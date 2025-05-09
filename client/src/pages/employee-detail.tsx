@@ -244,7 +244,7 @@ export default function EmployeeDetail() {
           <Tabs defaultValue="business" className="w-full">
             <Card>
               <CardHeader>
-                <div className="flex justify-end items-center">
+                <div className="flex justify-center items-center">
                   {/* Desktop Tabs - Hidden on small screens */}
                   <TabsList className="hidden md:flex">
                     <TabsTrigger value="business">
