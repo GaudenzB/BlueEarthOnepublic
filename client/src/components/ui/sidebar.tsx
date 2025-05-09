@@ -9,7 +9,8 @@ import {
   MessageSquare, 
   Settings,
   UserCog,
-  LogOut
+  LogOut,
+  Link as LinkIcon
 } from "lucide-react"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { Button } from "@/components/ui/button"

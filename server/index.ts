@@ -67,5 +67,13 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Schedule employee sync from Bubble.io
+    if (process.env.BUBBLE_API_KEY) {
+      log('Initializing Bubble.io employee sync');
+      scheduleEmployeeSync(60); // Sync every 60 minutes
+    } else {
+      log('Bubble.io API key not set, employee sync disabled');
+    }
   });
 })();

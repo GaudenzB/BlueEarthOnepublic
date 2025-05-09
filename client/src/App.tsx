@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import UserManagement from "@/pages/user-management";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
+import Integrations from "@/pages/integrations";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Suspense, lazy } from "react";
@@ -63,6 +64,11 @@ function Router() {
       <Route 
         path="/users" 
         component={(props) => <ProtectedRoute component={UserManagement} requireSuperAdmin={true} {...props} />} 
+      />
+      
+      <Route 
+        path="/integrations" 
+        component={(props) => <ProtectedRoute component={Integrations} requireSuperAdmin={true} {...props} />} 
       />
       
       {/* Fallback route */}
