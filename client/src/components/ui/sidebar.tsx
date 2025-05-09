@@ -62,6 +62,11 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       title: "User Management",
       href: "/users",
       icon: <UserCog className="mr-3 h-5 w-5" />,
+    },
+    {
+      title: "Integrations",
+      href: "/integrations",
+      icon: <LinkIcon className="mr-3 h-5 w-5" />,
     }
   ] : []
   
