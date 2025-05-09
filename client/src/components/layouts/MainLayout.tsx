@@ -1,8 +1,9 @@
 import React from "react"
 import { Sidebar } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { Menu, Bell, HelpCircle } from "lucide-react"
+import { Menu, Bell, HelpCircle, Search } from "lucide-react"
 import { useSidebar } from "@/hooks/use-sidebar"
+import { Input } from "@/components/ui/input"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -27,9 +28,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <Menu className="h-6 w-6" />
           </Button>
           
-          {/* Empty div to keep the header aligned on desktop */}
-          <div className="lg:block hidden">
-            <span className="text-xl font-semibold">Employee Directory</span>
+          {/* Global search in header */}
+          <div className="flex-1 max-w-lg mx-auto lg:mx-0">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search across the company portal..."
+                className="pl-9 w-full bg-muted focus:bg-background"
+              />
+            </div>
           </div>
           
           {/* Right-side actions */}
