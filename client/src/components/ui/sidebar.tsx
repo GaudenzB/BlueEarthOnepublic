@@ -61,7 +61,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-[#0a2949] text-white transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
+          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-[#0C1C36] text-white transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
           className
         )}
@@ -91,8 +91,8 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                   className={cn(
                     "w-full justify-start px-4 py-2.5 text-sm font-medium transition-colors duration-150",
                     isActive 
-                      ? "bg-white/20 text-white" 
-                      : "text-white/70 hover:text-white hover:bg-white/15 hover:shadow-sm"
+                      ? "bg-[#2A3A55] text-white" 
+                      : "bg-transparent text-white hover:text-white hover:bg-[#2A3A55]"
                   )}
                 >
                   {item.icon}
@@ -114,7 +114,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               <p className="text-sm font-medium text-white">John Doe</p>
               <p className="text-xs text-white/70">HR Manager</p>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto text-white/70 hover:text-white hover:bg-white/15 transition-colors duration-150">
+            <Button variant="ghost" size="icon" className="ml-auto text-white hover:text-white hover:bg-[#2A3A55] transition-colors duration-150">
               <Settings className="h-5 w-5" />
             </Button>
           </div>
