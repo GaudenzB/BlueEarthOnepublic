@@ -2,8 +2,24 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { authenticate, authorize, comparePassword, generateToken, hashPassword, isSuperAdmin } from "./auth";
-import { insertUserSchema, userLoginSchema, userRoleEnum } from "@shared/schema";
+import { 
+  authenticate, 
+  authorize, 
+  comparePassword, 
+  generateToken, 
+  hashPassword, 
+  isSuperAdmin,
+  generateResetToken,
+  calculateExpiryTime
+} from "./auth";
+import { 
+  insertUserSchema, 
+  userLoginSchema, 
+  userRoleEnum, 
+  forgotPasswordSchema, 
+  resetPasswordSchema 
+} from "@shared/schema";
+import { sendPasswordResetEmail } from "./email/sendgrid";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
@@ -105,6 +121,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get current user error:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  
+  // Forgot password (public route)
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const { email } = forgotPasswordSchema.parse(req.body);
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      // Even if user is not found, we return success to prevent email enumeration
+      if (!user) {
+        return res.json({ 
+          success: true,
+          message: "If that email exists in our system, a password reset link has been sent" 
+        });
+      }
+      
+      // Generate reset token
+      const resetToken = generateResetToken();
+      const expiryTime = calculateExpiryTime(1); // 1 hour expiry
+      
+      // Save reset token to user
+      const tokenSaved = await storage.setResetToken(email, resetToken, expiryTime);
+      
+      if (!tokenSaved) {
+        return res.status(500).json({ message: "Failed to process password reset" });
+      }
+      
+      // Create reset URL
+      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
+      
+      // Send password reset email
+      await sendPasswordResetEmail(email, resetToken, resetUrl);
+      
+      res.json({ 
+        success: true,
+        message: "If that email exists in our system, a password reset link has been sent" 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+  
+  // Reset password (public route)
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const { token, password } = resetPasswordSchema.parse(req.body);
+      
+      // Find user by reset token
+      const user = await storage.getUserByResetToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      // Hash new password
+      const hashedPassword = await hashPassword(password);
+      
+      // Update user password and clear reset token
+      const success = await storage.resetUserPassword(user.id, hashedPassword);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to reset password" });
+      }
+      
+      res.json({ 
+        success: true,
+        message: "Password has been reset successfully" 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
   
