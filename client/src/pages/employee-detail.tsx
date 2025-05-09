@@ -164,26 +164,28 @@ export default function EmployeeDetail() {
             <Avatar className="h-32 w-32 mx-auto">
               {employee?.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
               <AvatarFallback className="text-2xl">
-                {employee.name.split(' ').map(n => n[0]).join('')}
+                {employee?.name ? employee.name.split(' ').map(n => n[0]).join('') : 'EM'}
               </AvatarFallback>
             </Avatar>
-            <CardTitle className="mt-4">{employee.name}</CardTitle>
-            <CardDescription>{employee.position}</CardDescription>
+            <CardTitle className="mt-4">{employee?.name || 'Unknown'}</CardTitle>
+            <CardDescription>{employee?.position || 'No position'}</CardDescription>
             <Badge 
-              className={`mt-2 ${getStatusColor(employee.status)}`}
+              className={`mt-2 ${getStatusColor(employee?.status || 'inactive')}`}
             >
-              {getStatusText(employee.status)}
+              {getStatusText(employee?.status || 'inactive')}
             </Badge>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center">
-                <Mail className="h-5 w-5 mr-2 text-gray-500" />
-                <a href={`mailto:${employee.email}`} className="text-blue-600 hover:underline">
-                  {employee.email}
-                </a>
-              </div>
-              {employee.phone && (
+              {employee?.email && (
+                <div className="flex items-center">
+                  <Mail className="h-5 w-5 mr-2 text-gray-500" />
+                  <a href={`mailto:${employee.email}`} className="text-blue-600 hover:underline">
+                    {employee.email}
+                  </a>
+                </div>
+              )}
+              {employee?.phone && (
                 <div className="flex items-center">
                   <Phone className="h-5 w-5 mr-2 text-gray-500" />
                   <a href={`tel:${employee.phone}`} className="text-blue-600 hover:underline">
@@ -191,14 +193,18 @@ export default function EmployeeDetail() {
                   </a>
                 </div>
               )}
-              <div className="flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-gray-500" />
-                <span>{employee.location}</span>
-              </div>
-              <div className="flex items-center">
-                <Building className="h-5 w-5 mr-2 text-gray-500" />
-                <span>{employee.department}</span>
-              </div>
+              {employee?.location && (
+                <div className="flex items-center">
+                  <MapPin className="h-5 w-5 mr-2 text-gray-500" />
+                  <span>{employee.location}</span>
+                </div>
+              )}
+              {employee?.department && (
+                <div className="flex items-center">
+                  <Building className="h-5 w-5 mr-2 text-gray-500" />
+                  <span>{employee.department}</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -213,7 +219,7 @@ export default function EmployeeDetail() {
               <div>
                 <h3 className="text-lg font-medium">About</h3>
                 <p className="mt-2 text-gray-600">
-                  {employee.bio || 'No bio information available for this employee.'}
+                  {employee?.bio || 'No bio information available for this employee.'}
                 </p>
               </div>
 
@@ -222,8 +228,10 @@ export default function EmployeeDetail() {
               <div>
                 <h3 className="text-lg font-medium">Responsibilities</h3>
                 <p className="mt-2 text-gray-600">
-                  As a {employee.position} in the {employee.department} department, 
-                  {employee.responsibilities || ' this employee is responsible for managing departmental tasks and collaborating with team members to achieve company goals.'}
+                  {employee ? 
+                    `As a ${employee.position || 'team member'} in the ${employee.department || 'company'} department, ${employee.responsibilities || 'this employee is responsible for managing departmental tasks and collaborating with team members to achieve company goals.'}` 
+                    : 'No responsibility information available.'
+                  }
                 </p>
               </div>
 
@@ -232,24 +240,30 @@ export default function EmployeeDetail() {
               <div>
                 <h3 className="text-lg font-medium">Contact Information</h3>
                 <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{employee.email}</p>
-                  </div>
-                  {employee.phone && (
+                  {employee?.email && (
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium">{employee.email}</p>
+                    </div>
+                  )}
+                  {employee?.phone && (
                     <div>
                       <p className="text-sm text-gray-500">Phone</p>
                       <p className="font-medium">{employee.phone}</p>
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium">{employee.location}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Department</p>
-                    <p className="font-medium">{employee.department}</p>
-                  </div>
+                  {employee?.location && (
+                    <div>
+                      <p className="text-sm text-gray-500">Location</p>
+                      <p className="font-medium">{employee.location}</p>
+                    </div>
+                  )}
+                  {employee?.department && (
+                    <div>
+                      <p className="text-sm text-gray-500">Department</p>
+                      <p className="font-medium">{employee.department}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
