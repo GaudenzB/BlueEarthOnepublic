@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
+import blueEarthLogo from "@/assets/BlueEarth-Capital_white.png";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -51,7 +52,12 @@ export default function Login() {
   return (
     <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
       <Card className="w-[350px] shadow-lg">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-3">
+          <div className="flex justify-center">
+            <div className="bg-[#0C1C36] p-4 rounded-md flex justify-center items-center">
+              <img src={blueEarthLogo} alt="BlueEarth Capital" className="h-10" />
+            </div>
+          </div>
           <CardTitle className="text-2xl text-center font-bold">Login</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
@@ -84,7 +90,7 @@ export default function Login() {
           <CardFooter className="flex flex-col space-y-2">
             <Button 
               type="submit" 
-              className="w-full bg-blue-800 hover:bg-blue-900"
+              className="w-full bg-[#0C1C36] hover:bg-[#2A3A55] transition-colors duration-150"
               disabled={login.isPending}
             >
               {login.isPending ? "Logging in..." : "Sign In"}
