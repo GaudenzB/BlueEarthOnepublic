@@ -17,7 +17,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <Sidebar />
       
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="flex items-center justify-between px-4 py-3 bg-background border-b border-border md:py-4 md:px-6">
+        <header className="flex items-center justify-between px-4 py-3 bg-background border-b border-border/40 md:py-4 md:px-6">
           {/* Mobile Menu Toggle */}
           <Button 
             variant="ghost" 

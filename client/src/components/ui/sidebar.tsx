@@ -61,13 +61,13 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-background border-r border-border transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
+          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-background border-r border-border/40 transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
           className
         )}
         {...props}
       >
-        <div className="flex h-16 items-center justify-center px-4 border-b border-border">
+        <div className="flex h-16 items-center justify-center px-4 border-b border-border/40">
           <div className="flex items-center">
             <Building2 className="text-primary h-6 w-6 mr-2" />
             <span className="text-foreground font-semibold text-lg">Company Portal</span>
@@ -105,7 +105,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         </nav>
         
         {/* User profile moved to bottom of sidebar */}
-        <div className="mt-auto p-4 border-t border-border">
+        <div className="mt-auto p-4 border-t border-border/40">
           <div className="flex items-center">
             <Avatar>
               <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User" />
