@@ -90,7 +90,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 <Button
                   variant={isActive ? "default" : "ghost"}
                   className={cn(
-                    "w-full justify-start px-4 py-6 text-sm font-medium",
+                    "w-full justify-start px-4 py-2.5 text-sm font-medium",
                     isActive 
                       ? "bg-primary text-primary-foreground" 
                       : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -103,8 +103,9 @@ export function Sidebar({ className, ...props }: SidebarProps) {
             )
           })}
         </nav>
-
-        <div className="p-4 border-t border-border">
+        
+        {/* User profile moved to bottom of sidebar */}
+        <div className="mt-auto p-4 border-t border-border">
           <div className="flex items-center">
             <Avatar>
               <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User" />
