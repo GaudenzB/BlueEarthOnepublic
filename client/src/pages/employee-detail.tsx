@@ -162,7 +162,7 @@ export default function EmployeeDetail() {
         <Card>
           <CardHeader className="text-center">
             <Avatar className="h-32 w-32 mx-auto">
-              <AvatarImage src={employee.avatarUrl || ""} alt={employee.name} />
+              {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
               <AvatarFallback className="text-2xl">
                 {employee.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>

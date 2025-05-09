@@ -1,4 +1,5 @@
 import React from "react"
+import { Link } from "wouter"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -31,7 +32,7 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
       <CardContent className="p-4">
         <div className="flex items-center">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={employee.avatarUrl} alt={employee.name} />
+            {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div className="ml-3">
@@ -61,9 +62,11 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
             {formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1)}
           </Badge>
           <div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" title="View Profile">
-              <User className="h-4 w-4" />
-            </Button>
+            <Link href={`/employees/${employee.id}`}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="View Profile">
+                <User className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" title="Send Message">
               <MessageSquare className="h-4 w-4" />
             </Button>
