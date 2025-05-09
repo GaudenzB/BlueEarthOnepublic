@@ -20,6 +20,7 @@ import {
   resetPasswordSchema 
 } from "@shared/schema";
 import { sendPasswordResetEmail } from "./email/sendgrid";
+import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
@@ -431,6 +432,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to filter employees by status" });
     }
+  });
+  
+  // Bubble.io API integration routes (admin only)
+  
+  // Manually trigger employee sync from Bubble.io
+  app.post("/api/bubble/sync-employees", authenticate, authorize(["superadmin", "admin"]), async (req, res) => {
+    try {
+      const syncStats = await syncEmployeesFromBubble();
+      
+      res.json({
+        success: true,
+        message: "Employee sync completed successfully",
+        stats: syncStats
+      });
+    } catch (error) {
+      console.error("Manual employee sync error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to sync employees from Bubble.io",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
+  // Get last sync status
+  app.get("/api/bubble/sync-status", authenticate, authorize(["superadmin", "admin"]), (req, res) => {
+    // This would ideally return information about the last sync from a database
+    // For now, we'll just return basic info
+    res.json({
+      success: true,
+      message: "Employee sync is configured",
+      config: {
+        bubbleApiUrl: process.env.BUBBLE_API_KEY ? "Configured" : "Not configured",
+        syncInterval: "Every 60 minutes",
+      }
+    });
   });
 
   // Create employee
