@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Employee } from "@shared/schema";
@@ -6,9 +6,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Mail, Phone, MapPin, SquareUser, Building, Activity } from "lucide-react";
+import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { colors } from "@/lib/colors";
 
 export default function EmployeeDetail() {
@@ -83,29 +84,59 @@ export default function EmployeeDetail() {
               </div>
             </CardContent>
           </Card>
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-6 w-full" />
+          <div className="md:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-6 w-48" />
+                  <div className="flex space-x-1">
+                    <Skeleton className="h-9 w-20" />
+                    <Skeleton className="h-9 w-20" />
+                    <Skeleton className="h-9 w-20" />
+                    <Skeleton className="h-9 w-20 hidden md:block" />
+                    <Skeleton className="h-9 w-20 hidden md:block" />
+                    <Skeleton className="h-9 w-20 hidden md:block" />
+                  </div>
                 </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-6 w-full" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Skeleton className="h-4 w-24 mb-2" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                      <div>
+                        <Skeleton className="h-4 w-24 mb-2" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Skeleton className="h-4 w-24 mb-2" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                      <div>
+                        <Skeleton className="h-4 w-24 mb-2" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-6 w-full" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -209,66 +240,183 @@ export default function EmployeeDetail() {
           </CardContent>
         </Card>
 
-        {/* Details Card */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Employee Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium">About</h3>
-                <p className="mt-2 text-gray-600">
-                  {employee?.bio || 'No bio information available for this employee.'}
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="text-lg font-medium">Responsibilities</h3>
-                <p className="mt-2 text-gray-600">
-                  {employee ? 
-                    `As a ${employee.position || 'team member'} in the ${employee.department || 'company'} department, ${employee.responsibilities || 'this employee is responsible for managing departmental tasks and collaborating with team members to achieve company goals.'}` 
-                    : 'No responsibility information available.'
-                  }
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="text-lg font-medium">Contact Information</h3>
-                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {employee?.email && (
-                    <div>
-                      <p className="text-sm text-gray-500">Email</p>
-                      <p className="font-medium">{employee.email}</p>
-                    </div>
-                  )}
-                  {employee?.phone && (
-                    <div>
-                      <p className="text-sm text-gray-500">Phone</p>
-                      <p className="font-medium">{employee.phone}</p>
-                    </div>
-                  )}
-                  {employee?.location && (
-                    <div>
-                      <p className="text-sm text-gray-500">Location</p>
-                      <p className="font-medium">{employee.location}</p>
-                    </div>
-                  )}
-                  {employee?.department && (
-                    <div>
-                      <p className="text-sm text-gray-500">Department</p>
-                      <p className="font-medium">{employee.department}</p>
-                    </div>
-                  )}
+        {/* Details Card with Tabs */}
+        <div className="md:col-span-2">
+          <Tabs defaultValue="business" className="w-full">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Employee Details</CardTitle>
+                  <TabsList>
+                    <TabsTrigger value="business" className="text-xs md:text-sm">
+                      <Briefcase className="h-4 w-4 mr-1 hidden md:inline" />
+                      Business Info
+                    </TabsTrigger>
+                    <TabsTrigger value="personal" className="text-xs md:text-sm">
+                      <User className="h-4 w-4 mr-1 hidden md:inline" />
+                      Personal Info
+                    </TabsTrigger>
+                    <TabsTrigger value="documents" className="text-xs md:text-sm">
+                      <FileText className="h-4 w-4 mr-1 hidden md:inline" />
+                      Documents
+                    </TabsTrigger>
+                    <TabsTrigger value="compensation" className="text-xs md:text-sm">
+                      <DollarSign className="h-4 w-4 mr-1 hidden md:inline" />
+                      Compensation
+                    </TabsTrigger>
+                    <TabsTrigger value="permissions" className="text-xs md:text-sm">
+                      <Lock className="h-4 w-4 mr-1 hidden md:inline" />
+                      Permissions
+                    </TabsTrigger>
+                    <TabsTrigger value="onboarding" className="text-xs md:text-sm">
+                      <Calendar className="h-4 w-4 mr-1 hidden md:inline" />
+                      On-/Offboarding
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent>
+                {/* Business Info Tab */}
+                <TabsContent value="business" className="space-y-6 mt-0">
+                  <div>
+                    <h3 className="text-lg font-medium">Position & Department</h3>
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Job Title</p>
+                        <p className="font-medium">{employee?.position || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Department</p>
+                        <p className="font-medium">{employee?.department || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Location</p>
+                        <p className="font-medium">{employee?.location || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Status</p>
+                        <p className="font-medium">{getStatusText(employee?.status || 'inactive')}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+                  
+                  <div>
+                    <h3 className="text-lg font-medium">Responsibilities</h3>
+                    <p className="mt-2 text-gray-600">
+                      {employee ? 
+                        `As a ${employee.position || 'team member'} in the ${employee.department || 'company'} department, ${employee.responsibilities || 'this employee is responsible for managing departmental tasks and collaborating with team members to achieve company goals.'}` 
+                        : 'No responsibility information available.'
+                      }
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="text-lg font-medium">Business Contact</h3>
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {employee?.email && (
+                        <div>
+                          <p className="text-sm text-gray-500">Email</p>
+                          <p className="font-medium">{employee.email}</p>
+                        </div>
+                      )}
+                      {employee?.phone && (
+                        <div>
+                          <p className="text-sm text-gray-500">Business Phone</p>
+                          <p className="font-medium">{employee.phone}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Personal Info Tab */}
+                <TabsContent value="personal" className="space-y-6 mt-0">
+                  <div>
+                    <h3 className="text-lg font-medium">Personal Details</h3>
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Full Name</p>
+                        <p className="font-medium">{employee?.name || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Personal Email</p>
+                        <p className="font-medium">{employee?.email || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Phone</p>
+                        <p className="font-medium">{employee?.phone || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Address</p>
+                        <p className="font-medium">{employee?.location || 'Not specified'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h3 className="text-lg font-medium">Bio</h3>
+                    <p className="mt-2 text-gray-600">
+                      {employee?.bio || 'No bio information available for this employee.'}
+                    </p>
+                  </div>
+                </TabsContent>
+
+                {/* Documents Tab */}
+                <TabsContent value="documents" className="space-y-6 mt-0">
+                  <div className="text-center py-10">
+                    <FileText className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium">No Documents Available</h3>
+                    <p className="text-gray-500 mt-2">
+                      There are no documents uploaded for this employee yet.
+                    </p>
+                  </div>
+                </TabsContent>
+
+                {/* Compensation Tab */}
+                <TabsContent value="compensation" className="space-y-6 mt-0">
+                  <div className="text-center py-10">
+                    <DollarSign className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium">Compensation Information</h3>
+                    <p className="text-gray-500 mt-2">
+                      Compensation details are not available in this view.
+                      Contact HR for more information.
+                    </p>
+                  </div>
+                </TabsContent>
+
+                {/* Permissions Tab */}
+                <TabsContent value="permissions" className="space-y-6 mt-0">
+                  <div className="text-center py-10">
+                    <Lock className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium">Access Permissions</h3>
+                    <p className="text-gray-500 mt-2">
+                      System and application access permissions are not available in this view.
+                      Contact the IT department for more information.
+                    </p>
+                  </div>
+                </TabsContent>
+
+                {/* On-/Offboarding Tab */}
+                <TabsContent value="onboarding" className="space-y-6 mt-0">
+                  <div className="text-center py-10">
+                    <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium">On-/Offboarding Status</h3>
+                    <p className="text-gray-500 mt-2">
+                      On-/Offboarding information is not available in this view.
+                      Contact HR for more information.
+                    </p>
+                  </div>
+                </TabsContent>
+              </CardContent>
+            </Card>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
