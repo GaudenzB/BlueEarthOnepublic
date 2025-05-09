@@ -12,6 +12,8 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("user"),
   active: boolean("active").notNull().default(true),
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
+  resetToken: text("reset_token"),
+  resetTokenExpires: text("reset_token_expires"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -35,10 +37,21 @@ export const userLoginSchema = z.object({
   password: z.string().min(6),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 export type UserRole = z.infer<typeof userRoleEnum>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type UserLogin = z.infer<typeof userLoginSchema>;
+export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
+export type ResetPassword = z.infer<typeof resetPasswordSchema>;
 
 // Employee data model
 export const employees = pgTable("employees", {
