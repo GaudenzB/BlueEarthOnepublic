@@ -89,10 +89,10 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 <Button
                   variant={isActive ? "default" : "ghost"}
                   className={cn(
-                    "w-full justify-start px-4 py-2.5 text-sm font-medium",
+                    "w-full justify-start px-4 py-2.5 text-sm font-medium transition-colors duration-150",
                     isActive 
                       ? "bg-white/20 text-white" 
-                      : "text-white/70 hover:text-white hover:bg-white/10"
+                      : "text-white/70 hover:text-white hover:bg-white/15 hover:shadow-sm"
                   )}
                 >
                   {item.icon}
@@ -114,7 +114,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               <p className="text-sm font-medium text-white">John Doe</p>
               <p className="text-xs text-white/70">HR Manager</p>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto text-white/70 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="icon" className="ml-auto text-white/70 hover:text-white hover:bg-white/15 transition-colors duration-150">
               <Settings className="h-5 w-5" />
             </Button>
           </div>
