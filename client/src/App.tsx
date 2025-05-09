@@ -8,6 +8,8 @@ import EmployeeDirectory from "@/pages/employee-directory";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import UserManagement from "@/pages/user-management";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Suspense, lazy } from "react";
@@ -50,6 +52,8 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/login" component={(props) => <PublicRoute component={Login} {...props} />} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password/:token" component={ResetPassword} />
       
       {/* Protected routes */}
       <Route path="/" component={(props) => <ProtectedRoute component={EmployeeDirectory} {...props} />} />
@@ -71,8 +75,13 @@ function AppContent() {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
   
-  // Don't use MainLayout for login page
-  if (location === "/login" || !isAuthenticated) {
+  // Don't use MainLayout for auth-related pages
+  if (
+    location === "/login" || 
+    location === "/forgot-password" || 
+    location.startsWith("/reset-password") || 
+    !isAuthenticated
+  ) {
     return <Router />;
   }
   

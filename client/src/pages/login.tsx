@@ -111,14 +111,11 @@ export default function Login() {
                 variant="link" 
                 className="p-0 h-auto font-normal"
                 style={{ color: colors.primary.light }}
-                onClick={() => {
-                  toast({
-                    title: "Password Reset",
-                    description: "Please contact the system administrator to reset your password.",
-                  });
-                }}
+                asChild
               >
-                Forgot your password?
+                <Link href="/forgot-password">
+                  Forgot your password?
+                </Link>
               </Button>
             </div>
           </CardFooter>
