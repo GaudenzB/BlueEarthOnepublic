@@ -10,6 +10,7 @@ import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { colors } from "@/lib/colors";
 
 export default function EmployeeDetail() {
@@ -244,32 +245,87 @@ export default function EmployeeDetail() {
             <Card>
               <CardHeader>
                 <div className="flex justify-end items-center">
-                  <TabsList>
-                    <TabsTrigger value="business" className="text-xs md:text-sm">
-                      <Briefcase className="h-4 w-4 mr-1 hidden md:inline" />
+                  {/* Desktop Tabs - Hidden on small screens */}
+                  <TabsList className="hidden md:flex">
+                    <TabsTrigger value="business">
+                      <Briefcase className="h-4 w-4 mr-1" />
                       Business Info
                     </TabsTrigger>
-                    <TabsTrigger value="personal" className="text-xs md:text-sm">
-                      <User className="h-4 w-4 mr-1 hidden md:inline" />
+                    <TabsTrigger value="personal">
+                      <User className="h-4 w-4 mr-1" />
                       Personal Info
                     </TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs md:text-sm">
-                      <FileText className="h-4 w-4 mr-1 hidden md:inline" />
+                    <TabsTrigger value="documents">
+                      <FileText className="h-4 w-4 mr-1" />
                       Documents
                     </TabsTrigger>
-                    <TabsTrigger value="compensation" className="text-xs md:text-sm">
-                      <DollarSign className="h-4 w-4 mr-1 hidden md:inline" />
+                    <TabsTrigger value="compensation">
+                      <DollarSign className="h-4 w-4 mr-1" />
                       Compensation
                     </TabsTrigger>
-                    <TabsTrigger value="permissions" className="text-xs md:text-sm">
-                      <Lock className="h-4 w-4 mr-1 hidden md:inline" />
+                    <TabsTrigger value="permissions">
+                      <Lock className="h-4 w-4 mr-1" />
                       Permissions
                     </TabsTrigger>
-                    <TabsTrigger value="onboarding" className="text-xs md:text-sm">
-                      <Calendar className="h-4 w-4 mr-1 hidden md:inline" />
+                    <TabsTrigger value="onboarding">
+                      <Calendar className="h-4 w-4 mr-1" />
                       On-/Offboarding
                     </TabsTrigger>
                   </TabsList>
+                  
+                  {/* Mobile Dropdown - Visible only on small screens */}
+                  <div className="md:hidden w-full">
+                    <Select 
+                      defaultValue="business" 
+                      onValueChange={(value) => {
+                        // Find the TabsTrigger for this value and click it
+                        const tab = document.querySelector(`button[data-value="${value}"]`) as HTMLElement;
+                        if (tab) tab.click();
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select section" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="business">
+                          <div className="flex items-center">
+                            <Briefcase className="h-4 w-4 mr-2" />
+                            <span>Business Info</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="personal">
+                          <div className="flex items-center">
+                            <User className="h-4 w-4 mr-2" />
+                            <span>Personal Info</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="documents">
+                          <div className="flex items-center">
+                            <FileText className="h-4 w-4 mr-2" />
+                            <span>Documents</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="compensation">
+                          <div className="flex items-center">
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            <span>Compensation</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="permissions">
+                          <div className="flex items-center">
+                            <Lock className="h-4 w-4 mr-2" />
+                            <span>Permissions</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="onboarding">
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            <span>On-/Offboarding</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
