@@ -5,16 +5,40 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  role: text("role").notNull().default("user"),
+  active: boolean("active").notNull().default(true),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
+  firstName: true,
+  lastName: true,
+  role: true,
 });
 
+export const userRoleEnum = z.enum([
+  "superadmin",
+  "admin",
+  "manager",
+  "user",
+]);
+
+export const userLoginSchema = z.object({
+  username: z.string().min(3),
+  password: z.string().min(6),
+});
+
+export type UserRole = z.infer<typeof userRoleEnum>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type UserLogin = z.infer<typeof userLoginSchema>;
 
 // Employee data model
 export const employees = pgTable("employees", {

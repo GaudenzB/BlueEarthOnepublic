@@ -1,11 +1,16 @@
 import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, or } from "drizzle-orm";
+import { eq, like, or, sql } from "drizzle-orm";
 
 export interface IStorage {
+  // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
+  getAllUsers(): Promise<User[]>;
   
   // Employee CRUD operations
   getAllEmployees(): Promise<Employee[]>;
@@ -28,6 +33,11 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
@@ -35,6 +45,27 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+  
+  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning({ id: users.id });
+    return result.length > 0;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async getAllEmployees(): Promise<Employee[]> {
@@ -81,11 +112,11 @@ export class DatabaseStorage implements IStorage {
       .from(employees)
       .where(
         or(
-          like(employees.name.toLowerCase(), `%${searchLower}%`),
-          like(employees.position.toLowerCase(), `%${searchLower}%`),
-          like(employees.department.toLowerCase(), `%${searchLower}%`),
-          like(employees.email.toLowerCase(), `%${searchLower}%`),
-          like(employees.location.toLowerCase(), `%${searchLower}%`)
+          sql`LOWER(${employees.name}) LIKE ${'%' + searchLower + '%'}`,
+          sql`LOWER(${employees.position}) LIKE ${'%' + searchLower + '%'}`,
+          sql`LOWER(${employees.department}) LIKE ${'%' + searchLower + '%'}`,
+          sql`LOWER(${employees.email}) LIKE ${'%' + searchLower + '%'}`,
+          sql`LOWER(${employees.location}) LIKE ${'%' + searchLower + '%'}`
         )
       );
   }
