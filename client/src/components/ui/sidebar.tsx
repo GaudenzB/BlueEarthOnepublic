@@ -7,12 +7,15 @@ import {
   Calendar, 
   FileText, 
   MessageSquare, 
-  Settings 
+  Settings,
+  UserCog,
+  LogOut
 } from "lucide-react"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/hooks/useAuth"
 import blueEarthLogo from "@/assets/BlueEarth-Capital_white.png"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -20,8 +23,10 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Sidebar({ className, ...props }: SidebarProps) {
   const [location] = useLocation()
   const { isOpen, toggleSidebar } = useSidebar()
+  const { user, logout, isSuperAdmin } = useAuth()
 
-  const navItems = [
+  // Basic navigation items
+  const baseNavItems = [
     {
       title: "Employee Directory",
       href: "/",
@@ -48,6 +53,18 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       icon: <MessageSquare className="mr-3 h-5 w-5" />,
     },
   ]
+  
+  // Admin navigation items - only visible to superadmins
+  const adminNavItems = isSuperAdmin ? [
+    {
+      title: "User Management",
+      href: "/users",
+      icon: <UserCog className="mr-3 h-5 w-5" />,
+    }
+  ] : []
+  
+  // Combine all navigation items
+  const navItems = [...baseNavItems, ...adminNavItems]
 
   return (
     <>
@@ -107,16 +124,38 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         <div className="mt-auto p-4 border-t border-white/10">
           <div className="flex items-center">
             <Avatar>
-              <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User" />
-              <AvatarFallback>JD</AvatarFallback>
+              <AvatarImage src="/user-profile.jpg" alt={user?.username || "User"} />
+              <AvatarFallback>
+                {user?.firstName?.charAt(0) || ""}{user?.lastName?.charAt(0) || user?.username?.charAt(0) || "U"}
+              </AvatarFallback>
             </Avatar>
             <div className="ml-3">
-              <p className="text-sm font-medium text-white">John Doe</p>
-              <p className="text-xs text-white/70">HR Manager</p>
+              <p className="text-sm font-medium text-white">
+                {user?.firstName && user?.lastName 
+                  ? `${user.firstName} ${user.lastName}` 
+                  : user?.username || "User"}
+              </p>
+              <p className="text-xs text-white/70">
+                {user?.role === "superadmin" 
+                  ? "Super Admin" 
+                  : user?.role === "admin" 
+                  ? "Administrator" 
+                  : user?.role === "manager" 
+                  ? "Manager" 
+                  : "User"}
+              </p>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto text-white hover:text-white hover:bg-[#2A3A55] transition-colors duration-150">
-              <Settings className="h-5 w-5" />
-            </Button>
+            <div className="flex ml-auto">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:text-white hover:bg-[#2A3A55] transition-colors duration-150"
+                onClick={logout}
+                title="Logout"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </aside>

@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create employee
-  app.post("/api/employees", async (req, res) => {
+  app.post("/api/employees", authenticate, async (req, res) => {
     try {
       const employeeSchema = z.object({
         name: z.string().min(1, "Name is required"),
@@ -358,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update employee
-  app.patch("/api/employees/:id", async (req, res) => {
+  app.patch("/api/employees/:id", authenticate, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const employeeSchema = z.object({
@@ -389,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete employee
-  app.delete("/api/employees/:id", async (req, res) => {
+  app.delete("/api/employees/:id", authenticate, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteEmployee(id);
