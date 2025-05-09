@@ -1,10 +1,6 @@
-import { 
-  users, type User, type InsertUser,
-  employees, type Employee, type InsertEmployee 
-} from "@shared/schema";
-
-// modify the interface with any CRUD methods
-// you might need
+import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee } from "@shared/schema";
+import { db } from "./db";
+import { eq, like, or } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -22,184 +18,97 @@ export interface IStorage {
   filterEmployeesByStatus(status: string): Promise<Employee[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private employeesMap: Map<number, Employee>;
-  private userCurrentId: number;
-  private employeeCurrentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.employeesMap = new Map();
-    this.userCurrentId = 1;
-    this.employeeCurrentId = 1;
-    
-    // Initialize with sample employee data
-    this.initializeEmployees();
-  }
-
-  // User methods
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
-  // Employee methods
   async getAllEmployees(): Promise<Employee[]> {
-    return Array.from(this.employeesMap.values());
+    return await db.select().from(employees);
   }
 
   async getEmployee(id: number): Promise<Employee | undefined> {
-    return this.employeesMap.get(id);
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+    return employee || undefined;
   }
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
-    const id = this.employeeCurrentId++;
-    const employee: Employee = { ...insertEmployee, id };
-    this.employeesMap.set(id, employee);
+    const [employee] = await db
+      .insert(employees)
+      .values(insertEmployee)
+      .returning();
     return employee;
   }
 
   async updateEmployee(id: number, updates: Partial<InsertEmployee>): Promise<Employee | undefined> {
-    const employee = this.employeesMap.get(id);
-    if (!employee) return undefined;
-
-    const updatedEmployee = { ...employee, ...updates };
-    this.employeesMap.set(id, updatedEmployee);
+    const [updatedEmployee] = await db
+      .update(employees)
+      .set(updates)
+      .where(eq(employees.id, id))
+      .returning();
     return updatedEmployee;
   }
 
   async deleteEmployee(id: number): Promise<boolean> {
-    return this.employeesMap.delete(id);
+    const result = await db
+      .delete(employees)
+      .where(eq(employees.id, id))
+      .returning({ id: employees.id });
+    return result.length > 0;
   }
 
   async searchEmployees(search: string): Promise<Employee[]> {
-    const lowerSearch = search.toLowerCase();
-    return Array.from(this.employeesMap.values()).filter(employee => 
-      employee.name.toLowerCase().includes(lowerSearch) || 
-      employee.department.toLowerCase().includes(lowerSearch) ||
-      employee.position.toLowerCase().includes(lowerSearch)
-    );
+    if (!search) {
+      return this.getAllEmployees();
+    }
+    const searchLower = search.toLowerCase();
+    return await db
+      .select()
+      .from(employees)
+      .where(
+        or(
+          like(employees.name.toLowerCase(), `%${searchLower}%`),
+          like(employees.position.toLowerCase(), `%${searchLower}%`),
+          like(employees.department.toLowerCase(), `%${searchLower}%`),
+          like(employees.email.toLowerCase(), `%${searchLower}%`),
+          like(employees.location.toLowerCase(), `%${searchLower}%`)
+        )
+      );
   }
 
   async filterEmployeesByDepartment(department: string): Promise<Employee[]> {
-    if (!department) return this.getAllEmployees();
-    
-    return Array.from(this.employeesMap.values()).filter(employee => 
-      employee.department.toLowerCase() === department.toLowerCase()
-    );
+    if (!department || department === "all") {
+      return this.getAllEmployees();
+    }
+    return await db
+      .select()
+      .from(employees)
+      .where(eq(employees.department, department));
   }
 
   async filterEmployeesByStatus(status: string): Promise<Employee[]> {
-    if (!status) return this.getAllEmployees();
-    
-    return Array.from(this.employeesMap.values()).filter(employee => 
-      employee.status.toLowerCase() === status.toLowerCase()
-    );
-  }
-
-  // Initialize with sample employee data for demonstration
-  private initializeEmployees() {
-    const sampleEmployees: InsertEmployee[] = [
-      {
-        name: "Sarah Williams",
-        position: "UX Designer",
-        department: "design",
-        location: "San Francisco, CA",
-        email: "sarah.williams@company.com",
-        phone: "555-123-4567",
-        avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "active"
-      },
-      {
-        name: "Michael Johnson",
-        position: "Full Stack Developer",
-        department: "engineering",
-        location: "Austin, TX",
-        email: "michael.johnson@company.com",
-        phone: "555-234-5678",
-        avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "active"
-      },
-      {
-        name: "Emily Chen",
-        position: "Marketing Manager",
-        department: "marketing",
-        location: "New York, NY",
-        email: "emily.chen@company.com",
-        phone: "555-345-6789",
-        avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "active"
-      },
-      {
-        name: "David Rodriguez",
-        position: "Product Manager",
-        department: "product",
-        location: "Chicago, IL",
-        email: "david.rodriguez@company.com",
-        phone: "555-456-7890",
-        avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "active"
-      },
-      {
-        name: "Sandra Kim",
-        position: "HR Specialist",
-        department: "hr",
-        location: "Seattle, WA",
-        email: "sandra.kim@company.com",
-        phone: "555-567-8901",
-        avatarUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "on_leave"
-      },
-      {
-        name: "Jason Taylor",
-        position: "Sales Representative",
-        department: "sales",
-        location: "Boston, MA",
-        email: "jason.taylor@company.com",
-        phone: "555-678-9012",
-        avatarUrl: "https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "active"
-      },
-      {
-        name: "Rebecca Singh",
-        position: "Data Analyst",
-        department: "engineering",
-        location: "Denver, CO",
-        email: "rebecca.singh@company.com",
-        phone: "555-789-0123",
-        avatarUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "remote"
-      },
-      {
-        name: "Thomas Wilson",
-        position: "Senior Developer",
-        department: "engineering",
-        location: "Portland, OR",
-        email: "thomas.wilson@company.com",
-        phone: "555-890-1234",
-        avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "active"
-      }
-    ];
-
-    // Create all sample employees
-    sampleEmployees.forEach(employee => {
-      this.createEmployee(employee);
-    });
+    if (!status || status === "all") {
+      return this.getAllEmployees();
+    }
+    return await db
+      .select()
+      .from(employees)
+      .where(eq(employees.status, status));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
