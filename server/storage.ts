@@ -12,6 +12,11 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   
+  // Password reset operations
+  setResetToken(email: string, token: string, expiresAt: string): Promise<boolean>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  resetUserPassword(userId: number, password: string): Promise<boolean>;
+  
   // Employee CRUD operations
   getAllEmployees(): Promise<Employee[]>;
   getEmployee(id: number): Promise<Employee | undefined>;
@@ -139,6 +144,69 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(employees)
       .where(eq(employees.status, status));
+  }
+  
+  // Password reset operations
+  async setResetToken(email: string, token: string, expiresAt: string): Promise<boolean> {
+    const [user] = await db
+      .update(users)
+      .set({
+        resetToken: token,
+        resetTokenExpires: expiresAt
+      })
+      .where(eq(users.email, email))
+      .returning();
+    
+    return !!user;
+  }
+  
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.resetToken, token));
+    
+    if (!user) {
+      return undefined;
+    }
+    
+    // Check if token is expired
+    if (user.resetTokenExpires) {
+      const now = new Date();
+      const tokenExpiry = new Date(user.resetTokenExpires);
+      
+      if (now > tokenExpiry) {
+        // Token has expired, clear it
+        await this.clearResetToken(user.id);
+        return undefined;
+      }
+    }
+    
+    return user;
+  }
+  
+  async resetUserPassword(userId: number, password: string): Promise<boolean> {
+    const [user] = await db
+      .update(users)
+      .set({
+        password,
+        resetToken: null,
+        resetTokenExpires: null
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return !!user;
+  }
+  
+  private async clearResetToken(userId: number): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        resetToken: null,
+        resetTokenExpires: null
+      })
+      .where(eq(users.id, userId));
   }
 }
 

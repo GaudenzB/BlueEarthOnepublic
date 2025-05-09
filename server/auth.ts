@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 import { User, UserRole } from "@shared/schema";
 
@@ -106,4 +107,15 @@ export const isSuperAdmin = (req: Request, res: Response, next: NextFunction) =>
   }
 
   next();
+};
+
+// Password reset functions
+export const generateResetToken = (): string => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+export const calculateExpiryTime = (hours: number = 24): string => {
+  const now = new Date();
+  now.setHours(now.getHours() + hours);
+  return now.toISOString();
 };

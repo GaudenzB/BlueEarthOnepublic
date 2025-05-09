@@ -1,11 +1,15 @@
 import { MailService } from '@sendgrid/mail';
 
-if (!process.env.SENDGRID_API_KEY) {
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+
+if (!SENDGRID_API_KEY) {
   console.warn("SENDGRID_API_KEY not set. Email functionality will be disabled.");
 }
 
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY || '');
+if (SENDGRID_API_KEY) {
+  mailService.setApiKey(SENDGRID_API_KEY);
+}
 
 export interface SendEmailParams {
   to: string;
@@ -16,7 +20,7 @@ export interface SendEmailParams {
 
 export async function sendEmail(params: SendEmailParams): Promise<boolean> {
   try {
-    if (!process.env.SENDGRID_API_KEY) {
+    if (!SENDGRID_API_KEY) {
       console.error('SendGrid API key is not set. Email not sent.');
       return false;
     }
@@ -25,8 +29,8 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
       to: params.to,
       from: 'support@blueearth.capital', // Update this to your verified sender
       subject: params.subject,
-      text: params.text,
-      html: params.html,
+      text: params.text || '',
+      html: params.html || '',
     });
     return true;
   } catch (error) {
