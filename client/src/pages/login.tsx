@@ -90,7 +90,7 @@ export default function Login() {
           <CardFooter className="flex flex-col space-y-2">
             <Button 
               type="submit" 
-              className="w-full bg-[#0C1C36] hover:bg-[#2A3A55] transition-colors duration-150"
+              className="w-full bg-[#1e3a6e] hover:bg-[#2A4A75] transition-colors duration-150"
               disabled={login.isPending}
             >
               {login.isPending ? "Logging in..." : "Sign In"}
@@ -98,7 +98,7 @@ export default function Login() {
             <div className="text-sm text-center mt-4">
               <Button 
                 variant="link" 
-                className="text-[#0C1C36] p-0 h-auto font-normal"
+                className="text-[#1e3a6e] p-0 h-auto font-normal"
                 onClick={() => {
                   toast({
                     title: "Password Reset",
