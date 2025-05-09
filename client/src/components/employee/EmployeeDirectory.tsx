@@ -12,6 +12,7 @@ export function EmployeeDirectory() {
   const [department, setDepartment] = useState("")
   const [activeOnly, setActiveOnly] = useState(false)
   const [sortBy, setSortBy] = useState<"name" | "department" | null>(null)
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
 
@@ -36,7 +37,14 @@ export function EmployeeDirectory() {
   }
 
   const handleSortBy = (sortType: "name" | "department") => {
-    setSortBy(sortType === sortBy ? null : sortType)
+    if (sortType === sortBy) {
+      // If already sorting by this field, toggle direction
+      setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc")
+    } else {
+      // If sorting by a new field, set it and default to ascending
+      setSortBy(sortType)
+      setSortDirection("asc")
+    }
     setCurrentPage(1)
   }
 
@@ -69,13 +77,19 @@ export function EmployeeDirectory() {
     
     // Sort employees
     if (sortBy === "name") {
-      filtered.sort((a, b) => a.name.localeCompare(b.name))
+      filtered.sort((a, b) => {
+        const comparison = a.name.localeCompare(b.name);
+        return sortDirection === "asc" ? comparison : -comparison;
+      });
     } else if (sortBy === "department") {
-      filtered.sort((a, b) => a.department.localeCompare(b.department))
+      filtered.sort((a, b) => {
+        const comparison = a.department.localeCompare(b.department);
+        return sortDirection === "asc" ? comparison : -comparison;
+      });
     }
     
     return filtered
-  }, [employees, searchTerm, department, activeOnly, sortBy])
+  }, [employees, searchTerm, department, activeOnly, sortBy, sortDirection])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage)
@@ -111,6 +125,7 @@ export function EmployeeDirectory() {
           department={department}
           activeOnly={activeOnly}
           sortBy={sortBy}
+          sortDirection={sortDirection}
         />
         
         <div className="directory-container overflow-auto">
@@ -169,6 +184,7 @@ export function EmployeeDirectory() {
         department={department}
         activeOnly={activeOnly}
         sortBy={sortBy}
+        sortDirection={sortDirection}
       />
       
       {filteredEmployees.length === 0 ? (

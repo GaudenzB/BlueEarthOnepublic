@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { Search, User, SortAsc, Building } from "lucide-react"
+import { Search, User, SortAsc, SortDesc, Building } from "lucide-react"
 
 interface SearchFiltersProps {
   onSearch: (value: string) => void
@@ -15,6 +15,7 @@ interface SearchFiltersProps {
   department: string
   activeOnly: boolean
   sortBy: "name" | "department" | null
+  sortDirection?: "asc" | "desc"
 }
 
 export function SearchFilters({
@@ -26,7 +27,8 @@ export function SearchFilters({
   searchTerm,
   department,
   activeOnly,
-  sortBy
+  sortBy,
+  sortDirection = "asc"
 }: SearchFiltersProps) {
   return (
     <Card className="shadow-sm">
@@ -80,7 +82,11 @@ export function SearchFilters({
             onClick={onSortByName}
             className="h-9"
           >
-            <SortAsc className="h-4 w-4 mr-2" />
+            {sortBy === "name" && sortDirection === "desc" ? (
+              <SortDesc className="h-4 w-4 mr-2" />
+            ) : (
+              <SortAsc className="h-4 w-4 mr-2" />
+            )}
             Sort by Name
           </Button>
           
@@ -90,7 +96,11 @@ export function SearchFilters({
             onClick={onSortByDepartment}
             className="h-9"
           >
-            <Building className="h-4 w-4 mr-2" />
+            {sortBy === "department" && sortDirection === "desc" ? (
+              <SortDesc className="h-4 w-4 mr-2" />
+            ) : (
+              <Building className="h-4 w-4 mr-2" />
+            )}
             Sort by Department
           </Button>
         </div>
