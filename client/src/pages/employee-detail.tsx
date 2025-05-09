@@ -87,8 +87,7 @@ export default function EmployeeDetail() {
           <div className="md:col-span-3">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <Skeleton className="h-6 w-48" />
+                <div className="flex justify-end items-center">
                   <div className="flex space-x-1">
                     <Skeleton className="h-9 w-20" />
                     <Skeleton className="h-9 w-20" />
@@ -244,8 +243,7 @@ export default function EmployeeDetail() {
           <Tabs defaultValue="business" className="w-full">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Employee Details</CardTitle>
+                <div className="flex justify-end items-center">
                   <TabsList>
                     <TabsTrigger value="business" className="text-xs md:text-sm">
                       <Briefcase className="h-4 w-4 mr-1 hidden md:inline" />
