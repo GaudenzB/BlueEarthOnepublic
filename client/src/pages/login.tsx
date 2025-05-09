@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import blueEarthLogo from "@/assets/BlueEarth-Capital_blue.png";
+import { colors } from "@/lib/colors";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -50,23 +51,23 @@ export default function Login() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
-      <Card className="w-[350px] shadow-lg">
+    <div className="flex h-screen items-center justify-center" style={{ backgroundColor: colors.background.base }}>
+      <Card className="w-[350px] shadow-lg" style={{ backgroundColor: colors.background.card }}>
         <CardHeader className="space-y-3">
           <div className="flex justify-center">
             <div className="bg-white p-4 rounded-md flex justify-center items-center shadow-sm">
               <img src={blueEarthLogo} alt="BlueEarth Capital" className="h-12" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center font-bold">Login</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl text-center font-bold" style={{ color: colors.text.body }}>Login</CardTitle>
+          <CardDescription className="text-center" style={{ color: colors.text.muted }}>
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" style={{ color: colors.text.body }}>Username</Label>
               <Input
                 id="username"
                 placeholder="Username"
@@ -76,7 +77,7 @@ export default function Login() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" style={{ color: colors.text.body }}>Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -90,7 +91,17 @@ export default function Login() {
           <CardFooter className="flex flex-col space-y-2">
             <Button 
               type="submit" 
-              className="w-full bg-[#1e3a6e] hover:bg-[#2A4A75] transition-colors duration-150"
+              className="w-full transition-colors duration-150 shadow-md hover:shadow-lg"
+              style={{ 
+                backgroundColor: colors.primary.base,
+                color: colors.text.primary,
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = colors.primary.hover;
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = colors.primary.base;
+              }}
               disabled={login.isPending}
             >
               {login.isPending ? "Logging in..." : "Sign In"}
@@ -98,7 +109,8 @@ export default function Login() {
             <div className="text-sm text-center mt-4">
               <Button 
                 variant="link" 
-                className="text-[#1e3a6e] p-0 h-auto font-normal"
+                className="p-0 h-auto font-normal"
+                style={{ color: colors.primary.light }}
                 onClick={() => {
                   toast({
                     title: "Password Reset",

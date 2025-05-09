@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/hooks/useAuth"
 import blueEarthLogo from "@/assets/BlueEarth-Capital_white.png"
+import { colors } from "@/lib/colors"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -78,13 +79,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-[#1e3a6e] text-white transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
+          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
           className
         )}
+        style={{ backgroundColor: colors.background.sidebar, color: colors.text.primary }}
         {...props}
       >
-        <div className="flex h-20 items-center justify-center px-4 border-b border-white/10">
+        <div className="flex h-20 items-center justify-center px-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="flex items-center justify-center w-full">
             <img src={blueEarthLogo} alt="BlueEarth Capital" className="h-10" />
           </div>
@@ -108,9 +110,22 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                   className={cn(
                     "w-full justify-start px-4 py-2.5 text-sm font-medium transition-colors duration-150",
                     isActive 
-                      ? "bg-[#2A4A75] text-white" 
-                      : "bg-transparent text-white hover:text-white hover:bg-[#2A4A75]"
+                      ? "text-white" 
+                      : "bg-transparent text-white hover:text-white"
                   )}
+                  style={{ 
+                    backgroundColor: isActive ? colors.primary.hover : 'transparent',
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = colors.primary.hover;
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
                   {item.icon}
                   {item.title}
@@ -121,7 +136,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         </nav>
         
         {/* User profile moved to bottom of sidebar */}
-        <div className="mt-auto p-4 border-t border-white/10">
+        <div className="mt-auto p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="flex items-center">
             <Avatar>
               <AvatarImage src="/user-profile.jpg" alt={user?.username || "User"} />
@@ -135,7 +150,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                   ? `${user.firstName} ${user.lastName}` 
                   : user?.username || "User"}
               </p>
-              <p className="text-xs text-white/70">
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
                 {user?.role === "superadmin" 
                   ? "Super Admin" 
                   : user?.role === "admin" 
@@ -149,7 +164,16 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white hover:text-white hover:bg-[#2A4A75] transition-colors duration-150"
+                className="text-white transition-colors duration-150"
+                style={{ 
+                  backgroundColor: 'transparent', 
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.primary.hover;
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
                 onClick={logout}
                 title="Logout"
               >
