@@ -29,50 +29,50 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
   
   return (
     <Card className="overflow-hidden border border-border hover:shadow-md transition-shadow duration-300">
-      <CardContent className="p-4">
-        <div className="flex items-center">
-          <Avatar className="h-12 w-12">
-            {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          <div className="ml-3">
-            <h3 className="text-base font-semibold text-foreground">{employee.name}</h3>
-            <p className="text-sm text-muted-foreground">{employee.position}</p>
+      <Link href={`/employees/${employee.id}`} className="block cursor-pointer">
+        <CardContent className="p-4">
+          <div className="flex items-center">
+            <Avatar className="h-12 w-12">
+              {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div className="ml-3">
+              <h3 className="text-base font-semibold text-foreground">{employee.name}</h3>
+              <p className="text-sm text-muted-foreground">{employee.position}</p>
+            </div>
           </div>
-        </div>
-        
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center text-sm">
-            <Building className="text-muted-foreground h-4 w-4 mr-2" />
-            <span>{employee.department.charAt(0).toUpperCase() + employee.department.slice(1)} Department</span>
+          
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center text-sm">
+              <Building className="text-muted-foreground h-4 w-4 mr-2" />
+              <span>{employee.department.charAt(0).toUpperCase() + employee.department.slice(1)} Department</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <MapPin className="text-muted-foreground h-4 w-4 mr-2" />
+              <span>{employee.location}</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <Mail className="text-muted-foreground h-4 w-4 mr-2" />
+              <span>{employee.email}</span>
+            </div>
           </div>
-          <div className="flex items-center text-sm">
-            <MapPin className="text-muted-foreground h-4 w-4 mr-2" />
-            <span>{employee.location}</span>
-          </div>
-          <div className="flex items-center text-sm">
-            <Mail className="text-muted-foreground h-4 w-4 mr-2" />
-            <span>{employee.email}</span>
-          </div>
-        </div>
-        
-        <div className="mt-4 pt-3 border-t border-border flex justify-between">
-          <Badge variant={statusConfig.variant} className="flex items-center">
-            <span className={`w-1.5 h-1.5 mr-1.5 rounded-full ${statusConfig.dot}`}></span>
-            {formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1)}
-          </Badge>
-          <div>
-            <Link href={`/employees/${employee.id}`}>
+          
+          <div className="mt-4 pt-3 border-t border-border flex justify-between">
+            <Badge variant={statusConfig.variant} className="flex items-center">
+              <span className={`w-1.5 h-1.5 mr-1.5 rounded-full ${statusConfig.dot}`}></span>
+              {formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1)}
+            </Badge>
+            <div>
               <Button variant="ghost" size="icon" className="h-8 w-8" title="View Profile">
                 <User className="h-4 w-4" />
               </Button>
-            </Link>
-            <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" title="Send Message">
-              <MessageSquare className="h-4 w-4" />
-            </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" title="Send Message">
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardContent>
+        </CardContent>
+      </Link>
     </Card>
   )
 }
