@@ -63,6 +63,8 @@ export const employees = pgTable("employees", {
   email: varchar("email", { length: 100 }).notNull().unique(),
   phone: varchar("phone", { length: 20 }),
   avatarUrl: text("avatar_url"),
+  bio: text("bio"),
+  responsibilities: text("responsibilities"),
   status: varchar("status", { length: 20 }).notNull().default("active"),
 });
 

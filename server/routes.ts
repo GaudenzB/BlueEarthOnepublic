@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch employees" });
     }
   });
-
+  
   // Get employee by ID
   app.get("/api/employees/:id", authenticate, async (req, res) => {
     try {

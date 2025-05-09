@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import EmployeeDirectory from "@/pages/employee-directory";
+import EmployeeDetail from "@/pages/employee-detail";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import UserManagement from "@/pages/user-management";
@@ -58,6 +59,7 @@ function Router() {
       
       {/* Protected routes */}
       <Route path="/" component={(props) => <ProtectedRoute component={EmployeeDirectory} {...props} />} />
+      <Route path="/employees/:id" component={(props) => <ProtectedRoute component={EmployeeDetail} {...props} />} />
       <Route path="/dashboard" component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
       
       {/* Super admin routes */}
