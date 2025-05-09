@@ -58,7 +58,7 @@ export function EmployeeDirectory() {
     }
     
     // Filter by department
-    if (department) {
+    if (department && department !== "all") {
       filtered = filtered.filter(employee => employee.department === department)
     }
     
