@@ -69,8 +69,8 @@ export default function EmployeeDetail() {
           </Button>
           <Skeleton className="h-8 w-64" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card className="md:col-span-1">
             <CardHeader>
               <Skeleton className="h-32 w-32 rounded-full mx-auto" />
               <Skeleton className="h-6 w-32 mx-auto mt-4" />
@@ -84,7 +84,7 @@ export default function EmployeeDetail() {
               </div>
             </CardContent>
           </Card>
-          <div className="md:col-span-2">
+          <div className="md:col-span-3">
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
@@ -185,12 +185,11 @@ export default function EmployeeDetail() {
           <ChevronLeft className="mr-2 h-4 w-4" />
           Back to Directory
         </Button>
-        <h1 className="text-3xl font-bold">Employee Profile</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Profile Card */}
-        <Card>
+        <Card className="md:col-span-1">
           <CardHeader className="text-center">
             <Avatar className="h-32 w-32 mx-auto">
               {employee?.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
@@ -241,7 +240,7 @@ export default function EmployeeDetail() {
         </Card>
 
         {/* Details Card with Tabs */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-3">
           <Tabs defaultValue="business" className="w-full">
             <Card>
               <CardHeader>
