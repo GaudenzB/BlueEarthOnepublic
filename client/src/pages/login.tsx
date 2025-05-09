@@ -95,9 +95,20 @@ export default function Login() {
             >
               {login.isPending ? "Logging in..." : "Sign In"}
             </Button>
-            <p className="text-sm text-center text-gray-500 mt-4">
-              BlueEarth Capital Employee Portal
-            </p>
+            <div className="text-sm text-center mt-4">
+              <Button 
+                variant="link" 
+                className="text-[#0C1C36] p-0 h-auto font-normal"
+                onClick={() => {
+                  toast({
+                    title: "Password Reset",
+                    description: "Please contact the system administrator to reset your password.",
+                  });
+                }}
+              >
+                Forgot your password?
+              </Button>
+            </div>
           </CardFooter>
         </form>
       </Card>
