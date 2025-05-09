@@ -61,7 +61,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 flex-col bg-background border-r border-border transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
+          "fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-background border-r border-border transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:relative lg:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
           className
         )}
