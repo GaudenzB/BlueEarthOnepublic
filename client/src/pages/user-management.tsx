@@ -313,6 +313,28 @@ export default function UserManagement() {
     );
   }
 
+  // Handle view user details
+  const handleViewUser = (userId: number) => {
+    setDetailUserId(userId);
+    setShowUserDetail(true);
+  };
+
+  // Handle back to user list
+  const handleBackToList = () => {
+    setShowUserDetail(false);
+    setDetailUserId(null);
+  };
+
+  // Show user details view if a user is selected
+  if (showUserDetail && detailUserId) {
+    return (
+      <div className="container mx-auto py-8">
+        <UserDetails userId={detailUserId} onBackClick={handleBackToList} />
+      </div>
+    );
+  }
+
+  // Otherwise show user list view
   return (
     <div className="container mx-auto py-8">
       <Card>
@@ -480,6 +502,13 @@ export default function UserManagement() {
                             onClick={() => handleEditClick(user)}
                           >
                             Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-blue-800 hover:bg-blue-900 text-white"
+                            onClick={() => handleViewUser(user.id)}
+                          >
+                            Permissions
                           </Button>
                           <Button
                             size="sm"
