@@ -21,6 +21,7 @@ import {
 } from "@shared/schema";
 import { sendPasswordResetEmail } from "./email/sendgrid";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
+import { registerPermissionRoutes } from "./routes/permissions";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes

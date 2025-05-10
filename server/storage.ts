@@ -1,4 +1,4 @@
-import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee } from "@shared/schema";
+import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee, userPermissions, type UserPermission, type InsertUserPermission } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, or, sql } from "drizzle-orm";
 
@@ -214,6 +214,64 @@ export class DatabaseStorage implements IStorage {
         resetTokenExpires: null
       })
       .where(eq(users.id, userId));
+  }
+
+  // User permissions methods
+  async getUserPermissions(userId: number): Promise<UserPermission[]> {
+    return await db.select()
+      .from(userPermissions)
+      .where(eq(userPermissions.userId, userId));
+  }
+
+  async addUserPermission(permission: InsertUserPermission): Promise<UserPermission> {
+    const [newPermission] = await db.insert(userPermissions)
+      .values(permission)
+      .returning();
+    return newPermission;
+  }
+
+  async updateUserPermission(id: number, permission: Partial<InsertUserPermission>): Promise<UserPermission | undefined> {
+    const [updatedPermission] = await db.update(userPermissions)
+      .set(permission)
+      .where(eq(userPermissions.id, id))
+      .returning();
+    return updatedPermission;
+  }
+
+  async deleteUserPermission(id: number): Promise<boolean> {
+    const result = await db.delete(userPermissions)
+      .where(eq(userPermissions.id, id))
+      .returning({ id: userPermissions.id });
+    return result.length > 0;
+  }
+
+  async hasPermission(userId: number, area: string, permission: 'view' | 'edit' | 'delete'): Promise<boolean> {
+    // Super admins always have all permissions
+    const user = await this.getUser(userId);
+    if (user?.role === 'superadmin') {
+      return true;
+    }
+
+    // For admins, grant view access to all areas by default
+    if (user?.role === 'admin' && permission === 'view') {
+      return true;
+    }
+
+    // Check specific permissions
+    const [userPermission] = await db.select()
+      .from(userPermissions)
+      .where(eq(userPermissions.userId, userId))
+      .where(eq(userPermissions.area, area));
+
+    if (!userPermission) {
+      return false;
+    }
+
+    if (permission === 'view') return userPermission.canView;
+    if (permission === 'edit') return userPermission.canEdit;
+    if (permission === 'delete') return userPermission.canDelete;
+
+    return false;
   }
 }
 
