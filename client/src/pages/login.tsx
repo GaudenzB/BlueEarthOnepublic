@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,25 +15,12 @@ export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
-  const usernameInputRef = useRef<HTMLInputElement>(null);
-  
-  // Redirect if authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      setLocation("/");
-    }
-  }, [isAuthenticated, setLocation]);
-  
-  // Focus the username input field when component mounts
-  useEffect(() => {
-    // Short timeout to ensure DOM is fully loaded
-    const timer = setTimeout(() => {
-      if (usernameInputRef.current) {
-        usernameInputRef.current.focus();
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
+
+  // If user is already authenticated, redirect to home
+  if (isAuthenticated) {
+    setLocation("/");
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,32 +70,23 @@ export default function Login() {
               <Label htmlFor="username" style={{ color: colors.text.body }}>Username</Label>
               <Input
                 id="username"
-                name="username"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoComplete="username"
-                ref={usernameInputRef}
-                onClick={(e) => e.currentTarget.focus()}
-                // Add tabIndex to ensure it can receive focus
-                tabIndex={1}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" style={{ color: colors.text.body }}>Password</Label>
               <Input
                 id="password"
-                name="password"
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                onClick={(e) => e.currentTarget.focus()}
-                // Add tabIndex to ensure proper tab order
-                tabIndex={2}
               />
             </div>
           </CardContent>
