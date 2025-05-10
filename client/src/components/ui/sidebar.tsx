@@ -92,7 +92,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         style={{ backgroundColor: colors.background.sidebar, color: colors.text.primary }}
         {...props}
       >
-        <div className="flex h-20 items-center justify-center px-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+        <div className="flex h-20 items-center justify-center px-4">
           <div className="flex items-center justify-center w-full">
             <img src={blueEarthLogo} alt="BlueEarth Capital" className="h-10" />
           </div>
