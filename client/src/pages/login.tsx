@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,23 +9,31 @@ import Logo from "@/components/logo";
 import { colors } from "@/lib/colors";
 
 export default function Login() {
+  console.log("Login component rendered");
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const { login, isAuthenticated } = useAuth();
+  // const { login, isAuthenticated } = useAuth();
+  const login = { 
+    mutateAsync: () => Promise.resolve(),
+    isPending: false
+  };
+  const isAuthenticated = false;
+  
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
 
   const usernameRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
+    console.log("Login effect running, focusing username field");
     usernameRef.current?.focus();
   }, []);
 
-  // If user is already authenticated, redirect to home
-  if (isAuthenticated) {
-    setLocation("/");
-    return null;
-  }
+  // Disabled redirection for testing
+  // if (isAuthenticated) {
+  //   setLocation("/");
+  //   return null;
+  // }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
