@@ -1,0 +1,114 @@
+Instructions: Rebuild Login Form (Stable Focus + Styling)
+
+✅ Step 1: Update Login.tsx (full rewrite)
+Replace everything inside client/src/pages/Login.tsx with the following clean version:
+
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import Logo from "@/components/logo";
+
+export default function Login() {
+  const navigate = useNavigate();
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  const usernameRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    usernameRef.current?.focus();
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username || !password) {
+      toast.error("Username and password required");
+      return;
+    }
+
+    setLoading(true);
+    // Fake login delay
+    setTimeout(() => {
+      setLoading(false);
+      navigate("/home");
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="flex flex-col items-center">
+          <Logo className="h-12 mb-2" />
+          <CardTitle className="text-xl">Login</CardTitle>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
+          <CardContent className="space-y-4">
+            <Input
+              ref={usernameRef}
+              id="username"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoComplete="username"
+            />
+            <Input
+              id="password"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  );
+}
+✅ Step 2: Check Input Component
+In client/src/components/ui/input.tsx, ensure this is the entire file (cleaned and safe):
+
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  ({ className, type = "text", ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+          "ring-offset-background placeholder:text-muted-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+
+Input.displayName = "Input";
+
+export { Input };
+✅ Step 3: Verify Logo Component
+You already have client/src/components/logo.tsx. Make sure it's simple and stable:
+
+export default function Logo({ className = "" }: { className?: string }) {
+  return (
+    <img src="/logo.svg" alt="Logo" className={className} />
+  );
+}
