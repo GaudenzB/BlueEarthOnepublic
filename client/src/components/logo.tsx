@@ -1,4 +1,4 @@
-import blueEarthLogo from "@/assets/BlueEarth-Capital_blue.png";
+import blueEarthLogo from "@/assets/BlueEarth Capital_blue.png";
 
 export default function Logo({ className = "" }: { className?: string }) {
   return (

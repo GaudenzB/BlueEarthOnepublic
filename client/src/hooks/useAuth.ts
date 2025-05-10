@@ -31,11 +31,12 @@ export function useAuth() {
     refetchInterval: 60 * 1000, // Only refetch every minute
     refetchOnWindowFocus: false, // Don't refetch on window focus
     refetchOnReconnect: false, // Don't refetch on reconnect
-    onError: () => {
-      // Clear token from local storage on auth error
-      localStorage.removeItem("token");
-    },
   });
+  
+  // Handle auth errors
+  if (error) {
+    localStorage.removeItem("token");
+  }
 
   // Set user in local state and token in local storage
   const setUser = (user: User) => {
