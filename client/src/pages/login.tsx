@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,12 @@ export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
+  const usernameRef = useRef<HTMLInputElement>(null);
+
+  // Focus username field once when component mounts
+  useEffect(() => {
+    usernameRef.current?.focus();
+  }, []);
 
   // If user is already authenticated, redirect to home
   if (isAuthenticated) {
@@ -69,13 +75,13 @@ export default function Login() {
             <div className="space-y-2">
               <Label htmlFor="username" style={{ color: colors.text.body }}>Username</Label>
               <Input
+                ref={usernameRef}
                 id="username"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoComplete="username"
-                autoFocus
               />
             </div>
             <div className="space-y-2">

@@ -1,0 +1,58 @@
+1 autoFocus on Username keeps re-firing
+Every time the login page rerenders (React-Query’s silent useAuth() polling does this once or twice while the form is already on screen) the <input> node is remounted, so the browser honours the autofocus attribute again and steals the caret from whichever box you just clicked.
+
+/* Login.tsx – current code */
+<Input
+  id="username"
+  placeholder="Username"
+  value={username}
+  onChange={(e) => setUsername(e.target.value)}
+  required
+  autoComplete="username"
+  autoFocus          // ← culprit
+/>
+Fix
+
+Remove the attribute and give focus only once, after the component has mounted:
+
+export default function Login() {
+  …
+  const usernameRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    usernameRef.current?.focus();      // fires once, never again
+  }, []);
+
+  return (
+    …
+    <Input
+      ref={usernameRef}
+      id="username"
+      placeholder="Username"
+      value={username}
+      onChange={(e) => setUsername(e.target.value)}
+      required
+      autoComplete="username"
+    />
+    …
+  );
+}
+2 The utility string in input.tsx is corrupted
+Inside client/src/components/ui/input.tsx the Tailwind class list was pasted with an ellipsis:
+
+className={cn(
+  "flex h-10 w-full rounded-md border border-input bg-ba...:ring-offset-2
+   disabled:cursor-not-allowed disabled:opacity-50",
+   className
+)}
+The literal ... ends up in your markup, Tailwind can’t parse it, and the browser receives two invalid classes (bg-ba...:ring-offset-2 and -50). While it doesn’t break focusing directly, it does confuse the outline/ring you expect to see and complicates debugging.
+
+Replace the whole string with the original, un-shortened version:
+
+className={cn(
+  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
+   ring-offset-background placeholder:text-muted-foreground
+   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+   focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+   className
+)}
