@@ -26,6 +26,13 @@ export interface IStorage {
   searchEmployees(search: string): Promise<Employee[]>;
   filterEmployeesByDepartment(department: string): Promise<Employee[]>;
   filterEmployeesByStatus(status: string): Promise<Employee[]>;
+  
+  // User permissions operations
+  getUserPermissions(userId: number): Promise<UserPermission[]>;
+  addUserPermission(permission: InsertUserPermission): Promise<UserPermission>;
+  updateUserPermission(id: number, permission: Partial<InsertUserPermission>): Promise<UserPermission | undefined>;
+  deleteUserPermission(id: number): Promise<boolean>;
+  hasPermission(userId: number, area: string, permission: 'view' | 'edit' | 'delete'): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {

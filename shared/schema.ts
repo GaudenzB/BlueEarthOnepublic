@@ -32,6 +32,17 @@ export const userRoleEnum = z.enum([
   "user",
 ]);
 
+// Define functional permission areas
+export const permissionAreaEnum = z.enum([
+  "finance",
+  "hr",
+  "it",
+  "legal",
+  "operations",
+]);
+
+export type PermissionArea = z.infer<typeof permissionAreaEnum>;
+
 export const userLoginSchema = z.object({
   username: z.string().min(3),
   password: z.string().min(6),
@@ -93,3 +104,22 @@ export const departmentEnum = z.enum([
 ]);
 
 export type Department = z.infer<typeof departmentEnum>;
+
+// User permissions table
+export const userPermissions = pgTable("user_permissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  area: text("area").notNull(),
+  canView: boolean("can_view").notNull().default(true),
+  canEdit: boolean("can_edit").notNull().default(false),
+  canDelete: boolean("can_delete").notNull().default(false),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+});
+
+export const insertUserPermissionSchema = createInsertSchema(userPermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type UserPermission = typeof userPermissions.$inferSelect;
+export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
