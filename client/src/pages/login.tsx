@@ -24,11 +24,15 @@ export default function Login() {
     }
   }, [isAuthenticated, setLocation]);
   
-  // Focus username field on component mount
+  // Focus the username input field when component mounts
   useEffect(() => {
-    if (usernameInputRef.current) {
-      usernameInputRef.current.focus();
-    }
+    // Short timeout to ensure DOM is fully loaded
+    const timer = setTimeout(() => {
+      if (usernameInputRef.current) {
+        usernameInputRef.current.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,28 +81,34 @@ export default function Login() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username" style={{ color: colors.text.body }}>Username</Label>
-              <input
+              <Input
                 id="username"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                name="username"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoComplete="username"
                 ref={usernameInputRef}
+                onClick={(e) => e.currentTarget.focus()}
+                // Add tabIndex to ensure it can receive focus
+                tabIndex={1}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" style={{ color: colors.text.body }}>Password</Label>
-              <input
+              <Input
                 id="password"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                name="password"
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                onClick={(e) => e.currentTarget.focus()}
+                // Add tabIndex to ensure proper tab order
+                tabIndex={2}
               />
             </div>
           </CardContent>
