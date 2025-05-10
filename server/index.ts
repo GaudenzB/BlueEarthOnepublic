@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { scheduleEmployeeSync } from "./services/employeeSync";
 import { addBioAndResponsibilitiesFields } from "./migrations/addEmployeeFields";
+import { addUserPermissionsTable } from "./migrations/addUserPermissions";
 
 const app = express();
 app.use(express.json());
@@ -41,6 +42,7 @@ app.use((req, res, next) => {
 (async () => {
   // Run database migrations
   await addBioAndResponsibilitiesFields();
+  await addUserPermissionsTable();
   
   const server = await registerRoutes(app);
 

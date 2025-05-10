@@ -1,4 +1,4 @@
-import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee, userPermissions, type UserPermission, type InsertUserPermission } from "@shared/schema";
+import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee, userPermissions as userPermissionsTable, type UserPermission, type InsertUserPermission } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, or, sql } from "drizzle-orm";
 
@@ -219,29 +219,29 @@ export class DatabaseStorage implements IStorage {
   // User permissions methods
   async getUserPermissions(userId: number): Promise<UserPermission[]> {
     return await db.select()
-      .from(userPermissions)
-      .where(eq(userPermissions.userId, userId));
+      .from(userPermissionsTable)
+      .where(eq(userPermissionsTable.userId, userId));
   }
 
   async addUserPermission(permission: InsertUserPermission): Promise<UserPermission> {
-    const [newPermission] = await db.insert(userPermissions)
+    const [newPermission] = await db.insert(userPermissionsTable)
       .values(permission)
       .returning();
     return newPermission;
   }
 
   async updateUserPermission(id: number, permission: Partial<InsertUserPermission>): Promise<UserPermission | undefined> {
-    const [updatedPermission] = await db.update(userPermissions)
+    const [updatedPermission] = await db.update(userPermissionsTable)
       .set(permission)
-      .where(eq(userPermissions.id, id))
+      .where(eq(userPermissionsTable.id, id))
       .returning();
     return updatedPermission;
   }
 
   async deleteUserPermission(id: number): Promise<boolean> {
-    const result = await db.delete(userPermissions)
-      .where(eq(userPermissions.id, id))
-      .returning({ id: userPermissions.id });
+    const result = await db.delete(userPermissionsTable)
+      .where(eq(userPermissionsTable.id, id))
+      .returning({ id: userPermissionsTable.id });
     return result.length > 0;
   }
 
@@ -258,15 +258,16 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Check specific permissions
-    const [userPermission] = await db.select()
-      .from(userPermissions)
-      .where(eq(userPermissions.userId, userId))
-      .where(eq(userPermissions.area, area));
+    const permissions = await db.select()
+      .from(userPermissionsTable)
+      .where(eq(userPermissionsTable.userId, userId))
+      .where(eq(userPermissionsTable.area, area));
 
-    if (!userPermission) {
+    if (!permissions || permissions.length === 0) {
       return false;
     }
 
+    const userPermission = permissions[0];
     if (permission === 'view') return userPermission.canView;
     if (permission === 'edit') return userPermission.canEdit;
     if (permission === 'delete') return userPermission.canDelete;

@@ -24,6 +24,8 @@ import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employ
 import { registerPermissionRoutes } from "./routes/permissions";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register permission routes
+  registerPermissionRoutes(app);
   // Auth routes
   
   // Register a new user (public route)
