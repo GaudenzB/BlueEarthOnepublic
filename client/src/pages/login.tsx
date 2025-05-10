@@ -15,11 +15,12 @@ export default function Login() {
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
 
-  // If user is already authenticated, redirect to home
-  if (isAuthenticated) {
-    setLocation("/");
-    return null;
-  }
+  // Move redirection logic to useEffect for proper side effect handling
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      setLocation("/");
+    }
+  }, [isAuthenticated, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
