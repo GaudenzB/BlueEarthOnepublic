@@ -23,99 +23,72 @@ interface AuthResponse {
 }
 
 export function useAuth() {
-  // Get the current user from local storage
-  const getLocalUser = (): User | null => {
-    const userJson = localStorage.getItem("user");
-    return userJson ? JSON.parse(userJson) : null;
-  };
+  // Query to fetch the current user
+  const { data: user, isLoading, error, refetch } = useQuery<User | null>({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: () => {
+      // Clear token from local storage on auth error
+      localStorage.removeItem("token");
+    },
+  });
 
-  // Store token in local storage
-  const setToken = (token: string) => {
-    localStorage.setItem("token", token);
-  };
-
-  // Get token from local storage
-  const getToken = (): string | null => {
-    return localStorage.getItem("token");
-  };
-
-  // Store user in local storage
+  // Set user in local state and token in local storage
   const setUser = (user: User) => {
-    localStorage.setItem("user", JSON.stringify(user));
-  };
-
-  // Remove user and token from local storage
-  const clearAuth = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    queryClient.clear();
+    queryClient.setQueryData(["/api/auth/me"], user);
   };
 
   // Login mutation
   const login = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      return await apiRequest<AuthResponse>("/api/auth/login", {
+      const response = await apiRequest<AuthResponse>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify(credentials),
       });
+      
+      // Store token in local storage
+      localStorage.setItem("token", response.token);
+      
+      return response.user;
     },
-    onSuccess: (data) => {
-      setToken(data.token);
-      setUser(data.user);
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    onSuccess: (user) => {
+      setUser(user);
     },
   });
 
   // Logout function
   const logout = () => {
-    clearAuth();
-    window.location.href = "/";
+    localStorage.removeItem("token");
+    queryClient.setQueryData(["/api/auth/me"], null);
+    // Invalidate queries to refetch after logout
+    queryClient.invalidateQueries();
   };
-
-  // Get current user query
-  const { data: user, isLoading } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      const token = getToken();
-      if (!token) return null;
-      
-      try {
-        return await apiRequest<User>("/api/auth/me");
-      } catch (error) {
-        // If auth fails, clear local storage
-        clearAuth();
-        return null;
-      }
-    },
-    initialData: getLocalUser,
-    retry: false,
-  });
 
   // Check if user is authenticated
   const isAuthenticated = !!user;
-
-  // Check if user has a specific role
-  const hasRole = (role: string | string[]) => {
-    if (!user) return false;
-    
-    if (Array.isArray(role)) {
-      return role.includes(user.role);
-    }
-    
-    return user.role === role;
-  };
-
-  // Check if user is superadmin
-  const isSuperAdmin = hasRole("superadmin");
+  
+  // Check if user is a superadmin
+  const isSuperAdmin = isAuthenticated && user?.role === "superadmin";
+  
+  // Check if user is an admin (including superadmin)
+  const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "superadmin");
+  
+  // Get user's full name
+  const fullName = user 
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username
+    : '';
 
   return {
     user,
-    isLoading,
-    isAuthenticated,
     login,
     logout,
-    hasRole,
+    isLoading,
+    error,
+    isAuthenticated,
     isSuperAdmin,
+    isAdmin,
+    fullName,
+    refetchUser: refetch,
   };
 }

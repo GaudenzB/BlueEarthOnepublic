@@ -260,14 +260,16 @@ export class DatabaseStorage implements IStorage {
     // Check specific permissions
     const permissions = await db.select()
       .from(userPermissionsTable)
-      .where(eq(userPermissionsTable.userId, userId))
-      .where(eq(userPermissionsTable.area, area));
+      .where(eq(userPermissionsTable.userId, userId));
+    
+    // Filter for the specific area
+    const areaPermissions = permissions.filter(p => p.area === area);
 
-    if (!permissions || permissions.length === 0) {
+    if (areaPermissions.length === 0) {
       return false;
     }
 
-    const userPermission = permissions[0];
+    const userPermission = areaPermissions[0];
     if (permission === 'view') return userPermission.canView;
     if (permission === 'edit') return userPermission.canEdit;
     if (permission === 'delete') return userPermission.canDelete;
