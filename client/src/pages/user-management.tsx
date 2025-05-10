@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserDetails } from "@/components/admin/UserDetails";
 
 interface User {
   id: number;
@@ -42,6 +43,8 @@ export default function UserManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showUserDetail, setShowUserDetail] = useState(false);
+  const [detailUserId, setDetailUserId] = useState<number | null>(null);
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
     email: "",

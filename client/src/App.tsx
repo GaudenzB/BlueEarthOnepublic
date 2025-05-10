@@ -14,6 +14,7 @@ import ResetPassword from "@/pages/reset-password";
 import Integrations from "@/pages/integrations";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { Suspense, lazy } from "react";
 
 // Auth protected route component
@@ -104,8 +105,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <AppContent />
+        <PermissionsProvider>
+          <Toaster />
+          <AppContent />
+        </PermissionsProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
