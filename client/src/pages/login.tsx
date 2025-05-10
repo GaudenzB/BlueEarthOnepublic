@@ -75,6 +75,7 @@ export default function Login() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoComplete="username"
+                autoFocus
               />
             </div>
             <div className="space-y-2">
