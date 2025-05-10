@@ -6,16 +6,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar } from "lucide-react";
+import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { colors } from "@/lib/colors";
+import { usePermissionsContext } from "@/contexts/PermissionsContext";
+import { PermissionGuard } from "@/components/permissions/PermissionGuard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
+  const { hasPermissionCached, permissionResults } = usePermissionsContext();
 
   const { data: employee, isLoading, error } = useQuery<Employee>({
     queryKey: ['/api/employees', id],
@@ -247,30 +251,35 @@ export default function EmployeeDetail() {
                 <div className="flex justify-center items-center">
                   {/* Desktop Tabs - Hidden on small screens */}
                   <TabsList className="hidden md:flex">
+                    {/* Business info tab - visible to everyone */}
                     <TabsTrigger value="business">
                       <Briefcase className="h-4 w-4 mr-1" />
                       Business Info
                     </TabsTrigger>
-                    <TabsTrigger value="personal">
-                      <User className="h-4 w-4 mr-1" />
-                      Personal Info
-                    </TabsTrigger>
-                    <TabsTrigger value="documents">
-                      <FileText className="h-4 w-4 mr-1" />
-                      Documents
-                    </TabsTrigger>
-                    <TabsTrigger value="compensation">
-                      <DollarSign className="h-4 w-4 mr-1" />
-                      Compensation
-                    </TabsTrigger>
-                    <TabsTrigger value="permissions">
-                      <Lock className="h-4 w-4 mr-1" />
-                      Permissions
-                    </TabsTrigger>
-                    <TabsTrigger value="onboarding">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      On-/Offboarding
-                    </TabsTrigger>
+                    
+                    {/* HR-restricted tabs */}
+                    <PermissionGuard area="hr" permission="view">
+                      <TabsTrigger value="personal">
+                        <User className="h-4 w-4 mr-1" />
+                        Personal Info
+                      </TabsTrigger>
+                      <TabsTrigger value="documents">
+                        <FileText className="h-4 w-4 mr-1" />
+                        Documents
+                      </TabsTrigger>
+                      <TabsTrigger value="compensation">
+                        <DollarSign className="h-4 w-4 mr-1" />
+                        Compensation
+                      </TabsTrigger>
+                      <TabsTrigger value="permissions">
+                        <Lock className="h-4 w-4 mr-1" />
+                        Permissions
+                      </TabsTrigger>
+                      <TabsTrigger value="onboarding">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        On-/Offboarding
+                      </TabsTrigger>
+                    </PermissionGuard>
                   </TabsList>
                   
                   {/* Mobile Dropdown - Visible only on small screens */}
@@ -287,42 +296,49 @@ export default function EmployeeDetail() {
                         <SelectValue placeholder="Select section" />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* Business info - visible to all */}
                         <SelectItem value="business">
                           <div className="flex items-center">
                             <Briefcase className="h-4 w-4 mr-2" />
                             <span>Business Info</span>
                           </div>
                         </SelectItem>
-                        <SelectItem value="personal">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-2" />
-                            <span>Personal Info</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="documents">
-                          <div className="flex items-center">
-                            <FileText className="h-4 w-4 mr-2" />
-                            <span>Documents</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="compensation">
-                          <div className="flex items-center">
-                            <DollarSign className="h-4 w-4 mr-2" />
-                            <span>Compensation</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="permissions">
-                          <div className="flex items-center">
-                            <Lock className="h-4 w-4 mr-2" />
-                            <span>Permissions</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="onboarding">
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            <span>On-/Offboarding</span>
-                          </div>
-                        </SelectItem>
+                        
+                        {/* HR-restricted items */}
+                        {hasPermissionCached('hr', 'view') === true && (
+                          <>
+                            <SelectItem value="personal">
+                              <div className="flex items-center">
+                                <User className="h-4 w-4 mr-2" />
+                                <span>Personal Info</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="documents">
+                              <div className="flex items-center">
+                                <FileText className="h-4 w-4 mr-2" />
+                                <span>Documents</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="compensation">
+                              <div className="flex items-center">
+                                <DollarSign className="h-4 w-4 mr-2" />
+                                <span>Compensation</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="permissions">
+                              <div className="flex items-center">
+                                <Lock className="h-4 w-4 mr-2" />
+                                <span>Permissions</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="onboarding">
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                <span>On-/Offboarding</span>
+                              </div>
+                            </SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -388,83 +404,130 @@ export default function EmployeeDetail() {
 
                 {/* Personal Info Tab */}
                 <TabsContent value="personal" className="space-y-6 mt-0">
-                  <div>
-                    <h3 className="text-lg font-medium">Personal Details</h3>
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {hasPermissionCached('hr', 'view') === true ? (
+                    <>
                       <div>
-                        <p className="text-sm text-gray-500">Full Name</p>
-                        <p className="font-medium">{employee?.name || 'Not specified'}</p>
+                        <h3 className="text-lg font-medium">Personal Details</h3>
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-500">Full Name</p>
+                            <p className="font-medium">{employee?.name || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Personal Email</p>
+                            <p className="font-medium">{employee?.email || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Phone</p>
+                            <p className="font-medium">{employee?.phone || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Address</p>
+                            <p className="font-medium">{employee?.location || 'Not specified'}</p>
+                          </div>
+                        </div>
                       </div>
+                      
+                      <Separator />
+                      
                       <div>
-                        <p className="text-sm text-gray-500">Personal Email</p>
-                        <p className="font-medium">{employee?.email || 'Not specified'}</p>
+                        <h3 className="text-lg font-medium">Bio</h3>
+                        <p className="mt-2 text-gray-600">
+                          {employee?.bio || 'No bio information available for this employee.'}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Phone</p>
-                        <p className="font-medium">{employee?.phone || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Address</p>
-                        <p className="font-medium">{employee?.location || 'Not specified'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h3 className="text-lg font-medium">Bio</h3>
-                    <p className="mt-2 text-gray-600">
-                      {employee?.bio || 'No bio information available for this employee.'}
-                    </p>
-                  </div>
+                    </>
+                  ) : (
+                    <Alert className="bg-amber-50 border-amber-300">
+                      <ShieldAlert className="h-5 w-5 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        Access to personal information is restricted. You need HR permissions to view this section.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </TabsContent>
 
                 {/* Documents Tab */}
                 <TabsContent value="documents" className="space-y-6 mt-0">
-                  <div className="text-center py-10">
-                    <FileText className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium">No Documents Available</h3>
-                    <p className="text-gray-500 mt-2">
-                      There are no documents uploaded for this employee yet.
-                    </p>
-                  </div>
+                  {hasPermissionCached('hr', 'view') === true ? (
+                    <div className="text-center py-10">
+                      <FileText className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium">No Documents Available</h3>
+                      <p className="text-gray-500 mt-2">
+                        There are no documents uploaded for this employee yet.
+                      </p>
+                    </div>
+                  ) : (
+                    <Alert className="bg-amber-50 border-amber-300">
+                      <ShieldAlert className="h-5 w-5 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        Access to employee documents is restricted. You need HR permissions to view this section.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </TabsContent>
 
                 {/* Compensation Tab */}
                 <TabsContent value="compensation" className="space-y-6 mt-0">
-                  <div className="text-center py-10">
-                    <DollarSign className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium">Compensation Information</h3>
-                    <p className="text-gray-500 mt-2">
-                      Compensation details are not available in this view.
-                      Contact HR for more information.
-                    </p>
-                  </div>
+                  {hasPermissionCached('hr', 'view') === true ? (
+                    <div className="text-center py-10">
+                      <DollarSign className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium">Compensation Information</h3>
+                      <p className="text-gray-500 mt-2">
+                        Compensation details are not available in this view.
+                        Contact HR for more information.
+                      </p>
+                    </div>
+                  ) : (
+                    <Alert className="bg-amber-50 border-amber-300">
+                      <ShieldAlert className="h-5 w-5 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        Access to compensation information is restricted. You need HR permissions to view this section.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </TabsContent>
 
                 {/* Permissions Tab */}
                 <TabsContent value="permissions" className="space-y-6 mt-0">
-                  <div className="text-center py-10">
-                    <Lock className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium">Access Permissions</h3>
-                    <p className="text-gray-500 mt-2">
-                      System and application access permissions are not available in this view.
-                      Contact the IT department for more information.
-                    </p>
-                  </div>
+                  {hasPermissionCached('hr', 'view') === true ? (
+                    <div className="text-center py-10">
+                      <Lock className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium">Access Permissions</h3>
+                      <p className="text-gray-500 mt-2">
+                        System and application access permissions are not available in this view.
+                        Contact the IT department for more information.
+                      </p>
+                    </div>
+                  ) : (
+                    <Alert className="bg-amber-50 border-amber-300">
+                      <ShieldAlert className="h-5 w-5 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        Access to system permissions information is restricted. You need HR permissions to view this section.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </TabsContent>
 
                 {/* On-/Offboarding Tab */}
                 <TabsContent value="onboarding" className="space-y-6 mt-0">
-                  <div className="text-center py-10">
-                    <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium">On-/Offboarding Status</h3>
-                    <p className="text-gray-500 mt-2">
-                      On-/Offboarding information is not available in this view.
-                      Contact HR for more information.
-                    </p>
-                  </div>
+                  {hasPermissionCached('hr', 'view') === true ? (
+                    <div className="text-center py-10">
+                      <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium">On-/Offboarding Status</h3>
+                      <p className="text-gray-500 mt-2">
+                        On-/Offboarding information is not available in this view.
+                        Contact HR for more information.
+                      </p>
+                    </div>
+                  ) : (
+                    <Alert className="bg-amber-50 border-amber-300">
+                      <ShieldAlert className="h-5 w-5 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        Access to onboarding/offboarding information is restricted. You need HR permissions to view this section.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </TabsContent>
               </CardContent>
             </Card>
