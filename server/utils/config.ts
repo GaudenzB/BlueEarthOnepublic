@@ -1,139 +1,129 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as dotenv from 'dotenv';
-import { logger } from './logger';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
-// Define configuration interface
-export interface AppConfig {
-  // Server
-  nodeEnv: string;
-  port: number;
-  logLevel: string;
-  corsOrigin: string;
+// Load environment-specific configuration
+const nodeEnv = process.env.NODE_ENV || 'development';
+const envPath = path.resolve(process.cwd(), `.env.${nodeEnv}`);
+
+// Try to load environment-specific file first, then fall back to .env
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  dotenv.config();
+}
+
+// Configuration defaults
+const defaults = {
+  // Server settings
+  port: 3000,
+  host: '0.0.0.0',
   
-  // Database
-  databaseUrl: string;
+  // Database settings
+  dbConnectionString: process.env.DATABASE_URL,
+  dbPoolSize: 10,
+  dbIdleTimeout: 10000,
   
-  // Redis
-  redisUrl?: string;
+  // Security settings
+  jwtSecret: process.env.JWT_SECRET || 'development_jwt_secret',
+  jwtExpiresIn: '8h',
+  bcryptSaltRounds: nodeEnv === 'production' ? 12 : 10,
+  csrfEnabled: nodeEnv !== 'development',
   
-  // Security
-  sessionSecret: string;
-  jwtSecret: string;
-  bcryptSaltRounds: number;
+  // Redis settings
+  redisUrl: process.env.REDIS_URL,
+  redisEnabled: !!process.env.REDIS_URL,
   
   // Rate limiting
-  rateLimitWindowMs: number;
-  rateLimitMax: number;
-  authRateLimitWindowMs: number;
-  authRateLimitMax: number;
-  resetRateLimitWindowMs: number;
-  resetRateLimitMax: number;
+  rateLimit: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per windowMs per IP
+    standardHeaders: true,
+    legacyHeaders: false
+  },
+  authRateLimit: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 requests per windowMs per IP for auth routes
+    standardHeaders: true,
+    legacyHeaders: false
+  },
+  passwordResetRateLimit: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // 3 requests per windowMs per IP for password reset
+    standardHeaders: true, 
+    legacyHeaders: false
+  },
   
-  // SendGrid
-  sendgridApiKey?: string;
-  sendgridFromEmail: string;
+  // CORS settings
+  corsOrigin: nodeEnv === 'production' 
+    ? [process.env.FRONTEND_URL || 'https://blueearth.capital']
+    : '*',
   
-  // Bubble.io
-  bubbleApiKey?: string;
-  bubbleApiUrl: string;
+  // Logging settings
+  logLevel: nodeEnv === 'production' ? 'info' : 'debug',
+  logPrettyPrint: nodeEnv !== 'production',
   
-  // Document Storage
-  documentStorageType: 'local' | 's3';
-  localStoragePath?: string;
-  awsAccessKeyId?: string;
-  awsSecretAccessKey?: string;
-  awsRegion?: string;
-  s3BucketName?: string;
-}
-
-/**
- * Load environment-specific configuration
- */
-export function loadConfig(): AppConfig {
-  const env = process.env.NODE_ENV || 'development';
-  const configPath = path.resolve(process.cwd(), `config/${env}.env`);
+  // Document storage settings
+  documentStorage: {
+    type: process.env.DOCUMENT_STORAGE_TYPE || 'local',
+    s3: {
+      bucket: process.env.S3_BUCKET,
+      region: process.env.S3_REGION || 'us-east-1',
+      accessKey: process.env.S3_ACCESS_KEY,
+      secretKey: process.env.S3_SECRET_KEY,
+      endpoint: process.env.S3_ENDPOINT,
+    },
+    local: {
+      storagePath: process.env.LOCAL_STORAGE_PATH || './storage',
+    },
+  },
   
-  // Check if config file exists
-  if (fs.existsSync(configPath)) {
-    logger.info(`Loading configuration from ${configPath}`);
-    dotenv.config({ path: configPath });
-  } else {
-    logger.warn(`Configuration file not found at ${configPath}, using environment variables only`);
-  }
-  
-  // Always load the .env file as well (for local development)
-  const dotenvPath = path.resolve(process.cwd(), '.env');
-  if (fs.existsSync(dotenvPath)) {
-    logger.info('Loading additional configuration from .env file');
-    dotenv.config({ path: dotenvPath });
-  }
-  
-  // Required environment variables
-  const requiredEnvVars = [
-    'NODE_ENV',
-    'DATABASE_URL',
-    'SESSION_SECRET',
-    'JWT_SECRET'
-  ];
-  
-  // Check for required environment variables
-  const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
-  if (missingEnvVars.length > 0) {
-    if (env === 'production') {
-      throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-    } else {
-      logger.warn(`Missing recommended environment variables: ${missingEnvVars.join(', ')}`);
-    }
-  }
-  
-  // Return configuration object
-  return {
-    // Server
-    nodeEnv: process.env.NODE_ENV || 'development',
-    port: parseInt(process.env.PORT || '5000', 10),
-    logLevel: process.env.LOG_LEVEL || 'info',
-    corsOrigin: process.env.CORS_ORIGIN || '*',
-    
-    // Database
-    databaseUrl: process.env.DATABASE_URL || '',
-    
-    // Redis
-    redisUrl: process.env.REDIS_URL,
-    
-    // Security
-    sessionSecret: process.env.SESSION_SECRET || 'dev_session_secret',
-    jwtSecret: process.env.JWT_SECRET || 'dev_jwt_secret',
-    bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
-    
-    // Rate limiting
-    rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-    rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
-    authRateLimitWindowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '3600000', 10),
-    authRateLimitMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '10', 10),
-    resetRateLimitWindowMs: parseInt(process.env.RESET_RATE_LIMIT_WINDOW_MS || '3600000', 10),
-    resetRateLimitMax: parseInt(process.env.RESET_RATE_LIMIT_MAX || '3', 10),
-    
-    // SendGrid
+  // Email settings
+  email: {
+    fromEmail: process.env.EMAIL_FROM || 'no-reply@blueearth.capital',
+    fromName: process.env.EMAIL_FROM_NAME || 'BlueEarth Capital',
     sendgridApiKey: process.env.SENDGRID_API_KEY,
-    sendgridFromEmail: process.env.SENDGRID_FROM_EMAIL || 'noreply@blueearthcapital.com',
-    
-    // Bubble.io
+  },
+  
+  // Integration settings
+  integrations: {
     bubbleApiKey: process.env.BUBBLE_API_KEY,
-    bubbleApiUrl: process.env.BUBBLE_API_URL || 'https://api.bubble.io/v1/',
-    
-    // Document Storage
-    documentStorageType: (process.env.DOCUMENT_STORAGE_TYPE || 'local') as 'local' | 's3',
-    localStoragePath: process.env.LOCAL_STORAGE_PATH,
-    awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    awsRegion: process.env.AWS_REGION,
-    s3BucketName: process.env.S3_BUCKET_NAME
-  };
+    bubbleApiUrl: process.env.BUBBLE_API_URL || 'https://blueearth.bubbleapps.io/api/1.1',
+  },
+  
+  // Request timeouts
+  timeouts: {
+    default: 30000, // 30 seconds
+    upload: 300000, // 5 minutes for uploads
+    download: 60000, // 1 minute for downloads
+  },
+  
+  // Performance settings
+  queryCache: {
+    enabled: true,
+    ttl: 60 * 1000, // 1 minute
+  },
+  
+  // Environment
+  nodeEnv,
+  isDevelopment: nodeEnv === 'development',
+  isProduction: nodeEnv === 'production',
+  isTest: nodeEnv === 'test',
+};
+
+// Required environment variables in production
+const requiredEnvVars = [
+  'DATABASE_URL',
+  'JWT_SECRET',
+];
+
+// Check for required env vars in production
+if (nodeEnv === 'production') {
+  const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  if (missing.length > 0) {
+    console.error(`Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
 }
 
-// Create config singleton
-export const config = loadConfig();
-
-// Export default
-export default config;
+export default defaults;

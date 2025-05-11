@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { logger, formatError } from '../utils/logger';
+import { logger, logFormats } from '../utils/logger';
 import { sendError, sendValidationError } from '../utils/apiResponse';
 
 /**
@@ -40,7 +40,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   
   logger.error('Request error', {
     ...errorContext,
-    ...formatError(err)
+    ...logFormats.formatError(err)
   });
   
   // Already sent response - don't try to send again

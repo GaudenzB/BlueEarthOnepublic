@@ -41,6 +41,7 @@ import documentsRoutes from "./routes/documents";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
 import contractsRoutes from "./routes/contracts";
 import healthRoutes from "./routes/health";
+import monitoringRoutes from "./routes/monitoring";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Debug middleware to log all requests
@@ -64,6 +65,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register document and contract routes
   app.use('/api/documents', documentsRoutes);
   app.use('/api/contracts', contractsRoutes);
+  
+  // Register health and monitoring routes
+  app.use('/api/health', healthRoutes);
+  app.use('/api/monitoring', monitoringRoutes);
 
   // Auth routes
   

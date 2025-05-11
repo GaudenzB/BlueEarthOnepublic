@@ -1,32 +1,22 @@
 import pino from 'pino';
+import config from './config';
 
-/**
- * Application Logger Configuration
- * 
- * Utilizes Pino logger for structured, JSON-based logging with appropriate 
- * formatting based on the environment.
- */
-
-// Determine environment for logger configuration
-const isProduction = process.env.NODE_ENV === 'production';
-const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-
-// Default log level from environment variable or based on environment
-const LOG_LEVEL = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
-
-// Create the logger instance with appropriate configuration
-export const logger = pino({
+// Configure log levels and transport options
+const loggerOptions = {
+  level: config.logLevel,
   name: 'blueearth-portal',
-  level: LOG_LEVEL,
-  
-  // Custom fields to include in every log
+  timestamp: pino.stdTimeFunctions.isoTime,
+  formatters: {
+    level: (label: string) => {
+      return { level: label.toUpperCase() };
+    },
+  },
   base: {
     app: 'blueearth-portal',
-    env: process.env.NODE_ENV || 'development',
+    env: config.nodeEnv,
   },
-  
-  // Format logs for development environment
-  transport: isDevelopment
+  // Only use pretty printing in development
+  transport: config.logPrettyPrint
     ? {
         target: 'pino-pretty',
         options: {
@@ -36,31 +26,79 @@ export const logger = pino({
         },
       }
     : undefined,
-    
-  // Additional options
-  redact: isProduction
-    ? ['req.headers.authorization', 'req.headers.cookie', '*.password', '*.secret', '*.token']
-    : [],
-});
+};
 
-/**
- * Standardized error formatter for consistent error logging
- * 
- * @param error The error object to format
- * @returns Object with formatted error details
- */
-export function formatError(error: unknown): Record<string, any> {
-  if (error instanceof Error) {
+// Create the shared logger instance
+export const logger = pino(loggerOptions);
+
+// Utility functions for log formatting
+export const logFormats = {
+  // Format error objects for better logging
+  formatError: (error: any) => {
+    if (!error) return { error: 'Unknown error' };
+    
+    const errorObj: Record<string, any> = {
+      message: error.message || 'Unknown error',
+      name: error.name || 'Error',
+      stack: config.isDevelopment ? error.stack : undefined,
+    };
+    
+    // Include additional error properties if available
+    if (error.code) errorObj.code = error.code;
+    if (error.status || error.statusCode) errorObj.statusCode = error.status || error.statusCode;
+    if (error.path) errorObj.path = error.path;
+    if (error.type) errorObj.type = error.type;
+    
+    // Include validation errors if available (common with Zod, express-validator, etc.)
+    if (error.errors || error.details) {
+      errorObj.details = error.errors || error.details;
+    }
+    
+    return { error: errorObj };
+  },
+  
+  // Format request objects for logging
+  formatRequest: (req: any) => {
+    if (!req) return {};
+    
     return {
-      message: error.message,
-      stack: isDevelopment ? error.stack : undefined,
-      name: error.name,
-      ...(error as any)
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      query: req.query,
+      params: req.params,
+      ip: req.ip,
+      headers: config.isDevelopment
+        ? req.headers
+        : {
+            'user-agent': req.headers['user-agent'],
+            'content-type': req.headers['content-type'],
+            'x-request-id': req.headers['x-request-id'],
+          },
+    };
+  },
+  
+  // Format response objects for logging
+  formatResponse: (res: any) => {
+    if (!res) return {};
+    
+    return {
+      statusCode: res.statusCode,
+      duration: res.responseTime,
+      headers: config.isDevelopment
+        ? res.getHeaders()
+        : {
+            'content-type': res.getHeader('content-type'),
+            'content-length': res.getHeader('content-length'),
+          },
     };
   }
-  
-  return { error };
-}
+};
 
-// Export a default logger instance
+// Create child loggers for specific components
+export const createLogger = (component: string, context?: any) => {
+  return logger.child({ component, ...(context || {}) });
+};
+
+// Export default logger
 export default logger;

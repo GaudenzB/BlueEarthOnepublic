@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import { randomUUID } from 'crypto';
-import { logger } from '../utils/logger';
+import { v4 as uuidv4 } from 'uuid';
+import { logger, logFormats } from '../utils/logger';
+import config from '../utils/config';
 
-// Extend Express Request type to include our custom properties
+// Extend Express Request type to include request ID
 declare global {
   namespace Express {
     interface Request {
       id?: string;
+      startTime?: [number, number]; // hrtime tuple
     }
   }
 }
@@ -23,73 +25,93 @@ declare global {
  * - Truncates overly verbose response bodies
  */
 export function requestLoggerMiddleware(req: Request, res: Response, next: NextFunction) {
-  // Skip logging for static assets or non-API routes
-  if (!req.path.startsWith('/api')) {
-    return next();
-  }
+  // Assign unique ID to request
+  req.id = req.id || req.headers['x-request-id'] as string || uuidv4();
   
-  // Generate a unique ID for this request
-  req.id = randomUUID();
+  // Add request ID to response headers
+  res.setHeader('X-Request-ID', req.id);
   
-  // Create a child logger with request context
-  const reqLogger = logger.child({ 
-    requestId: req.id,
-    method: req.method,
-    path: req.path
-  });
+  // Record start time
+  req.startTime = process.hrtime();
   
-  // Capture request start time
-  const startTime = Date.now();
+  // Only log detailed information for API routes
+  const isApiRoute = req.path.startsWith('/api');
   
-  // Log basic request info
-  reqLogger.debug({
-    type: 'request',
-    method: req.method,
-    path: req.path,
-    query: req.query,
-    ip: req.ip
-  }, `Request: ${req.method} ${req.path}`);
-  
-  // Only log request body for certain content types and only in debug mode
-  const contentType = req.get('Content-Type');
-  if (contentType && contentType.includes('application/json') && logger.isLevelEnabled('debug')) {
-    reqLogger.debug({ body: sanitizeBody(req.body) }, 'Request body');
-  }
-  
-  // Capture the original response functions
-  const originalEnd = res.end;
-  const originalJson = res.json;
-  let responseBody: any;
-  
-  // Override res.json to capture the response body
-  res.json = function(body) {
-    responseBody = body;
-    return originalJson.apply(res, [body] as any);
-  };
-  
-  // Log on response completion
-  res.on('finish', () => {
-    const duration = Date.now() - startTime;
-    const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-    
-    const logObject: Record<string, any> = {
-      type: 'response',
+  // Log basic info for all requests
+  if (isApiRoute) {
+    logger.debug({
+      requestId: req.id,
       method: req.method,
       path: req.path,
-      statusCode: res.statusCode,
-      duration: `${duration}ms`,
-    };
+      type: 'request',
+      query: req.query,
+      ip: req.ip,
+    }, `Request: ${req.method} ${req.path}`);
     
-    // Only include response body for certain status codes and only in debug mode
-    if (responseBody && logger.isLevelEnabled('debug')) {
-      logObject.body = truncateResponseBody(responseBody);
+    // Log request body for non-GET requests in development, but sanitize sensitive data
+    if (config.nodeEnv === 'development' && req.method !== 'GET' && req.body) {
+      logger.debug({
+        requestId: req.id,
+        body: sanitizeBody(req.body),
+      }, 'Request body');
+    }
+  }
+  
+  // Capture the original response.end method
+  const originalEnd = res.end;
+  
+  // Override the response.end method to use correct function signature
+  const endHandler = function(this: Response, chunk: any, encoding?: BufferEncoding | (() => void), callback?: () => void): Response {
+    // Restore original end method
+    res.end = originalEnd;
+    
+    // Calculate duration
+    const hrTime = process.hrtime(req.startTime);
+    const durationMs = hrTime[0] * 1000 + hrTime[1] / 1000000;
+    const duration = `${durationMs.toFixed(0)}ms`;
+    
+    // Only log detailed response for API routes
+    if (isApiRoute) {
+      // Attempt to parse the response body if it's JSON
+      let responseBody: any = {};
+      
+      if (res.statusCode >= 400 && res.statusCode < 600) {
+        // Log error responses with more detail
+        logger.error({
+          requestId: req.id,
+          method: req.method,
+          path: req.path,
+          type: 'response',
+          statusCode: res.statusCode,
+          duration,
+          error: responseBody.error || responseBody.message || 'Unknown error',
+        }, `Error response: ${req.method} ${req.path} ${res.statusCode}`);
+      } else {
+        // Log successful responses
+        logger.info({
+          requestId: req.id,
+          method: req.method,
+          path: req.path,
+          type: 'response',
+          statusCode: res.statusCode,
+          duration,
+          body: truncateResponseBody(responseBody),
+        }, `Response: ${req.method} ${req.path} ${res.statusCode}`);
+      }
     }
     
-    reqLogger[logLevel](
-      logObject, 
-      `Response: ${req.method} ${req.path} ${res.statusCode} - ${duration}ms`
-    );
-  });
+    // Handle cases based on arguments
+    if (typeof encoding === 'function') {
+      // Case: .end(chunk, callback)
+      return originalEnd.call(this, chunk, encoding);
+    } else {
+      // Case: .end(chunk, encoding, callback)
+      return originalEnd.call(this, chunk, encoding, callback);
+    }
+  };
+  
+  // Override the end method
+  res.end = endHandler as any;
   
   next();
 }
@@ -100,14 +122,22 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
 function sanitizeBody(body: any): any {
   if (!body) return body;
   
-  const sensitiveFields = ['password', 'token', 'secret', 'authorization', 'key'];
+  // Create a copy of the body
   const sanitized = { ...body };
   
-  for (const field of sensitiveFields) {
-    if (sanitized[field]) {
+  // List of sensitive fields to redact
+  const sensitiveFields = [
+    'password', 'newPassword', 'oldPassword', 'confirmPassword',
+    'token', 'accessToken', 'refreshToken', 'apiKey', 'secret',
+    'creditCard', 'cardNumber', 'cvv', 'ssn', 'socialSecurity'
+  ];
+  
+  // Redact sensitive fields
+  sensitiveFields.forEach(field => {
+    if (field in sanitized) {
       sanitized[field] = '[REDACTED]';
     }
-  }
+  });
   
   return sanitized;
 }
@@ -118,17 +148,20 @@ function sanitizeBody(body: any): any {
 function truncateResponseBody(body: any): any {
   if (!body) return body;
   
-  const stringified = JSON.stringify(body);
-  const maxLength = 500;
+  // Stringify the body to get its size
+  const bodyString = JSON.stringify(body);
   
-  if (stringified.length <= maxLength) {
-    return body;
+  // If body is too large, truncate it
+  if (bodyString.length > 500) {
+    return {
+      _truncated: true,
+      _originalSize: bodyString.length,
+      message: 'Response body truncated due to size',
+      preview: bodyString.substring(0, 500) + '...'
+    };
   }
   
-  return {
-    _truncated: true,
-    _originalSize: stringified.length,
-    message: 'Response body truncated due to size',
-    preview: stringified.substring(0, maxLength) + '...'
-  };
+  return body;
 }
+
+export default requestLoggerMiddleware;
