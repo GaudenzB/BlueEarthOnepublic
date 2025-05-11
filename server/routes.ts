@@ -33,7 +33,7 @@ import {
 } from "./utils/apiResponse";
 import { logger } from "./utils/logger";
 import { sendPasswordResetEmail } from "./email/sendgrid";
-import { validate, validateRequest } from "./middleware/validation";
+import { validate, validateIdParameter } from "./middleware/validation";
 import { ApiError } from "./middleware/errorHandler";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get user by ID
-  app.get("/api/users/:id", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
+  app.get("/api/users/:id", authenticate, isSuperAdmin, validateIdParameter(), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const user = await storage.getUser(id);
@@ -346,16 +346,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = user;
       return sendSuccess(res, userWithoutPassword);
     } catch (error) {
-      console.error("Get user error:", error);
+      logger.error({ userId: req.params.id, error }, "Error retrieving user");
       return sendError(res, "Failed to get user");
     }
   });
   
   // Create user
-  app.post("/api/users", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
+  app.post("/api/users", authenticate, isSuperAdmin, validate(insertUserSchema), async (req: Request, res: Response) => {
     try {
-      // Validate request body
-      const userData = insertUserSchema.parse(req.body);
+      // Get validated data from request body
+      const userData = req.body;
       
       // Check if username already exists
       const existingUsername = await storage.getUserByUsername(userData.username);
@@ -393,22 +393,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update user
-  app.patch("/api/users/:id", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
+  app.patch("/api/users/:id", authenticate, isSuperAdmin, validateIdParameter(), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       
-      // Create a partial schema for updates
+      // Define reusable validation schema for user updates
       const updateUserSchema = z.object({
-        username: z.string().min(3, "Username must be at least 3 characters").optional(),
-        email: z.string().email("Invalid email format").optional(),
-        firstName: z.string().optional(),
-        lastName: z.string().optional(),
-        role: userRoleEnum.optional(),
-        active: z.boolean().optional(),
-        password: z.string().min(6, "Password must be at least 6 characters").optional(),
+        body: z.object({
+          username: z.string().min(3, "Username must be at least 3 characters").optional(),
+          email: z.string().email("Invalid email format").optional(),
+          firstName: z.string().optional(),
+          lastName: z.string().optional(),
+          role: userRoleEnum.optional(),
+          active: z.boolean().optional(),
+          password: z.string().min(6, "Password must be at least 6 characters").optional(),
+        })
       });
       
-      const updateData = updateUserSchema.parse(req.body);
+      // Validate request before processing
+      await updateUserSchema.parseAsync({
+        body: req.body
+      });
+      
+      const updateData = req.body;
       
       // If updating username, check if it already exists
       if (updateData.username) {
@@ -453,7 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Delete user
-  app.delete("/api/users/:id", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
+  app.delete("/api/users/:id", authenticate, isSuperAdmin, validateIdParameter(), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -468,9 +475,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sendNotFound(res, "User not found");
       }
       
+      logger.info({ userId: id, deletedBy: req.user!.id }, "User deleted");
       return sendSuccess(res, null, "User deleted successfully");
     } catch (error) {
-      console.error("Delete user error:", error);
+      logger.error({ userId: req.params.id, error }, "Error deleting user");
       return sendError(res, "Failed to delete user");
     }
   });
