@@ -39,6 +39,12 @@ import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employ
 import { registerPermissionRoutes } from "./routes/permissions";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Debug middleware to log all requests
+  app.use((req, res, next) => {
+    logger.debug(`Received request: ${req.method} ${req.path}`);
+    next();
+  });
+  
   // Register permission routes
   registerPermissionRoutes(app);
 
