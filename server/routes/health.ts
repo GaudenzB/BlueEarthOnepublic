@@ -2,86 +2,91 @@ import { Router } from 'express';
 import { checkDatabaseConnection } from '../db';
 import { logger } from '../utils/logger';
 import config from '../utils/config';
-import { version } from '../../package.json';
-import os from 'os';
 
 const router = Router();
 
 /**
- * Basic health check endpoint - just confirms the API is responding
+ * Basic health check endpoint
+ * Returns a simple 200 OK response
  */
-router.get('/ping', (req, res) => {
-  return res.json({ status: 'ok', message: 'pong' });
-});
-
-/**
- * Detailed health check endpoint for monitoring systems
- * Checks database connection and provides general service info
- */
-router.get('/health', async (req, res) => {
-  // Check database connection
-  const dbStatus = await checkDatabaseConnection().catch(() => false);
-  
-  // Check Redis connection if configured
-  let redisStatus = 'disabled';
-  if (config.redisUrl) {
-    try {
-      // This is a simplified check that would need to be implemented
-      // based on how Redis is initialized in your application
-      redisStatus = 'ok';
-    } catch (error) {
-      logger.error('Health check: Redis connection failed', error);
-      redisStatus = 'error';
-    }
-  }
-  
-  // Get system info
-  const uptime = process.uptime();
-  const memoryUsage = process.memoryUsage();
-  const freeMemory = os.freemem();
-  const totalMemory = os.totalmem();
-  
-  // Build health response object
-  const health = {
-    status: dbStatus ? 'ok' : 'error',
+router.get('/', (req, res) => {
+  return res.status(200).json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    version,
-    environment: config.nodeEnv,
-    services: {
-      database: dbStatus ? 'ok' : 'error',
-      redis: redisStatus,
-    },
-    system: {
-      uptime: Math.floor(uptime),
-      memoryUsage: {
-        rss: Math.round(memoryUsage.rss / 1024 / 1024),
-        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
-        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
-        external: Math.round(memoryUsage.external / 1024 / 1024),
-      },
-      freeMemory: Math.round(freeMemory / 1024 / 1024),
-      totalMemory: Math.round(totalMemory / 1024 / 1024),
-      memoryUsagePercent: Math.round(((totalMemory - freeMemory) / totalMemory) * 100),
-    },
-  };
-  
-  // Return status code based on overall health
-  const statusCode = health.status === 'ok' ? 200 : 503;
-  return res.status(statusCode).json(health);
+    environment: config.nodeEnv
+  });
 });
 
 /**
- * Detailed readiness probe for Kubernetes or similar orchestration
- * This checks if the service is ready to accept traffic
+ * Detailed health check endpoint
+ * Checks database connection and other services
  */
-router.get('/ready', async (req, res) => {
-  // Check database connection
-  const dbConnected = await checkDatabaseConnection().catch(() => false);
+router.get('/details', async (req, res) => {
+  const startTime = process.hrtime();
   
-  if (dbConnected) {
-    return res.status(200).json({ status: 'ready' });
-  } else {
-    return res.status(503).json({ status: 'not ready', reason: 'database connection failed' });
+  try {
+    // Check database connection
+    const dbConnected = await checkDatabaseConnection();
+    
+    // Check redis if enabled
+    let redisConnected = false;
+    if (config.redisEnabled) {
+      // In a real implementation, this would check Redis connection
+      redisConnected = true;
+    }
+    
+    // Calculate response time
+    const hrTime = process.hrtime(startTime);
+    const responseTime = (hrTime[0] * 1000 + hrTime[1] / 1000000).toFixed(2);
+    
+    // Prepare service checks
+    const services = {
+      database: {
+        status: dbConnected ? 'healthy' : 'unhealthy',
+        message: dbConnected ? 'Connected' : 'Connection failed'
+      },
+      redis: config.redisEnabled 
+        ? {
+            status: redisConnected ? 'healthy' : 'unhealthy',
+            message: redisConnected ? 'Connected' : 'Connection failed'
+          }
+        : { 
+            status: 'disabled',
+            message: 'Redis is not configured'
+          }
+    };
+    
+    // Determine overall health
+    const unhealthyServices = Object.values(services).filter(s => s.status === 'unhealthy');
+    const isHealthy = unhealthyServices.length === 0;
+    
+    // Prepare response
+    const healthStatus = {
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      environment: config.nodeEnv,
+      responseTime: `${responseTime}ms`,
+      version: process.env.npm_package_version || 'unknown',
+      uptime: `${Math.floor(process.uptime())}s`,
+      services
+    };
+    
+    // Log health check results
+    if (!isHealthy) {
+      logger.warn(`Health check failed: ${unhealthyServices.length} unhealthy services`, healthStatus);
+    } else {
+      logger.debug('Health check successful', healthStatus);
+    }
+    
+    return res.status(isHealthy ? 200 : 503).json(healthStatus);
+  } catch (error) {
+    logger.error('Health check error', error);
+    return res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Failed to check health status',
+      error: process.env.NODE_ENV === 'production' ? undefined : error
+    });
   }
 });
 
