@@ -4,40 +4,26 @@ import { setupVite, serveStatic, log } from "./vite";
 import { scheduleEmployeeSync } from "./services/employeeSync";
 import { runMigrations } from "./migrations";
 import { checkDatabaseConnection } from "./db";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { requestLoggerMiddleware } from "./middleware/requestLogger";
+import { logger } from "./utils/logger";
 
+/**
+ * Express Application Setup
+ * 
+ * This module sets up the Express application with all middleware,
+ * routes, and error handlers.
+ */
+
+// Create Express application
 const app = express();
+
+// Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
+// Request logging middleware (replaces custom logging)
+app.use(requestLoggerMiddleware);
 
 (async () => {
   // Check database connection before proceeding
@@ -57,13 +43,11 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Register 404 handler (after routes, before error handler)
+  app.use((req, res) => notFoundHandler(req, res));
+  
+  // Global error handler (must be registered last)
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
