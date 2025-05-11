@@ -400,3 +400,65 @@ Transactional emails are sent through SendGrid with particular focus on the pass
 - **Future Enhancements**:
   - SendGrid Dynamic Templates support (commented reference implementation)
   - Email queueing system for high-volume scenarios
+
+## Performance & Scalability
+
+### Database Optimization
+
+The application uses Neon serverless PostgreSQL with performance optimizations:
+
+1. **Connection Pooling**:
+   - Configurable connection pool size based on environment
+   - Automatic connection recycling with idle timeout settings
+   - Connection health monitoring with automatic recovery
+
+2. **Query Optimization**:
+   - Efficient queries with proper indexing on critical fields
+   - Selective column retrieval to minimize data transfer
+   - Pagination implemented for data-intensive endpoints
+
+3. **Cold Start Mitigation**:
+   - Monitoring of cold start latency in production
+   - Connection warming strategies for high-traffic scenarios
+   - Query result caching for frequently accessed, rarely changing data
+
+### Frontend Performance
+
+Several strategies are implemented to optimize frontend performance:
+
+1. **Bundle Optimization**:
+   - Code splitting to reduce initial load size
+   - Tree shaking to eliminate unused code
+   - Lazy loading for resource-intensive components
+   - Minification and compression for production builds
+
+2. **Rendering Optimization**:
+   - React Query for efficient data fetching and caching
+   - Memoization of expensive calculations with useMemo
+   - Component optimizations with React.memo where appropriate
+   - Virtualization for long lists to reduce DOM size
+
+3. **Asset Optimization**:
+   - Image compression and format optimization (WebP)
+   - Local storage for appropriate client-side caching
+   - Proper use of Vite's asset handling mechanism
+   - CDN integration options for production deployments
+
+### Scaling Considerations
+
+The application architecture supports scaling in several ways:
+
+1. **Horizontal Scaling**:
+   - Stateless backend design allows for multiple instances
+   - Centralized session storage in database
+   - No server-side in-memory state that would block scaling
+
+2. **Caching Strategy**:
+   - Strategic use of React Query for frontend caching
+   - Redis integration options for high-volume deployments
+   - Employee sync results caching to reduce external API calls
+
+3. **Bottleneck Management**:
+   - Monitoring for performance bottlenecks
+   - Optimized database interactions with proper indexing
+   - Rate limiting for external API integrations

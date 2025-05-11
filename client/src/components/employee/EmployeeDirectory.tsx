@@ -16,13 +16,20 @@ export function EmployeeDirectory() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
 
+  // Define the API response type
+  interface ApiResponse {
+    success: boolean;
+    message: string;
+    data: Employee[];
+  }
+  
   // Query to fetch employees
-  const { data, isLoading, isError } = useQuery({
+  const { data: apiResponse, isLoading, isError } = useQuery<ApiResponse>({
     queryKey: ["/api/employees"],
   })
   
   // Extract employees from the response data structure
-  const employees = data?.data || []
+  const employees = apiResponse?.data || []
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
