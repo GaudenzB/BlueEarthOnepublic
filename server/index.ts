@@ -6,6 +6,7 @@ import { runMigrations } from "./migrations";
 import { checkDatabaseConnection } from "./db";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { requestLoggerMiddleware } from "./middleware/requestLogger";
+import { setupSecurityMiddleware } from "./middleware/security";
 import { logger } from "./utils/logger";
 
 /**
@@ -19,8 +20,19 @@ import { logger } from "./utils/logger";
 const app = express();
 
 // Basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({
+  limit: '1mb',  // Limit request body size to prevent DoS attacks
+  verify: (req: Request, res: Response, buf: Buffer) => {
+    // Store raw body for certain routes that need it (like webhooks)
+    if (req.path.startsWith('/api/webhooks/')) {
+      (req as any).rawBody = buf;
+    }
+  }
+}));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+
+// Apply security middleware (CORS, Helmet, CSRF)
+setupSecurityMiddleware(app);
 
 // Request logging middleware (replaces custom logging)
 app.use(requestLoggerMiddleware);
