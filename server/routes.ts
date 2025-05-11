@@ -619,6 +619,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add a catch-all route for client-side navigation
+  // This needs to be added after all API routes but before creating the HTTP server
+  app.get("*", (req, res, next) => {
+    // Skip API routes (they should be handled by their own handlers)
+    if (req.path.startsWith('/api/')) {
+      logger.debug(`API route not found: ${req.method} ${req.path}`);
+      return next();
+    }
+    
+    // Log request for debugging
+    logger.debug(`Serving client-side route: ${req.path}`);
+    
+    // This will be handled by the Vite middleware in development
+    // or the static file serving in production
+    next();
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
