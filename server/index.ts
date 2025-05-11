@@ -7,6 +7,7 @@ import { checkDatabaseConnection } from "./db";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { requestLoggerMiddleware } from "./middleware/requestLogger";
 import { setupSecurityMiddleware } from "./middleware/security";
+import { setupSwaggerDocs } from "./middleware/swagger";
 import { logger } from "./utils/logger";
 
 /**
@@ -52,6 +53,9 @@ app.use(requestLoggerMiddleware);
     log(`ERROR: Database migration failed: ${error}`);
     process.exit(1);
   }
+  
+  // Setup API documentation
+  setupSwaggerDocs(app);
   
   const server = await registerRoutes(app);
 

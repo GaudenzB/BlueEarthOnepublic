@@ -5,7 +5,8 @@
  */
 
 import { writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import * as schema from '../../shared/schema';
 
@@ -46,6 +47,110 @@ registry.registerComponent('schemas', 'Employee', {
     syncedAt: { type: 'string', format: 'date-time' },
   },
   required: ['id', 'name', 'position', 'department', 'email', 'status']
+});
+
+// Document schemas
+registry.registerComponent('schemas', 'Document', {
+  type: 'object',
+  properties: {
+    id: { type: 'string', format: 'uuid' },
+    title: { type: 'string' },
+    description: { type: 'string', nullable: true },
+    updatedAt: { type: 'string', format: 'date-time' },
+    createdAt: { type: 'string', format: 'date-time' },
+    filename: { type: 'string' },
+    originalFilename: { type: 'string' },
+    mimeType: { type: 'string' },
+    fileSize: { type: 'string' },
+    storageKey: { type: 'string' },
+    checksum: { type: 'string' },
+    documentType: { 
+      type: 'string', 
+      enum: ['CONTRACT', 'AGREEMENT', 'POLICY', 'REPORT', 'PRESENTATION', 'CORRESPONDENCE', 'INVOICE', 'OTHER'] 
+    },
+    isConfidential: { type: 'boolean' },
+    tags: { 
+      type: 'array',
+      items: { type: 'string' },
+      nullable: true
+    },
+    processingStatus: {
+      type: 'string',
+      enum: ['PENDING', 'QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED', 'ERROR'],
+    },
+    aiProcessed: { type: 'boolean' },
+    aiMetadata: { 
+      type: 'object',
+      nullable: true
+    },
+    uploadedBy: { type: 'string', format: 'uuid' },
+    tenantId: { type: 'string', format: 'uuid' },
+    versionId: { type: 'string', format: 'uuid', nullable: true },
+    customMetadata: { 
+      type: 'object',
+      nullable: true
+    }
+  },
+  required: ['id', 'title', 'filename', 'originalFilename', 'mimeType', 'fileSize', 'storageKey', 'checksum']
+});
+
+// Contract schemas
+registry.registerComponent('schemas', 'Contract', {
+  type: 'object',
+  properties: {
+    id: { type: 'string', format: 'uuid' },
+    documentId: { type: 'string', format: 'uuid' },
+    tenantId: { type: 'string', format: 'uuid' },
+    title: { type: 'string' },
+    contractNumber: { type: 'string' },
+    version: { type: 'string' },
+    contractType: { 
+      type: 'string', 
+      enum: [
+        'SERVICE_AGREEMENT', 'EMPLOYMENT', 'VENDOR', 'LICENSE', 
+        'LEASE', 'NDA', 'INVESTMENT', 'PARTNERSHIP', 'LOAN', 'OTHER'
+      ]
+    },
+    createdAt: { type: 'string', format: 'date-time' },
+    updatedAt: { type: 'string', format: 'date-time' },
+    effectiveDate: { type: 'string', nullable: true },
+    expirationDate: { type: 'string', nullable: true },
+    parties: { 
+      type: 'object',
+      nullable: true
+    },
+    counterpartyName: { type: 'string', nullable: true },
+    counterpartyContact: { type: 'string', nullable: true },
+    value: { type: 'string', nullable: true },
+    currency: { type: 'string' },
+    status: { 
+      type: 'string', 
+      enum: ['PENDING', 'DRAFT', 'UNDER_REVIEW', 'ACTIVE', 'EXPIRED', 'TERMINATED', 'ARCHIVED']
+    },
+    description: { type: 'string', nullable: true },
+    isConfidential: { type: 'boolean' },
+    renewalTerms: { type: 'string', nullable: true },
+    terminationClauses: { type: 'string', nullable: true },
+    tags: { 
+      type: 'array',
+      items: { type: 'string' },
+      nullable: true
+    },
+    approvalStatus: { type: 'string', nullable: true },
+    approvedBy: { type: 'string', format: 'uuid', nullable: true },
+    approvalDate: { type: 'string', format: 'date-time', nullable: true },
+    parentContractId: { type: 'string', format: 'uuid', nullable: true },
+    accessControlList: { 
+      type: 'array',
+      items: { type: 'string' },
+      nullable: true
+    },
+    customMetadata: { 
+      type: 'object',
+      nullable: true
+    }
+  },
+  required: ['id', 'documentId', 'tenantId', 'title', 'contractNumber', 'version', 'contractType', 'status']
 });
 
 // Define authentication component
@@ -191,6 +296,309 @@ registry.registerPath({
   },
 });
 
+// Document endpoints
+registry.registerPath({
+  method: 'get',
+  path: '/api/documents',
+  tags: ['Documents'],
+  security: [{ bearerAuth: [] }],
+  parameters: [
+    {
+      name: 'documentType',
+      in: 'query',
+      required: false,
+      schema: { 
+        type: 'string',
+        enum: ['CONTRACT', 'AGREEMENT', 'POLICY', 'REPORT', 'PRESENTATION', 'CORRESPONDENCE', 'INVOICE', 'OTHER']
+      },
+    },
+    {
+      name: 'search',
+      in: 'query',
+      required: false,
+      schema: { type: 'string' },
+    },
+    {
+      name: 'limit',
+      in: 'query',
+      required: false,
+      schema: { type: 'integer', default: 20 },
+    },
+    {
+      name: 'offset',
+      in: 'query',
+      required: false,
+      schema: { type: 'integer', default: 0 },
+    },
+    {
+      name: 'sortBy',
+      in: 'query',
+      required: false,
+      schema: { type: 'string', default: 'createdAt' },
+    },
+    {
+      name: 'sortOrder',
+      in: 'query',
+      required: false,
+      schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
+    },
+  ],
+  responses: {
+    '200': {
+      description: 'List of documents',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              data: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/Document' },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/documents',
+  tags: ['Documents'],
+  security: [{ bearerAuth: [] }],
+  requestBody: {
+    required: true,
+    content: {
+      'multipart/form-data': {
+        schema: {
+          type: 'object',
+          properties: {
+            file: {
+              type: 'string',
+              format: 'binary',
+              description: 'Document file to upload',
+            },
+            title: { 
+              type: 'string',
+              description: 'Document title'
+            },
+            description: {
+              type: 'string',
+              description: 'Document description'
+            },
+            documentType: {
+              type: 'string',
+              enum: ['CONTRACT', 'AGREEMENT', 'POLICY', 'REPORT', 'PRESENTATION', 'CORRESPONDENCE', 'INVOICE', 'OTHER'],
+              description: 'Type of document'
+            },
+            isConfidential: {
+              type: 'boolean',
+              description: 'Whether the document contains confidential information'
+            },
+            tags: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Tags for categorizing the document'
+            }
+          },
+          required: ['file', 'title'],
+        },
+      },
+    },
+  },
+  responses: {
+    '201': {
+      description: 'Document uploaded successfully',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              data: { $ref: '#/components/schemas/Document' },
+            },
+          },
+        },
+      },
+    },
+    '400': {
+      description: 'Invalid request or file upload error',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              errors: { type: 'object' },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/documents/{id}',
+  tags: ['Documents'],
+  security: [{ bearerAuth: [] }],
+  parameters: [
+    {
+      name: 'id',
+      in: 'path',
+      required: true,
+      schema: { type: 'string', format: 'uuid' },
+    },
+  ],
+  responses: {
+    '200': {
+      description: 'Document details',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              data: { $ref: '#/components/schemas/Document' },
+            },
+          },
+        },
+      },
+    },
+    '404': {
+      description: 'Document not found',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
+// Contract endpoints
+registry.registerPath({
+  method: 'get',
+  path: '/api/contracts',
+  tags: ['Contracts'],
+  security: [{ bearerAuth: [] }],
+  parameters: [
+    {
+      name: 'contractType',
+      in: 'query',
+      required: false,
+      schema: { 
+        type: 'string',
+        enum: [
+          'SERVICE_AGREEMENT', 'EMPLOYMENT', 'VENDOR', 'LICENSE', 
+          'LEASE', 'NDA', 'INVESTMENT', 'PARTNERSHIP', 'LOAN', 'OTHER'
+        ]
+      },
+    },
+    {
+      name: 'status',
+      in: 'query',
+      required: false,
+      schema: { 
+        type: 'string',
+        enum: ['PENDING', 'DRAFT', 'UNDER_REVIEW', 'ACTIVE', 'EXPIRED', 'TERMINATED', 'ARCHIVED']
+      },
+    },
+    {
+      name: 'search',
+      in: 'query',
+      required: false,
+      schema: { type: 'string' },
+    },
+    {
+      name: 'counterpartyName',
+      in: 'query',
+      required: false,
+      schema: { type: 'string' },
+    },
+  ],
+  responses: {
+    '200': {
+      description: 'List of contracts',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              data: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/Contract' },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/contracts/{id}',
+  tags: ['Contracts'],
+  security: [{ bearerAuth: [] }],
+  parameters: [
+    {
+      name: 'id',
+      in: 'path',
+      required: true,
+      schema: { type: 'string', format: 'uuid' },
+    },
+  ],
+  responses: {
+    '200': {
+      description: 'Contract details',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              data: { $ref: '#/components/schemas/Contract' },
+            },
+          },
+        },
+      },
+    },
+    '404': {
+      description: 'Contract not found',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
 // Generate OpenAPI schema
 const openApiSchema = {
   openapi: '3.0.0',
@@ -203,8 +611,17 @@ const openApiSchema = {
       email: 'support@blueearth.capital',
     },
   },
-  paths: registry.paths,
-  components: registry.components,
+  paths: {},  // Use empty object instead of registry.paths
+  components: {
+    schemas: {},
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT'
+      }
+    }
+  },
   security: [{ bearerAuth: [] }],
   servers: [
     {
@@ -219,11 +636,18 @@ const openApiSchema = {
   ],
 };
 
-// Write OpenAPI schema to file
+// Write OpenAPI schema to file (prepare file path)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const outputPath = resolve(__dirname, '../../docs/openapi.json');
-writeFileSync(outputPath, JSON.stringify(openApiSchema, null, 2));
 
-console.log(`OpenAPI schema generated at: ${outputPath}`);
+// Write schema to file
+try {
+  writeFileSync(outputPath, JSON.stringify(openApiSchema, null, 2));
+  console.log(`OpenAPI schema generated at: ${outputPath}`);
+} catch (error) {
+  console.error('Error writing OpenAPI schema:', error);
+}
 
 // Export for use in Express
 export default openApiSchema;
