@@ -48,6 +48,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
   
+  // Apply rate limiting to all API routes (except auth which has stricter limits)
+  app.use('/api', (req, res, next) => {
+    // Skip if it's an auth route (auth has its own rate limits)
+    if (req.path.startsWith('/api/auth/')) {
+      return next();
+    }
+    return apiLimiter(req, res, next);
+  });
+  
   // Register permission routes
   registerPermissionRoutes(app);
 
@@ -209,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Forgot password (public route)
-  app.post("/api/auth/forgot-password", validate(forgotPasswordSchema), async (req: Request, res: Response) => {
+  app.post("/api/auth/forgot-password", passwordResetLimiter, validate(forgotPasswordSchema), async (req: Request, res: Response) => {
     try {
       // Request body is already validated by middleware
       const data = req.body;
@@ -266,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Reset password (public route)
-  app.post("/api/auth/reset-password", validate(resetPasswordSchema), async (req: Request, res: Response) => {
+  app.post("/api/auth/reset-password", passwordResetLimiter, validate(resetPasswordSchema), async (req: Request, res: Response) => {
     try {
       // Request body is already validated by middleware
       const data = req.body;
