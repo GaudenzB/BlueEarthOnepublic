@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import ContractList from "@/components/contracts/ContractList";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
-import { PageLayout } from "@/components/layouts/PageLayout";
+//import { PageLayout } from "@/components/layouts/PageLayout";
 
 export default function Contracts() {
   const [activeTab, setActiveTab] = React.useState("all");
@@ -113,7 +113,7 @@ export default function Contracts() {
   });
 
   return (
-    <PageLayout>
+    <div className="container mx-auto py-6 max-w-7xl">
       <Helmet>
         <title>Contracts | BlueEarth Capital</title>
         <meta
@@ -208,6 +208,6 @@ export default function Contracts() {
           />
         </TabsContent>
       </Tabs>
-    </PageLayout>
+    </div>
   );
 }

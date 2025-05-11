@@ -1,40 +1,33 @@
 import React from "react";
 import { Link } from "wouter";
-import { 
-  Table, 
-  TableHeader, 
-  TableRow, 
-  TableHead, 
-  TableBody, 
-  TableCell 
+import { formatDistanceToNow } from "date-fns";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  FileTextIcon, 
-  FileCheckIcon,
-  FileX2Icon, 
-  MoreHorizontalIcon, 
-  ClockIcon,
-  GavelIcon,
-  BuildingIcon,
-  LandmarkIcon,
-  FileSignatureIcon, 
-  UsersIcon,
-  KeyIcon,
-  CreditCardIcon,
-  HandshakeIcon,
-  DollarSignIcon
-} from "lucide-react";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
-import { PermissionGuard } from "@/components/permissions/PermissionGuard";
+import {
+  FileContractIcon,
+  AlertTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  HourglassIcon,
+  FileIcon,
+  BanIcon,
+  ArchiveIcon,
+} from "lucide-react";
 
 type Contract = {
   id: string;
@@ -57,210 +50,161 @@ interface ContractListProps {
 }
 
 export default function ContractList({ contracts, isLoading, filter = "all" }: ContractListProps) {
-  const getContractTypeIcon = (type: string | null) => {
-    switch (type) {
-      case "SERVICE_AGREEMENT":
-        return <FileSignatureIcon className="h-4 w-4" />;
-      case "EMPLOYMENT":
-        return <UsersIcon className="h-4 w-4" />;
-      case "VENDOR":
-        return <BuildingIcon className="h-4 w-4" />;
-      case "LICENSE":
-        return <KeyIcon className="h-4 w-4" />;
-      case "LEASE":
-        return <LandmarkIcon className="h-4 w-4" />;
-      case "NDA":
-        return <FileCheckIcon className="h-4 w-4" />;
-      case "INVESTMENT":
-        return <CreditCardIcon className="h-4 w-4" />;
-      case "PARTNERSHIP":
-        return <HandshakeIcon className="h-4 w-4" />;
-      case "LOAN":
-        return <DollarSignIcon className="h-4 w-4" />;
-      default:
-        return <GavelIcon className="h-4 w-4" />;
-    }
-  };
+  // Helper for rendering status badges with appropriate colors and icons
+  const renderStatusBadge = (status: string) => {
+    const getStatusInfo = () => {
+      switch (status) {
+        case "DRAFT":
+          return { color: "bg-gray-200 text-gray-800", icon: <FileIcon className="h-3 w-3 mr-1" /> };
+        case "PENDING":
+          return { color: "bg-yellow-100 text-yellow-800", icon: <HourglassIcon className="h-3 w-3 mr-1" /> };
+        case "UNDER_REVIEW":
+          return { color: "bg-blue-100 text-blue-800", icon: <ClockIcon className="h-3 w-3 mr-1" /> };
+        case "ACTIVE":
+          return { color: "bg-green-100 text-green-800", icon: <CheckCircleIcon className="h-3 w-3 mr-1" /> };
+        case "EXPIRED":
+          return { color: "bg-orange-100 text-orange-800", icon: <AlertTriangleIcon className="h-3 w-3 mr-1" /> };
+        case "TERMINATED":
+          return { color: "bg-red-100 text-red-800", icon: <BanIcon className="h-3 w-3 mr-1" /> };
+        case "ARCHIVED":
+          return { color: "bg-slate-100 text-slate-800", icon: <ArchiveIcon className="h-3 w-3 mr-1" /> };
+        default:
+          return { color: "bg-gray-100 text-gray-800", icon: <FileContractIcon className="h-3 w-3 mr-1" /> };
+      }
+    };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return <Badge variant="success" className="gap-1 px-2"><FileCheckIcon className="h-3 w-3" /> Active</Badge>;
-      case "UNDER_REVIEW":
-        return <Badge variant="warning" className="gap-1 px-2"><ClockIcon className="h-3 w-3" /> Under Review</Badge>;
-      case "PENDING":
-      case "DRAFT":
-        return <Badge variant="outline" className="gap-1 px-2"><ClockIcon className="h-3 w-3" /> Draft</Badge>;
-      case "EXPIRED":
-      case "TERMINATED":
-        return <Badge variant="destructive" className="gap-1 px-2"><FileX2Icon className="h-3 w-3" /> Expired</Badge>;
-      case "ARCHIVED":
-        return <Badge variant="secondary" className="gap-1 px-2"><FileTextIcon className="h-3 w-3" /> Archived</Badge>;
-      default:
-        return <Badge variant="secondary" className="gap-1 px-2"><FileTextIcon className="h-3 w-3" /> {status}</Badge>;
-    }
-  };
+    const { color, icon } = getStatusInfo();
 
-  const filteredContracts = React.useMemo(() => {
-    if (filter === "all") {
-      return contracts;
-    } else if (filter === "recent") {
-      // Sort by created date and get first 10
-      return [...contracts]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 10);
-    } else if (filter === "active") {
-      // Filter active contracts
-      return contracts.filter(contract => contract.status === "ACTIVE");
-    } else if (filter === "expiring") {
-      // Filter contracts expiring in the next 90 days
-      const now = new Date();
-      const ninetyDaysFromNow = new Date();
-      ninetyDaysFromNow.setDate(now.getDate() + 90);
-      
-      return contracts.filter(contract => {
-        if (!contract.expirationDate) return false;
-        const expirationDate = new Date(contract.expirationDate);
-        return expirationDate >= now && expirationDate <= ninetyDaysFromNow;
-      });
-    } else {
-      // Filter by contract type
-      return contracts.filter(contract => contract.contractType === filter);
-    }
-  }, [contracts, filter]);
+    return (
+      <Badge className={`${color} flex items-center`} variant="outline">
+        {icon}
+        {status.replace(/_/g, " ")}
+      </Badge>
+    );
+  };
 
   if (isLoading) {
     return (
-      <div className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <Skeleton className="h-4 w-[150px]" />
-          <Skeleton className="h-8 w-[100px]" />
-        </div>
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array(5).fill(0).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-[40px]" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Contracts</CardTitle>
+          <CardDescription>Loading contract list...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[250px]" />
+                  <Skeleton className="h-4 w-[200px]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
+  // Filter contracts based on the filter prop
+  const filteredContracts = contracts.filter((contract) => {
+    if (filter === "all") return true;
+    if (filter === "active") return contract.status === "ACTIVE";
+    if (filter === "expiring") {
+      // Check if contract expires within 90 days
+      if (!contract.expirationDate) return false;
+      const expirationDate = new Date(contract.expirationDate);
+      const today = new Date();
+      const ninetyDaysFromNow = new Date();
+      ninetyDaysFromNow.setDate(today.getDate() + 90);
+      return expirationDate <= ninetyDaysFromNow && expirationDate >= today;
+    }
+    if (filter === "recent") {
+      // Show contracts created in the last 30 days
+      const createdDate = new Date(contract.createdAt);
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      return createdDate >= thirtyDaysAgo;
+    }
+    return true;
+  });
+
   if (filteredContracts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 border rounded-md bg-muted/10">
-        <GavelIcon className="h-12 w-12 text-muted-foreground mb-3" />
-        <h3 className="text-lg font-medium">No contracts found</h3>
-        <p className="text-muted-foreground mb-4">
-          {filter === "all" 
-            ? "No contracts have been added yet."
-            : filter === "recent"
-              ? "No recent contracts found."
-              : filter === "active"
-                ? "No active contracts found."
-                : filter === "expiring"
-                  ? "No contracts expiring in the next 90 days."
-                  : `No ${filter.toLowerCase().replace('_', ' ')} contracts found.`}
-        </p>
-        <PermissionGuard area="contracts" permission="edit">
-          <Button variant="outline">Add your first contract</Button>
-        </PermissionGuard>
-      </div>
+      <Card className="mt-4">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <FileContractIcon className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium">No contracts found</h3>
+            <p className="text-sm text-gray-500 mt-2 max-w-md">
+              {filter === "all" 
+                ? "There are no contracts in the system yet." 
+                : filter === "active" 
+                  ? "There are no active contracts at this time."
+                  : filter === "expiring"
+                    ? "No contracts are expiring soon."
+                    : "No recent contracts found."}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[30%]">Contract</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Counterparty</TableHead>
-            <TableHead>Expiration</TableHead>
-            <TableHead className="w-[60px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredContracts.map((contract) => (
-            <TableRow key={contract.id}>
-              <TableCell className="font-medium">
-                <Link href={`/contracts/${contract.id}`}>
-                  <div className="flex items-center gap-2 text-primary hover:underline cursor-pointer">
-                    {getContractTypeIcon(contract.contractType)}
-                    <div>
-                      <span className="block">{contract.title}</span>
-                      <span className="text-xs text-muted-foreground">{contract.contractNumber}</span>
-                    </div>
-                  </div>
-                </Link>
-              </TableCell>
-              <TableCell>
-                {contract.contractType?.replace('_', ' ') || "Other"}
-              </TableCell>
-              <TableCell>
-                {getStatusBadge(contract.status)}
-              </TableCell>
-              <TableCell>
-                {contract.counterpartyName || "—"}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {contract.expirationDate 
-                  ? format(new Date(contract.expirationDate), "MMM d, yyyy")
-                  : "—"
-                }
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontalIcon className="h-4 w-4" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Link href={`/contracts/${contract.id}`}>
-                        <span>View details</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <PermissionGuard area="contracts" permission="view">
-                      <DropdownMenuItem>Download</DropdownMenuItem>
-                    </PermissionGuard>
-                    <PermissionGuard area="contracts" permission="edit">
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                    </PermissionGuard>
-                    <PermissionGuard area="contracts" permission="delete">
-                      <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                    </PermissionGuard>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Contract</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Counterparty</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Effective Date</TableHead>
+              <TableHead>Expiration</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {filteredContracts.map((contract) => (
+              <TableRow key={contract.id}>
+                <TableCell className="font-medium">
+                  <Link href={`/contracts/${contract.id}`} className="text-primary hover:underline">
+                    {contract.title}
+                    <div className="text-xs text-gray-500">#{contract.contractNumber}</div>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm">{contract.contractType.replace(/_/g, " ")}</span>
+                </TableCell>
+                <TableCell>{contract.counterpartyName}</TableCell>
+                <TableCell>{renderStatusBadge(contract.status)}</TableCell>
+                <TableCell>
+                  {contract.currency} {contract.value}
+                </TableCell>
+                <TableCell>
+                  <span>{new Date(contract.effectiveDate).toLocaleDateString()}</span>
+                </TableCell>
+                <TableCell>
+                  {contract.expirationDate ? (
+                    <div className="flex flex-col">
+                      <span>{new Date(contract.expirationDate).toLocaleDateString()}</span>
+                      <span className="text-xs text-gray-500">
+                        {formatDistanceToNow(new Date(contract.expirationDate), { addSuffix: true })}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">No expiration</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

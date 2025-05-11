@@ -15,6 +15,7 @@ import ResetPassword from "@/pages/reset-password";
 import Integrations from "@/pages/integrations";
 import Documents from "@/pages/documents";
 import DocumentDetail from "@/pages/document-detail";
+import Contracts from "@/pages/contracts";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/dashboard" component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
       <Route path="/documents" component={(props) => <ProtectedRoute component={Documents} {...props} />} />
       <Route path="/documents/:id" component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
+      <Route path="/contracts" component={(props) => <ProtectedRoute component={Contracts} {...props} />} />
       
       {/* Super admin routes */}
       <Route 
