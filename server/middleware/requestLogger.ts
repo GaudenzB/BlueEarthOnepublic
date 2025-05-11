@@ -2,6 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { logger, createRequestLogger } from '../utils/logger';
 
+// Extend Express Request type to include our custom properties
+declare global {
+  namespace Express {
+    interface Request {
+      id?: string;
+    }
+  }
+}
+
 /**
  * Middleware to log HTTP requests and responses
  * 
@@ -59,7 +68,7 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
     const duration = Date.now() - startTime;
     const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
     
-    const logObject = {
+    const logObject: Record<string, any> = {
       type: 'response',
       method: req.method,
       path: req.path,

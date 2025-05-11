@@ -35,8 +35,7 @@ export const validate = (
       return sendValidationError(
         res, 
         result.error.format(), 
-        `Validation failed for request ${type}`,
-        422 // Using 422 Unprocessable Entity for validation errors
+        `Validation failed for request ${type}`
       );
     }
     
@@ -82,8 +81,7 @@ export const validateRequest = (schemas: {
       return sendValidationError(
         res, 
         errors, 
-        'Validation failed for request',
-        422
+        'Validation failed for request'
       );
     }
     
