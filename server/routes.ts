@@ -6,7 +6,8 @@ import {
   authenticate, 
   authorize, 
   comparePassword, 
-  generateToken, 
+  generateToken,
+  revokeToken, 
   hashPassword, 
   isSuperAdmin,
   generateResetToken,
@@ -19,6 +20,13 @@ import {
   forgotPasswordSchema, 
   resetPasswordSchema 
 } from "@shared/schema";
+import { 
+  sendSuccess, 
+  sendError, 
+  sendUnauthorized, 
+  sendNotFound, 
+  sendValidationError 
+} from "./utils/apiResponse";
 import { sendPasswordResetEmail } from "./email/sendgrid";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
@@ -26,6 +34,7 @@ import { registerPermissionRoutes } from "./routes/permissions";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register permission routes
   registerPermissionRoutes(app);
+
   // Auth routes
   
   // Register a new user (public route)
@@ -37,14 +46,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if username already exists
       const existingUsername = await storage.getUserByUsername(userData.username);
       if (existingUsername) {
-        return res.status(400).json({ message: "Username already exists" });
+        return sendError(res, "Username already exists", 400);
       }
       
       // Check if email already exists
       if (userData.email) {
         const existingEmail = await storage.getUserByEmail(userData.email);
         if (existingEmail) {
-          return res.status(400).json({ message: "Email already exists" });
+          return sendError(res, "Email already exists", 400);
         }
       }
       
@@ -62,13 +71,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return user data without password and token
       const { password, ...userWithoutPassword } = user;
-      res.status(201).json({ user: userWithoutPassword, token });
+      return sendSuccess(res, { user: userWithoutPassword, token }, "User registered successfully", 201);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        return sendValidationError(res, error.errors);
       }
       console.error("Registration error:", error);
-      res.status(500).json({ message: "Failed to register user" });
+      return sendError(res, "Failed to register user");
     }
   });
   
@@ -81,18 +90,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user by username
       const user = await storage.getUserByUsername(loginData.username);
       if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return sendUnauthorized(res, "Invalid credentials");
       }
       
       // Check if user is active
       if (!user.active) {
-        return res.status(401).json({ message: "Your account has been deactivated" });
+        return sendUnauthorized(res, "Your account has been deactivated");
       }
       
       // Verify password
       const isPasswordValid = await comparePassword(loginData.password, user.password);
       if (!isPasswordValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return sendUnauthorized(res, "Invalid credentials");
       }
       
       // Generate token
@@ -100,13 +109,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return user data without password and token
       const { password, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword, token });
+      return sendSuccess(res, { user: userWithoutPassword, token }, "Login successful");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        return sendValidationError(res, error.errors);
       }
       console.error("Login error:", error);
-      res.status(500).json({ message: "Failed to login" });
+      return sendError(res, "Failed to login");
+    }
+  });
+  
+  // Logout (protected route)
+  app.post("/api/auth/logout", authenticate, async (req: Request, res: Response) => {
+    try {
+      // Get token from header
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+      
+      if (!token) {
+        return sendError(res, "No token provided", 400);
+      }
+      
+      // Revoke token
+      const success = revokeToken(token);
+      
+      if (success) {
+        return sendSuccess(res, null, "Logged out successfully");
+      } else {
+        return sendError(res, "Failed to logout", 400);
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      return sendError(res, "Internal server error");
     }
   });
   
@@ -116,15 +149,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user from database
       const user = await storage.getUser(req.user!.id);
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return sendNotFound(res, "User not found");
       }
       
       // Return user data without password
       const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      return sendSuccess(res, userWithoutPassword);
     } catch (error) {
       console.error("Get current user error:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      return sendError(res, "Failed to get user data");
     }
   });
   
@@ -132,46 +165,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
       // Validate request body
-      const { email } = forgotPasswordSchema.parse(req.body);
+      const data = forgotPasswordSchema.parse(req.body);
       
-      // Find user by email
-      const user = await storage.getUserByEmail(email);
-      
-      // Even if user is not found, we return success to prevent email enumeration
+      // Check if user exists
+      const user = await storage.getUserByEmail(data.email);
       if (!user) {
-        return res.json({ 
-          success: true,
-          message: "If that email exists in our system, a password reset link has been sent" 
-        });
+        // For security reasons, don't disclose if email exists
+        return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
       }
       
       // Generate reset token
       const resetToken = generateResetToken();
-      const expiryTime = calculateExpiryTime(1); // 1 hour expiry
+      const expiresAt = calculateExpiryTime(24); // 24 hours
       
       // Save reset token to user
-      const tokenSaved = await storage.setResetToken(email, resetToken, expiryTime);
+      await storage.setResetToken(data.email, resetToken, expiresAt);
       
-      if (!tokenSaved) {
-        return res.status(500).json({ message: "Failed to process password reset" });
+      // Create reset link
+      const resetLink = `${data.resetUrl || 'https://portal.blueearthcapital.com'}/reset-password?token=${resetToken}`;
+      
+      // Send reset email
+      const emailSent = await sendPasswordResetEmail(data.email, resetToken, resetLink);
+      
+      if (!emailSent) {
+        console.error("Failed to send password reset email to:", data.email);
+        // Don't expose this error to the user for security
       }
       
-      // Create reset URL
-      const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
-      
-      // Send password reset email
-      await sendPasswordResetEmail(email, resetToken, resetUrl);
-      
-      res.json({ 
-        success: true,
-        message: "If that email exists in our system, a password reset link has been sent" 
-      });
+      // Always return success to prevent email enumeration attacks
+      return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid email format" });
+        return sendValidationError(res, error.errors);
       }
       console.error("Forgot password error:", error);
-      res.status(500).json({ message: "Failed to process password reset request" });
+      return sendError(res, "Failed to process forgot password request");
     }
   });
   
@@ -179,76 +207,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
     try {
       // Validate request body
-      const { token, password } = resetPasswordSchema.parse(req.body);
+      const data = resetPasswordSchema.parse(req.body);
       
       // Find user by reset token
-      const user = await storage.getUserByResetToken(token);
-      
+      const user = await storage.getUserByResetToken(data.token);
       if (!user) {
-        return res.status(400).json({ message: "Invalid or expired reset token" });
+        return sendError(res, "Invalid or expired reset token", 400);
       }
       
       // Hash new password
-      const hashedPassword = await hashPassword(password);
+      const hashedPassword = await hashPassword(data.password);
       
-      // Update user password and clear reset token
+      // Update user password
       const success = await storage.resetUserPassword(user.id, hashedPassword);
       
       if (!success) {
-        return res.status(500).json({ message: "Failed to reset password" });
+        return sendError(res, "Failed to reset password");
       }
       
-      res.json({ 
-        success: true,
-        message: "Password has been reset successfully" 
-      });
+      return sendSuccess(res, null, "Password has been reset successfully");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: error.errors 
-        });
+        return sendValidationError(res, error.errors);
       }
       console.error("Reset password error:", error);
-      res.status(500).json({ message: "Failed to reset password" });
+      return sendError(res, "Failed to reset password");
     }
   });
   
-  // User management routes (superadmin only)
+  // User management routes (protected, superadmin only)
   
-  // Get all users (superadmin only)
+  // Get all users
   app.get("/api/users", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
     try {
       const users = await storage.getAllUsers();
-      // Return users without passwords
-      const usersWithoutPasswords = users.map(({ password, ...rest }) => rest);
-      res.json(usersWithoutPasswords);
+      
+      // Remove passwords from response
+      const usersWithoutPasswords = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      return sendSuccess(res, usersWithoutPasswords);
     } catch (error) {
-      console.error("Get all users error:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
+      console.error("Get users error:", error);
+      return sendError(res, "Failed to get users");
     }
   });
   
-  // Get user by ID (superadmin only)
+  // Get user by ID
   app.get("/api/users/:id", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const user = await storage.getUser(id);
       
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return sendNotFound(res, "User not found");
       }
       
-      // Return user without password
+      // Remove password from response
       const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      return sendSuccess(res, userWithoutPassword);
     } catch (error) {
       console.error("Get user error:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      return sendError(res, "Failed to get user");
     }
   });
   
-  // Create a new user (superadmin only)
+  // Create user
   app.post("/api/users", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
     try {
       // Validate request body
@@ -257,14 +283,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if username already exists
       const existingUsername = await storage.getUserByUsername(userData.username);
       if (existingUsername) {
-        return res.status(400).json({ message: "Username already exists" });
+        return sendError(res, "Username already exists", 400);
       }
       
       // Check if email already exists
       if (userData.email) {
         const existingEmail = await storage.getUserByEmail(userData.email);
         if (existingEmail) {
-          return res.status(400).json({ message: "Email already exists" });
+          return sendError(res, "Email already exists", 400);
         }
       }
       
@@ -279,112 +305,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return user data without password
       const { password, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
+      return sendSuccess(res, userWithoutPassword, "User created successfully", 201);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        return sendValidationError(res, error.errors);
       }
       console.error("Create user error:", error);
-      res.status(500).json({ message: "Failed to create user" });
+      return sendError(res, "Failed to create user");
     }
   });
   
-  // Update user (superadmin only)
+  // Update user
   app.patch("/api/users/:id", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       
-      // Check if user exists
-      const existingUser = await storage.getUser(id);
-      if (!existingUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Validate request body
-      const updateSchema = z.object({
-        username: z.string().min(3).optional(),
-        email: z.string().email().optional(),
+      // Create a partial schema for updates
+      const updateUserSchema = z.object({
+        username: z.string().min(3, "Username must be at least 3 characters").optional(),
+        email: z.string().email("Invalid email format").optional(),
         firstName: z.string().optional(),
         lastName: z.string().optional(),
         role: userRoleEnum.optional(),
         active: z.boolean().optional(),
-        password: z.string().min(6).optional(),
+        password: z.string().min(6, "Password must be at least 6 characters").optional(),
       });
       
-      const userData = updateSchema.parse(req.body);
+      const updateData = updateUserSchema.parse(req.body);
       
       // If updating username, check if it already exists
-      if (userData.username && userData.username !== existingUser.username) {
-        const existingUsername = await storage.getUserByUsername(userData.username);
-        if (existingUsername) {
-          return res.status(400).json({ message: "Username already exists" });
+      if (updateData.username) {
+        const existingUsername = await storage.getUserByUsername(updateData.username);
+        if (existingUsername && existingUsername.id !== id) {
+          return sendError(res, "Username already exists", 400);
         }
       }
       
       // If updating email, check if it already exists
-      if (userData.email && userData.email !== existingUser.email) {
-        const existingEmail = await storage.getUserByEmail(userData.email);
-        if (existingEmail) {
-          return res.status(400).json({ message: "Email already exists" });
+      if (updateData.email) {
+        const existingEmail = await storage.getUserByEmail(updateData.email);
+        if (existingEmail && existingEmail.id !== id) {
+          return sendError(res, "Email already exists", 400);
         }
       }
       
       // If updating password, hash it
-      let updateData: any = { ...userData };
-      if (userData.password) {
-        updateData.password = await hashPassword(userData.password);
+      let updatedData = { ...updateData };
+      if (updateData.password) {
+        const hashedPassword = await hashPassword(updateData.password);
+        updatedData = { ...updatedData, password: hashedPassword };
       }
       
       // Update user
-      const updatedUser = await storage.updateUser(id, updateData);
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
+      const user = await storage.updateUser(id, updatedData);
+      
+      if (!user) {
+        return sendNotFound(res, "User not found");
       }
       
       // Return user data without password
-      const { password, ...userWithoutPassword } = updatedUser;
-      res.json(userWithoutPassword);
+      const { password, ...userWithoutPassword } = user;
+      return sendSuccess(res, userWithoutPassword, "User updated successfully");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        return sendValidationError(res, error.errors);
       }
       console.error("Update user error:", error);
-      res.status(500).json({ message: "Failed to update user" });
+      return sendError(res, "Failed to update user");
     }
   });
   
-  // Delete user (superadmin only)
+  // Delete user
   app.delete("/api/users/:id", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       
-      // Prevent superadmin from deleting themselves
-      if (req.user!.id === id) {
-        return res.status(400).json({ message: "Cannot delete your own account" });
+      // Prevent deleting yourself
+      if (id === req.user!.id) {
+        return sendError(res, "You cannot delete your own account", 400);
       }
       
       const success = await storage.deleteUser(id);
       
       if (!success) {
-        return res.status(404).json({ message: "User not found" });
+        return sendNotFound(res, "User not found");
       }
       
-      res.json({ message: "User deleted successfully" });
+      return sendSuccess(res, null, "User deleted successfully");
     } catch (error) {
       console.error("Delete user error:", error);
-      res.status(500).json({ message: "Failed to delete user" });
+      return sendError(res, "Failed to delete user");
     }
   });
-  
-  // Employee routes (protected - require authentication)
+
+  // Employee routes
   
   // Get all employees
   app.get("/api/employees", authenticate, async (req, res) => {
     try {
-      const employees = await storage.getAllEmployees();
-      res.json(employees);
+      // Check for search or filter params
+      const search = req.query.search as string;
+      const department = req.query.department as string;
+      const status = req.query.status as string;
+      
+      let employees;
+      
+      if (search) {
+        employees = await storage.searchEmployees(search);
+      } else if (department) {
+        employees = await storage.filterEmployeesByDepartment(department);
+      } else if (status) {
+        employees = await storage.filterEmployeesByStatus(status);
+      } else {
+        employees = await storage.getAllEmployees();
+      }
+      
+      return sendSuccess(res, employees);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch employees" });
+      console.error("Get employees error:", error);
+      return sendError(res, "Failed to get employees");
     }
   });
   
@@ -395,85 +434,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employee = await storage.getEmployee(id);
       
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return sendNotFound(res, "Employee not found");
       }
       
-      res.json(employee);
+      return sendSuccess(res, employee);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch employee" });
-    }
-  });
-
-  // Search employees
-  app.get("/api/employees/search/:query", authenticate, async (req, res) => {
-    try {
-      const query = req.params.query;
-      const employees = await storage.searchEmployees(query);
-      res.json(employees);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to search employees" });
-    }
-  });
-
-  // Filter employees by department
-  app.get("/api/employees/department/:department", authenticate, async (req, res) => {
-    try {
-      const department = req.params.department;
-      const employees = await storage.filterEmployeesByDepartment(department);
-      res.json(employees);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to filter employees by department" });
-    }
-  });
-
-  // Filter employees by status
-  app.get("/api/employees/status/:status", authenticate, async (req, res) => {
-    try {
-      const status = req.params.status;
-      const employees = await storage.filterEmployeesByStatus(status);
-      res.json(employees);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to filter employees by status" });
+      console.error("Get employee error:", error);
+      return sendError(res, "Failed to get employee");
     }
   });
   
-  // Bubble.io API integration routes (admin only)
-  
-  // Manually trigger employee sync from Bubble.io
-  app.post("/api/bubble/sync-employees", authenticate, authorize(["superadmin", "admin"]), async (req, res) => {
-    try {
-      const syncStats = await syncEmployeesFromBubble();
-      
-      res.json({
-        success: true,
-        message: "Employee sync completed successfully",
-        stats: syncStats
-      });
-    } catch (error) {
-      console.error("Manual employee sync error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to sync employees from Bubble.io",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-  
-  // Get last sync status
-  app.get("/api/bubble/sync-status", authenticate, authorize(["superadmin", "admin"]), (req, res) => {
-    // This would ideally return information about the last sync from a database
-    // For now, we'll just return basic info
-    res.json({
-      success: true,
-      message: "Employee sync is configured",
-      config: {
-        bubbleApiUrl: process.env.BUBBLE_API_KEY ? "Configured" : "Not configured",
-        syncInterval: "Every 60 minutes",
-      }
-    });
-  });
-
-  // Create employee
+  // Create employee (manual entry, not via Bubble sync)
   app.post("/api/employees", authenticate, async (req, res) => {
     try {
       const employeeSchema = z.object({
@@ -484,21 +455,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: z.string().email("Invalid email format"),
         phone: z.string().optional(),
         avatarUrl: z.string().optional(),
-        status: z.string().default("active"),
+        status: z.string(),
       });
 
       const validatedData = employeeSchema.parse(req.body);
       const employee = await storage.createEmployee(validatedData);
       
-      res.status(201).json(employee);
+      return sendSuccess(res, employee, "Employee created successfully", 201);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        return sendValidationError(res, error.errors);
       }
-      res.status(500).json({ message: "Failed to create employee" });
+      console.error("Create employee error:", error);
+      return sendError(res, "Failed to create employee");
     }
   });
-
+  
   // Update employee
   app.patch("/api/employees/:id", authenticate, async (req, res) => {
     try {
@@ -512,21 +484,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: z.string().optional(),
         avatarUrl: z.string().optional(),
         status: z.string().optional(),
+        bio: z.string().optional(),
+        responsibilities: z.string().optional(),
       });
 
       const validatedData = employeeSchema.parse(req.body);
       const employee = await storage.updateEmployee(id, validatedData);
       
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return sendNotFound(res, "Employee not found");
       }
       
-      res.json(employee);
+      return sendSuccess(res, employee, "Employee updated successfully");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        return sendValidationError(res, error.errors);
       }
-      res.status(500).json({ message: "Failed to update employee" });
+      console.error("Update employee error:", error);
+      return sendError(res, "Failed to update employee");
     }
   });
 
@@ -537,16 +512,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.deleteEmployee(id);
       
       if (!success) {
-        return res.status(404).json({ message: "Employee not found" });
+        return sendNotFound(res, "Employee not found");
       }
       
-      res.json({ message: "Employee deleted successfully" });
+      return sendSuccess(res, null, "Employee deleted successfully");
     } catch (error) {
-      res.status(500).json({ message: "Failed to delete employee" });
+      console.error("Delete employee error:", error);
+      return sendError(res, "Failed to delete employee");
+    }
+  });
+  
+  // Trigger manual employee sync from Bubble.io
+  app.post("/api/sync/employees", authenticate, isSuperAdmin, async (req, res) => {
+    try {
+      if (!process.env.BUBBLE_API_KEY) {
+        return sendError(res, "Bubble API key not configured", 400);
+      }
+      
+      const result = await syncEmployeesFromBubble();
+      return sendSuccess(res, result, "Employee sync completed");
+    } catch (error) {
+      console.error("Employee sync error:", error);
+      return sendError(res, "Failed to sync employees");
     }
   });
 
   const httpServer = createServer(app);
-
   return httpServer;
 }

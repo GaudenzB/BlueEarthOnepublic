@@ -1,9 +1,20 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 import { User, UserRole } from "@shared/schema";
 import { sendUnauthorized, sendForbidden } from "./utils/apiResponse";
+
+/**
+ * Enhanced Authentication System
+ * 
+ * Features:
+ * - Configurable password hashing strength via environment variable
+ * - JWT token with claims for better validation (audience, issuer)
+ * - Token revocation support for logout functionality
+ * - Standardized API responses for auth errors
+ * - Role-based access control with fine-grained error messages
+ */
 
 // Extend Express Request type to include user property
 declare global {
@@ -14,6 +25,7 @@ declare global {
         username: string;
         email: string;
         role: string;
+        jti?: string; // JWT token ID
       };
     }
   }
@@ -22,6 +34,8 @@ declare global {
 // Configurable security settings with environment variable overrides
 const SALT_ROUNDS = parseInt(process.env.PASSWORD_SALT_ROUNDS || '10', 10);
 const TOKEN_EXPIRY = process.env.JWT_TOKEN_EXPIRY || '24h'; 
+const TOKEN_AUDIENCE = 'blueearth-portal';
+const TOKEN_ISSUER = 'blueearth-api';
 
 // Secret key for JWT
 const JWT_SECRET = process.env.JWT_SECRET || (
@@ -36,7 +50,6 @@ if (!JWT_SECRET) {
 }
 
 // Store of revoked tokens (in-memory for now, could be replaced with Redis or database)
-// Keys are token JTIs (unique identifiers), values are expiry timestamps
 const revokedTokens: Record<string, number> = {};
 
 // Cleanup expired tokens from revoked tokens store periodically
@@ -63,17 +76,13 @@ export const comparePassword = async (
   return bcrypt.compare(password, hash);
 };
 
-// Type definitions for JWT handling
-interface JwtUserPayload {
+// Enhanced JWT payload interface
+interface TokenPayload extends JwtPayload {
   id: number;
   username: string;
   email: string;
   role: string;
   jti: string;
-  aud: string;
-  iss: string;
-  iat: number;
-  exp: number;
 }
 
 // Function to generate a JWT token with a unique identifier (JTI)
@@ -81,34 +90,32 @@ export const generateToken = (user: User): string => {
   // Generate a unique token identifier
   const tokenId = crypto.randomBytes(16).toString('hex');
   
-  const payload = {
+  const payload: TokenPayload = {
     id: user.id,
-    username: user.username,
-    email: user.email,
+    username: user.username || '',
+    email: user.email || '',
     role: user.role,
-    jti: tokenId, // Include token ID for revocation support
+    jti: tokenId,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 
+         (typeof TOKEN_EXPIRY === 'string' && TOKEN_EXPIRY.endsWith('h') 
+          ? parseInt(TOKEN_EXPIRY.slice(0, -1), 10) * 3600 
+          : 86400)
   };
 
-  // Cast JWT_SECRET to the appropriate type to satisfy TypeScript
-  return jwt.sign(
-    payload, 
-    JWT_SECRET, 
-    { 
-      expiresIn: TOKEN_EXPIRY,
-      audience: 'blueearth-portal', // Add audience claim for additional validation
-      issuer: 'blueearth-api',      // Add issuer claim for additional validation
-    }
-  );
+  // Sign the token
+  return jwt.sign(payload, JWT_SECRET, { 
+    expiresIn: TOKEN_EXPIRY,
+    audience: TOKEN_AUDIENCE,
+    issuer: TOKEN_ISSUER,
+  });
 };
 
 // Function to revoke a token (logout)
 export const revokeToken = (token: string): boolean => {
   try {
     // Verify and decode the token
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      jti: string;
-      exp: number;
-    };
+    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
     
     // Add to revoked tokens list with expiry
     if (decoded.jti && decoded.exp) {
@@ -135,31 +142,24 @@ export const authenticate = (
   }
 
   try {
-    // Verify token with enhanced validation options
+    // Verify token
     const decoded = jwt.verify(token, JWT_SECRET, {
-      audience: 'blueearth-portal',
-      issuer: 'blueearth-api',
-      complete: true, // Return full decoded token for additional info
-    }) as {
-      payload: {
-        id: number;
-        username: string;
-        email: string;
-        role: string;
-        jti: string;
-      }
-    };
+      audience: TOKEN_AUDIENCE,
+      issuer: TOKEN_ISSUER
+    }) as TokenPayload;
     
     // Check if token has been revoked
-    if (decoded.payload.jti && revokedTokens[decoded.payload.jti]) {
+    if (decoded.jti && revokedTokens[decoded.jti]) {
       return sendUnauthorized(res, "Token has been revoked");
     }
     
+    // Set user in request
     req.user = {
-      id: decoded.payload.id,
-      username: decoded.payload.username,
-      email: decoded.payload.email,
-      role: decoded.payload.role
+      id: decoded.id,
+      username: decoded.username,
+      email: decoded.email,
+      role: decoded.role,
+      jti: decoded.jti
     };
     
     next();
