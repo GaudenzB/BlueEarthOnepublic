@@ -1,0 +1,4130 @@
+</div>
+            </div>
+          </div>
+        )}
+        
+        {selectedTab === 'timeline' && (
+          <ContractTimeline contractId={contract.id} />
+        )}
+      </div>
+    </div>
+  );
+};
+```
+
+### AI Analysis Results Component
+
+```tsx
+// client/src/features/ai/AIAnalysisResults.tsx
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { getDocumentAnalysis, acceptAnalysisResults, fetchAnalysisVersions } from '../../api/documents';
+import { Spinner } from '../../components/Spinner';
+import { Badge } from '../../components/Badge';
+import { AnalysisVersionCompare } from './AnalysisVersionCompare';
+import { toast } from 'react-hot-toast';
+
+interface AIAnalysisResultsProps {
+  documentId: string;
+}
+
+export const AIAnalysisResults = ({ documentId }: AIAnalysisResultsProps) => {
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  
+  // Fetch analysis data
+  const { data, isLoading, isError } = useQuery(
+    ['documentAnalysis', documentId],
+    () => getDocumentAnalysis(documentId),
+    {
+      refetchOnWindowFocus: false,
+    }
+  );
+  
+  // Fetch version history
+  const { data: versions } = useQuery(
+    ['analysisVersions', documentId],
+    () => fetchAnalysisVersions(documentId),
+    {
+      enabled: showVersions,
+    }
+  );
+  
+  // Accept analysis mutation
+  const acceptMutation = useMutation(acceptAnalysisResults, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(['documentAnalysis', documentId]);
+      queryClient.invalidateQueries(['contract']);
+      toast.success('Analysis results accepted');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to accept analysis: ${error.message || 'Unknown error'}`);
+    },
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md">
+        <div className="text-center">
+          <Spinner size="md" />
+          <p className="mt-2 text-sm text-gray-500">Processing document...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (isError) {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-md">
+        <p>Error loading analysis results</p>
+      </div>
+    );
+  }
+  
+  if (!data || data.processingStatus === 'PENDING' || data.processingStatus === 'QUEUED') {
+    return (
+      <div className="p-4 bg-gray-50 text-gray-700 rounded-md">
+        <p>Document is queued for analysis. Please check back later.</p>
+      </div>
+    );
+  }
+  
+  if (data.processingStatus === 'PROCESSING') {
+    return (
+      <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md">
+        <div className="text-center">
+          <Spinner size="md" />
+          <p className="mt-2 text-sm text-gray-500">AI analysis in progress...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (data.processingStatus === 'FAILED' || data.processingStatus === 'ERROR') {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-md">
+        <p>Analysis failed: {data.aiMetadata?.error || 'Unknown error'}</p>
+        <button
+          onClick={() => queryClient.invalidateQueries(['documentAnalysis', documentId])}
+          className="mt-2 text-sm text-red-700 hover:text-red-900 underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+  
+  if (!data.aiProcessed || !data.aiMetadata) {
+    return (
+      <div className="p-4 bg-gray-50 text-gray-700 rounded-md">
+        <p>No analysis available yet</p>
+      </div>
+    );
+  }
+  
+  const { aiMetadata } = data;
+  
+  const handleAcceptAnalysis = () => {
+    acceptMutation.mutate({ documentId });
+  };
+  
+  return (
+    <div className={`bg-gray-50 p-4 rounded-md ${isEditing ? 'border-2 border-blue-500' : ''}`}>
+      {/* Header with actions */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium text-gray-900">AI Analysis Results</h3>
+        <div className="flex space-x-2">
+          <span className="text-xs text-gray-500">
+            Processed with {aiMetadata.aiModelVersion || 'AI'}
+          </span>
+          
+          <button
+            onClick={() => setShowVersions(!showVersions)}
+            className="px-2 py-1 text-xs font-medium rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          >
+            {showVersions ? 'Hide Versions' : 'Show Versions'}
+          </button>
+          
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="px-2 py-1 text-xs font-medium rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            >
+              {isEditing ? 'Cancel' : 'Edit'}
+            </button>
+            {!isEditing && (
+              <button
+                onClick={handleAcceptAnalysis}
+                disabled={acceptMutation.isLoading}
+                className="px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-400"
+              >
+                {acceptMutation.isLoading ? 'Saving...' : 'Accept Analysis'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Version history section */}
+      {showVersions && versions && versions.length > 0 && (
+        <div className="mb-6 border rounded-md">
+          <div className="bg-gray-100 px-3 py-2 border-b">
+            <h4 className="font-medium text-gray-800">Version History</h4>
+          </div>
+          <div className="p-3">
+            <AnalysisVersionCompare documentId={documentId} />
+          </div>
+        </div>
+      )}
+      
+      {/* Analysis content */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h4 className="font-medium text-sm text-gray-500 mb-1">Document Type</h4>
+          <p className="text-gray-900">{aiMetadata.documentType || 'Not detected'}</p>
+        </div>
+        
+        <div>
+          <h4 className="font-medium text-sm text-gray-500 mb-1">Contract Type</h4>
+          <p className="text-gray-900">{aiMetadata.contractType || 'Not detected'}</p>
+        </div>
+        
+        <div>
+          <h4 className="font-medium text-sm text-gray-500 mb-1">Suggested Tags</h4>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {aiMetadata.suggestedTags?.map((tag: string) => (
+              <Badge key={tag} color="blue" size="sm">{tag}</Badge>
+            ))}
+            {(!aiMetadata.suggestedTags || aiMetadata.suggestedTags.length === 0) && (
+              <span className="text-gray-500">No tags suggested</span>
+            )}
+          </div>
+        </div>
+        
+        {aiMetadata.isContract && (
+          <>
+            <div>
+              <h4 className="font-medium text-sm text-gray-500 mb-1">Parties</h4>
+              <ul className="list-disc list-inside">
+                {Object.entries(aiMetadata.parties || {}).map(([role, name]) => (
+                  <li key={role} className="text-gray-900">
+                    <span className="font-medium">{role}:</span> {name}
+                  </li>
+                ))}
+                {(!aiMetadata.parties || Object.keys(aiMetadata.parties).length === 0) && (
+                  <span className="text-gray-500">No parties detected</span>
+                )}
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-sm text-gray-500 mb-1">Key Dates</h4>
+              <ul className="list-disc list-inside">
+                {Object.entries(aiMetadata.dates || {}).map(([type, date]) => (
+                  <li key={type} className="text-gray-900">
+                    <span className="font-medium">{type}:</span> {new Date(date as string).toLocaleDateString()}
+                  </li>
+                ))}
+                {(!aiMetadata.dates || Object.keys(aiMetadata.dates).length === 0) && (
+                  <span className="text-gray-500">No dates detected</span>
+                )}
+              </ul>
+            </div>
+            
+            <div className="col-span-2">
+              <h4 className="font-medium text-sm text-gray-500 mb-1">Financial Details</h4>
+              {aiMetadata.financialDetails ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(aiMetadata.financialDetails).map(([key, value]) => (
+                    <div key={key} className="p-2 bg-white rounded border border-gray-200">
+                      <span className="font-medium">{key}:</span> {value}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-gray-500">No financial details detected</span>
+              )}
+            </div>
+            
+            <div className="col-span-2">
+              <h4 className="font-medium text-sm text-gray-500 mb-1">Compliance Check</h4>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                <div className={`p-2 rounded ${aiMetadata.complianceChecks?.gdpr?.compliant ? 'bg-green-100' : 'bg-yellow-100'}`}>
+                  <span className="font-medium">GDPR:</span> {aiMetadata.complianceChecks?.gdpr?.compliant ? 'Compliant' : 'Review needed'}
+                  {aiMetadata.complianceChecks?.gdpr?.issues && aiMetadata.complianceChecks.gdpr.issues.length > 0 && (
+                    <ul className="mt-1 text-xs text-gray-700 list-disc list-inside">
+                      {aiMetadata.complianceChecks.gdpr.issues.map((issue, index) => (
+                        <li key={index}>{issue}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className={`p-2 rounded ${aiMetadata.complianceChecks?.finma?.compliant ? 'bg-green-100' : 'bg-yellow-100'}`}>
+                  <span className="font-medium">FINMA:</span> {aiMetadata.complianceChecks?.finma?.compliant ? 'Compliant' : 'Review needed'}
+                  {aiMetadata.complianceChecks?.finma?.issues && aiMetadata.complianceChecks.finma.issues.length > 0 && (
+                    <ul className="mt-1 text-xs text-gray-700 list-disc list-inside">
+                      {aiMetadata.complianceChecks.finma.issues.map((issue, index) => (
+                        <li key={index}>{issue}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {aiMetadata.obligations && aiMetadata.obligations.length > 0 && (
+              <div className="col-span-2">
+                <h4 className="font-medium text-sm text-gray-500 mb-1">Key Obligations</h4>
+                <div className="mt-1 border border-gray-200 rounded">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Party
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Deadline
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {aiMetadata.obligations.map((obligation, index) => (
+                        <tr key={index}>
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            {obligation.party}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            {obligation.description}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-gray-900">
+                            {obligation.deadline || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            
+            {aiMetadata.riskFactors && aiMetadata.riskFactors.length > 0 && (
+              <div className="col-span-2">
+                <h4 className="font-medium text-sm text-gray-500 mb-1">Risk Factors</h4>
+                <ul className="mt-1 text-sm text-gray-700 list-disc list-inside bg-white p-3 border rounded-md">
+                  {aiMetadata.riskFactors.map((risk, index) => (
+                    <li key={index} className="my-1">{risk}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      
+      {isEditing && (
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => setIsEditing(false)}
+            className="mr-2 px-3 py-1 bg-white border border-gray-300 text-gray-700 rounded-md text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              // Handle saving edited analysis
+              setIsEditing(false);
+              toast.success('Analysis updated');
+            }}
+            className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm"
+          >
+            Save Changes
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+### Analysis Version Comparison Component
+
+```tsx
+// client/src/features/ai/AnalysisVersionCompare.tsx
+import { useState, useEffect } from 'react';
+import { useQuery } from 'react-query';
+import { fetchAnalysisVersions, compareVersions } from '../../api/documents';
+import { Spinner } from '../../components/Spinner';
+import { Badge } from '../../components/Badge';
+import { DiffViewer } from '../../components/DiffViewer';
+
+interface AnalysisVersionCompareProps {
+  documentId: string;
+}
+
+export const AnalysisVersionCompare = ({ documentId }: AnalysisVersionCompareProps) => {
+  const [selectedVersions, setSelectedVersions] = useState<string[]>([]);
+  
+  // Fetch all versions
+  const { data: versions, isLoading } = useQuery(
+    ['analysisVersions', documentId],
+    () => fetchAnalysisVersions(documentId)
+  );
+  
+  // Fetch comparison if two versions selected
+  const { data: comparison, isLoading: isLoadingComparison } = useQuery(
+    ['versionComparison', ...selectedVersions],
+    () => compareVersions(selectedVersions[0], selectedVersions[1]),
+    {
+      enabled: selectedVersions.length === 2,
+    }
+  );
+  
+  // Toggle version selection
+  const toggleVersion = (versionId: string) => {
+    if (selectedVersions.includes(versionId)) {
+      setSelectedVersions(selectedVersions.filter(id => id !== versionId));
+    } else {
+      // Only allow selecting two versions
+      if (selectedVersions.length < 2) {
+        setSelectedVersions([...selectedVersions, versionId]);
+      } else {
+        // Replace the first selected version
+        setSelectedVersions([selectedVersions[1], versionId]);
+      }
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+  
+  if (!versions || versions.length === 0) {
+    return (
+      <div className="p-4 bg-gray-50 rounded-md text-center">
+        <p>No analysis versions available for this document.</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-500">
+          Select two versions to compare differences
+        </p>
+      </div>
+      
+      {/* Version list */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {versions.map(version => (
+          <div 
+            key={version.id}
+            className={`p-3 border rounded-md cursor-pointer ${
+              selectedVersions.includes(version.id) 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+            onClick={() => toggleVersion(version.id)}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="font-medium">{new Date(version.createdAt).toLocaleString()}</div>
+                <div className="text-sm text-gray-500">{version.modelVersion}</div>
+              </div>
+              {selectedVersions.includes(version.id) && (
+                <Badge color="blue">Selected</Badge>
+              )}
+            </div>
+            {version.diffSummary && (
+              <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded max-h-20 overflow-y-auto">
+                <pre className="whitespace-pre-wrap">{version.diffSummary}</pre>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      {/* Version comparison */}
+      {selectedVersions.length === 2 && (
+        <div className="mt-6 border rounded-md overflow-hidden">
+          <div className="bg-gray-100 px-4 py-2 font-medium">
+            Comparison
+          </div>
+          <div className="p-4">
+            {isLoadingComparison ? (
+              <div className="flex items-center justify-center h-40">
+                <Spinner size="md" />
+              </div>
+            ) : comparison ? (
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-3 rounded text-sm">
+                  <h3 className="font-medium mb-2">Summary of Changes</h3>
+                  <pre className="whitespace-pre-wrap">{comparison.summary}</pre>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium mb-2">Detailed Changes</h3>
+                  <DiffViewer 
+                    oldValue={JSON.stringify(comparison.fromVersion, null, 2)} 
+                    newValue={JSON.stringify(comparison.toVersion, null, 2)} 
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-gray-500">Select two versions to compare</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+## 12. Implementation Roadmap
+
+### Phase 1: Foundation (Weeks 1-2)
+1. **Database Setup**
+   - Set up Postgres with proper schemas and indexing
+   - Configure RLS for multi-tenant isolation
+   - Implement migrations with Drizzle ORM
+
+2. **Core Authentication & API Framework**
+   - User authentication with JWT
+   - RBAC middleware
+   - Basic error handling
+   - Transaction support
+   - Audit logging infrastructure
+
+3. **Storage Infrastructure**
+   - Set up S3 bucket with KMS encryption
+   - Configure object lock for WORM compliance
+   - Implement secure upload/download with signed URLs
+
+### Phase 2: Core Functionality (Weeks 3-4)
+1. **Document Management**
+   - Upload with virus scanning
+   - Document listing with filtering and search
+   - Version tracking
+   - Basic document preview
+   - Tag management
+
+2. **Background Processing**
+   - Set up Redis and BullMQ
+   - Implement document processing queue
+   - Configure automatic retry logic
+   - Monitoring and alerting
+
+3. **Basic Frontend**
+   - Authentication flows
+   - Document upload component
+   - Document listing grid view
+   - Document details view
+
+### Phase 3: AI Integration (Weeks 5-6)
+1. **Text Extraction**
+   - Implement document parsing for various formats
+   - Set up semantic chunking
+   - Build structured text extraction
+
+2. **AI Analysis**
+   - Configure OpenAI integration
+   - Implement chunking and result merging
+   - Add schema validation for results
+   - Set up caching system for AI results
+
+3. **AI Frontend**
+   - Build AI analysis results components
+   - Add version comparison UI
+   - Implement AI result editing functionality
+
+### Phase 4: Contract Management (Weeks 7-8)
+1. **Contract Data Model**
+   - Implement contract workflows
+   - Set up approval processes
+   - Add compliance checking
+   - Create contract metadata extraction
+
+2. **Contract UI**
+   - Contract viewer/editor
+   - Approval workflow UI
+   - Compliance dashboard
+   - Version tracking
+
+3. **Testing & Documentation**
+   - Unit tests for core modules
+   - Integration tests for critical flows
+   - User documentation
+   - API documentation
+
+### Phase 5: Performance & Security (Weeks 9-10)
+1. **Performance Optimization**
+   - Query optimization
+   - Caching layer
+   - Frontend performance
+   - Lazy loading
+
+2. **Security Hardening**
+   - Penetration testing
+   - Security audit
+   - GDPR compliance validation
+   - FINMA compliance validation
+
+3. **Monitoring & Observability**
+   - Metrics dashboard
+   - Error tracking
+   - Performance monitoring
+   - Usage analytics
+
+### Phase 6: Production Readiness (Weeks 11-12)
+1. **Deployment Infrastructure**
+   - CI/CD pipeline
+   - Environment configuration
+   - Infrastructure as Code
+   - Backup and recovery procedures
+
+2. **User Training & Documentation**
+   - User guides
+   - Admin documentation
+   - API documentation
+   - Training sessions
+
+3. **Launch & Support**
+   - Production deployment
+   - Initial monitoring
+   - Support processes
+   - Feedback collection
+
+## 13. Deployment Approach
+
+### Environment Setup
+1. **Development Environment**
+   - Local development with Docker Compose
+   - Shared development database for team
+   - Mock S3 for storage testing
+   - Local Redis for queue testing
+
+2. **Staging Environment**
+   - AWS environment with proper IAM roles
+   - Separate S3 bucket with retention disabled
+   - Full infrastructure but scaled down
+   - Test data similar to production
+
+3. **Production Environment**
+   - Locked down AWS environment
+   - Compliant S3 storage with WORM enabled
+   - Scaled according to expected load
+   - High availability configuration
+
+### Infrastructure as Code
+```terraform
+# Sample Terraform for S3 WORM setup
+resource "aws_s3_bucket" "document_storage" {
+  bucket = "bluearthone-documents-${var.environment}"
+  
+  tags = {
+    Name        = "BlueEarthOne Document Storage"
+    Environment = var.environment
+  }
+}
+
+resource "aws_s3_bucket_versioning" "document_versioning" {
+  bucket = aws_s3_bucket.document_storage.id
+  
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "document_encryption" {
+  bucket = aws_s3_bucket.document_storage.id
+  
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.document_encryption_key.arn
+      sse_algorithm     = "aws:kms"
+    }
+  }
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "document_worm" {
+  bucket = aws_s3_bucket.document_storage.id
+  
+  rule {
+    default_retention {
+      mode = "COMPLIANCE"
+      days = var.document_retention_days
+    }
+  }
+}
+
+# KMS Key for encryption
+resource "aws_kms_key" "document_encryption_key" {
+  description             = "KMS key for document encryption"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+  
+  policy = data.aws_iam_policy_document.document_encryption_key_policy.json
+}
+```
+
+### Scaling Strategy
+1. **Horizontal Scaling**
+   - Web servers behind load balancer
+   - Auto-scaling groups for API servers
+   - Multiple queue workers for document processing
+
+2. **Database Scaling**
+   - Read replicas for heavy read operations
+   - PgBouncer for connection pooling
+   - Partitioned tables for large datasets
+
+3. **Queue Scaling**
+   - Multiple Redis instances with sharding
+   - Priority queues for critical operations
+   - Delayed queues for scheduled tasks
+
+## 14. Maintenance & Operations
+
+### Monitoring & Alerting
+1. **Metrics to Track**
+   - Document upload count and size
+   - Processing queue length and latency
+   - AI analysis time and token usage
+   - Error rates by component
+
+2. **Alert Thresholds**
+   - Document processing queue > 100 items
+   - AI analysis time > 60 seconds
+   - Error rate > 1% for any component
+   - S3 storage usage > 80% of quota
+
+### Backup & Recovery
+1. **Database Backup**
+   - Daily full backups with 30-day retention
+   - Continuous WAL archiving
+   - Point-in-time recovery capability
+
+2. **Document Backup**
+   - S3 versioning enabled
+   - Cross-region replication for disaster recovery
+   - Regular backup verification
+
+### Security Procedures
+1. **Key Rotation**
+   - Quarterly KMS key rotation
+   - JWT signing key rotation
+   - API key rotation schedule
+
+2. **Access Reviews**
+   - Monthly user access review
+   - Quarterly service account review
+   - Continuous IAM policy auditing
+
+3. **Vulnerability Management**
+   - Weekly dependency scanning
+   - Monthly vulnerability assessment
+   - Quarterly penetration testing
+
+## 15. Conclusion
+
+This document management and contract management system provides a secure, scalable, and intelligent solution for asset management firms. Key features include:
+
+1. **Secure Document Management**
+   - Encrypted storage with WORM compliance
+   - Multi-tenant isolation with RLS
+   - Comprehensive audit logging
+   - Version tracking and history
+
+2. **Intelligent Contract Analysis**
+   - AI-powered metadata extraction
+   - Compliance checking for GDPR and FINMA
+   - Obligation tracking
+   - Risk assessment
+
+3. **Efficient Workflows**
+   - Streamlined approval processes
+   - Task assignment and tracking
+   - Deadline monitoring
+   - Compliance validation
+
+4. **Performance & Security**
+   - Optimized database queries
+   - Background processing for heavy tasks
+   - Rate limiting and DoS protection
+   - Regular security auditing
+
+This implementation balances security, performance, and usability to create a system that meets the complex needs of asset management firms while providing a modern, intuitive user experience.
+        .from(contracts)
+        .where(query.where);
+      
+      const countResult = await totalCountQuery;
+      const totalCount = parseInt(countResult[0].count.toString());
+      
+      // Add sorting
+      const sortField = req.query.sortField as keyof typeof contracts || 'createdAt';
+      const sortOrder = req.query.sortOrder === 'asc' ? asc : desc;
+      
+      if (sortField in contracts) {
+        query = query.orderBy(sortOrder(contracts[sortField]));
+      } else {
+        query = query.orderBy(desc(contracts.createdAt));
+      }
+      
+      // Add pagination
+      query = query.limit(limit).offset(offset);
+      
+      // Execute query
+      const results = await query;
+      
+      // Return paginated results
+      res.status(200).json({
+        data: results,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get contract by ID
+router.get(
+  '/:id', 
+  authenticate, 
+  tenantContext, 
+  standardLimiter, 
+  async (req, res, next) => {
+    try {
+      const contractId = req.params.id;
+      
+      // Join with documents to get title
+      const contract = await db.select({
+        ...contracts,
+        documentTitle: documents.title,
+      })
+      .from(contracts)
+      .leftJoin(documents, eq(contracts.documentId, documents.id))
+      .where(
+        and(
+          eq(contracts.id, contractId),
+          eq(contracts.isDeleted, false),
+          eq(contracts.tenantId, req.user.tenantId)
+        )
+      )
+      .limit(1);
+      
+      if (!contract || contract.length === 0) {
+        return res.status(404).json({ error: 'Contract not found' });
+      }
+      
+      res.status(200).json(contract[0]);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Create contract
+router.post(
+  '/', 
+  authenticate, 
+  tenantContext, 
+  authorize(['admin', 'legal']), 
+  standardLimiter, 
+  async (req, res, next) => {
+    try {
+      const { documentId, contractType, counterpartyName, effectiveDate, expirationDate } = req.body;
+      
+      // Validate document exists and belongs to tenant
+      const document = await db.query.documents.findFirst({
+        where: and(
+          eq(documents.id, documentId),
+          eq(documents.tenantId, req.user.tenantId)
+        ),
+      });
+      
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+      
+      // Check if contract already exists for document
+      const existingContract = await db.query.contracts.findFirst({
+        where: eq(contracts.documentId, documentId),
+      });
+      
+      if (existingContract) {
+        return res.status(409).json({ 
+          error: 'Contract already exists for this document',
+          contractId: existingContract.id,
+        });
+      }
+      
+      // Create contract
+      const [contract] = await db.insert(contracts).values({
+        documentId,
+        contractType: contractType || 'OTHER',
+        status: 'DRAFT',
+        counterpartyName: counterpartyName || '',
+        effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
+        expirationDate: expirationDate ? new Date(expirationDate) : null,
+        tenantId: req.user.tenantId,
+        createdBy: req.user.id,
+        version: 1,
+      }).returning();
+      
+      // Store for audit middleware
+      res.locals.entityId = contract.id;
+      
+      res.status(201).json(contract);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Update contract
+router.patch(
+  '/:id', 
+  authenticate, 
+  tenantContext, 
+  standardLimiter, 
+  async (req, res, next) => {
+    try {
+      const contractId = req.params.id;
+      
+      // Get current contract
+      const contract = await db.query.contracts.findFirst({
+        where: and(
+          eq(contracts.id, contractId),
+          eq(contracts.isDeleted, false),
+          eq(contracts.tenantId, req.user.tenantId)
+        ),
+      });
+      
+      if (!contract) {
+        return res.status(404).json({ error: 'Contract not found' });
+      }
+      
+      // Check permissions for status changes
+      if (req.body.status && req.body.status !== contract.status) {
+        // Check if status transition is valid
+        if (!validStatusTransitions[contract.status].includes(req.body.status)) {
+          return res.status(400).json({ 
+            error: 'Invalid status transition', 
+            current: contract.status,
+            allowed: validStatusTransitions[contract.status],
+          });
+        }
+        
+        // Check permissions for approval
+        if (req.body.status === 'APPROVED' && !req.user.roles.includes('legal')) {
+          return res.status(403).json({ 
+            error: 'Only legal team members can approve contracts',
+          });
+        }
+        
+        // Set approval metadata if approving
+        if (req.body.status === 'APPROVED') {
+          req.body.approvedBy = req.user.id;
+          req.body.approvedAt = new Date();
+        }
+      }
+      
+      // Build update object
+      const updateData = {
+        ...req.body,
+        
+        // Format dates if provided
+        ...(req.body.effectiveDate ? { 
+          effectiveDate: new Date(req.body.effectiveDate) 
+        } : {}),
+        
+        ...(req.body.expirationDate ? { 
+          expirationDate: new Date(req.body.expirationDate) 
+        } : {}),
+        
+        ...(req.body.nextReviewDate ? { 
+          nextReviewDate: new Date(req.body.nextReviewDate) 
+        } : {}),
+        
+        // Add metadata
+        updatedAt: new Date(),
+        updatedBy: req.user.id,
+        version: contract.version + 1,
+      };
+      
+      // Optimistic locking
+      const [updatedContract] = await db.update(contracts)
+        .set(updateData)
+        .where(
+          and(
+            eq(contracts.id, contractId),
+            eq(contracts.version, contract.version)
+          )
+        )
+        .returning();
+      
+      if (!updatedContract) {
+        return res.status(409).json({ 
+          error: 'Contract was modified by another user. Please refresh and try again.',
+        });
+      }
+      
+      // Store for audit middleware
+      res.locals.entityId = contractId;
+      
+      res.status(200).json(updatedContract);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Delete contract (soft delete)
+router.delete(
+  '/:id', 
+  authenticate, 
+  tenantContext, 
+  authorize(['admin', 'legal']), 
+  standardLimiter, 
+  async (req, res, next) => {
+    try {
+      const contractId = req.params.id;
+      
+      // Get current contract
+      const contract = await db.query.contracts.findFirst({
+        where: and(
+          eq(contracts.id, contractId),
+          eq(contracts.isDeleted, false),
+          eq(contracts.tenantId, req.user.tenantId)
+        ),
+      });
+      
+      if (!contract) {
+        return res.status(404).json({ error: 'Contract not found' });
+      }
+      
+      // Soft delete
+      await db.update(contracts)
+        .set({
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: req.user.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(contracts.id, contractId));
+      
+      // Store for audit middleware
+      res.locals.entityId = contractId;
+      
+      res.status(200).json({ message: 'Contract deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Apply audit middleware and error handler
+router.use(auditMiddleware('contract'));
+router.use(errorHandler);
+
+export default router;
+```
+
+## 11. Frontend Components
+
+### Document Upload Component
+
+```tsx
+// client/src/features/documents/DocumentUpload.tsx
+import { useState } from 'react';
+import { useMutation, useQueryClient } from 'react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { uploadDocument } from '../../api/documents';
+import { TagsInput } from '../../components/TagsInput';
+import { toast } from 'react-hot-toast';
+
+// Form validation schema
+const uploadSchema = z.object({
+  file: z.instanceof(File, { message: 'Please select a file' }),
+  title: z.string().min(1, 'Title is required').max(255),
+  description: z.string().optional(),
+  documentType: z.enum(['GENERAL', 'REPORT', 'PRESENTATION', 'POLICY']),
+  tags: z.array(z.string()).optional(),
+});
+
+type UploadFormValues = z.infer<typeof uploadSchema>;
+
+export const DocumentUpload = () => {
+  const queryClient = useQueryClient();
+  const [uploadProgress, setUploadProgress] = useState(0);
+  
+  // React Hook Form setup
+  const { 
+    control, 
+    register, 
+    handleSubmit, 
+    reset,
+    formState: { errors, isSubmitting } 
+  } = useForm<UploadFormValues>({
+    resolver: zodResolver(uploadSchema),
+    defaultValues: {
+      documentType: 'GENERAL',
+      tags: [],
+    },
+  });
+  
+  // Upload mutation
+  const uploadMutation = useMutation(uploadDocument, {
+    onSuccess: () => {
+      // Invalidate documents query to refresh list
+      queryClient.invalidateQueries('documents');
+      
+      // Reset form and progress
+      reset();
+      setUploadProgress(0);
+      
+      // Show success notification
+      toast.success('Document uploaded successfully');
+    },
+    onError: (error: any) => {
+      // Show error notification
+      toast.error(`Upload failed: ${error.message || 'Unknown error'}`);
+      setUploadProgress(0);
+    },
+  });
+  
+  const onSubmit = async (data: UploadFormValues) => {
+    try {
+      // Upload with progress tracking
+      await uploadMutation.mutateAsync({
+        file: data.file,
+        metadata: {
+          title: data.title,
+          description: data.description || '',
+          documentType: data.documentType,
+          tags: data.tags || [],
+        },
+        onProgress: (progress) => {
+          setUploadProgress(progress);
+        },
+      });
+    } catch (error) {
+      // Error is handled by mutation onError
+    }
+  };
+  
+  return (
+    <div className="p-6 bg-white rounded-lg shadow">
+      <h2 className="text-xl font-semibold mb-4">Upload Document</h2>
+      
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* File input with drag & drop */}
+        <div className="mb-4">
+          <label 
+            htmlFor="file" 
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Document File <span className="text-red-500">*</span>
+          </label>
+          <div 
+            className={`border-2 border-dashed rounded-md p-6 text-center ${
+              errors.file ? 'border-red-500' : 'border-gray-300 hover:border-blue-500'
+            }`}
+          >
+            <input
+              id="file"
+              type="file"
+              className="hidden"
+              {...register('file')}
+              onChange={(e) => {
+                register('file').onChange(e);
+                // Set title to filename if empty
+                if (e.target.files?.[0] && !control._formValues.title) {
+                  control._setValue('title', e.target.files[0].name);
+                }
+              }}
+            />
+            <div className="space-y-2">
+              <div className="flex justify-center">
+                <svg 
+                  className="w-10 h-10 text-gray-400" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
+                  />
+                </svg>
+              </div>
+              <div className="text-sm text-gray-600">
+                <label htmlFor="file" className="cursor-pointer text-blue-600 hover:underline">
+                  Click to upload
+                </label>
+                {' '}or drag and drop
+              </div>
+              <p className="text-xs text-gray-500">
+                PDF, Word, Excel, PowerPoint, Text (up to 50MB)
+              </p>
+            </div>
+            
+            {/* Show selected filename */}
+            {control._formValues.file && (
+              <div className="mt-2 text-sm text-gray-800 flex items-center justify-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                </svg>
+                <span>{control._formValues.file?.name}</span>
+              </div>
+            )}
+          </div>
+          {errors.file && (
+            <p className="mt-1 text-sm text-red-600">{errors.file.message}</p>
+          )}
+        </div>
+        
+        {/* Title input */}
+        <div>
+          <label 
+            htmlFor="title" 
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="title"
+            type="text"
+            className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+              errors.title ? 'border-red-500' : 'border-gray-300'
+            }`}
+            {...register('title')}
+          />
+          {errors.title && (
+            <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+          )}
+        </div>
+        
+        {/* Description textarea */}
+        <div>
+          <label 
+            htmlFor="description" 
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Description
+          </label>
+          <textarea
+            id="description"
+            rows={3}
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            {...register('description')}
+          />
+        </div>
+        
+        {/* Document type select */}
+        <div>
+          <label 
+            htmlFor="documentType" 
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Document Type <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="documentType"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            {...register('documentType')}
+          >
+            <option value="GENERAL">General</option>
+            <option value="REPORT">Report</option>
+            <option value="PRESENTATION">Presentation</option>
+            <option value="POLICY">Policy</option>
+          </select>
+        </div>
+        
+        {/* Tags input */}
+        <div>
+          <label 
+            htmlFor="tags" 
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Tags
+          </label>
+          <Controller
+            name="tags"
+            control={control}
+            render={({ field }) => (
+              <TagsInput
+                id="tags"
+                value={field.value || []}
+                onChange={field.onChange}
+                placeholder="Add tags..."
+              />
+            )}
+          />
+        </div>
+        
+        {/* Upload progress */}
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-500 mt-1 text-right">
+              {uploadProgress.toFixed(0)}% uploaded
+            </p>
+          </div>
+        )}
+        
+        {/* Submit button */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => reset()}
+            disabled={isSubmitting}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="ml-3 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
+          >
+            {isSubmitting ? 'Uploading...' : 'Upload Document'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+```
+
+### Contract Viewer Component
+
+```tsx
+// client/src/features/contracts/ContractViewer.tsx
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { fetchContract, updateContract } from '../../api/contracts';
+import { Badge } from '../../components/Badge';
+import { Spinner } from '../../components/Spinner';
+import { ContractFieldEdit } from './ContractFieldEdit';
+import { ContractWorkflow } from './ContractWorkflow';
+import { ContractTimeline } from './ContractTimeline';
+import { AIAnalysisResults } from '../ai/AIAnalysisResults';
+import { DocumentPreview } from '../documents/DocumentPreview';
+import { formatDate } from '../../utils/formatDate';
+import { toast } from 'react-hot-toast';
+
+interface ContractViewerProps {
+  contractId: string;
+}
+
+export const ContractViewer = ({ contractId }: ContractViewerProps) => {
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<'details' | 'document' | 'timeline' | 'ai'>('details');
+  
+  // Fetch contract data
+  const { data: contract, isLoading, isError } = useQuery(
+    ['contract', contractId],
+    () => fetchContract(contractId),
+    {
+      refetchOnWindowFocus: false,
+    }
+  );
+  
+  // Update contract mutation
+  const updateMutation = useMutation(updateContract, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(['contract', contractId]);
+      setIsEditing(false);
+      toast.success('Contract updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Update failed: ${error.message || 'Unknown error'}`);
+    },
+  });
+  
+  // Handle field updates
+  const handleFieldUpdate = (field: string, value: any) => {
+    if (!contract) return;
+    
+    updateMutation.mutate({
+      id: contract.id,
+      [field]: value,
+    });
+  };
+  
+  // Status badge color mapping
+  const statusColorMap = {
+    DRAFT: 'gray',
+    REVIEW: 'yellow',
+    APPROVED: 'green',
+    ACTIVE: 'blue',
+    EXPIRED: 'red',
+    TERMINATED: 'red',
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+  
+  if (isError || !contract) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-500">Error loading contract. Please try again.</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="bg-white rounded-lg shadow">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {contract.documentTitle || 'Untitled Contract'}
+            </h2>
+            <div className="mt-1 flex items-center text-sm text-gray-500">
+              <span className="mr-2">
+                {contract.contractType || 'Other'} Contract
+              </span>
+              <span className="mx-2">•</span>
+              <span>
+                ID: {contract.id}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Badge color={statusColorMap[contract.status] || 'gray'}>
+              {contract.status}
+            </Badge>
+            <button
+              type="button"
+              onClick={() => setIsEditing(!isEditing)}
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              {isEditing ? 'Cancel' : 'Edit'}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Tabs */}
+      <div className="px-6 py-3 border-b border-gray-200">
+        <div className="flex space-x-6">
+          <button
+            className={`py-2 px-1 text-sm font-medium border-b-2 ${
+              selectedTab === 'details'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setSelectedTab('details')}
+          >
+            Details
+          </button>
+          <button
+            className={`py-2 px-1 text-sm font-medium border-b-2 ${
+              selectedTab === 'document'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setSelectedTab('document')}
+          >
+            Document
+          </button>
+          <button
+            className={`py-2 px-1 text-sm font-medium border-b-2 ${
+              selectedTab === 'ai'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setSelectedTab('ai')}
+          >
+            AI Analysis
+          </button>
+          <button
+            className={`py-2 px-1 text-sm font-medium border-b-2 ${
+              selectedTab === 'timeline'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setSelectedTab('timeline')}
+          >
+            Timeline
+          </button>
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className="px-6 py-4">
+        {selectedTab === 'details' && (
+          <div className="space-y-6">
+            {/* Key information section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left column */}
+              <div className="space-y-4">
+                <ContractFieldEdit
+                  label="Contract Type"
+                  value={contract.contractType}
+                  options={[
+                    { value: 'IMA', label: 'Investment Management Agreement' },
+                    { value: 'SUBSCRIPTION', label: 'Subscription Agreement' },
+                    { value: 'LIMITED_PARTNERSHIP', label: 'Limited Partnership Agreement' },
+                    { value: 'SERVICE_PROVIDER', label: 'Service Provider Agreement' },
+                    { value: 'DISTRIBUTION', label: 'Distribution Agreement' },
+                    { value: 'OTHER', label: 'Other' },
+                  ]}
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('contractType', value)}
+                />
+                
+                <ContractFieldEdit
+                  label="Counterparty"
+                  value={contract.counterpartyName}
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('counterpartyName', value)}
+                />
+                
+                <ContractFieldEdit
+                  label="Counterparty Country"
+                  value={contract.counterpartyCountry}
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('counterpartyCountry', value)}
+                />
+                
+                <ContractFieldEdit
+                  label="Effective Date"
+                  value={contract.effectiveDate}
+                  type="date"
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('effectiveDate', value)}
+                  render={(value) => formatDate(value)}
+                />
+                
+                <ContractFieldEdit
+                  label="Expiration Date"
+                  value={contract.expirationDate}
+                  type="date"
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('expirationDate', value)}
+                  render={(value) => formatDate(value)}
+                />
+              </div>
+              
+              {/* Right column */}
+              <div className="space-y-4">
+                <ContractFieldEdit
+                  label="Annual Value"
+                  value={contract.annualValue}
+                  type="number"
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('annualValue', value)}
+                  render={(value) => value ? `${contract.currency || 'USD'} ${Number(value).toLocaleString()}` : '-'}
+                />
+                
+                <ContractFieldEdit
+                  label="Currency"
+                  value={contract.currency}
+                  options={[
+                    { value: 'USD', label: 'USD - US Dollar' },
+                    { value: 'EUR', label: 'EUR - Euro' },
+                    { value: 'CHF', label: 'CHF - Swiss Franc' },
+                    { value: 'GBP', label: 'GBP - British Pound' },
+                  ]}
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('currency', value)}
+                />
+                
+                <ContractFieldEdit
+                  label="Next Review Date"
+                  value={contract.nextReviewDate}
+                  type="date"
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('nextReviewDate', value)}
+                  render={(value) => formatDate(value)}
+                />
+                
+                <ContractFieldEdit
+                  label="Assigned To"
+                  value={contract.assignedTo}
+                  type="user"
+                  isEditing={isEditing}
+                  onChange={(value) => handleFieldUpdate('assignedTo', value)}
+                />
+                
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <ContractFieldEdit
+                      label="GDPR Compliant"
+                      value={contract.gdprCompliant}
+                      type="checkbox"
+                      isEditing={isEditing}
+                      onChange={(value) => handleFieldUpdate('gdprCompliant', value)}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <ContractFieldEdit
+                      label="FINMA Compliant"
+                      value={contract.finmaCompliant}
+                      type="checkbox"
+                      isEditing={isEditing}
+                      onChange={(value) => handleFieldUpdate('finmaCompliant', value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Workflow section */}
+            <div className="mt-8">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Workflow</h3>
+              <ContractWorkflow
+                contractId={contract.id}
+                status={contract.status}
+                assignedTo={contract.assignedTo}
+              />
+            </div>
+          </div>
+        )}
+        
+        {selectedTab === 'document' && (
+          <div className="h-[calc(100vh-240px)] min-h-[500px]">
+            <DocumentPreview documentId={contract.documentId} />
+          </div>
+        )}
+        
+        {selectedTab === 'ai' && (
+          <div className="space-y-4">
+            <AIAnalysisResults documentId={contract.documentId} />
+            <div className="mt-4">
+              <button
+                onClick={() => queryClient.invalidateQueries(['documentAnalysis', contract.documentId])}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Refresh Analysis
+              </button>
+            </div>complianceChecks?.finma?.issues || []))),
+        relevantClauses: Array.from(new Set(results.flatMap(r => r.complianceChecks?.finma?.relevantClauses || []))),
+      },
+    },
+    
+    // Combine all obligations
+    obligations: results.flatMap(r => r.obligations || []),
+    
+    // Merge extracted terms (last one wins for duplicate keys)
+    extractedTerms: results.reduce((acc, r) => ({ ...acc, ...(r.extractedTerms || {}) }), {}),
+  };
+  
+  return merged;
+}
+
+// Helper to get most frequent value in array
+function getMostFrequent(arr) {
+  if (!arr || arr.length === 0) return null;
+  
+  const counts = {};
+  let maxItem = arr[0];
+  let maxCount = 1;
+  
+  for (const item of arr) {
+    if (!item) continue;
+    
+    counts[item] = (counts[item] || 0) + 1;
+    if (counts[item] > maxCount) {
+      maxItem = item;
+      maxCount = counts[item];
+    }
+  }
+  
+  return maxItem;
+}
+```
+
+## 8. Document Analysis Versioning
+
+```typescript
+// server/services/ai/analysisVersioning.ts
+import { db } from '../../db';
+import { analysisVersions, analysisDiffs } from '../../../shared/schema/index';
+import { eq, desc } from 'drizzle-orm';
+import { deepDiff } from 'deep-diff';
+import { logger } from '../utils/logger';
+
+// Save a new analysis version
+export async function saveAnalysisVersion(documentId, modelVersion, result) {
+  try {
+    // Get document to find tenant
+    const document = await db.query.documents.findFirst({
+      where: eq(documents.id, documentId),
+      columns: {
+        tenantId: true,
+      },
+    });
+    
+    if (!document) {
+      throw new Error(`Document not found: ${documentId}`);
+    }
+    
+    // Get previous version if exists
+    const previousVersion = await db.query.analysisVersions.findFirst({
+      where: eq(analysisVersions.documentId, documentId),
+      orderBy: [desc(analysisVersions.createdAt)],
+    });
+    
+    // Insert new version
+    const [newVersion] = await db.insert(analysisVersions).values({
+      documentId,
+      modelVersion,
+      result,
+      createdAt: new Date(),
+      tenantId: document.tenantId,
+    }).returning();
+    
+    // Calculate diff if previous version exists
+    if (previousVersion) {
+      const diff = generateDiff(previousVersion.result, result);
+      
+      // Store diff for retrieval
+      await db.insert(analysisDiffs).values({
+        fromVersionId: previousVersion.id,
+        toVersionId: newVersion.id,
+        diff: JSON.stringify(diff),
+        createdAt: new Date(),
+      });
+      
+      // Generate human-readable diff summary
+      const diffSummary = generateDiffSummary(diff);
+      
+      await db.update(analysisVersions)
+        .set({
+          diffSummary,
+        })
+        .where(eq(analysisVersions.id, newVersion.id));
+      
+      return {
+        versionId: newVersion.id,
+        hasDiff: true,
+        diffSummary,
+      };
+    }
+    
+    return {
+      versionId: newVersion.id,
+      hasDiff: false,
+    };
+  } catch (error) {
+    logger.error(`Error saving analysis version for document ${documentId}:`, error);
+    throw error;
+  }
+}
+
+// Generate difference between two objects
+function generateDiff(oldObj, newObj) {
+  try {
+    return deepDiff(oldObj, newObj);
+  } catch (error) {
+    logger.error('Error generating diff:', error);
+    return [];
+  }
+}
+
+// Generate human-readable diff summary
+function generateDiffSummary(diff) {
+  if (!diff || diff.length === 0) {
+    return 'No changes detected';
+  }
+  
+  const changes = {
+    added: [],
+    removed: [],
+    changed: [],
+  };
+  
+  // Process diff to create summary
+  for (const d of diff) {
+    const path = d.path.join('.');
+    
+    switch (d.kind) {
+      case 'N': // New property
+        changes.added.push(`Added ${path}: ${JSON.stringify(d.rhs)}`);
+        break;
+      case 'D': // Deleted property
+        changes.removed.push(`Removed ${path}: ${JSON.stringify(d.lhs)}`);
+        break;
+      case 'E': // Edited property
+        changes.changed.push(`Changed ${path} from ${JSON.stringify(d.lhs)} to ${JSON.stringify(d.rhs)}`);
+        break;
+      case 'A': // Array change
+        if (d.item.kind === 'N') {
+          changes.added.push(`Added item to ${path}: ${JSON.stringify(d.item.rhs)}`);
+        } else if (d.item.kind === 'D') {
+          changes.removed.push(`Removed item from ${path}: ${JSON.stringify(d.item.lhs)}`);
+        } else {
+          changes.changed.push(`Changed item in ${path}`);
+        }
+        break;
+    }
+  }
+  
+  // Create summary text
+  let summary = '';
+  
+  if (changes.added.length) {
+    summary += `Added: ${changes.added.length} items\n`;
+    changes.added.slice(0, 5).forEach(item => {
+      summary += `- ${item}\n`;
+    });
+    if (changes.added.length > 5) {
+      summary += `- ...and ${changes.added.length - 5} more\n`;
+    }
+  }
+  
+  if (changes.removed.length) {
+    summary += `Removed: ${changes.removed.length} items\n`;
+    changes.removed.slice(0, 5).forEach(item => {
+      summary += `- ${item}\n`;
+    });
+    if (changes.removed.length > 5) {
+      summary += `- ...and ${changes.removed.length - 5} more\n`;
+    }
+  }
+  
+  if (changes.changed.length) {
+    summary += `Changed: ${changes.changed.length} items\n`;
+    changes.changed.slice(0, 5).forEach(item => {
+      summary += `- ${item}\n`;
+    });
+    if (changes.changed.length > 5) {
+      summary += `- ...and ${changes.changed.length - 5} more\n`;
+    }
+  }
+  
+  return summary;
+}
+
+// Compare two analysis versions
+export async function compareAnalysisVersions(versionId1, versionId2) {
+  // Try to find existing diff
+  const existingDiff = await db.query.analysisDiffs.findFirst({
+    where: and(
+      eq(analysisDiffs.fromVersionId, versionId1),
+      eq(analysisDiffs.toVersionId, versionId2)
+    ),
+  });
+  
+  if (existingDiff) {
+    return {
+      diff: JSON.parse(existingDiff.diff),
+      fromVersion: (await db.query.analysisVersions.findFirst({
+        where: eq(analysisVersions.id, versionId1),
+      }))?.result,
+      toVersion: (await db.query.analysisVersions.findFirst({
+        where: eq(analysisVersions.id, versionId2),
+      }))?.result,
+      summary: generateDiffSummary(JSON.parse(existingDiff.diff)),
+    };
+  }
+  
+  // If not found, maybe the order is reversed
+  const reversedDiff = await db.query.analysisDiffs.findFirst({
+    where: and(
+      eq(analysisDiffs.fromVersionId, versionId2),
+      eq(analysisDiffs.toVersionId, versionId1)
+    ),
+  });
+  
+  if (reversedDiff) {
+    const diff = JSON.parse(reversedDiff.diff);
+    // Invert the diff
+    const invertedDiff = invertDiff(diff);
+    
+    return {
+      diff: invertedDiff,
+      fromVersion: (await db.query.analysisVersions.findFirst({
+        where: eq(analysisVersions.id, versionId1),
+      }))?.result,
+      toVersion: (await db.query.analysisVersions.findFirst({
+        where: eq(analysisVersions.id, versionId2),
+      }))?.result,
+      summary: generateDiffSummary(invertedDiff),
+    };
+  }
+  
+  // If still not found, generate diff directly
+  const version1 = await db.query.analysisVersions.findFirst({
+    where: eq(analysisVersions.id, versionId1),
+  });
+  
+  const version2 = await db.query.analysisVersions.findFirst({
+    where: eq(analysisVersions.id, versionId2),
+  });
+  
+  if (!version1 || !version2) {
+    throw new Error('One or both versions not found');
+  }
+  
+  const diff = generateDiff(version1.result, version2.result);
+  
+  // Store for future use
+  await db.insert(analysisDiffs).values({
+    fromVersionId: versionId1,
+    toVersionId: versionId2,
+    diff: JSON.stringify(diff),
+    createdAt: new Date(),
+  });
+  
+  return {
+    diff,
+    fromVersion: version1.result,
+    toVersion: version2.result,
+    summary: generateDiffSummary(diff),
+  };
+}
+
+// Helper to invert diff direction
+function invertDiff(diff) {
+  return diff.map(d => {
+    switch (d.kind) {
+      case 'N':
+        return { kind: 'D', path: d.path, lhs: d.rhs };
+      case 'D':
+        return { kind: 'N', path: d.path, rhs: d.lhs };
+      case 'E':
+        return { kind: 'E', path: d.path, lhs: d.rhs, rhs: d.lhs };
+      case 'A':
+        return { 
+          kind: 'A', 
+          path: d.path, 
+          index: d.index, 
+          item: invertDiff([d.item])[0] 
+        };
+      default:
+        return d;
+    }
+  });
+}
+```
+
+## 9. Asynchronous Audit Logging
+
+```typescript
+// server/services/audit/auditQueue.ts
+import { Queue, Worker } from 'bullmq';
+import { db } from '../../db';
+import { auditLogs, auditFailedLogs } from '../../../shared/schema/index';
+import { metrics } from '../monitoring/metrics';
+import { logger } from '../utils/logger';
+
+// Create Redis connection
+const connection = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+};
+
+// Create audit queue
+export const auditQueue = new Queue('audit-logging', { connection });
+
+// Track audit metrics
+const auditCounter = metrics.counter({
+  name: 'audit_logs_total',
+  help: 'Total number of audit logs',
+  labelNames: ['status'],
+});
+
+// Create worker to process audit logs
+const auditWorker = new Worker('audit-logging', async job => {
+  const data = job.data;
+  
+  try {
+    await db.insert(auditLogs).values({
+      entityType: data.entityType,
+      entityId: data.entityId.toString(),
+      action: data.action,
+      userId: data.userId.toString(),
+      details: data.details || {},
+      ipAddress: data.ipAddress || null,
+      userAgent: data.userAgent || null,
+      timestamp: new Date(data.timestamp || Date.now()),
+      tenantId: data.tenantId,
+    });
+    
+    auditCounter.inc({ status: 'success' });
+    return { success: true };
+  } catch (error) {
+    logger.error(`Failed to write audit log for ${data.entityType}:${data.entityId}`, error);
+    
+    // Store failed audit log in separate table for review
+    try {
+      await db.insert(auditFailedLogs).values({
+        data: data,
+        error: error.message,
+        timestamp: new Date(),
+        processed: false,
+      });
+    } catch (innerError) {
+      logger.error('Critical: Failed to store failed audit log', innerError);
+    }
+    
+    auditCounter.inc({ status: 'failed' });
+    throw error;
+  }
+}, { connection });
+
+// Function to queue audit log
+export async function logAuditEvent(data) {
+  try {
+    // Queue audit log instead of writing directly
+    await auditQueue.add('audit-log', {
+      ...data,
+      timestamp: data.timestamp || new Date().toISOString(),
+    }, {
+      attempts: 5,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+      removeOnComplete: true,
+    });
+    
+    return true;
+  } catch (error) {
+    logger.error('Error queueing audit event:', error);
+    
+    // Try to write directly as fallback
+    try {
+      await db.insert(auditLogs).values({
+        entityType: data.entityType,
+        entityId: data.entityId.toString(),
+        action: data.action,
+        userId: data.userId.toString(),
+        details: data.details || {},
+        ipAddress: data.ipAddress || null,
+        userAgent: data.userAgent || null,
+        timestamp: new Date(data.timestamp || Date.now()),
+        tenantId: data.tenantId,
+      });
+      
+      return true;
+    } catch (directWriteError) {
+      logger.error('Failed direct write fallback for audit log:', directWriteError);
+      return false;
+    }
+  }
+}
+
+// Monitor audit queue health
+async function checkAuditQueueHealth() {
+  const jobCounts = await auditQueue.getJobCounts();
+  
+  // Alert if many failed jobs
+  if (jobCounts.failed > 100) {
+    logger.error(`Large number of failed audit logs: ${jobCounts.failed}`);
+    
+    // Send alert
+    await sendAlert({
+      level: 'critical',
+      message: `${jobCounts.failed} failed audit logs detected`,
+      component: 'audit',
+      actionRequired: 'Review auditFailedLogs table',
+    });
+  }
+  
+  // Alert if queue is backing up
+  if (jobCounts.waiting > 1000) {
+    logger.warn(`Audit queue is backing up: ${jobCounts.waiting} waiting jobs`);
+    
+    // Send alert
+    await sendAlert({
+      level: 'warning',
+      message: `Audit queue has ${jobCounts.waiting} waiting jobs`,
+      component: 'audit',
+      actionRequired: 'Check worker performance or scale up workers',
+    });
+  }
+}
+```
+
+## 10. Comprehensive API Endpoints
+
+### Document API
+
+```typescript
+// server/api/documents/routes.ts
+import express from 'express';
+import multer from 'multer';
+import { db } from '../../db';
+import { documents } from '../../../shared/schema/documents';
+import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
+import { tenantContext } from '../../middleware/tenantContext';
+import { errorHandler } from '../../middleware/errorHandler';
+import { auditMiddleware } from '../../middleware/auditMiddleware';
+import { createRateLimiter } from '../../middleware/rateLimiter';
+import { queueDocumentForProcessing } from '../../services/queue/documentQueue';
+import { scanFile } from '../../services/security/virusScan';
+import { 
+  uploadFileToS3, 
+  getSignedDownloadUrl, 
+  getSignedUploadUrl 
+} from '../../services/storage/s3Storage';
+import { logAuditEvent } from '../../services/audit/auditQueue';
+import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../../services/utils/logger';
+import { eq, like, or, and, desc, asc, sql } from 'drizzle-orm';
+
+const router = express.Router();
+
+// Set up multer for temporary storage
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  }
+});
+
+// Rate limiters
+const standardLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 100 });
+const uploadLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 20 });
+
+// Validate document creation input
+const createDocumentSchema = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().optional(),
+  documentType: z.enum(['GENERAL', 'REPORT', 'PRESENTATION', 'POLICY']),
+  tags: z.array(z.string()).optional(),
+});
+
+// Get presigned upload URL
+router.post(
+  '/upload-url', 
+  authenticate, 
+  tenantContext, 
+  uploadLimiter, 
+  async (req, res, next) => {
+    try {
+      const { fileName, contentType } = req.body;
+      
+      if (!fileName || !contentType) {
+        return res.status(400).json({ error: 'fileName and contentType are required' });
+      }
+      
+      // Check tenant storage limits
+      const tenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, req.user.tenantId),
+      });
+      
+      if (tenant.storageLimitGB && tenant.currentStorageUsageGB >= tenant.storageLimitGB) {
+        return res.status(403).json({ 
+          error: 'Storage limit exceeded', 
+          limit: tenant.storageLimitGB,
+          usage: tenant.currentStorageUsageGB,
+        });
+      }
+      
+      // Get presigned URL
+      const { url, key } = await getSignedUploadUrl(
+        fileName, 
+        contentType,
+        req.user.tenantId
+      );
+      
+      res.status(200).json({ uploadUrl: url, key });
+      
+      // Log audit event
+      await logAuditEvent({
+        entityType: 'document',
+        entityId: 'upload-url',
+        action: 'GENERATE_UPLOAD_URL',
+        userId: req.user.id,
+        tenantId: req.user.tenantId,
+        details: {
+          fileName,
+          contentType,
+          key,
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Upload document
+router.post(
+  '/', 
+  authenticate, 
+  tenantContext, 
+  uploadLimiter, 
+  upload.single('file'), 
+  async (req, res, next) => {
+    let documentId = null;
+    
+    try {
+      const file = req.file;
+      
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      // Parse and validate input
+      let input;
+      try {
+        input = createDocumentSchema.parse({
+          title: req.body.title || file.originalname,
+          description: req.body.description || '',
+          documentType: req.body.documentType || 'GENERAL',
+          tags: req.body.tags ? JSON.parse(req.body.tags) : [],
+        });
+      } catch (validationError) {
+        return res.status(400).json({ 
+          error: 'Invalid input', 
+          details: validationError.errors,
+        });
+      }
+      
+      // Check tenant storage limits
+      const tenant = await db.query.tenants.findFirst({
+        where: eq(tenants.id, req.user.tenantId),
+      });
+      
+      const estimatedSizeMB = file.size / (1024 * 1024);
+      const estimatedSizeGB = estimatedSizeMB / 1024;
+      
+      if (tenant.storageLimitGB && 
+          tenant.currentStorageUsageGB + estimatedSizeGB > tenant.storageLimitGB) {
+        return res.status(403).json({ 
+          error: 'Storage limit would be exceeded', 
+          limit: tenant.storageLimitGB,
+          usage: tenant.currentStorageUsageGB,
+          required: estimatedSizeGB,
+        });
+      }
+      
+      // Create document with PENDING status
+      const [document] = await db.insert(documents).values({
+        id: uuidv4(),
+        title: input.title,
+        description: input.description,
+        fileName: file.originalname,
+        filePath: 'pending', // Temporary placeholder
+        fileSize: file.size.toString(),
+        mimeType: file.mimetype,
+        documentType: input.documentType,
+        tags: input.tags || [],
+        processingStatus: 'PENDING',
+        scanStatus: 'PENDING',
+        tenantId: req.user.tenantId,
+        uploadedBy: req.user.id,
+        createdBy: req.user.id,
+        version: 1,
+      }).returning();
+      
+      documentId = document.id;
+      
+      // Store to attach to response if needed
+      res.locals.entityId = documentId;
+      
+      try {
+        // Scan file
+        await scanFile(file.buffer, documentId);
+        
+        // Upload to S3
+        const s3Key = await uploadFileToS3(
+          file.buffer, 
+          file.originalname, 
+          file.mimetype,
+          req.user.tenantId
+        );
+        
+        // Update document with S3 key
+        await db.update(documents)
+          .set({
+            filePath: s3Key,
+            processingStatus: 'UPLOADED',
+            updatedAt: new Date(),
+          })
+          .where(eq(documents.id, documentId));
+        
+        // Update tenant storage usage
+        await db.update(tenants)
+          .set({
+            currentStorageUsageGB: tenant.currentStorageUsageGB + estimatedSizeGB,
+            updatedAt: new Date(),
+          })
+          .where(eq(tenants.id, req.user.tenantId));
+        
+        // Queue for AI processing
+        await queueDocumentForProcessing(documentId);
+        
+        // Return success
+        res.status(201).json({
+          id: documentId,
+          title: document.title,
+          status: 'processing',
+          message: 'Document uploaded successfully and queued for processing',
+        });
+      } catch (processingError) {
+        // If upload fails, mark document as error
+        await db.update(documents)
+          .set({
+            processingStatus: 'ERROR',
+            updatedAt: new Date(),
+            aiMetadata: { error: processingError.message },
+          })
+          .where(eq(documents.id, documentId));
+        
+        throw processingError;
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get documents with pagination, filtering, and sorting
+router.get(
+  '/', 
+  authenticate, 
+  tenantContext, 
+  standardLimiter, 
+  async (req, res, next) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = (page - 1) * limit;
+      
+      // Build base query
+      let query = db.select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.isDeleted, false),
+            eq(documents.tenantId, req.user.tenantId)
+          )
+        );
+      
+      // Apply filters
+      if (req.query.type) {
+        query = query.where(eq(documents.documentType, req.query.type as string));
+      }
+      
+      if (req.query.searchTerm) {
+        const searchTerm = `%${req.query.searchTerm}%`;
+        query = query.where(
+          or(
+            like(documents.title, searchTerm),
+            like(documents.description, searchTerm)
+          )
+        );
+      }
+      
+      if (req.query.tag) {
+        query = query.where(sql`${req.query.tag}::text = ANY(${documents.tags})`);
+      }
+      
+      if (req.query.uploadedBy) {
+        query = query.where(eq(documents.uploadedBy, req.query.uploadedBy as string));
+      }
+      
+      if (req.query.status) {
+        query = query.where(eq(documents.processingStatus, req.query.status as string));
+      }
+      
+      // Count total results for pagination
+      const totalCountQuery = db.select({ count: sql`count(*)` })
+        .from(documents)
+        .where(query.where);
+      
+      const countResult = await totalCountQuery;
+      const totalCount = parseInt(countResult[0].count.toString());
+      
+      // Add sorting
+      const sortField = req.query.sortField as keyof typeof documents || 'uploadedAt';
+      const sortOrder = req.query.sortOrder === 'asc' ? asc : desc;
+      
+      if (sortField in documents) {
+        query = query.orderBy(sortOrder(documents[sortField]));
+      } else {
+        query = query.orderBy(desc(documents.uploadedAt));
+      }
+      
+      // Add pagination
+      query = query.limit(limit).offset(offset);
+      
+      // Execute query
+      const results = await query;
+      
+      // Return paginated results
+      res.status(200).json({
+        data: results,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get document by ID
+router.get(
+  '/:id', 
+  authenticate, 
+  tenantContext, 
+  standardLimiter, 
+  async (req, res, next) => {
+    try {
+      const documentId = req.params.id;
+      
+      const document = await db.query.documents.findFirst({
+        where: and(
+          eq(documents.id, documentId),
+          eq(documents.isDeleted, false),
+          eq(documents.tenantId, req.user.tenantId)
+        ),
+      });
+      
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+      
+      // Generate signed download URL
+      const downloadUrl = await getSignedDownloadUrl(document.filePath);
+      
+      // Return document with download URL
+      res.status(200).json({
+        ...document,
+        downloadUrl,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get document analysis
+router.get(
+  '/:id/analysis', 
+  authenticate, 
+  tenantContext, 
+  standardLimiter, 
+  async (req, res, next) => {
+    try {
+      const documentId = req.params.id;
+      
+      const document = await db.query.documents.findFirst({
+        where: and(
+          eq(documents.id, documentId),
+          eq(documents.isDeleted, false),
+          eq(documents.tenantId, req.user.tenantId)
+        ),
+      });
+      
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+      
+      res.status(200).json({
+        documentId: document.id,
+        aiProcessed: document.aiProcessed,
+        aiMetadata: document.aiMetadata,
+        aiModelVersion: document.aiModelVersion,
+        aiProcessedAt: document.aiProcessedAt,
+        processingStatus: document.processingStatus,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Apply error handler and audit middleware
+router.use(auditMiddleware('document'));
+router.use(errorHandler);
+
+export default router;
+```
+
+### Contract API
+
+```typescript
+// server/api/contracts/routes.ts
+import express from 'express';
+import { db } from '../../db';
+import { contracts, contractStatusEnum } from '../../../shared/schema/contracts';
+import { documents } from '../../../shared/schema/documents';
+import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
+import { tenantContext } from '../../middleware/tenantContext';
+import { errorHandler } from '../../middleware/errorHandler';
+import { auditMiddleware } from '../../middleware/auditMiddleware';
+import { createRateLimiter } from '../../middleware/rateLimiter';
+import { logAuditEvent } from '../../services/audit/auditQueue';
+import { z } from 'zod';
+import { logger } from '../../services/utils/logger';
+import { eq, and, desc, asc, sql, or, like } from 'drizzle-orm';
+
+const router = express.Router();
+
+// Rate limiter
+const standardLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 100 });
+
+// Contract workflows
+const validStatusTransitions = {
+  DRAFT: ['REVIEW'],
+  REVIEW: ['DRAFT', 'APPROVED'],
+  APPROVED: ['ACTIVE', 'EXPIRED', 'TERMINATED'],
+  ACTIVE: ['EXPIRED', 'TERMINATED'],
+  EXPIRED: [],
+  TERMINATED: [],
+};
+
+// Get contracts with pagination, filtering, and sorting
+router.get(
+  '/', 
+  authenticate, 
+  tenantContext, 
+  standardLimiter,
+  async (req, res, next) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = (page - 1) * limit;
+      
+      // Join with documents to get title
+      let query = db.select({
+        ...contracts,
+        documentTitle: documents.title,
+      })
+      .from(contracts)
+      .leftJoin(documents, eq(contracts.documentId, documents.id))
+      .where(
+        and(
+          eq(contracts.isDeleted, false),
+          eq(contracts.tenantId, req.user.tenantId)
+        )
+      );
+      
+      // Apply filters
+      if (req.query.type) {
+        query = query.where(eq(contracts.contractType, req.query.type as string));
+      }
+      
+      if (req.query.status) {
+        query = query.where(eq(contracts.status, req.query.status as string));
+      }
+      
+      if (req.query.searchTerm) {
+        const searchTerm = `%${req.query.searchTerm}%`;
+        query = query.where(
+          or(
+            like(documents.title, searchTerm),
+            like(contracts.counterpartyName, searchTerm)
+          )
+        );
+      }
+      
+      if (req.query.assignedTo) {
+        query = query.where(eq(contracts.assignedTo, req.query.assignedTo as string));
+      }
+      
+      // Count total results for pagination
+      const totalCountQuery = db.select({ count: sql`count(*)` })
+        .from# Document & Contract Management System Implementation Guide
+
+This comprehensive guide outlines the implementation of a secure, scalable, and intelligent document and contract management system for an asset management firm with 50+ employees, $1.5B AUM, and multiple fund vehicles.
+
+## System Architecture Overview
+
+The system is built as a TypeScript monorepo with a clear separation between:
+
+* **Backend (server)**
+   * Node.js with Express
+   * TypeScript
+   * Drizzle ORM with PostgreSQL
+   * Zod for validation
+   * BullMQ for background processing
+
+* **Frontend (client)**
+   * React
+   * Vite
+   * Tailwind CSS
+   * React Query for data fetching
+
+## 1. Database Schema
+
+### Document Management
+
+```typescript
+// shared/schema/documents.ts
+import { pgTable, uuid, text, timestamp, boolean, jsonb, pgEnum, index }
+
+## 6. AI Document Analysis with Semantic Chunking
+
+```typescript
+// server/services/ai/textExtraction.ts
+import * as fs from 'fs/promises';
+import mammoth from 'mammoth';
+import pdfParse from 'pdf-parse';
+import { SentenceTokenizer } from 'natural';
+import { logger } from '../utils/logger';
+
+// Tokenizer for sentence boundaries
+const tokenizer = new SentenceTokenizer();
+
+// Extract text from document buffer based on mime type
+export async function extractTextFromDocument(fileBuffer, mimeType) {
+  try {
+    switch (mimeType) {
+      case 'application/pdf':
+        return extractTextFromPdf(fileBuffer);
+      
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return extractTextFromDocx(fileBuffer);
+      
+      case 'text/plain':
+        return Buffer.from(fileBuffer).toString('utf8');
+      
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        return extractTextFromExcel(fileBuffer);
+      
+      case 'application/json':
+        return JSON.stringify(JSON.parse(Buffer.from(fileBuffer).toString('utf8')), null, 2);
+      
+      default:
+        throw new Error(`Unsupported file type: ${mimeType}`);
+    }
+  } catch (error) {
+    logger.error(`Error extracting text:`, error);
+    throw error;
+  }
+}
+
+// Extract text from PDF with structure
+async function extractTextFromPdf(fileBuffer) {
+  // Parse PDF
+  const data = await pdfParse(fileBuffer);
+  
+  // Try to extract structure
+  try {
+    return extractDocumentStructure(data.text);
+  } catch (error) {
+    logger.warn(`Error extracting PDF structure, falling back to plain text: ${error.message}`);
+    return data.text;
+  }
+}
+
+// Extract text from DOCX with structure
+async function extractTextFromDocx(fileBuffer) {
+  // Extract document with style map to preserve headings
+  const result = await mammoth.extractRawText({
+    buffer: fileBuffer,
+    styleMap: [
+      "p[style-name='Heading 1'] => h1:fresh",
+      "p[style-name='Heading 2'] => h2:fresh",
+      "p[style-name='Heading 3'] => h3:fresh",
+    ],
+  });
+  
+  // Try to extract structure
+  try {
+    return extractDocumentStructure(result.value);
+  } catch (error) {
+    logger.warn(`Error extracting DOCX structure, falling back to plain text: ${error.message}`);
+    return result.value;
+  }
+}
+
+// Excel extraction helper
+async function extractTextFromExcel(fileBuffer) {
+  // Implementation with ExcelJS/SheetJS
+  // ...
+}
+
+// Create logical document sections from text
+function extractDocumentStructure(text) {
+  // Split by common heading patterns
+  const headingPatterns = [
+    /\n\s*(#{1,3})\s+(.+?)\n/g,          // Markdown/HTML-like headings
+    /\n\s*([A-Z0-9]{1,2}\.)\s+(.+?)\n/g, // Outline headings (A. Title)
+    /\n\s*(\d+\.)\s+(.+?)\n/g,           // Numbered headings (1. Title)
+    /\n\s*(Article|Section)\s+(\d+(?:\.\d+)?(?:\:[^\n]+)?)\n/gi, // Legal document sections
+  ];
+  
+  let sections = [];
+  let matches = [];
+  
+  // Collect all heading matches with their positions
+  headingPatterns.forEach(pattern => {
+    let match;
+    const patternString = pattern.toString();
+    // Clone the regex to reset lastIndex
+    const clonedPattern = new RegExp(pattern.source, pattern.flags);
+    while ((match = clonedPattern.exec(text)) !== null) {
+      matches.push({
+        index: match.index,
+        level: patternString.includes('#{1,3}') ? match[1].length : 1,
+        title: match[2].trim(),
+        fullMatch: match[0],
+      });
+    }
+  });
+  
+  // Sort matches by position in document
+  matches.sort((a, b) => a.index - b.index);
+  
+  // Build sections by concatenating all text between headings
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const nextMatch = matches[i + 1];
+    
+    const sectionStart = match.index + match.fullMatch.length;
+    const sectionEnd = nextMatch ? nextMatch.index : text.length;
+    
+    const sectionText = text.substring(sectionStart, sectionEnd).trim();
+    
+    sections.push({
+      title: match.title,
+      level: match.level,
+      text: sectionText,
+    });
+  }
+  
+  // Handle text before first heading as introduction
+  if (matches.length > 0 && matches[0].index > 0) {
+    const introText = text.substring(0, matches[0].index).trim();
+    if (introText.length > 0) {
+      sections.unshift({
+        title: 'Introduction',
+        level: 0,
+        text: introText,
+      });
+    }
+  }
+  
+  // If no sections found or text has no clear structure
+  if (sections.length === 0) {
+    // Split into paragraphs
+    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    
+    if (paragraphs.length > 1) {
+      // Multiple paragraphs - create section per paragraph group
+      const chunkSize = Math.min(5, Math.ceil(paragraphs.length / 4)); // Aim for ~4 chunks
+      
+      for (let i = 0; i < paragraphs.length; i += chunkSize) {
+        const chunk = paragraphs.slice(i, i + chunkSize).join('\n\n');
+        sections.push({
+          title: `Part ${Math.floor(i / chunkSize) + 1}`,
+          level: 1,
+          text: chunk,
+        });
+      }
+    } else {
+      // Single paragraph or no clear paragraphs - split by sentences
+      const sentences = tokenizer.tokenize(text);
+      const chunkSize = Math.ceil(sentences.length / 4); // Aim for ~4 chunks
+      
+      for (let i = 0; i < sentences.length; i += chunkSize) {
+        const chunk = sentences.slice(i, i + chunkSize).join(' ');
+        sections.push({
+          title: `Part ${Math.floor(i / chunkSize) + 1}`,
+          level: 1,
+          text: chunk,
+        });
+      }
+    }
+  }
+  
+  return sections;
+}
+
+// Convert sections to optimal chunks for AI processing
+export function createAIChunks(sections, maxChunkSize = 8000) {
+  const chunks = [];
+  let currentChunk = {
+    title: 'Document Analysis',
+    sections: [],
+    text: '',
+  };
+  
+  for (const section of sections) {
+    // If adding this section would exceed chunk size, finalize current chunk
+    if (currentChunk.text.length + section.text.length > maxChunkSize) {
+      chunks.push({...currentChunk});
+      currentChunk = {
+        title: `Document Analysis (cont.)`,
+        sections: [],
+        text: '',
+      };
+    }
+    
+    // Add section to current chunk
+    currentChunk.sections.push(section.title);
+    currentChunk.text += (currentChunk.text ? '\n\n' : '') + 
+                          `${'#'.repeat(section.level + 1)} ${section.title}\n\n${section.text}`;
+  }
+  
+  // Add final chunk if not empty
+  if (currentChunk.text) {
+    chunks.push(currentChunk);
+  }
+  
+  return chunks;
+}
+```
+
+## 7. Smart AI Analysis with Caching and Versioning
+
+```typescript
+// server/services/ai/textAnalysis.ts
+import { createHash } from 'crypto';
+import { Configuration, OpenAIApi } from 'openai';
+import { z } from 'zod';
+import { db } from '../../db';
+import { 
+  documentAnalysisCache, 
+  analysisVersions,
+  aiUsage
+} from '../../../shared/schema/index';
+import { eq, and } from 'drizzle-orm';
+import { logger } from '../utils/logger';
+import { createAIChunks } from './textExtraction';
+import { saveAnalysisVersion } from './analysisVersioning';
+import { trackAIUsage } from '../billing/aiUsage';
+
+// Initialize OpenAI client
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+// Define schema for AI analysis result
+const aiAnalysisSchema = z.object({
+  documentType: z.string(),
+  isContract: z.boolean(),
+  parties: z.object({
+    ourEntity: z.string().optional(),
+    counterparty: z.string().optional(),
+    counterpartyCountry: z.string().optional(),
+    thirdParties: z.array(z.string()).optional(),
+  }).optional(),
+  dates: z.object({
+    effective: z.string().optional(),
+    expiration: z.string().optional(),
+    execution: z.string().optional(),
+    nextReview: z.string().optional(),
+  }).optional(),
+  suggestedTags: z.array(z.string()).optional(),
+  contractType: z.string().optional(),
+  financialDetails: z.object({
+    monthlyCost: z.string().optional(),
+    annualValue: z.string().optional(),
+    currency: z.string().optional(),
+  }).optional(),
+  complianceChecks: z.object({
+    gdpr: z.object({
+      compliant: z.boolean(),
+      issues: z.array(z.string()).optional(),
+      personalDataProcessing: z.boolean(),
+      relevantClauses: z.array(z.string()).optional(),
+    }).optional(),
+    finma: z.object({
+      compliant: z.boolean(),
+      issues: z.array(z.string()).optional(),
+      relevantClauses: z.array(z.string()).optional(),
+    }).optional(),
+  }).optional(),
+  extractedTerms: z.record(z.string()).optional(),
+  obligations: z.array(z.object({
+    party: z.string(),
+    description: z.string(),
+    deadline: z.string().optional(),
+  })).optional(),
+  riskFactors: z.array(z.string()).optional(),
+});
+
+type AIAnalysisResult = z.infer<typeof aiAnalysisSchema>;
+
+// Generate cache key with document content and version
+function generateCacheKey(content, modelVersion, documentVersion) {
+  const contentHash = createHash('sha256')
+    .update(content)
+    .digest('hex');
+  
+  return `${contentHash}-${documentVersion}-${modelVersion}`;
+}
+
+// Analyze document text with AI
+export async function analyzeText(text, modelVersion, documentId, documentVersion) {
+  try {
+    // Get document to find tenant
+    const document = await db.query.documents.findFirst({
+      where: eq(documents.id, documentId),
+      columns: {
+        tenantId: true,
+      },
+    });
+    
+    if (!document) {
+      throw new Error(`Document not found: ${documentId}`);
+    }
+    
+    // Check cache first
+    const cacheKey = generateCacheKey(text, modelVersion, documentVersion);
+    
+    const cachedResult = await db.query.documentAnalysisCache.findFirst({
+      where: eq(documentAnalysisCache.cacheKey, cacheKey),
+    });
+    
+    if (cachedResult) {
+      logger.info(`Using cached analysis result for document ${documentId}`);
+      return cachedResult.analysisResult;
+    }
+    
+    // Process text in chunks if needed
+    let sections;
+    try {
+      // Check if text is already structured
+      if (Array.isArray(text) && text.length > 0 && text[0].title) {
+        sections = text;
+      } else {
+        // Not structured, extract structure
+        sections = extractDocumentStructure(text);
+      }
+    } catch (error) {
+      logger.warn(`Error structuring document, falling back to simple chunking: ${error.message}`);
+      sections = [{
+        title: 'Document',
+        level: 0,
+        text: text,
+      }];
+    }
+    
+    // Create AI-optimized chunks
+    const chunks = createAIChunks(sections);
+    logger.info(`Split document into ${chunks.length} chunks for analysis`);
+    
+    // Process each chunk
+    const chunkResults = [];
+    let totalTokensUsed = 0;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      logger.info(`Processing chunk ${i+1}/${chunks.length}`);
+      
+      const prompt = `
+      You are an expert document analyzer for an asset management firm. Analyze the following document text and extract structured information.
+      
+      ${chunk.text}
+      
+      ${i === 0 ? 'This is the first section of the document.' : ''}
+      ${i === chunks.length - 1 ? 'This is the final section of the document.' : ''}
+      
+      Extract and return a JSON object with ONLY the following information:
+      1. documentType: The type of document (e.g., "Contract", "Report", "Presentation", "Policy")
+      2. isContract: Boolean indicating if this is a legally binding contract
+      3. parties: Object with counterparty and ourEntity
+      4. dates: Object with effective dates, expiration dates, and review dates
+      5. suggestedTags: Array of relevant tags for this document
+      6. contractType: If contract, the specific type (e.g., "Investment Management Agreement")
+      7. financialDetails: Object with financial information (costs, values)
+      8. complianceChecks: Object with GDPR and FINMA compliance analysis
+      9. extractedTerms: Object with key contract terms
+      10. obligations: Array of obligations with parties and deadlines
+      11. riskFactors: Array of identified risks
+      
+      Return structured JSON only, no explanations. Include only fields where you found relevant information.
+      `;
+      
+      // Call OpenAI API
+      const response = await openai.createChatCompletion({
+        model: modelVersion,
+        messages: [
+          { role: "system", content: "You are a document analysis AI for an asset management firm. Extract structured data from documents." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.2,
+      });
+      
+      // Track token usage
+      const tokensUsed = response.data.usage?.total_tokens || 0;
+      totalTokensUsed += tokensUsed;
+      
+      const analysisText = response.data.choices[0]?.message?.content || '{}';
+      
+      try {
+        const chunkAnalysis = JSON.parse(analysisText);
+        chunkResults.push(chunkAnalysis);
+      } catch (e) {
+        logger.error('Failed to parse AI response as JSON:', e);
+        chunkResults.push({ error: 'Failed to parse analysis result' });
+      }
+    }
+    
+    // Track AI usage for billing
+    await trackAIUsage(document.tenantId, documentId, 'document_analysis', totalTokensUsed, modelVersion);
+    
+    // Merge results from all chunks
+    const mergedResult = mergeChunkResults(chunkResults);
+    
+    // Validate result against schema
+    try {
+      const validatedResult = aiAnalysisSchema.parse(mergedResult);
+      
+      // Cache result
+      await db.insert(documentAnalysisCache).values({
+        cacheKey,
+        documentId,
+        documentVersion,
+        modelVersion,
+        analysisResult: validatedResult,
+        createdAt: new Date(),
+        tenantId: document.tenantId,
+      });
+      
+      // Save as new version
+      await saveAnalysisVersion(documentId, modelVersion, validatedResult);
+      
+      return validatedResult;
+    } catch (validationError) {
+      logger.error('AI analysis result failed schema validation:', validationError);
+      
+      // Try to salvage what we can
+      const partialResult = {
+        documentType: mergedResult.documentType || 'GENERAL',
+        isContract: mergedResult.isContract || false,
+        suggestedTags: mergedResult.suggestedTags || [],
+        validationErrors: validationError.errors,
+      };
+      
+      return partialResult as AIAnalysisResult;
+    }
+  } catch (error) {
+    logger.error('Error in AI text analysis:', error);
+    throw error;
+  }
+}
+
+// Merge results from multiple chunks
+function mergeChunkResults(results) {
+  if (results.length === 1) {
+    return results[0];
+  }
+  
+  const merged = {
+    // Use most common document type from all chunks
+    documentType: getMostFrequent(results.map(r => r.documentType)) || 'GENERAL',
+    
+    // If any chunk says it's a contract, it's a contract
+    isContract: results.some(r => r.isContract),
+    
+    // Combine arrays with deduplication
+    suggestedTags: Array.from(new Set(results.flatMap(r => r.suggestedTags || []))),
+    riskFactors: Array.from(new Set(results.flatMap(r => r.riskFactors || []))),
+    
+    // Merge parties by combining all found data
+    parties: results.reduce((acc, r) => {
+      if (r.parties) {
+        return {
+          ourEntity: r.parties.ourEntity || acc.ourEntity,
+          counterparty: r.parties.counterparty || acc.counterparty,
+          counterpartyCountry: r.parties.counterpartyCountry || acc.counterpartyCountry,
+          thirdParties: [...(acc.thirdParties || []), ...(r.parties.thirdParties || [])],
+        };
+      }
+      return acc;
+    }, { thirdParties: [] }),
+    
+    // Merge dates by taking first valid ones
+    dates: results.reduce((acc, r) => {
+      if (r.dates) {
+        return {
+          effective: r.dates.effective || acc.effective,
+          expiration: r.dates.expiration || acc.expiration,
+          execution: r.dates.execution || acc.execution,
+          nextReview: r.dates.nextReview || acc.nextReview,
+        };
+      }
+      return acc;
+    }, {}),
+    
+    // Use first valid contract type
+    contractType: results.find(r => r.contractType)?.contractType,
+    
+    // Use first valid financial details
+    financialDetails: results.find(r => r.financialDetails)?.financialDetails,
+    
+    // Combine compliance checks, using most pessimistic assessment
+    complianceChecks: {
+      gdpr: {
+        compliant: results.every(r => r.complianceChecks?.gdpr?.compliant !== false),
+        issues: Array.from(new Set(results.flatMap(r => r.complianceChecks?.gdpr?.issues || []))),
+        personalDataProcessing: results.some(r => r.complianceChecks?.gdpr?.personalDataProcessing),
+        relevantClauses: Array.from(new Set(results.flatMap(r => r.complianceChecks?.gdpr?.relevantClauses || []))),
+      },
+      finma: {
+        compliant: results.every(r => r.complianceChecks?.finma?.compliant !== false),
+        issues: Array.from(new Set(results.flatMap(r => r. from 'drizzle-orm/pg-core';
+import { z } from 'zod';
+import { sql } from 'drizzle-orm';
+
+// Use Postgres enums for stronger typing
+export const documentTypeEnum = pgEnum('document_type', ['GENERAL', 'REPORT', 'PRESENTATION', 'POLICY']);
+export const processingStatusEnum = pgEnum('processing_status', ['PENDING', 'UPLOADED', 'QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED', 'ERROR']);
+
+export const documentTypes = z.enum(['GENERAL', 'REPORT', 'PRESENTATION', 'POLICY']);
+export type DocumentType = z.infer<typeof documentTypes>;
+
+export const documents = pgTable('documents', {
+  // Use UUID for better multi-region support
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  fileName: text('file_name').notNull(),
+  filePath: text('file_path').notNull(),
+  fileSize: text('file_size').notNull(),
+  mimeType: text('mime_type').notNull(),
+  
+  // Use UUID for foreign keys
+  uploadedBy: uuid('uploaded_by').notNull().references(() => users.id),
+  uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
+  
+  // Using enum for stronger typing
+  documentType: documentTypeEnum('document_type').default('GENERAL'),
+  processingStatus: processingStatusEnum('processing_status').default('PENDING'),
+  
+  // Multi-tenant support
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  
+  // Document metadata
+  metadata: jsonb('metadata').default({}),
+  tags: text('tags').array(),
+  
+  // Proper soft delete
+  isDeleted: boolean('is_deleted').default(false),
+  deletedAt: timestamp('deleted_at'),
+  deletedBy: uuid('deleted_by').references(() => users.id),
+  
+  // Optimistic locking and versioning
+  version: integer('version').notNull().default(1),
+  
+  // Audit fields
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: uuid('created_by').notNull().references(() => users.id),
+  updatedAt: timestamp('updated_at'),
+  updatedBy: uuid('updated_by').references(() => users.id),
+  
+  // AI processing fields
+  aiProcessed: boolean('ai_processed').default(false),
+  aiMetadata: jsonb('ai_metadata').default({}),
+  aiModelVersion: text('ai_model_version'),
+  aiProcessedAt: timestamp('ai_processed_at'),
+  
+  // Content security
+  scanStatus: text('scan_status').default('PENDING'),
+  scanResults: jsonb('scan_results').default({}),
+  scanDate: timestamp('scan_date'),
+});
+
+// Create indexes for efficient queries
+export const documentsIndexes = {
+  uploadedByIdx: index('documents_uploaded_by_idx').on(documents.uploadedBy),
+  documentTypeIdx: index('documents_document_type_idx').on(documents.documentType),
+  tagsIdx: index('documents_tags_idx').on(documents.tags).using('GIN'),
+  isDeletedIdx: index('documents_is_deleted_idx').on(documents.isDeleted),
+  tenantIdIdx: index('documents_tenant_id_idx').on(documents.tenantId),
+  processingStatusIdx: index('documents_processing_status_idx').on(documents.processingStatus),
+  // Full-text search index
+  contentSearchIdx: index('documents_content_search_idx').on(sql`to_tsvector('english', title || ' ' || description)`).using('GIN'),
+};
+```
+
+### Contract Management
+
+```typescript
+// shared/schema/contracts.ts
+import { pgTable, uuid, text, timestamp, boolean, jsonb, numeric, pgEnum, index } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { z } from 'zod';
+import { sql } from 'drizzle-orm';
+
+// Create proper Postgres enums for stronger typing
+export const contractTypeEnum = pgEnum('contract_type', ['IMA', 'SUBSCRIPTION', 'LIMITED_PARTNERSHIP', 'SERVICE_PROVIDER', 'DISTRIBUTION', 'OTHER']);
+export const contractStatusEnum = pgEnum('contract_status', ['DRAFT', 'REVIEW', 'APPROVED', 'ACTIVE', 'EXPIRED', 'TERMINATED']);
+
+export const contractTypes = z.enum(['IMA', 'SUBSCRIPTION', 'LIMITED_PARTNERSHIP', 'SERVICE_PROVIDER', 'DISTRIBUTION', 'OTHER']);
+export type ContractType = z.infer<typeof contractTypes>;
+
+export const contractStatuses = z.enum(['DRAFT', 'REVIEW', 'APPROVED', 'ACTIVE', 'EXPIRED', 'TERMINATED']);
+export type ContractStatus = z.infer<typeof contractStatuses>;
+
+export const contracts = pgTable('contracts', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id),
+  
+  // Using enums for stronger typing
+  contractType: contractTypeEnum('contract_type').default('OTHER'),
+  status: contractStatusEnum('contract_status').default('DRAFT'),
+  
+  // Key date fields
+  effectiveDate: timestamp('effective_date'),
+  expirationDate: timestamp('expiration_date'),
+  nextReviewDate: timestamp('next_review_date'),
+  
+  // Counterparty information
+  counterpartyName: text('counterparty_name'),
+  counterpartyCountry: text('counterparty_country'),
+  counterpartyDetails: jsonb('counterparty_details').default({}),
+  
+  // Extract important financials from JSONB for querying
+  monthlyCost: numeric('monthly_cost', { precision: 10, scale: 2 }),
+  annualValue: numeric('annual_value', { precision: 12, scale: 2 }),
+  currency: text('currency'),
+  
+  // Generated columns for efficient text search
+  counterpartyNameSearch: text('counterparty_name_search').generated('counterparty_details->>\'name\''),
+  
+  // Contract details - use JSONB for flexibility
+  terms: jsonb('terms').default({}),
+  obligations: jsonb('obligations').default({}),
+  
+  // Compliance flags
+  gdprCompliant: boolean('gdpr_compliant'),
+  finmaCompliant: boolean('finma_compliant'),
+  
+  // Multi-tenant support
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  
+  // Workflow fields
+  assignedTo: uuid('assigned_to').references(() => users.id),
+  approvedBy: uuid('approved_by').references(() => users.id),
+  approvedAt: timestamp('approved_at'),
+  
+  // Optimistic locking and versioning
+  version: integer('version').notNull().default(1),
+  
+  // Audit fields
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: uuid('created_by').notNull().references(() => users.id),
+  updatedAt: timestamp('updated_at'),
+  updatedBy: uuid('updated_by').references(() => users.id),
+  
+  // Soft delete
+  isDeleted: boolean('is_deleted').default(false),
+  deletedAt: timestamp('deleted_at'),
+  deletedBy: uuid('deleted_by').references(() => users.id),
+});
+
+// Define relations
+export const contractsRelations = relations(contracts, ({ one }) => ({
+  document: one(documents, {
+    fields: [contracts.documentId],
+    references: [documents.id],
+  }),
+}));
+
+// Create indexes for frequently queried fields
+export const contractsIndexes = {
+  contractTypeIdx: index('contracts_contract_type_idx').on(contracts.contractType),
+  statusIdx: index('contracts_status_idx').on(contracts.status),
+  nextReviewDateIdx: index('contracts_next_review_date_idx').on(contracts.nextReviewDate),
+  counterpartyNameIdx: index('contracts_counterparty_name_idx').on(contracts.counterpartyName),
+  tenantIdIdx: index('contracts_tenant_id_idx').on(contracts.tenantId),
+  documentIdIdx: index('contracts_document_id_idx').on(contracts.documentId),
+  counterpartyDetailsIdx: index('contracts_counterparty_details_idx').on(contracts.counterpartyDetails).using('GIN'),
+};
+```
+
+### Audit Logging
+
+```typescript
+// shared/schema/auditLogs.ts
+import { pgTable, uuid, text, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id').notNull(),
+  action: text('action').notNull(),
+  userId: text('user_id').notNull(),
+  details: jsonb('details').default({}),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+});
+
+// Create index for fast lookups
+export const auditLogsIndexes = {
+  entityTypeIdIdx: index('audit_logs_entity_type_id_idx').on(auditLogs.entityType, auditLogs.entityId),
+  userIdIdx: index('audit_logs_user_id_idx').on(auditLogs.userId),
+  timestampIdx: index('audit_logs_timestamp_idx').on(auditLogs.timestamp),
+  tenantIdIdx: index('audit_logs_tenant_id_idx').on(auditLogs.tenantId),
+};
+
+// For failed audit logs
+export const auditFailedLogs = pgTable('audit_failed_logs', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  data: jsonb('data').notNull(),
+  error: text('error').notNull(),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  processed: boolean('processed').default(false),
+  processedAt: timestamp('processed_at'),
+});
+```
+
+### AI Analysis Versioning and Caching
+
+```typescript
+// shared/schema/analysisVersions.ts
+import { pgTable, uuid, text, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+export const analysisVersions = pgTable('analysis_versions', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id),
+  modelVersion: text('model_version').notNull(),
+  result: jsonb('result').notNull(),
+  diffSummary: text('diff_summary'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+});
+
+export const analysisVersionsIndexes = {
+  documentIdIdx: index('analysis_versions_document_id_idx').on(analysisVersions.documentId),
+  tenantIdIdx: index('analysis_versions_tenant_id_idx').on(analysisVersions.tenantId),
+};
+
+export const analysisDiffs = pgTable('analysis_diffs', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  fromVersionId: uuid('from_version_id').notNull().references(() => analysisVersions.id),
+  toVersionId: uuid('to_version_id').notNull().references(() => analysisVersions.id),
+  diff: text('diff').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const analysisDiffsIndexes = {
+  versionPairIdx: index('analysis_diffs_version_pair_idx').on(analysisDiffs.fromVersionId, analysisDiffs.toVersionId),
+};
+
+export const documentAnalysisCache = pgTable('document_analysis_cache', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  cacheKey: text('cache_key').notNull().unique(),
+  documentId: uuid('document_id').notNull().references(() => documents.id),
+  documentVersion: integer('document_version').notNull(),
+  modelVersion: text('model_version').notNull(),
+  analysisResult: jsonb('analysis_result').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+});
+
+export const documentAnalysisCacheIndexes = {
+  cacheKeyIdx: index('document_analysis_cache_key_idx').on(documentAnalysisCache.cacheKey),
+  documentIdVersionIdx: index('document_analysis_doc_id_version_idx').on(
+    documentAnalysisCache.documentId, 
+    documentAnalysisCache.documentVersion
+  ),
+  tenantIdIdx: index('document_analysis_cache_tenant_id_idx').on(documentAnalysisCache.tenantId),
+};
+```
+
+### Multi-Tenancy Support
+
+```typescript
+// shared/schema/tenants.ts
+import { pgTable, uuid, text, timestamp, numeric, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+export const tenants = pgTable('tenants', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  name: text('name').notNull(),
+  domain: text('domain').unique(),
+  settings: jsonb('settings').default({}),
+  
+  // AI usage limits and tracking
+  aiQuotaLimit: numeric('ai_quota_limit', { precision: 10, scale: 2 }),
+  currentMonthAITokens: integer('current_month_ai_tokens').default(0),
+  currentMonthAICost: numeric('current_month_ai_cost', { precision: 10, scale: 2 }).default(0),
+  
+  // Storage limits
+  storageLimitGB: integer('storage_limit_gb'),
+  currentStorageUsageGB: numeric('current_storage_usage_gb', { precision: 10, scale: 2 }).default(0),
+  
+  // Subscription info
+  planType: text('plan_type'),
+  subscriptionStatus: text('subscription_status'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at'),
+  isActive: boolean('is_active').default(true),
+  lastUpdated: timestamp('last_updated'),
+});
+
+export const tenantApiKeys = pgTable('tenant_api_keys', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  keyName: text('key_name').notNull(),
+  keyPrefix: text('key_prefix').notNull(),
+  keyHash: text('key_hash').notNull(),
+  permissions: text('permissions').array(),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: uuid('created_by').notNull().references(() => users.id),
+  lastUsedAt: timestamp('last_used_at'),
+  isActive: boolean('is_active').default(true),
+});
+```
+
+### AI Usage Tracking
+
+```typescript
+// shared/schema/aiUsage.ts
+import { pgTable, uuid, text, timestamp, numeric, integer } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+export const aiUsage = pgTable('ai_usage', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  documentId: uuid('document_id').references(() => documents.id),
+  operation: text('operation').notNull(),
+  tokensUsed: integer('tokens_used').notNull(),
+  model: text('model').notNull(),
+  cost: numeric('cost', { precision: 10, scale: 6 }).notNull(),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  userId: uuid('user_id').references(() => users.id),
+});
+
+export const aiUsageIndexes = {
+  tenantIdIdx: index('ai_usage_tenant_id_idx').on(aiUsage.tenantId),
+  documentIdIdx: index('ai_usage_document_id_idx').on(aiUsage.documentId),
+  timestampIdx: index('ai_usage_timestamp_idx').on(aiUsage.timestamp),
+  userIdIdx: index('ai_usage_user_id_idx').on(aiUsage.userId),
+};
+```
+
+## 2. Multi-Tenant Isolation with Row-Level Security
+
+```sql
+-- migrations/001_setup_rls.sql
+
+-- Enable RLS on all tables
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contracts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE analysis_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_analysis_cache ENABLE ROW LEVEL SECURITY;
+
+-- Create a function to get the current tenant ID
+CREATE OR REPLACE FUNCTION current_tenant_id() RETURNS UUID AS $$
+BEGIN
+    RETURN current_setting('app.tenant_id', true)::UUID;
+EXCEPTION WHEN OTHERS THEN
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create RLS policies for documents
+CREATE POLICY documents_tenant_select ON documents 
+  FOR SELECT 
+  USING (tenant_id = current_tenant_id());
+
+CREATE POLICY documents_tenant_insert ON documents 
+  FOR INSERT 
+  WITH CHECK (tenant_id = current_tenant_id());
+
+CREATE POLICY documents_tenant_update ON documents 
+  FOR UPDATE 
+  USING (tenant_id = current_tenant_id()) 
+  WITH CHECK (tenant_id = current_tenant_id());
+
+CREATE POLICY documents_tenant_delete ON documents 
+  FOR DELETE 
+  USING (tenant_id = current_tenant_id());
+
+-- Create similar policies for contracts and other tables
+-- ... (similar policies for all other tables)
+```
+
+```typescript
+// server/middleware/tenantContext.ts
+import { Request, Response, NextFunction } from 'express';
+import { db } from '../db';
+import { Pool } from 'pg';
+
+// Create a pool with session state
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// Middleware to set tenant context
+export function tenantContext(req: Request, res: Response, next: NextFunction) {
+  if (!req.user?.tenantId) {
+    return res.status(403).json({ error: 'Tenant ID not found' });
+  }
+  
+  // Set tenant context at connection level
+  pool.query(`SET LOCAL app.tenant_id = '${req.user.tenantId}'`, [], (err) => {
+    if (err) {
+      console.error('Error setting tenant context:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    
+    next();
+  });
+}
+
+// Apply to all routes that need tenant isolation
+app.use('/api', authenticate, tenantContext);
+```
+
+## 3. Secure Cloud Storage Integration
+
+```typescript
+// server/services/storage/s3Storage.ts
+import { S3Client, PutObjectCommand, GetObjectCommand, PutObjectLockConfigurationCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+});
+
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'bluearthone-documents';
+
+// Enable object lock (WORM) for regulatory compliance
+export async function enableObjectLock() {
+  const command = new PutObjectLockConfigurationCommand({
+    Bucket: BUCKET_NAME,
+    ObjectLockConfiguration: {
+      ObjectLockEnabled: 'Enabled',
+      Rule: {
+        DefaultRetention: {
+          Mode: 'COMPLIANCE',
+          Days: 365 * 7, // 7-year retention for financial documents
+        },
+      },
+    },
+  });
+  
+  await s3Client.send(command);
+  console.log(`Object lock enabled for bucket ${BUCKET_NAME}`);
+}
+
+export async function uploadFileToS3(
+  fileBuffer: Buffer, 
+  fileName: string, 
+  mimeType: string, 
+  tenantId: string,
+  retentionDays?: number
+): Promise<string> {
+  // Create structured key with tenant/year/month/uuid
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const fileExtension = path.extname(fileName);
+  const uuid = uuidv4();
+  
+  const key = `tenant-${tenantId}/documents/${year}/${month}/${uuid}${fileExtension}`;
+  
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    Body: fileBuffer,
+    ContentType: mimeType,
+    // Enable KMS encryption
+    ServerSideEncryption: 'aws:kms',
+    SSEKMSKeyId: process.env.KMS_KEY_ID,
+    
+    // Add object lock for retention if specified
+    ...(retentionDays ? {
+      ObjectLockMode: 'COMPLIANCE',
+      ObjectLockRetainUntilDate: new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000),
+    } : {}),
+    
+    // Add metadata
+    Metadata: {
+      'tenant-id': tenantId,
+      'original-name': fileName,
+      'upload-date': date.toISOString(),
+    },
+  });
+  
+  await s3Client.send(command);
+  
+  return key;
+}
+
+export async function getSignedDownloadUrl(key: string, expiresIn = 3600): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+  
+  const url = await getSignedUrl(s3Client, command, { expiresIn });
+  
+  return url;
+}
+
+export async function getSignedUploadUrl(
+  fileName: string, 
+  mimeType: string, 
+  tenantId: string,
+  expiresIn = 3600
+): Promise<{ url: string, key: string }> {
+  // Create structured key
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const fileExtension = path.extname(fileName);
+  const uuid = uuidv4();
+  
+  const key = `tenant-${tenantId}/documents/${year}/${month}/${uuid}${fileExtension}`;
+  
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ContentType: mimeType,
+    ServerSideEncryption: 'aws:kms',
+    SSEKMSKeyId: process.env.KMS_KEY_ID,
+    Metadata: {
+      'tenant-id': tenantId,
+      'original-name': fileName,
+      'upload-date': date.toISOString(),
+    },
+  });
+  
+  const url = await getSignedUrl(s3Client, command, { expiresIn });
+  
+  return { url, key };
+}
+```
+
+## 4. Content Security and Virus Scanning
+
+```typescript
+// server/services/security/virusScan.ts
+import { ClamScan } from 'clamscan';
+import axios from 'axios';
+import { db } from '../../db';
+import { documents } from '../../../shared/schema/documents';
+import { eq } from 'drizzle-orm';
+import { logger } from '../utils/logger';
+
+// Primary scanner using ClamAV
+const clamscan = new ClamScan({
+  clamdscan: {
+    socket: '/var/run/clamav/clamd.sock',
+    active: true,
+  },
+});
+
+// Secondary scanner using commercial API
+async function scanWithCommercialService(buffer) {
+  const response = await axios.post(
+    process.env.VIRUS_SCAN_API_URL,
+    buffer,
+    {
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Api-Key': process.env.VIRUS_SCAN_API_KEY,
+      },
+    }
+  );
+  
+  return {
+    safe: response.data.safe === true,
+    threats: response.data.threats || [],
+  };
+}
+
+// Combined scanning approach
+export async function scanFile(buffer, documentId) {
+  try {
+    // Update scan status to in-progress
+    await db.update(documents)
+      .set({
+        scanStatus: 'SCANNING',
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, documentId));
+    
+    // First scan with ClamAV
+    const clamResult = await clamscan.scanBuffer(buffer);
+    
+    if (clamResult.isInfected) {
+      await markDocumentInfected(documentId, {
+        scanner: 'clamav',
+        viruses: clamResult.viruses,
+      });
+      
+      throw new Error(`Virus detected by ClamAV: ${clamResult.viruses.join(', ')}`);
+    }
+    
+    // Then scan with commercial service for additional protection
+    const commercialResult = await scanWithCommercialService(buffer);
+    
+    if (!commercialResult.safe) {
+      await markDocumentInfected(documentId, {
+        scanner: 'commercial',
+        threats: commercialResult.threats,
+      });
+      
+      throw new Error(`Threat detected by secondary scanner: ${commercialResult.threats.join(', ')}`);
+    }
+    
+    // Mark document as safe
+    await db.update(documents)
+      .set({
+        scanStatus: 'CLEAN',
+        scanResults: {
+          scanners: ['clamav', 'commercial'],
+          scannedAt: new Date().toISOString(),
+          result: 'clean',
+        },
+        scanDate: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, documentId));
+    
+    return { 
+      safe: true,
+      scannedAt: new Date(),
+      scanners: ['clamav', 'commercial'],
+    };
+  } catch (error) {
+    logger.error('Virus scan error:', error);
+    
+    // Mark as error if not already marked as infected
+    if (!error.message.includes('Virus detected') && !error.message.includes('Threat detected')) {
+      await db.update(documents)
+        .set({
+          scanStatus: 'ERROR',
+          scanResults: {
+            error: error.message,
+            scannedAt: new Date().toISOString(),
+          },
+          scanDate: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(documents.id, documentId));
+    }
+    
+    throw error;
+  }
+}
+
+// Mark document as infected
+async function markDocumentInfected(documentId, details) {
+  await db.update(documents)
+    .set({
+      scanStatus: 'INFECTED',
+      scanResults: {
+        ...details,
+        scannedAt: new Date().toISOString(),
+        result: 'infected',
+      },
+      scanDate: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, documentId));
+  
+  // Send security alert
+  await sendSecurityAlert({
+    level: 'critical',
+    message: `Infected file detected: ${details.viruses || details.threats}`,
+    documentId,
+    details,
+  });
+}
+```
+
+## 5. Background Job Processing with BullMQ
+
+```typescript
+// server/services/queue/documentQueue.ts
+import { Queue, Worker } from 'bullmq';
+import { createHash } from 'crypto';
+import { db } from '../../db';
+import { documents } from '../../../shared/schema/documents';
+import { scanFile } from '../security/virusScan';
+import { extractTextFromDocument } from '../ai/textExtraction';
+import { analyzeText } from '../ai/textAnalysis';
+import { eq, and, or } from 'drizzle-orm';
+import { logger } from '../utils/logger';
+import { metrics } from '../monitoring/metrics';
+
+// Create Redis connection
+const connection = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+};
+
+// Create document processing queue
+export const documentQueue = new Queue('document-processing', { connection });
+
+// Track queue metrics
+const jobCounter = metrics.counter({
+  name: 'document_jobs_total',
+  help: 'Total number of document processing jobs',
+  labelNames: ['status'],
+});
+
+const processingDuration = metrics.histogram({
+  name: 'document_processing_duration_seconds',
+  help: 'Duration of document processing jobs',
+  labelNames: ['stage'],
+  buckets: [1, 5, 15, 30, 60, 120, 300, 600],
+});
+
+// Create worker to process documents
+const worker = new Worker('document-processing', async job => {
+  const { documentId } = job.data;
+  const startTime = Date.now();
+  
+  try {
+    logger.info(`Processing document ${documentId}`);
+    
+    // Get document details
+    const document = await db.query.documents.findFirst({
+      where: eq(documents.id, documentId),
+    });
+    
+    if (!document) {
+      throw new Error(`Document not found: ${documentId}`);
+    }
+    
+    // Update document status with optimistic locking
+    const updateResult = await db.update(documents)
+      .set({
+        processingStatus: 'PROCESSING',
+        updatedAt: new Date(),
+        version: document.version + 1,
+      })
+      .where(
+        and(
+          eq(documents.id, documentId),
+          eq(documents.version, document.version),
+          or(
+            eq(documents.processingStatus, 'QUEUED'),
+            eq(documents.processingStatus, 'PENDING'),
+            eq(documents.processingStatus, 'UPLOADED'),
+            eq(documents.processingStatus, 'FAILED')
+          )
+        )
+      )
+      .returning();
+    
+    // If no rows updated, another worker took it
+    if (updateResult.length === 0) {
+      logger.warn(`Document ${documentId} was already being processed by another worker`);
+      return { skipped: true };
+    }
+    
+    // 1. Scan the file for viruses/malware
+    logger.info(`Scanning document ${documentId}`);
+    const scanStartTime = Date.now();
+    
+    // Get file from S3
+    const fileBuffer = await getFileFromS3(document.filePath);
+    
+    // Scan file
+    const scanResult = await scanFile(fileBuffer, documentId);
+    
+    processingDuration.observe({ stage: 'scan' }, (Date.now() - scanStartTime) / 1000);
+    
+    // Only proceed if file is clean
+    if (!scanResult.safe) {
+      throw new Error(`Document ${documentId} failed security scan`);
+    }
+    
+    // 2. Extract text from document
+    logger.info(`Extracting text from document ${documentId}`);
+    const extractStartTime = Date.now();
+    
+    // Extract text
+    const text = await extractTextFromDocument(fileBuffer, document.mimeType);
+    
+    processingDuration.observe({ stage: 'extract' }, (Date.now() - extractStartTime) / 1000);
+    
+    // 3. Analyze text using AI
+    logger.info(`Analyzing document ${documentId}`);
+    const analysisStartTime = Date.now();
+    
+    // Get current AI model version
+    const currentAiModel = process.env.AI_MODEL_VERSION || 'gpt-4-1106-preview';
+    
+    // Analyze text
+    const analysisResult = await analyzeText(text, currentAiModel, documentId, document.version);
+    
+    processingDuration.observe({ stage: 'analyze' }, (Date.now() - analysisStartTime) / 1000);
+    
+    // 4. Update document with AI metadata
+    await db.update(documents)
+      .set({
+        processingStatus: 'COMPLETED',
+        aiProcessed: true,
+        aiMetadata: analysisResult,
+        aiModelVersion: currentAiModel,
+        aiProcessedAt: new Date(),
+        updatedAt: new Date(),
+        version: document.version + 2,
+      })
+      .where(eq(documents.id, documentId));
+    
+    // 5. Process contract if detected
+    if (analysisResult.isContract) {
+      await processContractData(documentId, analysisResult);
+    }
+    
+    // Track completion
+    jobCounter.inc({ status: 'success' });
+    processingDuration.observe({ stage: 'total' }, (Date.now() - startTime) / 1000);
+    
+    logger.info(`Successfully processed document ${documentId}`);
+    return { success: true, documentId };
+  } catch (error) {
+    // Track failure
+    jobCounter.inc({ status: 'failed' });
+    logger.error(`Error processing document ${documentId}:`, error);
+    
+    // Update document with error status
+    await db.update(documents)
+      .set({
+        processingStatus: 'FAILED',
+        aiMetadata: { ...documents?.aiMetadata, error: error.message },
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, documentId));
+    
+    // Rethrow error to trigger job retry
+    throw error;
+  }
+}, { connection });
+
+// Configure worker events for monitoring
+worker.on('completed', job => {
+  logger.info(`Job ${job.id} completed for document ${job.data.documentId}`);
+});
+
+worker.on('failed', (job, error) => {
+  logger.error(`Job ${job?.id} failed for document ${job?.data?.documentId}:`, error);
+});
+
+// Function to add document to processing queue with idempotency key
+export async function queueDocumentForProcessing(
+  documentId: string, 
+  priority = 'normal',
+  trx = db
+) {
+  // Get document for version
+  const document = await trx.query.documents.findFirst({
+    where: eq(documents.id, documentId),
+    columns: {
+      id: true,
+      version: true,
+    },
+  });
+  
+  if (!document) {
+    throw new Error(`Document not found: ${documentId}`);
+  }
+  
+  // Create deterministic idempotency key
+  const idempotencyKey = createHash('sha256')
+    .update(`document-${documentId}-v${document.version}`)
+    .digest('hex');
+  
+  // Update document status
+  await trx.update(documents)
+    .set({
+      processingStatus: 'QUEUED',
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, documentId));
+  
+  // Add to queue with idempotency key and priority
+  const priorityValue = priority === 'high' ? 1 : 10;
+  
+  await documentQueue.add('process-document', 
+    { documentId }, 
+    {
+      priority: priorityValue,
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+      jobId: idempotencyKey,
+      removeOnComplete: 1000, // Keep last 1000 completed jobs
+      removeOnFail: 5000,     // Keep last 5000 failed jobs
+    }
+  );
+  
+  // Track job added
+  jobCounter.inc({ status: 'queued' });
+  
+  logger.info(`Document ${documentId} queued for processing with ${priority} priority`);
+  
+  return idempotencyKey;
+}
+
+// Helper function to get file from S3
+async function getFileFromS3(filePath) {
+  // Implementation to get file from S3
+  // ...
+}
+
+// Process contract data extracted from AI analysis
+async function processContractData(documentId, analysisResult) {
+  try {
+    // Check if contract already exists for this document
+    const existingContract = await db.query.contracts.findFirst({
+      where: eq(contracts.documentId, documentId),
+    });
+    
+    if (existingContract) {
+      // Update existing contract
+      await db.update(contracts)
+        .set({
+          contractType: determineContractType(analysisResult),
+          counterpartyName: analysisResult.parties?.counterparty || existingContract.counterpartyName,
+          counterpartyCountry: analysisResult.parties?.counterpartyCountry || existingContract.counterpartyCountry,
+          effectiveDate: analysisResult.dates?.effective ? new Date(analysisResult.dates.effective) : existingContract.effectiveDate,
+          expirationDate: analysisResult.dates?.expiration ? new Date(analysisResult.dates.expiration) : existingContract.expirationDate,
+          nextReviewDate: analysisResult.dates?.nextReview ? new Date(analysisResult.dates.nextReview) : existingContract.nextReviewDate,
+          terms: analysisResult.extractedTerms || existingContract.terms,
+          obligations: analysisResult.obligations || existingContract.obligations,
+          monthlyCost: analysisResult.financialDetails?.monthlyCost || existingContract.monthlyCost,
+          annualValue: analysisResult.financialDetails?.annualValue || existingContract.annualValue,
+          currency: analysisResult.financialDetails?.currency || existingContract.currency,
+          gdprCompliant: analysisResult.complianceChecks?.gdpr?.compliant ?? existingContract.gdprCompliant,
+          finmaCompliant: analysisResult.complianceChecks?.finma?.compliant ?? existingContract.finmaCompliant,
+          counterpartyDetails: {
+            ...existingContract.counterpartyDetails,
+            ...analysisResult.parties,
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(contracts.id, existingContract.id));
+      
+      logger.info(`Updated contract ${existingContract.id} for document ${documentId}`);
+    } else {
+      // Get document to find tenant and user
+      const document = await db.query.documents.findFirst({
+        where: eq(documents.id, documentId),
+      });
+      
+      if (!document) {
+        throw new Error(`Document not found: ${documentId}`);
+      }
+      
+      // Create new contract
+      const [contract] = await db.insert(contracts).values({
+        documentId,
+        contractType: determineContractType(analysisResult),
+        counterpartyName: analysisResult.parties?.counterparty || '',
+        counterpartyCountry: analysisResult.parties?.counterpartyCountry || '',
+        effectiveDate: analysisResult.dates?.effective ? new Date(analysisResult.dates.effective) : null,
+        expirationDate: analysisResult.dates?.expiration ? new Date(analysisResult.dates.expiration) : null,
+        nextReviewDate: analysisResult.dates?.nextReview ? new Date(analysisResult.dates.nextReview) : null,
+        terms: analysisResult.extractedTerms || {},
+        obligations: analysisResult.obligations || {},
+        monthlyCost: analysisResult.financialDetails?.monthlyCost || null,
+        annualValue: analysisResult.financialDetails?.annualValue || null,
+        currency: analysisResult.financialDetails?.currency || null,
+        gdprCompliant: analysisResult.complianceChecks?.gdpr?.compliant || false,
+        finmaCompliant: analysisResult.complianceChecks?.finma?.compliant || false,
+        counterpartyDetails: analysisResult.parties || {},
+        tenantId: document.tenantId,
+        createdBy: document.createdBy,
+        version: 1,
+        status: 'DRAFT',
+      }).returning();
+      
+      logger.info(`Created new contract for document ${documentId}: ${contract.id}`);
+    }
+  } catch (error) {
+    logger.error(`Error processing contract data for document ${documentId}:`, error);
+    throw error;
+  }
+}
+
+// Determine contract type based on analysis
+function determineContractType(analysis) {
+  const contractTypeMappings = {
+    'investment management agreement': 'IMA',
+    'investment advisory': 'IMA',
+    'subscription agreement': 'SUBSCRIPTION',
+    'subscription form': 'SUBSCRIPTION',
+    'limited partnership agreement': 'LIMITED_PARTNERSHIP',
+    'lpa': 'LIMITED_PARTNERSHIP',
+    'service provider agreement': 'SERVICE_PROVIDER',
+    'service agreement': 'SERVICE_PROVIDER',
+    'distribution agreement': 'DISTRIBUTION',
+    'placement agreement': 'DISTRIBUTION',
+  };
+  
+  // Try to find explicit contract type from AI
+  if (analysis.contractType) {
+    const normalizedType = analysis.contractType.toLowerCase();
+    for (const [key, value] of Object.entries(contractTypeMappings)) {
+      if (normalizedType.includes(key)) {
+        return value;
+      }
+    }
+  }
+  
+  // Try to infer from content
+  const text = (analysis.text || '').toLowerCase();
+  for (const [key, value] of Object.entries(contractTypeMappings)) {
+    if (text.includes(key)) {
+      return value;
+    }
+  }
+  
+  // Default
+  return 'OTHER';
+}

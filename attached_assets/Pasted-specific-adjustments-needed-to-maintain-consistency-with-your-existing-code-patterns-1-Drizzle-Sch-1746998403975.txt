@@ -1,0 +1,153 @@
+specific adjustments needed to maintain consistency with your existing code patterns:
+1. Drizzle Schema Syntax Adjustments
+typescript// shared/schema/analysisVersions.ts - Adjusted to match style
+import { pgTable, uuid, text, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+// Create index using consistent style
+export const analysisVersionsIndexes = {
+  documentIdIdx: index('analysis_versions_document_id_idx').on(analysisVersions.documentId),
+  tenantIdIdx: index('analysis_versions_tenant_id_idx').on(analysisVersions.tenantId),
+};
+
+export const analysisVersions = pgTable('analysis_versions', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id),
+  modelVersion: text('model_version').notNull(),
+  result: jsonb('result').notNull(),
+  diffSummary: text('diff_summary'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+});
+
+// Maintain same style for other new tables
+export const analysisDiffs = pgTable('analysis_diffs', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  fromVersionId: uuid('from_version_id').notNull().references(() => analysisVersions.id),
+  toVersionId: uuid('to_version_id').notNull().references(() => analysisVersions.id),
+  diff: text('diff').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const analysisDiffsIndexes = {
+  versionPairIdx: index('analysis_diffs_version_pair_idx').on(analysisDiffs.fromVersionId, analysisDiffs.toVersionId),
+};
+2. Middleware Consistency in Routes
+typescript// server/api/contracts/routes.ts - Using consistent middleware chain
+import express from 'express';
+import { db } from '../../db';
+import { contracts } from '../../../shared/schema/contracts';
+import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
+import { tenantContext } from '../../middleware/tenantContext';
+import { errorHandler } from '../../middleware/errorHandler';
+import { auditMiddleware } from '../../middleware/auditMiddleware';
+
+const router = express.Router();
+
+// Get contracts with pagination, filtering, and sorting
+router.get(
+  '/',
+  authenticate,                // Reuse existing authentication
+  tenantContext,               // Reuse tenant isolation
+  standardLimiter,            
+  async (req, res, next) => {
+    // Route implementation...
+  }
+);
+
+// Create contract
+router.post(
+  '/',
+  authenticate,
+  tenantContext,
+  authorize(['admin', 'legal']), // Reuse role-based authorization
+  standardLimiter,
+  async (req, res, next) => {
+    // Route implementation...
+  }
+);
+
+// Apply audit middleware using the same pattern as your existing routes
+router.use(auditMiddleware('contract'));
+router.use(errorHandler);
+
+export default router;
+3. Environment and Secrets Configuration
+dotenv# .env.example - Add all new environment variables
+
+# Existing configs...
+
+# New S3 Configuration
+S3_BUCKET_NAME=bluearthone-documents
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+KMS_KEY_ID=
+
+# Redis for Queue Management
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_URL=redis://localhost:6379
+
+# AI Configuration
+OPENAI_API_KEY=
+AI_MODEL_VERSION=gpt-4-1106-preview
+AI_TOKEN_QUOTA_LIMIT=100000
+
+# Security Configuration
+VIRUS_SCAN_API_URL=
+VIRUS_SCAN_API_KEY=
+
+# Monitoring Settings
+METRICS_USER=prometheus
+METRICS_PASSWORD=
+
+# Document Settings
+DOCUMENT_RETENTION_DAYS=2555  # 7 years
+Replit Secrets Registration
+In Replit, navigate to "Secrets" tab and add:
+
+AWS_ACCESS_KEY_ID: Your AWS access key
+AWS_SECRET_ACCESS_KEY: Your AWS secret key
+KMS_KEY_ID: Your KMS key ID for encryption
+OPENAI_API_KEY: Your OpenAI API key
+VIRUS_SCAN_API_KEY: Your virus scanning service API key
+METRICS_PASSWORD: Password for metrics endpoint
+
+Additional Consistency Notes:
+
+Error Handling: Use your existing error pattern for new services:
+
+typescripttry {
+  // Implementation
+} catch (error) {
+  logger.error('Error in process:', error);
+  // Use your existing error handling pattern
+  throw error;
+}
+
+Function Naming: Maintain your existing function naming conventions:
+
+typescript// If your functions use camelCase like "updateDocument"
+export async function queueDocumentForProcessing() {}
+export async function generateCacheKey() {}
+
+Common Repository Patterns: If you have common patterns for repositories, apply them to new code:
+
+typescript// If you have a pattern like:
+const documents = {
+  findById: (id) => db.query.documents.findFirst({ where: eq(documents.id, id) }),
+  // ...other repository methods
+}
+
+// Apply the same pattern to new entities
+const analysisVersions = {
+  findById: (id) => db.query.analysisVersions.findFirst({ where: eq(analysisVersions.id, id) }),
+  findByDocumentId: (documentId) => db.query.analysisVersions.findMany({ 
+    where: eq(analysisVersions.documentId, documentId),
+    orderBy: [desc(analysisVersions.createdAt)]
+  }),
+  // ...other repository methods
+}
+These adjustments ensure the new document and contract management modules integrate seamlessly with your existing codebase, maintaining your established patterns and standards.
