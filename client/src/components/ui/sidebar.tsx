@@ -10,7 +10,8 @@ import {
   Settings,
   UserCog,
   LogOut,
-  Link as LinkIcon
+  Link as LinkIcon,
+  GanttChart
 } from "lucide-react"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,11 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       title: "Documents",
       href: "/documents",
       icon: <FileText className="mr-3 h-5 w-5" />,
+    },
+    {
+      title: "Contracts",
+      href: "/contracts",
+      icon: <GanttChart className="mr-3 h-5 w-5" />,
     },
     {
       title: "Messages",
@@ -180,7 +186,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
-                onClick={logout}
+                onClick={() => logout.mutate()}
                 title="Logout"
               >
                 <LogOut className="h-5 w-5" />
