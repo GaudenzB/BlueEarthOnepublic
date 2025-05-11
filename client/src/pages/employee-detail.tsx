@@ -247,9 +247,9 @@ export default function EmployeeDetail() {
         <div className="md:col-span-3">
           <Tabs defaultValue="business" className="w-full">
             <Card>
-              <CardHeader>
-                <div className="flex justify-center items-center">
-                  {hasPermissionCached('hr', 'view') ? (
+              {hasPermissionCached('hr', 'view') ? (
+                <CardHeader>
+                  <div className="flex justify-center items-center">
                     <>
                       {/* Desktop Tabs with multiple options - Hidden on small screens */}
                       <TabsList className="hidden md:flex">
@@ -337,12 +337,10 @@ export default function EmployeeDetail() {
                         </Select>
                       </div>
                     </>
-                  ) : (
-                    <>{/* No navigation needed for a single tab */}</>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
+                  </div>
+                </CardHeader>
+              ) : null}
+              <CardContent className={hasPermissionCached('hr', 'view') ? "" : "pt-6"}>
                 {/* Business Info Tab */}
                 <TabsContent value="business" className="space-y-6 mt-0">
                   <div>
