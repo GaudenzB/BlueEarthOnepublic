@@ -31,10 +31,10 @@ import {
   sendNotFound, 
   sendValidationError 
 } from "./utils/apiResponse";
+import { logger } from "./utils/logger";
 import { sendPasswordResetEmail } from "./email/sendgrid";
 import { validate, validateRequest } from "./middleware/validation";
 import { ApiError } from "./middleware/errorHandler";
-import { logger } from "./utils/logger";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
 
@@ -518,18 +518,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create employee (manual entry, not via Bubble sync)
   app.post("/api/employees", authenticate, async (req, res) => {
     try {
-      const employeeSchema = z.object({
-        name: z.string().min(1, "Name is required"),
-        position: z.string().min(1, "Position is required"),
-        department: z.string().min(1, "Department is required"),
-        location: z.string().min(1, "Location is required"),
-        email: z.string().email("Invalid email format"),
-        phone: z.string().optional(),
-        avatarUrl: z.string().optional(),
-        status: z.string(),
+      // Use the centralized schema from shared/schema.ts 
+      // This ensures type-safety and consistent validation across the application
+      const validatedData = insertEmployeeSchema.parse(req.body);
+      
+      // Log the validated employee data
+      logger.debug('Creating employee with validated data', {
+        name: validatedData.name,
+        email: validatedData.email,
+        department: validatedData.department,
+        status: validatedData.status
       });
-
-      const validatedData = employeeSchema.parse(req.body);
+      
       const employee = await storage.createEmployee(validatedData);
       
       return sendSuccess(res, employee, "Employee created successfully", 201);
@@ -537,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return sendValidationError(res, error.errors);
       }
-      console.error("Create employee error:", error);
+      logger.error("Create employee error:", error);
       return sendError(res, "Failed to create employee");
     }
   });
@@ -546,20 +546,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/employees/:id", authenticate, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const employeeSchema = z.object({
-        name: z.string().min(1, "Name is required").optional(),
-        position: z.string().min(1, "Position is required").optional(),
-        department: z.string().min(1, "Department is required").optional(),
-        location: z.string().min(1, "Location is required").optional(),
-        email: z.string().email("Invalid email format").optional(),
-        phone: z.string().optional(),
-        avatarUrl: z.string().optional(),
-        status: z.string().optional(),
-        bio: z.string().optional(),
-        responsibilities: z.string().optional(),
+      
+      // Create a partial schema based on the insertEmployeeSchema 
+      // to validate update operations for complete type safety
+      const updateEmployeeSchema = insertEmployeeSchema.partial();
+      
+      // Ensure status is a valid enum value if provided
+      if (req.body.status) {
+        req.body.status = employeeStatusEnum.parse(req.body.status);
+      }
+      
+      // Validate the incoming data
+      const validatedData = updateEmployeeSchema.parse(req.body);
+      
+      // Log the update operation
+      logger.debug('Updating employee', {
+        id,
+        fields: Object.keys(validatedData),
       });
-
-      const validatedData = employeeSchema.parse(req.body);
+      
       const employee = await storage.updateEmployee(id, validatedData);
       
       if (!employee) {
@@ -571,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return sendValidationError(res, error.errors);
       }
-      console.error("Update employee error:", error);
+      logger.error("Update employee error:", error);
       return sendError(res, "Failed to update employee");
     }
   });
