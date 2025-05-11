@@ -1,91 +1,66 @@
 import pino from 'pino';
 
 /**
- * Centralized Logger Configuration
+ * Application Logger Configuration
  * 
- * This module provides a structured logger for the application using pino.
- * Features:
- * - Consistent log format across all components
- * - Log level filtering based on environment
- * - Request/response context capturing
- * - Pretty printing in development mode
+ * Utilizes Pino logger for structured, JSON-based logging with appropriate 
+ * formatting based on the environment.
  */
 
-// Determine the log level based on environment
-const getLogLevel = () => {
-  const env = process.env.NODE_ENV || 'development';
-  
-  switch (env) {
-    case 'production':
-      return 'info';
-    case 'test':
-      return 'error';
-    default:
-      return 'debug';
-  }
-};
+// Determine environment for logger configuration
+const isProduction = process.env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 
-// Configure pino options
-const pinoConfig = {
-  level: getLogLevel(),
-  transport: process.env.NODE_ENV !== 'production' 
+// Default log level from environment variable or based on environment
+const LOG_LEVEL = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
+
+// Create the logger instance with appropriate configuration
+export const logger = pino({
+  name: 'blueearth-portal',
+  level: LOG_LEVEL,
+  
+  // Custom fields to include in every log
+  base: {
+    app: 'blueearth-portal',
+    env: process.env.NODE_ENV || 'development',
+  },
+  
+  // Format logs for development environment
+  transport: isDevelopment
     ? {
         target: 'pino-pretty',
         options: {
           colorize: true,
           translateTime: 'SYS:standard',
           ignore: 'pid,hostname',
-        }
-      } 
+        },
+      }
     : undefined,
-  timestamp: pino.stdTimeFunctions.isoTime,
-  // Add application name and version to all logs
-  base: {
-    app: 'blueearth-portal',
-    env: process.env.NODE_ENV || 'development',
-  },
-};
+    
+  // Additional options
+  redact: isProduction
+    ? ['req.headers.authorization', 'req.headers.cookie', '*.password', '*.secret', '*.token']
+    : [],
+});
 
 /**
- * Application logger instance
+ * Standardized error formatter for consistent error logging
+ * 
+ * @param error The error object to format
+ * @returns Object with formatted error details
  */
-export const logger = pino(pinoConfig);
+export function formatError(error: unknown): Record<string, any> {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: isDevelopment ? error.stack : undefined,
+      name: error.name,
+      ...(error as any)
+    };
+  }
+  
+  return { error };
+}
 
-/**
- * Request context logger
- * Adds request-specific information to logs
- */
-export const createRequestLogger = (req: any) => {
-  return logger.child({
-    requestId: req.id || 'unknown',
-    method: req.method,
-    url: req.url,
-    ip: req.ip,
-    userId: req.user?.id || 'anonymous',
-  });
-};
-
-// Export log level constants for use throughout the application
-export const LOG_LEVELS = {
-  TRACE: 'trace',
-  DEBUG: 'debug',
-  INFO: 'info',
-  WARN: 'warn',
-  ERROR: 'error',
-  FATAL: 'fatal',
-};
-
-/**
- * Error logging helper
- * Formats errors consistently with stack traces
- */
-export const logError = (err: Error, context: string = '') => {
-  logger.error({
-    error: {
-      type: err.constructor.name,
-      message: err.message,
-      stack: err.stack,
-    },
-    context,
-  }, `Error: ${context ? context + ' - ' : ''}${err.message}`);
-};
+// Export a default logger instance
+export default logger;

@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { requestLoggerMiddleware } from "./middleware/requestLogger";
 import { setupSecurityMiddleware } from "./middleware/security";
 import { setupSwaggerDocs } from "./middleware/swagger";
+import { setupSession } from "./middleware/session";
 import { logger } from "./utils/logger";
 
 /**

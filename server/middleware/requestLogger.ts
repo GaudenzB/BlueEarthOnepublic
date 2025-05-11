@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import { logger, createRequestLogger } from '../utils/logger';
+import { logger } from '../utils/logger';
 
 // Extend Express Request type to include our custom properties
 declare global {
@@ -32,7 +32,11 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
   req.id = randomUUID();
   
   // Create a child logger with request context
-  const reqLogger = createRequestLogger(req);
+  const reqLogger = logger.child({ 
+    requestId: req.id,
+    method: req.method,
+    path: req.path
+  });
   
   // Capture request start time
   const startTime = Date.now();

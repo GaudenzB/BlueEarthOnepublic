@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, varchar, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -180,3 +180,17 @@ export const insertUserPermissionSchema = createInsertSchema(userPermissions).om
 
 export type UserPermission = typeof userPermissions.$inferSelect;
 export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
+
+/**
+ * Sessions table for storing express-session data
+ * Used by connect-pg-simple to store session information
+ */
+export const sessions = pgTable("sessions", {
+  sid: varchar("sid").primaryKey().notNull(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+}, (table) => {
+  return {
+    expireIdx: index('IDX_session_expire').on(table.expire)
+  };
+});

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { logger, logError } from '../utils/logger';
+import { logger, formatError } from '../utils/logger';
 import { sendError, sendValidationError } from '../utils/apiResponse';
 
 /**
@@ -30,9 +30,18 @@ export class ApiError extends Error {
  * - Hides internal error details in production
  */
 export function errorHandler(err: any, req: Request, res: Response, _next: NextFunction) {
-  // Log the error
-  const errorContext = `${req.method} ${req.path}`;
-  logError(err, errorContext);
+  // Log the error with context
+  const errorContext = {
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    userId: (req as any).user?.id || 'unauthenticated'
+  };
+  
+  logger.error('Request error', {
+    ...errorContext,
+    ...formatError(err)
+  });
   
   // Already sent response - don't try to send again
   if (res.headersSent) {
