@@ -1,77 +1,83 @@
-import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, varchar, boolean, jsonb, pgEnum, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { tenants } from '../tenants';
+import { users } from '../../schema';
 
 /**
  * Document Processing Status Enum
- * Tracks the AI processing status of documents
  */
-export const processingStatusEnum = z.enum([
-  'PENDING',    // Document is waiting to be processed
-  'QUEUED',     // Document has been queued for processing
-  'PROCESSING', // Document is currently being processed
-  'COMPLETED',  // Processing completed successfully
-  'FAILED',     // Processing failed
-  'ERROR'       // Error occurred during processing
+export const processingStatusEnum = pgEnum('processing_status', [
+  'PENDING',
+  'QUEUED',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+  'ERROR'
 ]);
-
-export type ProcessingStatus = z.infer<typeof processingStatusEnum>;
 
 /**
  * Document Type Enum
- * Describes the general type of document
  */
-export const documentTypeEnum = z.enum([
-  'CONTRACT',      // Legal contracts
-  'AGREEMENT',     // Agreements and MOUs
-  'POLICY',        // Internal policies
-  'REPORT',        // Reports and analyses
-  'PRESENTATION',  // Presentations and slides
-  'CORRESPONDENCE', // Letters, emails, etc.
-  'INVOICE',       // Financial documents
-  'OTHER'          // Miscellaneous documents
+export const documentTypeEnum = pgEnum('document_type', [
+  'CONTRACT',
+  'AGREEMENT',
+  'POLICY',
+  'REPORT',
+  'PRESENTATION',
+  'CORRESPONDENCE',
+  'INVOICE',
+  'OTHER'
 ]);
-
-export type DocumentType = z.infer<typeof documentTypeEnum>;
 
 /**
  * Documents Table
- * Stores metadata for all documents in the system
+ * Stores metadata about uploaded documents
  */
 export const documents = pgTable('documents', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  title: text('title'),
+  description: text('description'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  
+  // File details
   filename: varchar('filename', { length: 255 }).notNull(),
   originalFilename: varchar('original_filename', { length: 255 }).notNull(),
   mimeType: varchar('mime_type', { length: 100 }).notNull(),
-  fileSize: text('file_size').notNull(),
-  storageKey: text('storage_key').notNull(),
-  checksum: text('checksum').notNull(),
-  documentType: text('document_type').$type<DocumentType>(),
-  title: text('title'),
-  description: text('description'),
+  fileSize: varchar('file_size', { length: 20 }).notNull(),
+  storageKey: varchar('storage_key', { length: 255 }).notNull(),
+  checksum: varchar('checksum', { length: 64 }).notNull(),
+  
+  // Document classification
+  documentType: documentTypeEnum('document_type'),
+  isConfidential: boolean('is_confidential').default(false),
   tags: text('tags').array(),
-  uploadedBy: uuid('uploaded_by').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
-  deleted: boolean('deleted').default(false).notNull(),
-  processingStatus: text('processing_status').$type<ProcessingStatus>().default('PENDING'),
+  
+  // Processing status
+  processingStatus: processingStatusEnum('processing_status').default('PENDING'),
   aiProcessed: boolean('ai_processed').default(false),
   aiMetadata: jsonb('ai_metadata'),
-  retentionDate: timestamp('retention_date'),
-  isConfidential: boolean('is_confidential').default(false),
-  accessControlList: uuid('access_control_list').array(),
+  
+  // References
+  uploadedBy: uuid('uploaded_by').references(() => users.id),
+  tenantId: uuid('tenant_id').references(() => tenants.id),
+  versionId: uuid('version_id'),
+  
+  // Additional metadata
   customMetadata: jsonb('custom_metadata'),
-  versionId: text('version_id').default('1'),
+}, (table) => {
+  return {
+    tenantIdx: index('documents_tenant_idx').on(table.tenantId),
+    uploadedByIdx: index('documents_uploaded_by_idx').on(table.uploadedBy),
+    documentTypeIdx: index('documents_document_type_idx').on(table.documentType),
+    createdAtIdx: index('documents_created_at_idx').on(table.createdAt),
+  };
 });
 
-// Indexes removed for now to ensure the server starts
-
 /**
- * Document Insert Schema
- * Validation schema for document creation
+ * Schema for inserting a document
  */
 export const insertDocumentSchema = createInsertSchema(documents)
   .omit({
@@ -79,28 +85,60 @@ export const insertDocumentSchema = createInsertSchema(documents)
     createdAt: true,
     updatedAt: true,
     aiProcessed: true,
-    aiMetadata: true,
-    versionId: true
-  })
-  .extend({
-    documentType: documentTypeEnum.optional(),
-    tags: z.array(z.string()).optional(),
-    customMetadata: z.record(z.string(), z.any()).optional(),
-    accessControlList: z.array(z.string().uuid()).optional(),
+    aiMetadata: true
   });
 
 /**
- * Document Select Schema
- * Validation schema for document retrieval
+ * Schema for selecting a document
  */
-export const selectDocumentSchema = createSelectSchema(documents)
-  .extend({
-    documentType: documentTypeEnum.nullable(),
-    processingStatus: processingStatusEnum,
-    tags: z.array(z.string()).optional(),
-    customMetadata: z.record(z.string(), z.any()).optional(),
-    accessControlList: z.array(z.string().uuid()).optional(),
-  });
+export const selectDocumentSchema = createSelectSchema(documents);
 
-export type Document = z.infer<typeof selectDocumentSchema>;
+/**
+ * Document search schema
+ */
+export const documentSearchSchema = z.object({
+  query: z.string().optional(),
+  documentType: z.enum([
+    'CONTRACT',
+    'AGREEMENT',
+    'POLICY',
+    'REPORT',
+    'PRESENTATION',
+    'CORRESPONDENCE',
+    'INVOICE',
+    'OTHER'
+  ]).optional(),
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  isConfidential: z.boolean().optional(),
+  uploadedBy: z.string().uuid().optional(),
+});
+
+export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type DocumentSearch = z.infer<typeof documentSearchSchema>;
+
+// Create Zod enums for type safety in application code
+export const processingStatusZod = z.enum([
+  'PENDING',
+  'QUEUED', 
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+  'ERROR'
+]);
+
+export const documentTypeZod = z.enum([
+  'CONTRACT',
+  'AGREEMENT',
+  'POLICY',
+  'REPORT',
+  'PRESENTATION',
+  'CORRESPONDENCE',
+  'INVOICE',
+  'OTHER'
+]);
+
+export type ProcessingStatus = z.infer<typeof processingStatusZod>;
+export type DocumentType = z.infer<typeof documentTypeZod>;

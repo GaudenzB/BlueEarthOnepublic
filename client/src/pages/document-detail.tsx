@@ -177,13 +177,13 @@ export default function DocumentDetail() {
           </div>
           
           <div className="flex items-center gap-2">
-            <PermissionGuard requiredPermission="documents:download">
+            <PermissionGuard area="documents" permission="view">
               <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
                 Download
               </Button>
             </PermissionGuard>
-            <PermissionGuard requiredPermission="documents:share">
+            <PermissionGuard area="documents" permission="edit">
               <Button variant="outline" size="sm" className="gap-2">
                 <Share2Icon className="h-4 w-4" />
                 Share
@@ -343,7 +343,7 @@ export default function DocumentDetail() {
               </CardContent>
             </Card>
             
-            <PermissionGuard requiredPermission="documents:delete">
+            <PermissionGuard area="documents" permission="delete">
               <Card className="border-destructive/20">
                 <CardHeader>
                   <CardTitle className="text-destructive">Danger Zone</CardTitle>

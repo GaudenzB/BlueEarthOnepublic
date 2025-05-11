@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb, date, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, varchar, boolean, pgEnum, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -6,134 +6,176 @@ import { documents } from '../documents/documents';
 import { tenants } from '../tenants';
 
 /**
- * Contract Status Enum
- * Tracks the current status of a contract
+ * Contract Type Enum
  */
-export const contractStatusEnum = z.enum([
-  'DRAFT',        // Initial draft, not yet finalized
-  'UNDER_REVIEW', // Being reviewed internally
-  'PENDING',      // Waiting for counterparty signature
-  'ACTIVE',       // Current active contract
-  'EXPIRED',      // Contract term has ended
-  'TERMINATED',   // Contract terminated before expiration
-  'ARCHIVED'      // Historical contract, no longer relevant
+export const contractTypeEnum = pgEnum('contract_type', [
+  'SERVICE_AGREEMENT',
+  'EMPLOYMENT',
+  'VENDOR',
+  'LICENSE',
+  'LEASE',
+  'NDA',
+  'INVESTMENT',
+  'PARTNERSHIP',
+  'LOAN',
+  'OTHER'
 ]);
-
-export type ContractStatus = z.infer<typeof contractStatusEnum>;
 
 /**
- * Contract Type Enum
- * Classifies the type of contract
+ * Contract Status Enum
  */
-export const contractTypeEnum = z.enum([
-  'SERVICE_AGREEMENT',    // Service provider agreements
-  'EMPLOYMENT',           // Employment contracts
-  'VENDOR',               // Vendor agreements
-  'LICENSE',              // License agreements
-  'LEASE',                // Property leases
-  'NDA',                  // Non-disclosure agreements
-  'INVESTMENT',           // Investment contracts
-  'PARTNERSHIP',          // Partnership agreements
-  'LOAN',                 // Loan agreements
-  'OTHER'                 // Misc. contracts
+export const contractStatusEnum = pgEnum('contract_status', [
+  'PENDING',
+  'DRAFT',
+  'UNDER_REVIEW',
+  'ACTIVE',
+  'EXPIRED',
+  'TERMINATED',
+  'ARCHIVED'
 ]);
-
-export type ContractType = z.infer<typeof contractTypeEnum>;
 
 /**
  * Contracts Table
- * Stores contract metadata and links to document records
+ * Stores metadata about contracts
  */
-// Forward declare the contracts table to avoid circular reference issues
-const contractsTable = 'contracts';
-
-export const contracts = pgTable(contractsTable, {
+export const contracts = pgTable('contracts', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
-  documentId: uuid('document_id').notNull().references(() => documents.id),
-  contractNumber: varchar('contract_number', { length: 100 }).notNull(),
+  documentId: uuid('document_id').references(() => documents.id),
+  tenantId: uuid('tenant_id').references(() => tenants.id),
+  
+  // Core contract fields
   title: text('title').notNull(),
-  contractType: text('contract_type').$type<ContractType>().notNull(),
-  status: text('status').$type<ContractStatus>().notNull().default('DRAFT'),
-  description: text('description'),
+  contractNumber: varchar('contract_number', { length: 100 }).notNull(),
+  version: text('version').default('1.0').notNull(),
+  contractType: contractTypeEnum('contract_type').default('OTHER').notNull(),
   
-  // Parties
-  counterpartyName: text('counterparty_name'),
-  counterpartyContact: text('counterparty_contact'),
-  internalOwner: uuid('internal_owner').notNull(),
-  
-  // Important Dates
-  effectiveDate: date('effective_date'),
-  expirationDate: date('expiration_date'),
-  renewalDate: date('renewal_date'),
-  
-  // Financial details
-  value: text('value'),
-  currency: varchar('currency', { length: 3 }),
-  paymentTerms: text('payment_terms'),
-  
-  // Tracking
+  // Dates
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  createdBy: uuid('created_by').notNull(),
-  updatedBy: uuid('updated_by').notNull(),
-  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  effectiveDate: text('effective_date'),
+  expirationDate: text('expiration_date'),
   
-  // Compliance and Metadata
-  hasAutoRenewal: boolean('has_auto_renewal').default(false),
-  renewalNoticePeriod: integer('renewal_notice_period'),  // Days before expiration
-  complianceStatus: jsonb('compliance_status'),
-  riskRating: text('risk_rating'),
-  tags: text('tags').array(),
-  customMetadata: jsonb('custom_metadata'),
+  // Parties
+  parties: jsonb('parties'),
+  counterpartyName: text('counterparty_name'),
+  counterpartyContact: text('counterparty_contact'),
   
-  // Version tracking
-  version: integer('version').default(1).notNull(),
-  parentContractId: uuid('parent_contract_id').references({ table: contractsTable, column: 'id' }),
+  // Financial values
+  value: text('value'),
+  currency: varchar('currency', { length: 3 }).default('USD'),
   
-  // Additional flags
-  isTemplate: boolean('is_template').default(false),
+  // Status & metadata
+  status: contractStatusEnum('status').default('DRAFT').notNull(),
+  description: text('description'),
   isConfidential: boolean('is_confidential').default(false),
-  accessControlList: uuid('access_control_list').array(),
+  renewalTerms: text('renewal_terms'),
+  terminationClauses: text('termination_clauses'),
+  tags: text('tags').array(),
+  
+  // Approval tracking
+  approvalStatus: text('approval_status'),
+  approvedBy: uuid('approved_by'),
+  approvalDate: timestamp('approval_date'),
+  
+  // Versioning & parent relationships
+  parentContractId: uuid('parent_contract_id'),
+  
+  // Access control
+  accessControlList: text('access_control_list').array(),
+  
+  // Custom data
+  customMetadata: jsonb('custom_metadata'),
+}, (table) => {
+  return {
+    documentIdIdx: index('contracts_document_id_idx').on(table.documentId),
+    tenantIdIdx: index('contracts_tenant_id_idx').on(table.tenantId),
+    contractTypeIdx: index('contracts_contract_type_idx').on(table.contractType),
+    statusIdx: index('contracts_status_idx').on(table.status),
+    effectiveDateIdx: index('contracts_effective_date_idx').on(table.effectiveDate),
+    expirationDateIdx: index('contracts_expiration_date_idx').on(table.expirationDate),
+    createdAtIdx: index('contracts_created_at_idx').on(table.createdAt),
+  };
 });
 
-// Indexes removed for now to ensure the server starts
-
 /**
- * Contract Insert Schema
- * Validation schema for contract creation
+ * Schema for inserting a contract
  */
 export const insertContractSchema = createInsertSchema(contracts)
   .omit({
     id: true,
     createdAt: true,
-    updatedAt: true,
-    version: true,
+    updatedAt: true
   })
   .extend({
-    contractType: contractTypeEnum,
-    status: contractStatusEnum.optional().default('DRAFT'),
     tags: z.array(z.string()).optional(),
-    customMetadata: z.record(z.string(), z.any()).optional(),
-    accessControlList: z.array(z.string().uuid()).optional(),
-    complianceStatus: z.record(z.string(), z.any()).optional(),
-    effectiveDate: z.string().datetime().optional(),
-    expirationDate: z.string().datetime().optional(),
-    renewalDate: z.string().datetime().optional(),
+    accessControlList: z.array(z.string()).optional(),
   });
 
 /**
- * Contract Select Schema
- * Validation schema for contract retrieval
+ * Schema for selecting a contract
  */
-export const selectContractSchema = createSelectSchema(contracts)
-  .extend({
-    contractType: contractTypeEnum,
-    status: contractStatusEnum,
-    tags: z.array(z.string()).optional(),
-    customMetadata: z.record(z.string(), z.any()).optional(),
-    accessControlList: z.array(z.string().uuid()).optional(),
-    complianceStatus: z.record(z.string(), z.any()).optional(),
-  });
+export const selectContractSchema = createSelectSchema(contracts);
 
-export type Contract = z.infer<typeof selectContractSchema>;
+/**
+ * Contract search schema
+ */
+export const contractSearchSchema = z.object({
+  query: z.string().optional(),
+  contractType: z.enum([
+    'SERVICE_AGREEMENT',
+    'EMPLOYMENT',
+    'VENDOR',
+    'LICENSE',
+    'LEASE',
+    'NDA',
+    'INVESTMENT',
+    'PARTNERSHIP',
+    'LOAN',
+    'OTHER'
+  ]).optional(),
+  status: z.enum([
+    'PENDING',
+    'DRAFT',
+    'UNDER_REVIEW',
+    'ACTIVE',
+    'EXPIRED',
+    'TERMINATED',
+    'ARCHIVED'
+  ]).optional(),
+  fromDate: z.string().datetime().optional(),
+  toDate: z.string().datetime().optional(),
+  counterpartyName: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  isConfidential: z.boolean().optional(),
+});
+
+export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
+export type ContractSearch = z.infer<typeof contractSearchSchema>;
+
+// Create Zod enums for type safety in application code
+export const contractTypeZod = z.enum([
+  'SERVICE_AGREEMENT',
+  'EMPLOYMENT',
+  'VENDOR',
+  'LICENSE',
+  'LEASE',
+  'NDA',
+  'INVESTMENT',
+  'PARTNERSHIP',
+  'LOAN',
+  'OTHER'
+]);
+
+export const contractStatusZod = z.enum([
+  'PENDING',
+  'DRAFT',
+  'UNDER_REVIEW',
+  'ACTIVE',
+  'EXPIRED',
+  'TERMINATED',
+  'ARCHIVED'
+]);
+
+export type ContractType = z.infer<typeof contractTypeZod>;
+export type ContractStatus = z.infer<typeof contractStatusZod>;

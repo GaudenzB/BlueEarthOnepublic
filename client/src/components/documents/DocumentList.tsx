@@ -47,7 +47,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       case "AGREEMENT":
         return <FileCheckIcon className="h-4 w-4" />;
       case "REPORT":
-        return <FilePieIcon className="h-4 w-4" />;
+        return <FilePenIcon className="h-4 w-4" />;
       case "POLICY":
         return <FileEditIcon className="h-4 w-4" />;
       case "INVOICE":
@@ -139,7 +139,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
               ? "No recent documents found."
               : `No ${filter.toLowerCase()} documents found.`}
         </p>
-        <PermissionGuard requiredPermission="documents:create">
+        <PermissionGuard area="documents" permission="edit">
           <Button variant="outline">Upload your first document</Button>
         </PermissionGuard>
       </div>

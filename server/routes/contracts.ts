@@ -8,10 +8,10 @@ import { uploadFile, generateStorageKey } from '../services/documentStorage';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 import { 
-  contractStatusEnum, 
-  contractTypeEnum,
+  contractStatusZod, 
+  contractTypeZod,
   insertContractSchema
-} from '../../shared/schema/index';
+} from '../../shared/schema/contracts/contracts';
 
 const router = express.Router();
 
@@ -19,8 +19,8 @@ const router = express.Router();
 const getContractsSchema = z.object({
   limit: z.number().optional().default(20),
   offset: z.number().optional().default(0),
-  contractType: contractTypeEnum.optional(),
-  status: contractStatusEnum.optional(),
+  contractType: contractTypeZod.optional(),
+  status: contractStatusZod.optional(),
   search: z.string().optional(),
   sortBy: z.string().optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
@@ -341,7 +341,7 @@ router.patch('/:id/status', authenticate, tenantContext, async (req: Request, re
     
     // Validate status
     const statusSchema = z.object({
-      status: contractStatusEnum
+      status: contractStatusZod
     });
     
     const validationResult = statusSchema.safeParse(req.body);

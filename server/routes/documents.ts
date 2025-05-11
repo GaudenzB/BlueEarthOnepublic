@@ -6,7 +6,7 @@ import { documentRepository } from '../repositories/documentRepository';
 import { uploadFile, generateStorageKey, downloadFile } from '../services/documentStorage';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
-import { documentTypeEnum, processingStatusEnum } from '../../shared/schema/documents/documents';
+import { documentTypeZod, processingStatusZod } from '../../shared/schema/documents/documents';
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ const router = express.Router();
 const uploadDocumentSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional(),
-  documentType: documentTypeEnum.optional(),
+  documentType: documentTypeZod.optional(),
   tags: z.array(z.string()).optional(),
   isConfidential: z.boolean().optional(),
   retentionDate: z.string().datetime().optional(),
@@ -25,7 +25,7 @@ const uploadDocumentSchema = z.object({
 const getDocumentsSchema = z.object({
   limit: z.number().optional().default(20),
   offset: z.number().optional().default(0),
-  documentType: documentTypeEnum.optional(),
+  documentType: documentTypeZod.optional(),
   search: z.string().optional(),
   sortBy: z.string().optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
