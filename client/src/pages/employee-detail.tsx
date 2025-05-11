@@ -467,7 +467,7 @@ export default function EmployeeDetail() {
 
                 {/* Permissions Tab */}
                 <TabsContent value="permissions" className="space-y-6 mt-0">
-                  {hasPermissionCached('hr', 'view') === true ? (
+                  <PermissionGuard area="hr" permission="view" showAlert={false}>
                     <div className="text-center py-10">
                       <Lock className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                       <h3 className="text-lg font-medium">Access Permissions</h3>
@@ -476,19 +476,12 @@ export default function EmployeeDetail() {
                         Contact the IT department for more information.
                       </p>
                     </div>
-                  ) : (
-                    <Alert className="bg-amber-50 border-amber-300">
-                      <ShieldAlert className="h-5 w-5 text-amber-600" />
-                      <AlertDescription className="text-amber-800">
-                        Access to system permissions information is restricted. You need HR permissions to view this section.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  </PermissionGuard>
                 </TabsContent>
 
                 {/* On-/Offboarding Tab */}
                 <TabsContent value="onboarding" className="space-y-6 mt-0">
-                  {hasPermissionCached('hr', 'view') === true ? (
+                  <PermissionGuard area="hr" permission="view" showAlert={false}>
                     <div className="text-center py-10">
                       <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                       <h3 className="text-lg font-medium">On-/Offboarding Status</h3>
@@ -497,14 +490,7 @@ export default function EmployeeDetail() {
                         Contact HR for more information.
                       </p>
                     </div>
-                  ) : (
-                    <Alert className="bg-amber-50 border-amber-300">
-                      <ShieldAlert className="h-5 w-5 text-amber-600" />
-                      <AlertDescription className="text-amber-800">
-                        Access to onboarding/offboarding information is restricted. You need HR permissions to view this section.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  </PermissionGuard>
                 </TabsContent>
               </CardContent>
             </Card>
