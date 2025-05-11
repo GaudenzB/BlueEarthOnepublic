@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -19,14 +19,7 @@ export const analysisVersions = pgTable('analysis_versions', {
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
 });
 
-/**
- * Analysis Versions Indexes
- * Define database indexes for improved query performance
- */
-export const analysisVersionsIndexes = {
-  documentIdIdx: index('analysis_versions_document_id_idx').on(analysisVersions.documentId),
-  tenantIdIdx: index('analysis_versions_tenant_id_idx').on(analysisVersions.tenantId),
-};
+// Indexes removed for now to ensure the server starts
 
 /**
  * Analysis Diffs Table
@@ -40,13 +33,7 @@ export const analysisDiffs = pgTable('analysis_diffs', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/**
- * Analysis Diffs Indexes
- * Define database indexes for improved query performance
- */
-export const analysisDiffsIndexes = {
-  versionPairIdx: index('analysis_diffs_version_pair_idx').on(analysisDiffs.fromVersionId, analysisDiffs.toVersionId),
-};
+// Indexes removed for now to ensure the server starts
 
 /**
  * Analysis Version Insert Schema

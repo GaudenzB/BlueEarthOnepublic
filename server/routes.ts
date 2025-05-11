@@ -37,6 +37,8 @@ import { validate, validateIdParameter } from "./middleware/validation";
 import { ApiError } from "./middleware/errorHandler";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
+import documentsRoutes from "./routes/documents";
+import contractsRoutes from "./routes/contracts";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Debug middleware to log all requests
@@ -47,6 +49,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register permission routes
   registerPermissionRoutes(app);
+
+  // Register document and contract routes
+  app.use('/api/documents', documentsRoutes);
+  app.use('/api/contracts', contractsRoutes);
 
   // Auth routes
   

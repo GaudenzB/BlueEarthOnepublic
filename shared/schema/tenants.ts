@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -18,14 +18,6 @@ export const tenants = pgTable('tenants', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
-
-/**
- * Tenant Indexes
- * Define database indexes for improved query performance
- */
-export const tenantsIndexes = {
-  slugIdx: index('tenants_slug_idx').on(tenants.slug),
-};
 
 /**
  * Tenant Insert Schema

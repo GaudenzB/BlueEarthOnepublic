@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb, index, date, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb, date, integer } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -96,21 +96,7 @@ export const contracts = pgTable(contractsTable, {
   accessControlList: uuid('access_control_list').array(),
 });
 
-/**
- * Contract Indexes
- * Define database indexes for improved query performance
- */
-export const contractsIndexes = {
-  tenantIdIdx: index('contracts_tenant_id_idx').on(contracts.tenantId),
-  documentIdIdx: index('contracts_document_id_idx').on(contracts.documentId),
-  contractTypeIdx: index('contracts_contract_type_idx').on(contracts.contractType),
-  statusIdx: index('contracts_status_idx').on(contracts.status),
-  effectiveDateIdx: index('contracts_effective_date_idx').on(contracts.effectiveDate),
-  expirationDateIdx: index('contracts_expiration_date_idx').on(contracts.expirationDate),
-  internalOwnerIdx: index('contracts_internal_owner_idx').on(contracts.internalOwner),
-  tagsIdx: index('contracts_tags_idx').on(contracts.tags),
-  contractNumberIdx: index('contracts_contract_number_idx').on(contracts.contractNumber),
-};
+// Indexes removed for now to ensure the server starts
 
 /**
  * Contract Insert Schema

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, varchar, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -67,18 +67,7 @@ export const documents = pgTable('documents', {
   versionId: text('version_id').default('1'),
 });
 
-/**
- * Document Indexes
- * Define database indexes for improved query performance
- */
-export const documentsIndexes = {
-  tenantIdIdx: index('documents_tenant_id_idx').on(documents.tenantId),
-  documentTypeIdx: index('documents_document_type_idx').on(documents.documentType),
-  uploadedByIdx: index('documents_uploaded_by_idx').on(documents.uploadedBy),
-  createdAtIdx: index('documents_created_at_idx').on(documents.createdAt),
-  tagsIdx: index('documents_tags_idx').on(documents.tags),
-  checksumIdx: index('documents_checksum_idx').on(documents.checksum),
-};
+// Indexes removed for now to ensure the server starts
 
 /**
  * Document Insert Schema
