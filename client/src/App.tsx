@@ -13,6 +13,8 @@ import UserManagement from "@/pages/user-management";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Integrations from "@/pages/integrations";
+import Documents from "@/pages/documents";
+import DocumentDetail from "@/pages/document-detail";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
@@ -74,6 +76,8 @@ function Router() {
       <Route path="/" component={(props) => <ProtectedRoute component={EmployeeDirectory} {...props} />} />
       <Route path="/employees/:id" component={(props) => <ProtectedRoute component={EmployeeDetail} {...props} />} />
       <Route path="/dashboard" component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
+      <Route path="/documents" component={(props) => <ProtectedRoute component={Documents} {...props} />} />
+      <Route path="/documents/:id" component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
       
       {/* Super admin routes */}
       <Route 
