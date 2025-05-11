@@ -77,13 +77,31 @@ This starts:
 
 #### Database Migrations
 
-When updating the database schema in `shared/schema.ts`, apply changes with:
+The project uses two complementary approaches to database migrations:
 
-```bash
-npm run db:push
-```
+1. **Schema Changes (Drizzle Push)**:
+   When updating the database schema in `shared/schema.ts`, apply changes with:
 
-This uses Drizzle ORM to automatically update the database schema without manual migrations.
+   ```bash
+   npm run db:push
+   ```
+
+   This uses Drizzle ORM to automatically update the database schema.
+
+2. **Programmatic Migrations**:
+   For more complex schema changes that require data transformations or specific logic:
+
+   - Create a new migration file in `server/migrations/` following the naming convention `YYYYMMDD_NNN_descriptiveName.ts`
+   - Implement your migration with proper idempotency checks
+   - Register the migration in `server/migrations/index.ts`
+   - Migrations run automatically when the server starts
+
+**Migration Best Practices:**
+
+- Always include version information in migration files
+- Use transactions for atomic updates
+- Include robust idempotency checks
+- Add comprehensive documentation within migration files
 
 #### Code Organization
 
@@ -92,7 +110,18 @@ This uses Drizzle ORM to automatically update the database schema without manual
 - API routes: `server/routes.ts`
 - Database schema: `shared/schema.ts`
 
-## Database Schema
+## Database Configuration
+
+### Connection Management
+
+The application uses [Neon Serverless Postgres](https://neon.tech) with [Drizzle ORM](https://orm.drizzle.team/). Database connections are managed through a connection pool with environment-specific optimizations:
+
+- Production: 20 max connections, 30s idle timeout
+- Development: 10 max connections, 30s idle timeout
+
+Connection health monitoring is implemented with automatic error logging and a health check function.
+
+### Database Schema
 
 The application uses Drizzle ORM with PostgreSQL. The schema includes:
 

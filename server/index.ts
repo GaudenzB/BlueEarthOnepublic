@@ -2,8 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { scheduleEmployeeSync } from "./services/employeeSync";
-import { addBioAndResponsibilitiesFields } from "./migrations/addEmployeeFields";
-import { addUserPermissionsTable } from "./migrations/addUserPermissions";
+import { runMigrations } from "./migrations";
+import { checkDatabaseConnection } from "./db";
 
 const app = express();
 app.use(express.json());
@@ -40,9 +40,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Run database migrations
-  await addBioAndResponsibilitiesFields();
-  await addUserPermissionsTable();
+  // Check database connection before proceeding
+  const isDatabaseConnected = await checkDatabaseConnection();
+  if (!isDatabaseConnected) {
+    log('ERROR: Failed to connect to database. Please check your DATABASE_URL environment variable.');
+    process.exit(1);
+  }
+  
+  // Run database migrations through the migration manager
+  try {
+    await runMigrations();
+  } catch (error) {
+    log(`ERROR: Database migration failed: ${error}`);
+    process.exit(1);
+  }
   
   const server = await registerRoutes(app);
 
