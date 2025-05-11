@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { HelmetProvider } from "react-helmet-async";
 import NotFound from "@/pages/not-found";
 import EmployeeDirectory from "@/pages/employee-directory";
 import EmployeeDetail from "@/pages/employee-detail";
@@ -123,10 +124,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <PermissionsProvider>
-          <Toaster />
-          <AppContent />
-        </PermissionsProvider>
+        <HelmetProvider>
+          <PermissionsProvider>
+            <Toaster />
+            <AppContent />
+          </PermissionsProvider>
+        </HelmetProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
