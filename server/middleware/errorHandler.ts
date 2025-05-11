@@ -68,8 +68,19 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
 
 /**
  * Middleware to handle 404 errors for routes that don't exist
+ * 
+ * In development mode, API routes return a 404 error,
+ * but client-side routes are allowed to pass through to be handled by Vite
  */
 export function notFoundHandler(req: Request, res: Response) {
-  logger.debug({ path: req.path, method: req.method }, 'Route not found');
-  return sendError(res, `Route ${req.method} ${req.path} not found`, 404, { errorCode: 'ROUTE_NOT_FOUND' });
+  // Only handle API routes with the error handler
+  if (req.path.startsWith('/api/')) {
+    logger.debug({ path: req.path, method: req.method }, 'API route not found');
+    return sendError(res, `Route ${req.method} ${req.path} not found`, 404, { errorCode: 'ROUTE_NOT_FOUND' });
+  }
+  
+  // For client-side routes, this should be unreachable in development
+  // as Vite middleware should handle them, but just in case
+  logger.debug({ path: req.path, method: req.method }, 'Client route not found, passing through');
+  return res.status(404).send('Not found');
 }
