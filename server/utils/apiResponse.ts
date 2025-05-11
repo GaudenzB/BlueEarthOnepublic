@@ -36,13 +36,46 @@ export function sendError(
 }
 
 // Authentication error (401 Unauthorized)
-export function sendUnauthorized(res: Response, message: string = 'Authentication required') {
-  return sendError(res, message, 401);
+export function sendUnauthorized(
+  res: Response, 
+  message: string = 'Authentication required',
+  errorCode: string = 'AUTH_REQUIRED'
+) {
+  return sendError(res, message, 401, { errorCode });
 }
 
 // Authorization error (403 Forbidden)
-export function sendForbidden(res: Response, message: string = 'Insufficient permissions') {
-  return sendError(res, message, 403);
+export function sendForbidden(
+  res: Response, 
+  message: string = 'Insufficient permissions',
+  errorCode: string = 'PERMISSION_DENIED'
+) {
+  return sendError(res, message, 403, { errorCode });
+}
+
+// Authentication specific errors
+export function sendTokenExpired(res: Response) {
+  return sendUnauthorized(
+    res, 
+    'Your session has expired, please log in again', 
+    'TOKEN_EXPIRED'
+  );
+}
+
+export function sendTokenInvalid(res: Response) {
+  return sendUnauthorized(
+    res, 
+    'Invalid authentication token', 
+    'TOKEN_INVALID'
+  );
+}
+
+export function sendTokenRevoked(res: Response) {
+  return sendUnauthorized(
+    res, 
+    'Your session has been revoked', 
+    'TOKEN_REVOKED'
+  );
 }
 
 // Not found error (404)

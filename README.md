@@ -38,19 +38,33 @@ This project is organized as a monorepo with the following structure:
 
 Create a `.env` file in the root directory with the following variables:
 
-```
+```bash
 # Database
 DATABASE_URL=postgresql://username:password@localhost:5432/blueearth_portal
 
-# JWT
-JWT_SECRET=your_jwt_secret_key_here
+# Authentication Security
+JWT_SECRET=your_jwt_secret_key_here             # Required: Secret key for JWT signing (must be strong in production)
+JWT_TOKEN_EXPIRY=24h                            # Optional: Token expiration time (default: 24h)
+PASSWORD_SALT_ROUNDS=12                         # Optional: bcrypt salt rounds (default: 10, higher is more secure)
 
-# SendGrid (for email functionality)
-SENDGRID_API_KEY=your_sendgrid_api_key
+# Session Configuration
+SESSION_SECRET=your_session_secret_key_here     # Required: Secret for session encryption
 
-# Bubble.io API (for employee sync)
-BUBBLE_API_KEY=your_bubble_api_key
+# Email (SendGrid)
+SENDGRID_API_KEY=your_sendgrid_api_key          # Required for password reset functionality
+SENDGRID_FROM_EMAIL=no-reply@example.com        # Optional: Email sender address
+
+# Bubble.io Integration
+BUBBLE_API_KEY=your_bubble_api_key              # Required for employee data synchronization
+BUBBLE_SYNC_INTERVAL=60                         # Optional: Minutes between sync operations (default: 60)
 ```
+
+#### Security Recommendations
+
+- In production, use secure randomly generated strings for `JWT_SECRET` and `SESSION_SECRET`
+- For `PASSWORD_SALT_ROUNDS`, values between 10-14 offer good security/performance balance
+- Use environment-specific settings (lower values in development, higher in production)
+- Never expose secret keys in client-side code or public repositories
 
 ### Installation
 
@@ -130,17 +144,78 @@ The application uses Drizzle ORM with PostgreSQL. The schema includes:
 - `employees`: Employee data (synced from Bubble.io)
 - `sessions`: For maintaining user sessions
 
-## Authentication
+## Authentication & Security
 
-The system uses JWT-based authentication with:
-- Login/logout functionality
-- Password reset via email
-- Role-based access control (RBAC)
-- Permission-based access control (PBAC)
+### Authentication System
 
-## Permissions System
+The application implements a comprehensive JWT-based authentication system with enhanced security features:
 
-Permissions are granted based on:
-1. **User Role**: superadmin, admin, manager, or user
-2. **Functional Area**: finance, HR, IT, legal, operations
-3. **Action Type**: view, edit, delete
+1. **Authentication Flow**:
+   - User logs in with username/password
+   - Server verifies credentials using bcrypt with configurable salt rounds
+   - Server generates a JWT token with unique identifier (JTI) and enhanced claims
+   - Client stores token and includes it in the Authorization header
+   - Server validates token on each request with comprehensive checks
+
+2. **Security Features**:
+   - **Password Security**: bcrypt hashing with configurable rounds via `PASSWORD_SALT_ROUNDS` env variable
+   - **Token Revocation**: Server-side token blacklisting for secure logout
+   - **Token Validation**: Audience and issuer claims verification
+   - **Expiration Control**: Configurable via `JWT_TOKEN_EXPIRY` env variable
+   - **Environment-Specific Security**: Different settings for development/production
+
+3. **Password Reset**:
+   - Secure email-based password reset flow using SendGrid
+   - Time-limited reset tokens with cryptographic security
+   - Protection against email enumeration attacks
+
+4. **Implementation Details**:
+   - Server-side token validation and user context injection
+   - Standardized API responses for auth errors with detailed context
+   - Protection against common authentication vulnerabilities
+
+## Authorization & Permissions System
+
+The application implements a dual-layer authorization system combining role-based and attribute-based access control:
+
+### Role-Based Access Control (RBAC)
+
+Users are assigned one of the following roles:
+- **Superadmin**: Complete access to all system functions and data
+- **Admin**: Administrative access with limitations on certain system functions
+- **Manager**: Department-level access with management capabilities
+- **User**: Basic access to view employee information with restrictions
+
+Role-based middleware (`authorize()` and `isSuperAdmin()`) enforces these permissions at the API route level.
+
+### Functional Area Permissions (ABAC)
+
+For finer-grained control, the system implements attribute-based permissions across functional areas:
+- **Finance**: Financial information and reports
+- **HR**: Sensitive employee details and HR functions
+- **IT**: System configurations and technical settings
+- **Legal**: Legal documents and compliance information
+- **Operations**: Operational data and process information
+
+### Permission Actions
+
+For each functional area, users can be granted any combination of:
+- **View**: Permission to see data in the area
+- **Edit**: Permission to modify data in the area
+- **Delete**: Permission to remove data in the area
+
+### Implementation
+
+1. **Database Structure**:
+   - `user_permissions` table stores area-specific permissions
+   - Each permission record links a user to an area with specific actions
+
+2. **Permission Checking**:
+   - Server-side validation via `/api/check-permission/:area/:action` endpoint
+   - Client-side caching for performance optimization 
+   - Component-level access control with `<PermissionGuard>` component
+
+3. **UI Adaptation**:
+   - Interface elements conditionally render based on permissions
+   - UI components adapt to show only accessible options
+   - Error boundaries handle unauthorized access attempts
