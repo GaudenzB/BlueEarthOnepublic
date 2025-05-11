@@ -40,6 +40,7 @@ import { registerPermissionRoutes } from "./routes/permissions";
 import documentsRoutes from "./routes/documents";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
 import contractsRoutes from "./routes/contracts";
+import healthRoutes from "./routes/health";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Debug middleware to log all requests
