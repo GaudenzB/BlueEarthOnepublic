@@ -17,9 +17,12 @@ export function EmployeeDirectory() {
   const itemsPerPage = 8
 
   // Query to fetch employees
-  const { data: employees, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["/api/employees"],
   })
+  
+  // Extract employees from the response data structure
+  const employees = data?.data || []
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
