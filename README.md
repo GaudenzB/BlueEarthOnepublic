@@ -27,6 +27,69 @@ This project is organized as a monorepo with the following structure:
 - **Permission System**: Granular permission controls based on roles and functional areas
 - **Bubble.io Integration**: One-directional employee data sync from Bubble.io
 
+## Code Quality Tools
+
+The project includes a comprehensive set of code quality tools to maintain consistent standards:
+
+### ESLint Configuration
+
+ESLint is configured with strict rules tailored for TypeScript and React development:
+
+- **TypeScript**: Enforces type safety and best practices
+- **React**: Ensures proper React and React Hooks usage
+- **Prettier Integration**: Works alongside Prettier for consistent formatting
+
+To run the linter:
+
+```bash
+npx eslint --ext .js,.jsx,.ts,.tsx .
+```
+
+To fix automatically fixable issues:
+
+```bash
+npx eslint --ext .js,.jsx,.ts,.tsx . --fix
+```
+
+### Prettier Configuration
+
+Prettier is configured with project-specific formatting rules:
+
+- Single quotes
+- 2-space indentation
+- 100 character print width
+- ES5 trailing commas
+
+To format all files:
+
+```bash
+npx prettier --write "**/*.{js,jsx,ts,tsx,json,md,css}"
+```
+
+To check for formatting issues without fixing:
+
+```bash
+npx prettier --check "**/*.{js,jsx,ts,tsx,json,md,css}"
+```
+
+### Git Hooks with Husky
+
+The project uses Husky to enforce code quality checks before commits:
+
+- **Pre-commit**: Runs lint-staged to check and fix code style issues
+- **lint-staged**: Only processes files that are staged for commit
+
+### Continuous Integration
+
+GitHub Actions workflows are configured to automatically:
+
+1. Run ESLint on all JavaScript/TypeScript files
+2. Check TypeScript type correctness
+3. Verify the build process works correctly
+4. Run these checks on PRs to protected branches and direct pushes
+
+See `.github/workflows/ci.yml` for the complete workflow configuration.
+
 ## Getting Started
 
 ### Prerequisites
