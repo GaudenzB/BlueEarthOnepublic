@@ -488,7 +488,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all employees
   app.get("/api/employees", authenticate, async (req, res) => {
     try {
-      // Check for search or filter params
+      // Define schema for query parameters
+      const employeeQuerySchema = z.object({
+        query: z.object({
+          search: z.string().optional(),
+          department: departmentEnum.optional(),
+          status: employeeStatusEnum.optional()
+        })
+      });
+      
+      // Validate query parameters
+      try {
+        await employeeQuerySchema.parseAsync({
+          query: req.query
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          const formattedErrors = error.errors.reduce((acc: Record<string, string>, curr) => {
+            const path = curr.path.join('.').replace(/^query\./, '');
+            acc[path] = curr.message;
+            return acc;
+          }, {});
+          
+          logger.debug({ 
+            path: req.path, 
+            errors: formattedErrors 
+          }, 'Query parameter validation error');
+          
+          return sendValidationError(res, formattedErrors);
+        }
+        throw error;
+      }
+      
+      // Get sanitized parameters
       const search = req.query.search as string;
       const department = req.query.department as string;
       const status = req.query.status as string;
@@ -513,7 +545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get employee by ID
-  app.get("/api/employees/:id", authenticate, async (req, res) => {
+  app.get("/api/employees/:id", authenticate, validateIdParameter(), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const employee = await storage.getEmployee(id);
@@ -524,17 +556,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return sendSuccess(res, employee);
     } catch (error) {
-      console.error("Get employee error:", error);
+      logger.error({ employeeId: req.params.id, error }, "Error retrieving employee");
       return sendError(res, "Failed to get employee");
     }
   });
   
   // Create employee (manual entry, not via Bubble sync)
-  app.post("/api/employees", authenticate, async (req, res) => {
+  app.post("/api/employees", authenticate, validate(z.object({ body: insertEmployeeSchema })), async (req, res) => {
     try {
-      // Use the centralized schema from shared/schema.ts 
-      // This ensures type-safety and consistent validation across the application
-      const validatedData = insertEmployeeSchema.parse(req.body);
+      // Since we've already validated with the middleware, we can use the body directly
+      const validatedData = req.body;
       
       // Log the validated employee data
       logger.debug('Creating employee with validated data', {
@@ -548,30 +579,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return sendSuccess(res, employee, "Employee created successfully", 201);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return sendValidationError(res, error.errors);
-      }
-      logger.error("Create employee error:", error);
+      logger.error({ error }, "Error creating employee");
       return sendError(res, "Failed to create employee");
     }
   });
   
   // Update employee
-  app.patch("/api/employees/:id", authenticate, async (req, res) => {
+  app.patch("/api/employees/:id", authenticate, validateIdParameter(), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
       // Create a partial schema based on the insertEmployeeSchema 
       // to validate update operations for complete type safety
-      const updateEmployeeSchema = insertEmployeeSchema.partial();
+      const updateEmployeeSchema = z.object({
+        body: insertEmployeeSchema.partial()
+      });
       
-      // Ensure status is a valid enum value if provided
-      if (req.body.status) {
-        req.body.status = employeeStatusEnum.parse(req.body.status);
-      }
+      // Validate request
+      await updateEmployeeSchema.parseAsync({
+        body: req.body
+      });
       
-      // Validate the incoming data
-      const validatedData = updateEmployeeSchema.parse(req.body);
+      // We've already validated the request with the schema
+      // Now we can use the body directly
+      const validatedData = req.body;
       
       // Log the update operation
       logger.debug('Updating employee', {
