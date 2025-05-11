@@ -1,90 +1,84 @@
 import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
-import { sendValidationError } from '../utils/apiResponse';
+import { AnyZodObject, ZodError } from 'zod';
 import { logger } from '../utils/logger';
 
 /**
- * Middleware factory for request validation using Zod schemas
+ * Middleware to validate request data using Zod schemas
  * 
- * Features:
- * - Validates request body, query, or params against Zod schemas
- * - Returns standardized 422 Unprocessable Entity responses
- * - Includes detailed validation error information
- * - Uses safeParse() for better error handling
- * - Adds parsed data to request object
+ * This middleware validates a request body, query params, or route params
+ * against a provided Zod schema.
  * 
  * @param schema Zod schema to validate against
- * @param type Which part of the request to validate (body, query, params)
+ * @returns Express middleware
  */
-export const validate = (
-  schema: z.ZodType<any>,
-  type: 'body' | 'query' | 'params' = 'body'
-) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const data = req[type];
-    const result = schema.safeParse(data);
-    
-    if (!result.success) {
-      logger.debug({ 
-        validation: 'failed',
-        path: req.path,
-        data,
-        errors: result.error.format()
-      }, 'Validation failed');
+export function validate(schema: AnyZodObject) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Validate request against schema
+      await schema.parseAsync({
+        body: req.body,
+        query: req.query,
+        params: req.params
+      });
       
-      return sendValidationError(
-        res, 
-        result.error.format(), 
-        `Validation failed for request ${type}`
-      );
+      next();
+    } catch (error) {
+      // Handle Zod validation errors
+      if (error instanceof ZodError) {
+        const formattedErrors = error.errors.reduce((acc: Record<string, string>, curr) => {
+          // Get the field path (removing 'body.' prefix if it exists)
+          const path = curr.path.join('.').replace(/^body\./, '');
+          acc[path] = curr.message;
+          return acc;
+        }, {});
+        
+        logger.debug({ 
+          path: req.path, 
+          errors: formattedErrors 
+        }, 'Validation error');
+        
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: formattedErrors
+        });
+      }
+      
+      // Pass other errors to the error handler
+      next(error);
     }
-    
-    // Replace request data with validated and typed data
-    req[type] = result.data;
-    next();
   };
-};
+}
 
 /**
- * Enhanced version that allows validating multiple parts of the request
+ * Validate request parameters (like IDs)
+ * 
+ * @param paramName Name of the parameter to validate
+ * @returns Express middleware
  */
-export const validateRequest = (schemas: {
-  body?: z.ZodType<any>;
-  query?: z.ZodType<any>;
-  params?: z.ZodType<any>;
-}) => {
+export function validateIdParameter(paramName: string = 'id') {
   return (req: Request, res: Response, next: NextFunction) => {
-    const errors: Record<string, any> = {};
-    let hasErrors = false;
+    const id = req.params[paramName];
     
-    // Validate each part of the request
-    for (const [key, schema] of Object.entries(schemas)) {
-      if (schema) {
-        const result = schema.safeParse(req[key as keyof typeof schemas]);
-        if (!result.success) {
-          errors[key] = result.error.format();
-          hasErrors = true;
-        } else {
-          // Replace with validated data
-          req[key as keyof typeof schemas] = result.data;
-        }
-      }
+    // Check if id exists
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing parameter: ${paramName}`,
+        errors: { [paramName]: 'Parameter is required' }
+      });
     }
     
-    if (hasErrors) {
-      logger.debug({ 
-        validation: 'failed',
-        path: req.path,
-        errors
-      }, 'Multiple validation errors');
-      
-      return sendValidationError(
-        res, 
-        errors, 
-        'Validation failed for request'
-      );
+    // Check if id is a valid number
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId) || parsedId <= 0 || parsedId.toString() !== id) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid parameter: ${paramName}`,
+        errors: { [paramName]: 'Must be a positive integer' }
+      });
     }
     
     next();
   };
-};
+}
