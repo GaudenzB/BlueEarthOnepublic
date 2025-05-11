@@ -38,6 +38,7 @@ import { ApiError } from "./middleware/errorHandler";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
 import documentsRoutes from "./routes/documents";
+import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
 import contractsRoutes from "./routes/contracts";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -57,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   
   // Register a new user (public route)
-  app.post("/api/auth/register", async (req: Request, res: Response) => {
+  app.post("/api/auth/register", authLimiter, async (req: Request, res: Response) => {
     try {
       // Validate request body
       const userData = insertUserSchema.parse(req.body);
@@ -101,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Login (public route)
-  app.post("/api/auth/login", validate(userLoginSchema), async (req: Request, res: Response) => {
+  app.post("/api/auth/login", authLimiter, validate(userLoginSchema), async (req: Request, res: Response) => {
     try {
       // Request body is already validated by validate middleware
       const loginData = req.body;

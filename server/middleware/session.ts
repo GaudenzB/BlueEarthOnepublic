@@ -1,6 +1,6 @@
 import session from 'express-session';
 import { createClient } from 'redis';
-import connectRedis from 'connect-redis';
+import * as connectRedis from 'connect-redis';
 import connectPg from 'connect-pg-simple';
 import { Express } from 'express';
 import { pool } from '../db';
@@ -48,7 +48,8 @@ export function setupSession(app: Express): void {
   if (REDIS_URL) {
     try {
       logger.info('Setting up Redis session store');
-      const RedisStore = connectRedis(session);
+      // Connect-redis v7+ exports a class instead of a factory function
+      const { RedisStore } = connectRedis;
       const redisClient = createClient({ url: REDIS_URL });
       
       // Event handlers for Redis client
@@ -67,7 +68,10 @@ export function setupSession(app: Express): void {
       });
       
       // Setup Redis session store
-      sessionOptions.store = new RedisStore({ client: redisClient });
+      sessionOptions.store = new RedisStore({ 
+        client: redisClient,
+        prefix: 'blueearth-sess:'
+      });
       app.use(session(sessionOptions));
       
     } catch (error: any) {

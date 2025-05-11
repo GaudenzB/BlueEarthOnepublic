@@ -36,7 +36,10 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 // Apply security middleware (CORS, Helmet, CSRF)
 setupSecurityMiddleware(app);
 
-// Request logging middleware (replaces custom logging)
+// Set up session handling (Redis or PostgreSQL)
+setupSession(app);
+
+// Request logging middleware
 app.use(requestLoggerMiddleware);
 
 (async () => {
