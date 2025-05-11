@@ -249,64 +249,60 @@ export default function EmployeeDetail() {
             <Card>
               <CardHeader>
                 <div className="flex justify-center items-center">
-                  {/* Desktop Tabs - Hidden on small screens */}
-                  <TabsList className="hidden md:flex">
-                    {/* Business info tab - visible to everyone */}
-                    <TabsTrigger value="business">
-                      <Briefcase className="h-4 w-4 mr-1" />
-                      Business Info
-                    </TabsTrigger>
-                    
-                    {/* HR-restricted tabs - only shown if user has permission */}
-                    <PermissionGuard area="hr" permission="view" showAlert={false}>
-                      <TabsTrigger value="personal">
-                        <User className="h-4 w-4 mr-1" />
-                        Personal Info
-                      </TabsTrigger>
-                      <TabsTrigger value="documents">
-                        <FileText className="h-4 w-4 mr-1" />
-                        Documents
-                      </TabsTrigger>
-                      <TabsTrigger value="compensation">
-                        <DollarSign className="h-4 w-4 mr-1" />
-                        Compensation
-                      </TabsTrigger>
-                      <TabsTrigger value="permissions">
-                        <Lock className="h-4 w-4 mr-1" />
-                        Permissions
-                      </TabsTrigger>
-                      <TabsTrigger value="onboarding">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        On-/Offboarding
-                      </TabsTrigger>
-                    </PermissionGuard>
-                  </TabsList>
-                  
-                  {/* Mobile Dropdown - Visible only on small screens */}
-                  <div className="md:hidden w-full">
-                    <Select 
-                      defaultValue="business" 
-                      onValueChange={(value) => {
-                        // Find the TabsTrigger for this value and click it
-                        const tab = document.querySelector(`button[data-value="${value}"]`) as HTMLElement;
-                        if (tab) tab.click();
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select section" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {/* Business info - visible to all */}
-                        <SelectItem value="business">
-                          <div className="flex items-center">
-                            <Briefcase className="h-4 w-4 mr-2" />
-                            <span>Business Info</span>
-                          </div>
-                        </SelectItem>
+                  {hasPermissionCached('hr', 'view') ? (
+                    <>
+                      {/* Desktop Tabs with multiple options - Hidden on small screens */}
+                      <TabsList className="hidden md:flex">
+                        {/* Business info tab - visible to everyone */}
+                        <TabsTrigger value="business">
+                          <Briefcase className="h-4 w-4 mr-1" />
+                          Business Info
+                        </TabsTrigger>
                         
-                        {/* HR-restricted items */}
-                        <PermissionGuard area="hr" permission="view" showAlert={false}>
-                          <>
+                        {/* HR tabs */}
+                        <TabsTrigger value="personal">
+                          <User className="h-4 w-4 mr-1" />
+                          Personal Info
+                        </TabsTrigger>
+                        <TabsTrigger value="documents">
+                          <FileText className="h-4 w-4 mr-1" />
+                          Documents
+                        </TabsTrigger>
+                        <TabsTrigger value="compensation">
+                          <DollarSign className="h-4 w-4 mr-1" />
+                          Compensation
+                        </TabsTrigger>
+                        <TabsTrigger value="permissions">
+                          <Lock className="h-4 w-4 mr-1" />
+                          Permissions
+                        </TabsTrigger>
+                        <TabsTrigger value="onboarding">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          On-/Offboarding
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      {/* Mobile Dropdown with multiple options - Visible only on small screens */}
+                      <div className="md:hidden w-full">
+                        <Select 
+                          defaultValue="business" 
+                          onValueChange={(value) => {
+                            // Find the TabsTrigger for this value and click it
+                            const tab = document.querySelector(`button[data-value="${value}"]`) as HTMLElement;
+                            if (tab) tab.click();
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select section" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* All options */}
+                            <SelectItem value="business">
+                              <div className="flex items-center">
+                                <Briefcase className="h-4 w-4 mr-2" />
+                                <span>Business Info</span>
+                              </div>
+                            </SelectItem>
                             <SelectItem value="personal">
                               <div className="flex items-center">
                                 <User className="h-4 w-4 mr-2" />
@@ -337,11 +333,29 @@ export default function EmployeeDetail() {
                                 <span>On-/Offboarding</span>
                               </div>
                             </SelectItem>
-                          </>
-                        </PermissionGuard>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Desktop Simple View - Only Business Info, Hidden on small screens */}
+                      <TabsList className="hidden md:flex">
+                        <TabsTrigger value="business">
+                          <Briefcase className="h-4 w-4 mr-1" />
+                          Business Info
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      {/* Mobile Simple View - Only Business Info */}
+                      <div className="md:hidden w-full">
+                        <div className="flex items-center justify-center font-medium">
+                          <Briefcase className="h-4 w-4 mr-2" />
+                          <span>Business Info</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
