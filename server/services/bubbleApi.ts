@@ -1,14 +1,28 @@
 import fetch from 'node-fetch';
 import { InsertEmployee } from '@shared/schema';
+import { logger } from '../utils/logger';
 
-// Check if API key is available
+/**
+ * Bubble.io API Integration
+ * 
+ * This module handles the integration with Bubble.io's API for employee data.
+ * It includes retry logic with exponential backoff for handling network issues.
+ */
+
+// Configuration constants
 const BUBBLE_API_KEY = process.env.BUBBLE_API_KEY;
-if (!BUBBLE_API_KEY) {
-  console.warn('BUBBLE_API_KEY not set. Bubble.io integration will not function.');
-}
-
 const BUBBLE_API_URL = 'https://blueearth.team/version-test/api/1.1/obj';
 const BUBBLE_DATA_TYPE = 'Employees';
+
+// Retry configuration
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+const MAX_RETRY_DELAY = 30000; // 30 seconds
+const REQUEST_TIMEOUT = 10000; // 10 seconds
+
+if (!BUBBLE_API_KEY) {
+  logger.warn('BUBBLE_API_KEY not set. Bubble.io integration will not function.');
+}
 
 interface BubbleEmployee {
   _id: string;
@@ -86,6 +100,45 @@ interface BubbleApiResponse {
 }
 
 /**
+ * Sleep utility for retry delay
+ */
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Calculate exponential backoff delay
+ * @param attempt Current attempt number (1-based)
+ * @returns Delay in milliseconds with jitter
+ */
+function calculateBackoff(attempt: number): number {
+  // Exponential backoff with jitter: 2^attempt * initial_delay * (0.5-1.5 random factor)
+  const exponentialDelay = Math.min(
+    INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1),
+    MAX_RETRY_DELAY
+  );
+  // Add jitter (±50%) to prevent synchronized retries
+  const jitter = 0.5 + Math.random();
+  return Math.floor(exponentialDelay * jitter);
+}
+
+/**
+ * Make fetch request with timeout
+ */
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
  * Convert a Bubble.io employee to our application's employee format
  */
 function mapBubbleEmployeeToAppEmployee(bubbleEmployee: BubbleEmployee): InsertEmployee {
@@ -125,30 +178,110 @@ function mapBubbleStatusToAppStatus(bubbleStatus?: string): 'active' | 'inactive
 }
 
 /**
- * Fetch all employees from Bubble.io
+ * Fetch data from Bubble.io API with retry logic and exponential backoff
  */
-export async function fetchBubbleEmployees(): Promise<BubbleEmployee[]> {
+async function fetchBubbleData(url: string): Promise<BubbleApiResponse> {
   if (!BUBBLE_API_KEY) {
     throw new Error('BUBBLE_API_KEY is not set');
   }
 
-  try {
-    const response = await fetch(`${BUBBLE_API_URL}/${BUBBLE_DATA_TYPE}?limit=100`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${BUBBLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      logger.info(`Fetching data from Bubble.io (attempt ${attempt}/${MAX_RETRIES})`);
+      
+      // Increase timeout with each retry
+      const timeout = REQUEST_TIMEOUT * attempt;
+      
+      const response = await fetchWithTimeout(
+        url,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${BUBBLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          }
+        },
+        timeout
+      );
 
-    if (!response.ok) {
-      throw new Error(`Bubble API error: ${response.status} ${response.statusText}`);
+      // Handle rate limiting (status 429)
+      if (response.status === 429) {
+        const retryAfterHeader = response.headers.get('retry-after');
+        const retryAfter = retryAfterHeader 
+          ? parseInt(retryAfterHeader, 10) * 1000 
+          : calculateBackoff(attempt);
+        
+        logger.warn(`Rate limited by Bubble.io API. Retrying after ${retryAfter}ms`);
+        await sleep(retryAfter);
+        continue;
+      }
+
+      // Handle other error responses
+      if (!response.ok) {
+        throw new Error(`Bubble API error: ${response.status} ${response.statusText}`);
+      }
+
+      // Successfully got a response
+      const data = await response.json() as BubbleApiResponse;
+      logger.info(`Successfully fetched ${data.response.results.length} employees from Bubble.io`);
+      return data;
+      
+    } catch (error: any) {
+      lastError = error;
+      
+      // Determine if error is retryable
+      const isRetryable = 
+        error.name === 'AbortError' ||  // Timeout
+        error.name === 'FetchError' ||  // Network error
+        error.code === 'ECONNRESET' ||  // Connection reset
+        error.code === 'ETIMEDOUT' ||   // Connection timeout
+        error.code === 'ECONNABORTED' || // Connection aborted
+        (error.message && (
+          error.message.includes('timeout') ||
+          error.message.includes('network') ||
+          error.message.includes('connection')
+        ));
+      
+      if (!isRetryable) {
+        logger.error('Non-retryable error from Bubble.io API', { error: error.message });
+        throw error;
+      }
+      
+      // Only retry if not the last attempt
+      if (attempt < MAX_RETRIES) {
+        const delay = calculateBackoff(attempt);
+        logger.warn(`Retryable error from Bubble.io API. Retrying in ${delay}ms`, { 
+          error: error.message,
+          attempt,
+          nextAttempt: attempt + 1,
+          maxRetries: MAX_RETRIES,
+          delay
+        });
+        await sleep(delay);
+      } else {
+        logger.error(`Failed to fetch from Bubble.io after ${MAX_RETRIES} attempts`, { 
+          error: error.message,
+          attempts: MAX_RETRIES
+        });
+      }
     }
+  }
+  
+  // If all retries failed, throw the last error
+  throw lastError || new Error(`Failed to fetch from Bubble.io API after ${MAX_RETRIES} attempts`);
+}
 
-    const data = await response.json() as BubbleApiResponse;
+/**
+ * Fetch all employees from Bubble.io
+ */
+export async function fetchBubbleEmployees(): Promise<BubbleEmployee[]> {
+  try {
+    const data = await fetchBubbleData(`${BUBBLE_API_URL}/${BUBBLE_DATA_TYPE}?limit=100`);
     return data.response.results;
   } catch (error) {
-    console.error('Error fetching employees from Bubble.io:', error);
+    logger.error('Error fetching employees from Bubble.io:', error);
     throw error;
   }
 }

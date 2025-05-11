@@ -50,6 +50,7 @@ export const userLoginSchema = z.object({
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email format"),
+  resetUrl: z.string().url("Invalid URL format").optional(),
 });
 
 export const resetPasswordSchema = z.object({

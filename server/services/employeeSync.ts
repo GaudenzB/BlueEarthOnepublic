@@ -1,6 +1,7 @@
 import { storage } from '../storage';
 import { getEmployeesFromBubble } from './bubbleApi';
 import { Employee } from '@shared/schema';
+import { logger } from '../utils/logger';
 
 /**
  * Sync employees from Bubble.io to our application database

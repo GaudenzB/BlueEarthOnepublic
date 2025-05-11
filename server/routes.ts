@@ -218,31 +218,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const emailSent = await sendPasswordResetEmail(data.email, resetToken, resetLink);
       
       if (!emailSent) {
-        console.error("Failed to send password reset email to:", data.email);
+        logger.error({
+          event: "password_reset_email_failure",
+          email: data.email
+        }, "Failed to send password reset email");
+        
         // Don't expose this error to the user for security
+        // Just log it and continue with success response
       }
+      
+      // Log successful reset request
+      logger.info({
+        event: "password_reset_requested",
+        email: data.email,
+        userId: user?.id
+      });
       
       // Always return success to prevent email enumeration attacks
       return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return sendValidationError(res, error.errors);
-      }
-      console.error("Forgot password error:", error);
-      return sendError(res, "Failed to process forgot password request");
+      logger.error({ 
+        event: "forgot_password_error", 
+        error: error instanceof Error ? error.message : String(error),
+        email: req.body?.email
+      }, "Error processing forgot password request");
+      
+      // Always return the same message regardless of error to prevent email enumeration
+      return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
     }
   });
   
   // Reset password (public route)
-  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+  app.post("/api/auth/reset-password", validate(resetPasswordSchema), async (req: Request, res: Response) => {
     try {
-      // Validate request body
-      const data = resetPasswordSchema.parse(req.body);
+      // Request body is already validated by middleware
+      const data = req.body;
       
       // Find user by reset token
       const user = await storage.getUserByResetToken(data.token);
       if (!user) {
-        return sendError(res, "Invalid or expired reset token", 400);
+        logger.info({ 
+          event: "password_reset_failure", 
+          reason: "invalid_token",
+          token: data.token 
+        });
+        return sendError(res, "Invalid or expired reset token", 400, { errorCode: "RESET_TOKEN_INVALID" });
       }
       
       // Hash new password
@@ -252,16 +272,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.resetUserPassword(user.id, hashedPassword);
       
       if (!success) {
-        return sendError(res, "Failed to reset password");
+        logger.error({ 
+          event: "password_reset_failure", 
+          reason: "db_update_error",
+          userId: user.id 
+        });
+        throw new ApiError("Failed to reset password", 500, "RESET_SYSTEM_ERROR");
       }
+      
+      // Log successful password reset
+      logger.info({ 
+        event: "password_reset_success", 
+        userId: user.id 
+      });
       
       return sendSuccess(res, null, "Password has been reset successfully");
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return sendValidationError(res, error.errors);
+      // ApiError will be caught by global error handler
+      if (error instanceof ApiError) {
+        throw error;
       }
-      console.error("Reset password error:", error);
-      return sendError(res, "Failed to reset password");
+      
+      logger.error({ 
+        event: "password_reset_error", 
+        error: error instanceof Error ? error.message : String(error)
+      }, "Unexpected error during password reset");
+      
+      throw new ApiError("Failed to reset password", 500, "RESET_SYSTEM_ERROR");
     }
   });
   

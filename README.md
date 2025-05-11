@@ -123,6 +123,46 @@ The project uses two complementary approaches to database migrations:
 - Frontend pages: `client/src/pages/`
 - API routes: `server/routes.ts`
 - Database schema: `shared/schema.ts`
+- Middleware: `server/middleware/`
+- Utilities: `server/utils/`
+
+## API Routing & Error Handling
+
+### Request Lifecycle
+
+1. **Request Logging**: All API requests are logged with contextual information and unique request IDs.
+2. **Validation**: Requests are validated using Zod schemas before reaching route handlers.
+3. **Authentication & Authorization**: Token verification and permission checks are applied.
+4. **Route Handler**: Business logic processes the validated request.
+5. **Response Formatting**: Standardized response structure ensures consistency.
+6. **Error Handling**: Global error handler captures and formats exceptions.
+
+### Validation System
+
+Input validation uses a dual-layered approach:
+- **Schema Definition**: Type-safe models using Zod in `shared/schema.ts`
+- **Request Validation**: Middleware in `server/middleware/validation.ts` that:
+  - Validates request bodies, query params, and URL params
+  - Returns consistent 422 errors for validation failures
+  - Adds parsed and typed data to the request object
+
+### Error Handling
+
+The application uses a centralized error handling strategy:
+- **Global Error Handler**: Catches and formats all exceptions
+- **Error Classification**: Different handling for Zod errors, API errors, and general errors
+- **Custom ApiError Class**: For application-specific error types
+- **Standardized Responses**: Consistent error object structure
+- **Environment-Aware**: Different error details in development vs. production
+- **Validation Testing**: Includes test script (`test-login.js`) for verifying validation and errors
+
+### Logging
+
+Structured logging with pino provides:
+- **Log Levels**: Different verbosity based on environment
+- **Request-Specific Context**: Request IDs and user context in all logs
+- **JSON Format**: Machine-parsable logs for better monitoring
+- **Sensitive Data Filtering**: Automatic redaction of passwords and tokens
 
 ## Database Configuration
 
