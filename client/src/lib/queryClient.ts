@@ -65,8 +65,17 @@ export const getQueryFn: <T>(options: {
       headers["Authorization"] = `Bearer ${token}`;
     }
     
+    // Build the URL from the queryKey
+    // If queryKey has multiple segments, construct the URL with path parameters
+    let url = queryKey[0] as string;
+    if (queryKey.length > 1) {
+      // Check if the URL already ends with a slash
+      url = url.endsWith('/') ? url : `${url}/`;
+      url = `${url}${queryKey[1]}`;
+    }
+    
     // Make request
-    const res = await fetch(queryKey[0] as string, {
+    const res = await fetch(url, {
       credentials: "include",
       headers,
     });
