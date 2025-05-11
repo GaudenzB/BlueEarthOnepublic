@@ -17,17 +17,24 @@ interface User {
   createdAt: string;
 }
 
-interface AuthResponse {
+// Server response structures updated to match our new standardized API responses
+interface ApiSuccessResponse<T> {
+  success: true;
+  message: string;
+  data: T;
+}
+
+interface AuthResponse extends ApiSuccessResponse<{
   user: User;
   token: string;
-}
+}> {}
 
 export function useAuth() {
   // Check if there's a token in localStorage
   const token = localStorage.getItem("token");
   
   // Query to fetch the current user, but only if we have a token
-  const { data: user, isLoading, error, refetch } = useQuery<User | null>({
+  const { data, isLoading, error, refetch } = useQuery<ApiSuccessResponse<User> | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -37,14 +44,21 @@ export function useAuth() {
     enabled: !!token, // Only run the query if there's a token
   });
   
+  // Extract the user from the standardized API response
+  const user = data?.data || null;
+
   // Handle auth errors
   if (error) {
     localStorage.removeItem("token");
   }
 
-  // Set user in local state and token in local storage
-  const setUser = (user: User) => {
-    queryClient.setQueryData(["/api/auth/me"], user);
+  // Set user in local state
+  const setUser = (userData: User) => {
+    queryClient.setQueryData(["/api/auth/me"], {
+      success: true,
+      message: "User data retrieved successfully",
+      data: userData
+    });
   };
 
   // Login mutation
@@ -56,22 +70,36 @@ export function useAuth() {
       });
       
       // Store token in local storage
-      localStorage.setItem("token", response.token);
+      localStorage.setItem("token", response.data.token);
       
-      return response.user;
+      return response.data.user;
     },
-    onSuccess: (user) => {
-      setUser(user);
+    onSuccess: (userData) => {
+      setUser(userData);
     },
   });
 
-  // Logout function
-  const logout = () => {
-    localStorage.removeItem("token");
-    queryClient.setQueryData(["/api/auth/me"], null);
-    // Invalidate queries to refetch after logout
-    queryClient.invalidateQueries();
-  };
+  // Logout function with server-side token revocation
+  const logout = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          // Call the server logout endpoint to revoke the token
+          await apiRequest("/api/auth/logout", {
+            method: "POST"
+          });
+        } catch (error) {
+          console.error("Error during logout:", error);
+          // Continue with local logout even if server logout fails
+        }
+      }
+      // Local cleanup
+      localStorage.removeItem("token");
+      queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.invalidateQueries();
+    }
+  });
 
   // Check if user is authenticated
   const isAuthenticated = !!user;
