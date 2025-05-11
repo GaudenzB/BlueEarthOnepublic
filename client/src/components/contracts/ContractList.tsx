@@ -19,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  FileContractIcon,
+  FileTextIcon,
   AlertTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -69,7 +69,7 @@ export default function ContractList({ contracts, isLoading, filter = "all" }: C
         case "ARCHIVED":
           return { color: "bg-slate-100 text-slate-800", icon: <ArchiveIcon className="h-3 w-3 mr-1" /> };
         default:
-          return { color: "bg-gray-100 text-gray-800", icon: <FileContractIcon className="h-3 w-3 mr-1" /> };
+          return { color: "bg-gray-100 text-gray-800", icon: <FileTextIcon className="h-3 w-3 mr-1" /> };
       }
     };
 
@@ -136,7 +136,7 @@ export default function ContractList({ contracts, isLoading, filter = "all" }: C
       <Card className="mt-4">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <FileContractIcon className="h-12 w-12 text-gray-400 mb-4" />
+            <FileTextIcon className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium">No contracts found</h3>
             <p className="text-sm text-gray-500 mt-2 max-w-md">
               {filter === "all" 
