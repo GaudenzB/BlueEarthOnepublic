@@ -1,5 +1,5 @@
 import fetch, { RequestInit, Response as NodeFetchResponse } from 'node-fetch';
-import { InsertEmployee } from '@shared/schema';
+import { InsertEmployee, employeeStatusEnum, type EmployeeStatus } from '@shared/schema';
 import { logger } from '../utils/logger';
 
 /**
@@ -158,12 +158,14 @@ function mapBubbleEmployeeToAppEmployee(bubbleEmployee: BubbleEmployee): InsertE
 
 /**
  * Map Bubble.io status values to our application's status values
+ * Uses employeeStatusEnum values to ensure type safety
  */
-function mapBubbleStatusToAppStatus(bubbleStatus?: string): 'active' | 'inactive' | 'on_leave' | 'remote' {
+function mapBubbleStatusToAppStatus(bubbleStatus?: string): EmployeeStatus {
   if (!bubbleStatus) return 'active';
   
   const status = bubbleStatus.toLowerCase();
   
+  // Validate against our enum
   if (status.includes('active') || status.includes('current')) {
     return 'active';
   } else if (status.includes('leave') || status.includes('absent')) {
@@ -174,7 +176,8 @@ function mapBubbleStatusToAppStatus(bubbleStatus?: string): 'active' | 'inactive
     return 'inactive';
   }
   
-  return 'active'; // Default status
+  // Default to active (must be a valid enum value)
+  return 'active';
 }
 
 /**
