@@ -43,7 +43,7 @@ export async function syncEmployeesFromBubble(): Promise<{
     for (const bubbleEmployee of bubbleEmployees) {
       try {
         if (!bubbleEmployee.email) {
-          console.warn('Skipping employee with no email address');
+          logger.warn('Skipping employee with no email address');
           continue;
         }
         
@@ -52,36 +52,55 @@ export async function syncEmployeesFromBubble(): Promise<{
         
         if (existingEmployee) {
           // Employee exists, check if we need to update
-          if (
+          const needsUpdate = 
             existingEmployee.name !== bubbleEmployee.name ||
             existingEmployee.position !== bubbleEmployee.position ||
             existingEmployee.department !== bubbleEmployee.department ||
             existingEmployee.location !== bubbleEmployee.location ||
             existingEmployee.phone !== bubbleEmployee.phone ||
             existingEmployee.avatarUrl !== bubbleEmployee.avatarUrl ||
-            existingEmployee.status !== bubbleEmployee.status
-          ) {
+            existingEmployee.status !== bubbleEmployee.status;
+          
+          if (needsUpdate) {
             // Update employee
+            logger.debug('Updating existing employee', { 
+              employeeId: existingEmployee.id,
+              email: email 
+            });
             await storage.updateEmployee(existingEmployee.id, bubbleEmployee);
             stats.updated++;
           } else {
             // No changes needed
+            logger.debug('Employee unchanged', { 
+              employeeId: existingEmployee.id,
+              email: email 
+            });
             stats.unchanged++;
           }
         } else {
           // Create new employee
+          logger.info('Creating new employee', { 
+            email: email,
+            name: bubbleEmployee.name
+          });
           await storage.createEmployee(bubbleEmployee);
           stats.created++;
         }
       } catch (error) {
-        console.error('Error processing employee:', error);
+        logger.error('Error processing employee:', { 
+          error: error instanceof Error ? error.message : String(error),
+          employeeEmail: bubbleEmployee.email
+        });
         stats.errors++;
       }
     }
     
+    logger.info('Employee sync completed', { stats });
     return stats;
   } catch (error) {
-    console.error('Error syncing employees from Bubble.io:', error);
+    logger.error('Error syncing employees from Bubble.io:', { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
     throw error;
   }
 }
@@ -91,25 +110,32 @@ export async function syncEmployeesFromBubble(): Promise<{
  * @param intervalMinutes Interval in minutes between syncs
  */
 export function scheduleEmployeeSync(intervalMinutes: number = 60): NodeJS.Timeout {
-  console.log(`Scheduling employee sync every ${intervalMinutes} minutes`);
+  logger.info(`Scheduling employee sync every ${intervalMinutes} minutes`);
   
   // Run an initial sync
   syncEmployeesFromBubble()
     .then(stats => {
-      console.log('Initial employee sync completed:', stats);
+      logger.info('Initial employee sync completed', { stats });
     })
     .catch(error => {
-      console.error('Initial employee sync failed:', error);
+      logger.error('Initial employee sync failed', {
+        error: error instanceof Error ? error.message : String(error)
+      });
     });
     
   // Schedule recurring syncs
   return setInterval(() => {
+    logger.info('Running scheduled employee sync');
+    
     syncEmployeesFromBubble()
       .then(stats => {
-        console.log('Scheduled employee sync completed:', stats);
+        logger.info('Scheduled employee sync completed', { stats });
       })
       .catch(error => {
-        console.error('Scheduled employee sync failed:', error);
+        logger.error('Scheduled employee sync failed', {
+          error: error instanceof Error ? error.message : String(error),
+          nextRetry: `${intervalMinutes} minutes`
+        });
       });
   }, intervalMinutes * 60 * 1000);
 }

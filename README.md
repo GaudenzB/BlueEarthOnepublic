@@ -259,3 +259,47 @@ For each functional area, users can be granted any combination of:
    - Interface elements conditionally render based on permissions
    - UI components adapt to show only accessible options
    - Error boundaries handle unauthorized access attempts
+
+## External Integrations
+
+The application integrates with external services for core functionality:
+
+### Bubble.io Integration
+
+Employee data is synchronized from the company's Bubble.io application with robust implementation:
+
+- **Resilient Network Communication**:
+  - Exponential backoff with jitter for reliable retries
+  - Smart handling of rate limiting with Retry-After header support
+  - Classification of errors into retryable vs. non-retryable categories
+  - Request timeouts to prevent connection hanging
+
+- **Synchronization Process**:
+  - One-directional sync pulls data from Bubble.io to local database
+  - Configurable sync interval via `BUBBLE_SYNC_INTERVAL` env variable
+  - Differential updates to minimize database operations
+  - Detailed logging with operation statistics
+
+- **Implementation Details**:
+  - Employee mapping with fallback fields for data consistency
+  - Structured logging throughout the sync process
+  - Comprehensive error handling with context preservation
+
+### SendGrid Email Integration
+
+Transactional emails are sent through SendGrid with particular focus on the password reset flow:
+
+- **Email Implementation**:
+  - Support for both HTML and plain text formats for client compatibility
+  - Responsive email templates with mobile-friendly design
+  - Dynamic content generation with proper sanitization
+  - Configurable sender identity via environment variables
+
+- **Error Handling**:
+  - Detailed error classification with proper logging
+  - Rate limit detection and handling
+  - Graceful fallbacks when SendGrid is unavailable
+
+- **Future Enhancements**:
+  - SendGrid Dynamic Templates support (commented reference implementation)
+  - Email queueing system for high-volume scenarios

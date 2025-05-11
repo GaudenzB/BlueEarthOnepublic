@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch, { RequestInit, Response as NodeFetchResponse } from 'node-fetch';
 import { InsertEmployee } from '@shared/schema';
 import { logger } from '../utils/logger';
 
@@ -123,7 +123,7 @@ function calculateBackoff(attempt: number): number {
 /**
  * Make fetch request with timeout
  */
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<NodeFetchResponse> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   

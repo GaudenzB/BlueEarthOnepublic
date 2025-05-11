@@ -65,7 +65,16 @@ export type UserLogin = z.infer<typeof userLoginSchema>;
 export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
 export type ResetPassword = z.infer<typeof resetPasswordSchema>;
 
-// Employee data model
+/**
+ * Employee data model
+ * 
+ * Stores employee information synced from Bubble.io with additional fields
+ * for detailed employee profiles.
+ * 
+ * @version 2
+ * @changes 
+ * - Added bio and responsibilities fields in migration 20250511_002
+ */
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
@@ -77,13 +86,17 @@ export const employees = pgTable("employees", {
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
   responsibilities: text("responsibilities"),
+  // Status should match values in employeeStatusEnum
   status: varchar("status", { length: 20 }).notNull().default("active"),
+  // Tracking fields for change management
+  updatedAt: text("updated_at").default(new Date().toISOString()),
+  syncedAt: text("synced_at").default(new Date().toISOString()),
 });
 
-export const insertEmployeeSchema = createInsertSchema(employees).omit({
-  id: true,
-});
-
+/**
+ * Enum for valid employee status values
+ * Used for validation and type safety in both client and server code
+ */
 export const employeeStatusEnum = z.enum([
   "active",
   "inactive",
@@ -91,10 +104,41 @@ export const employeeStatusEnum = z.enum([
   "remote",
 ]);
 
+/**
+ * Schema for inserting an employee
+ * Extends the base schema from the database table with additional validation
+ */
+export const insertEmployeeSchema = createInsertSchema(employees)
+  .omit({
+    id: true,
+    updatedAt: true,
+    syncedAt: true,
+  })
+  .extend({
+    // Override status field to ensure it matches the enum values
+    status: employeeStatusEnum.default("active"),
+    // Add validation for email format
+    email: z.string().email("Invalid email format").min(3).max(100),
+  });
+
+// Enhanced employee search schema for filtering
+export const employeeSearchSchema = z.object({
+  query: z.string().optional(),
+  department: z.string().optional(),
+  status: employeeStatusEnum.optional(),
+  page: z.number().int().positive().optional().default(1),
+  limit: z.number().int().positive().optional().default(20),
+});
+
 export type EmployeeStatus = z.infer<typeof employeeStatusEnum>;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type Employee = typeof employees.$inferSelect;
+export type EmployeeSearch = z.infer<typeof employeeSearchSchema>;
 
+/**
+ * Enum for valid department values
+ * Used for validation and type safety in both client and server code
+ */
 export const departmentEnum = z.enum([
   "engineering",
   "marketing",
@@ -102,9 +146,21 @@ export const departmentEnum = z.enum([
   "product",
   "hr",
   "sales",
+  "finance",
+  "legal",
+  "operations",
+  "executive",
 ]);
 
+/**
+ * Department-related schemas for enhanced validation
+ */
+export const departmentFilterSchema = z.object({
+  department: departmentEnum,
+});
+
 export type Department = z.infer<typeof departmentEnum>;
+export type DepartmentFilter = z.infer<typeof departmentFilterSchema>;
 
 // User permissions table
 export const userPermissions = pgTable("user_permissions", {
