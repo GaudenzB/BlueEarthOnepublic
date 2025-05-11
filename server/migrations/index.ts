@@ -1,5 +1,6 @@
 import { addBioAndResponsibilitiesFields } from './addEmployeeFields';
 import { addUserPermissionsTable } from './addUserPermissions';
+import { addEmployeeTrackingFields } from './addEmployeeTrackingFields';
 
 /**
  * Migration Registry
@@ -33,6 +34,11 @@ export const migrations: Migration[] = [
     version: '20250511_002',
     name: 'Add bio and responsibilities to employee table',
     execute: addBioAndResponsibilitiesFields
+  },
+  {
+    version: '20250511_003',
+    name: 'Add tracking fields to employees table',
+    execute: addEmployeeTrackingFields
   }
   // Add new migrations here, following the version ordering
 ];
@@ -57,4 +63,8 @@ export async function runMigrations(): Promise<void> {
 }
 
 // Re-export individual migrations for direct use
-export { addBioAndResponsibilitiesFields, addUserPermissionsTable };
+export { 
+  addBioAndResponsibilitiesFields, 
+  addUserPermissionsTable,
+  addEmployeeTrackingFields 
+};
