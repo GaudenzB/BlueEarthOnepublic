@@ -338,15 +338,7 @@ export default function EmployeeDetail() {
                       </div>
                     </>
                   ) : (
-                    <>
-                      {/* No tabs needed when there's only one option - show section title instead */}
-                      <div className="w-full">
-                        <h3 className="text-lg font-medium flex items-center justify-center">
-                          <Briefcase className="h-5 w-5 mr-2" />
-                          Business Information
-                        </h3>
-                      </div>
-                    </>
+                    <>{/* No navigation needed for a single tab */}</>
                   )}
                 </div>
               </CardHeader>
