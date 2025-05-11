@@ -23,7 +23,10 @@ interface AuthResponse {
 }
 
 export function useAuth() {
-  // Query to fetch the current user
+  // Check if there's a token in localStorage
+  const token = localStorage.getItem("token");
+  
+  // Query to fetch the current user, but only if we have a token
   const { data: user, isLoading, error, refetch } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
@@ -31,6 +34,7 @@ export function useAuth() {
     refetchInterval: 5 * 60 * 1000, // Reduced from 1 minute to 5 minutes to match staleTime
     refetchOnWindowFocus: false, // Don't refetch on window focus
     refetchOnReconnect: false, // Don't refetch on reconnect
+    enabled: !!token, // Only run the query if there's a token
   });
   
   // Handle auth errors

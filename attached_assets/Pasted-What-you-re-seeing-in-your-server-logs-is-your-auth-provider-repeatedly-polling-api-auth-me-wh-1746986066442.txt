@@ -1,0 +1,61 @@
+What you’re seeing in your server logs…
+
+
+
+…is your auth provider repeatedly polling /api/auth/me while there’s no token. Each of those failed requests is invalidating the React-Query cache (or toggling isLoading/isError), which in your app component tree is un-mounting and re-mounting <Login> on every poll. That perfectly explains:
+
+Every keystroke “disappears” — you type “a”, the component remounts, its useState("") resets to "".
+You can’t ever focus the password field — autoFocus (or any one-time focus) fires again on each mount, so the cursor jumps back to username.
+Two ways to fix it
+
+1. Don’t fetch /api/auth/me until you actually have a token
+In your useAuth (or wherever you call useQuery("/api/auth/me")), add:
+
+const token = /* however you store it, maybe from localStorage or a cookie */;
+const { data: user, ... } = useQuery(
+  "/api/auth/me",
+  fetchCurrentUser,
+  {
+    enabled: Boolean(token),           // <-- only run if there *is* a token
+    retry: false,                      // disable React-Query retries
+    refetchOnWindowFocus: false,       // don’t refetch on window focus
+    refetchOnMount: false,             // don’t refetch every time the component mounts
+  }
+);
+That way, when you land on /login (no token), the query never runs, <Login> stays mounted, and your username state can actually accumulate characters and let you click into the password box.
+
+2. If you really need to keep polling /me, render <Login> outside of that cycle
+Instead of:
+
+function App() {
+  const { data: user, isLoading, isError } = useAuth();
+
+  if (isLoading) return <Spinner />;
+  if (!user)      return <Login />;      // ← gets unmounted/remounted on every poll
+  return <MainApp />;
+}
+wrap your login route in your router so that /login always renders the same <Login> tree:
+
+<BrowserRouter>
+  <Routes>
+    <Route path="/login" element={<Login />} />
+    <Route
+      path="/*"
+      element={
+        <AuthGuard>
+          <MainApp />
+        </AuthGuard>
+      }
+    />
+  </Routes>
+</BrowserRouter>
+and in your AuthGuard:
+
+function AuthGuard({ children }) {
+  const { data: user, isLoading } = useAuth();
+
+  if (isLoading) return <Spinner />;
+  if (!user)     return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+—this way the login page is mounted exactly once when you go to /login, and the polling in your guard never touches it.

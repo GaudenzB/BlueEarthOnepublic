@@ -40,7 +40,8 @@ export default function Login() {
         title: "Success",
         description: "Logged in successfully",
       });
-      setLocation("/");
+      // Don't navigate here - let the useEffect handle redirect
+      // to avoid component unmounting during state updates
     } catch (error) {
       toast({
         title: "Error",
