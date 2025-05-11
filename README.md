@@ -277,6 +277,40 @@ The application implements a comprehensive JWT-based authentication system with 
    - Standardized API responses for auth errors with detailed context
    - Protection against common authentication vulnerabilities
 
+### Web Security Protections
+
+The application implements comprehensive security measures to protect against common web vulnerabilities:
+
+1. **HTTP Security Headers**:
+   - **Content-Security-Policy (CSP)**: Restricts content sources to prevent XSS attacks
+   - **Strict-Transport-Security (HSTS)**: Enforces HTTPS connections
+   - **X-Content-Type-Options**: Prevents MIME type sniffing
+   - **X-Frame-Options**: Protects against clickjacking
+   - **Referrer-Policy**: Controls information in the Referer header
+
+2. **CORS Protection**:
+   - Environment-specific origin restrictions
+   - Secure methods and headers configuration
+   - Preflight request handling
+
+3. **Input Validation and Sanitization**:
+   - Robust schema-based validation for all inputs
+   - Parameter sanitization to prevent SQL injection
+   - File upload validation for content type and size
+   - XSS prevention through content sanitization
+
+4. **Environment Security**:
+   - Required environment variable validation at startup
+   - Production-specific security configurations
+   - Security settings via environment variables
+   - Prevention of secret leakage in responses and logs
+
+5. **Request Protection**:
+   - Request size limits to prevent DoS attacks
+   - Rate limiting for sensitive operations
+   - Secure session management
+   - Protection against parameter pollution
+
 ## Authorization & Permissions System
 
 The application implements a dual-layer authorization system combining role-based and attribute-based access control:

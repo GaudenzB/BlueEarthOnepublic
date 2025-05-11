@@ -610,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fields: Object.keys(validatedData),
       });
       
-      const employee = await storage.updateEmployee(id, validatedData);
+      const employee = await storage.updateEmployee(id, validatedData.body);
       
       if (!employee) {
         return sendNotFound(res, "Employee not found");
@@ -618,16 +618,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return sendSuccess(res, employee, "Employee updated successfully");
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return sendValidationError(res, error.errors);
-      }
-      logger.error("Update employee error:", error);
+      logger.error({ employeeId: req.params.id, error }, "Error updating employee");
       return sendError(res, "Failed to update employee");
     }
   });
 
   // Delete employee
-  app.delete("/api/employees/:id", authenticate, async (req, res) => {
+  app.delete("/api/employees/:id", authenticate, validateIdParameter(), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteEmployee(id);
@@ -636,9 +633,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sendNotFound(res, "Employee not found");
       }
       
+      logger.info({ employeeId: id, deletedBy: req.user!.id }, "Employee deleted");
       return sendSuccess(res, null, "Employee deleted successfully");
     } catch (error) {
-      console.error("Delete employee error:", error);
+      logger.error({ employeeId: req.params.id, error }, "Error deleting employee");
       return sendError(res, "Failed to delete employee");
     }
   });
@@ -646,15 +644,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Trigger manual employee sync from Bubble.io
   app.post("/api/sync/employees", authenticate, isSuperAdmin, async (req, res) => {
     try {
+      // Check if the Bubble API key is configured
       if (!process.env.BUBBLE_API_KEY) {
-        return sendError(res, "Bubble API key not configured", 400);
+        logger.error("Bubble API key not configured");
+        return sendError(res, "External API key not configured", 400);
       }
       
+      logger.info({ initiatedBy: req.user!.id }, "Manual employee sync initiated");
       const result = await syncEmployeesFromBubble();
+      
+      logger.info({ 
+        totalEmployees: result.totalEmployees,
+        created: result.created,
+        updated: result.updated,
+        unchanged: result.unchanged,
+        errors: result.errors
+      }, "Employee sync completed");
+      
       return sendSuccess(res, result, "Employee sync completed");
     } catch (error) {
-      console.error("Employee sync error:", error);
-      return sendError(res, "Failed to sync employees");
+      logger.error({ error }, "Employee sync error");
+      return sendError(res, "Failed to sync employees from external system");
     }
   });
 
