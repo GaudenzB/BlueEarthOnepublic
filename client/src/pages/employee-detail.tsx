@@ -339,20 +339,12 @@ export default function EmployeeDetail() {
                     </>
                   ) : (
                     <>
-                      {/* Desktop Simple View - Only Business Info, Hidden on small screens */}
-                      <TabsList className="hidden md:flex">
-                        <TabsTrigger value="business">
-                          <Briefcase className="h-4 w-4 mr-1" />
-                          Business Info
-                        </TabsTrigger>
-                      </TabsList>
-                      
-                      {/* Mobile Simple View - Only Business Info */}
-                      <div className="md:hidden w-full">
-                        <div className="flex items-center justify-center font-medium">
-                          <Briefcase className="h-4 w-4 mr-2" />
-                          <span>Business Info</span>
-                        </div>
+                      {/* No tabs needed when there's only one option - show section title instead */}
+                      <div className="w-full">
+                        <h3 className="text-lg font-medium flex items-center justify-center">
+                          <Briefcase className="h-5 w-5 mr-2" />
+                          Business Information
+                        </h3>
                       </div>
                     </>
                   )}
