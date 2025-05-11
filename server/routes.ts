@@ -28,6 +28,9 @@ import {
   sendValidationError 
 } from "./utils/apiResponse";
 import { sendPasswordResetEmail } from "./email/sendgrid";
+import { validate, validateRequest } from "./middleware/validation";
+import { ApiError } from "./middleware/errorHandler";
+import { logger } from "./utils/logger";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
 
@@ -82,40 +85,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Login (public route)
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  app.post("/api/auth/login", validate(userLoginSchema), async (req: Request, res: Response) => {
     try {
-      // Validate request body
-      const loginData = userLoginSchema.parse(req.body);
+      // Request body is already validated by validate middleware
+      const loginData = req.body;
       
       // Find user by username
       const user = await storage.getUserByUsername(loginData.username);
       if (!user) {
-        return sendUnauthorized(res, "Invalid credentials");
+        // Use a generic error message to prevent username enumeration
+        logger.info({ 
+          event: "failed_login_attempt",
+          username: loginData.username, 
+          reason: "user_not_found"
+        });
+        return sendUnauthorized(res, "Invalid credentials", "AUTH_INVALID_CREDENTIALS");
       }
       
       // Check if user is active
       if (!user.active) {
-        return sendUnauthorized(res, "Your account has been deactivated");
+        logger.info({ 
+          event: "failed_login_attempt", 
+          username: loginData.username, 
+          userId: user.id,
+          reason: "account_deactivated"
+        });
+        return sendUnauthorized(res, "Your account has been deactivated", "AUTH_ACCOUNT_DEACTIVATED");
       }
       
       // Verify password
       const isPasswordValid = await comparePassword(loginData.password, user.password);
       if (!isPasswordValid) {
-        return sendUnauthorized(res, "Invalid credentials");
+        logger.info({ 
+          event: "failed_login_attempt", 
+          username: loginData.username, 
+          userId: user.id,
+          reason: "invalid_password" 
+        });
+        return sendUnauthorized(res, "Invalid credentials", "AUTH_INVALID_CREDENTIALS");
       }
       
       // Generate token
       const token = generateToken(user);
       
+      // Log successful login
+      logger.info({ 
+        event: "successful_login", 
+        username: user.username, 
+        userId: user.id,
+        userRole: user.role
+      });
+      
       // Return user data without password and token
       const { password, ...userWithoutPassword } = user;
       return sendSuccess(res, { user: userWithoutPassword, token }, "Login successful");
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return sendValidationError(res, error.errors);
-      }
-      console.error("Login error:", error);
-      return sendError(res, "Failed to login");
+      logger.error({ 
+        event: "login_error", 
+        error: error instanceof Error ? error.message : String(error)
+      }, "Unexpected error during login");
+      
+      throw new ApiError("Authentication failed", 500, "AUTH_SYSTEM_ERROR");
     }
   });
   
@@ -162,10 +192,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Forgot password (public route)
-  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+  app.post("/api/auth/forgot-password", validate(forgotPasswordSchema), async (req: Request, res: Response) => {
     try {
-      // Validate request body
-      const data = forgotPasswordSchema.parse(req.body);
+      // Request body is already validated by middleware
+      const data = req.body;
       
       // Check if user exists
       const user = await storage.getUserByEmail(data.email);
