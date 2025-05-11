@@ -1,0 +1,82 @@
+1. Your focus hook is firing on every render (or remount)
+
+You’ve written:
+
+// Focus username input only once on mount
+React.useEffect(() => {
+  usernameInputRef.current?.focus();
+}, []);
+That empty-array should run only on first mount—but:
+
+If your component is accidentally remounting whenever any state changes (e.g. you key it by some prop that changes), that effect will fire again.
+If you ever remove the [], the effect will run on every render, and so as soon as you blur the input React will refocus it on the next render.
+How to check and fix:
+
+Log mounts.
+React.useEffect(() => {
+  console.log("Login mounted");
+  usernameInputRef.current?.focus();
+}, []);
+If you see “Login mounted” every time you click anywhere, you’ve got a remount problem upstream.
+Guard against reruns.
+If you really only want it once ever, you can use a ref flag:
+const didFocusOnce = React.useRef(false);
+React.useEffect(() => {
+  if (!didFocusOnce.current) {
+    usernameInputRef.current?.focus();
+    didFocusOnce.current = true;
+  }
+}, []);
+2. Switch to the built-in autoFocus attribute
+
+React will only autofocus once when the element is inserted into the DOM:
+
+<Input
+  id="username"
+  autoFocus
+  placeholder="Username"
+  value={username}
+  onChange={e => setUsername(e.target.value)}
+  required
+  autoComplete="username"
+/>
+Then you can remove your useEffect entirely. In most browsers that prevents any unwanted re-focusing when you click elsewhere.
+
+3. Make sure you’re not remounting on state or location changes
+
+In your router (using Wouter):
+
+function AppContent() {
+  const [location] = useLocation();
+  // …
+  if (location === "/login" || …) {
+    return <Router />;
+  }
+  return <MainLayout><Router/></MainLayout>;
+}
+If AppContent or your <Login> gets a different key or conditionally unmounts & remounts, that useEffect will fire again.
+
+Double-check that you’re not passing a key={…} prop to <Login>.
+Verify no parent state change (e.g. a theming toggle or layout change) causes the login page to remount.
+4. Inspect any global click/focus handlers
+
+Search for any code that might do something like:
+
+document.addEventListener("click", () => {
+  // …refocus the input
+});
+or a library that traps focus (e.g. a modal/focus-trap util) that’s wrapping your login form.
+
+5. Quick summary of fixes
+
+Use autoFocus on the username <Input> and delete the focus effect.
+If you still need JS control, ensure your useEffect has exactly [] (no missing or extra deps) and that the component truly only mounts once.
+Guard your focus logic with a ref flag so it never retriggers:
+const focused = React.useRef(false);
+React.useEffect(() => {
+  if (!focused.current) {
+    usernameInputRef.current?.focus();
+    focused.current = true;
+  }
+}, []);
+Check that you’re not unmounting/remounting <Login> on every click—use React DevTools or console logs to verify.

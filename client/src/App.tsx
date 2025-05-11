@@ -1,3 +1,4 @@
+import React, { Suspense, lazy, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -15,22 +16,26 @@ import Integrations from "@/pages/integrations";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
-import { Suspense, lazy } from "react";
 
 // Auth protected route component
 function ProtectedRoute({ component: Component, requireSuperAdmin = false, ...rest }: any) {
   const { isAuthenticated, isSuperAdmin } = useAuth();
   const [, setLocation] = useLocation();
   
-  // If not authenticated, redirect to login
-  if (!isAuthenticated) {
-    setLocation("/login");
-    return null;
-  }
+  // Handle redirects properly as side effects
+  useEffect(() => {
+    // If not authenticated, redirect to login
+    if (!isAuthenticated) {
+      setLocation("/login");
+    }
+    // If superadmin is required but user is not superadmin, redirect to home
+    else if (requireSuperAdmin && !isSuperAdmin) {
+      setLocation("/");
+    }
+  }, [isAuthenticated, isSuperAdmin, requireSuperAdmin, setLocation]);
   
-  // If superadmin is required but user is not superadmin, redirect to home
-  if (requireSuperAdmin && !isSuperAdmin) {
-    setLocation("/");
+  // Don't render until authentication state is confirmed
+  if (!isAuthenticated || (requireSuperAdmin && !isSuperAdmin)) {
     return null;
   }
   
@@ -42,8 +47,15 @@ function PublicRoute({ component: Component, ...rest }: any) {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   
+  // Handle redirect to home as a side effect if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocation("/");
+    }
+  }, [isAuthenticated, setLocation]);
+  
+  // Don't render if authenticated
   if (isAuthenticated) {
-    setLocation("/");
     return null;
   }
   
