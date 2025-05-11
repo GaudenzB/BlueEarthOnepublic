@@ -19,7 +19,16 @@ declare global {
 }
 
 // Secret key for JWT
-const JWT_SECRET = process.env.JWT_SECRET || "blueearthcapital_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET || (
+  process.env.NODE_ENV === 'development' 
+  ? 'development_only_secret_key_not_for_production' 
+  : undefined
+);
+
+// In production, we require a real JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required for application security');
+}
 
 // Function to hash a password
 export const hashPassword = async (password: string): Promise<string> => {
