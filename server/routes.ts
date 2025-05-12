@@ -149,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user by ID
   app.get("/api/users/:id", authenticate, isSuperAdmin, validateIdParameter(), async (req: Request, res: Response) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params['id']);
       const user = await storage.getUser(id);
       
       if (!user) {
@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = user;
       return sendSuccess(res, userWithoutPassword);
     } catch (error) {
-      logger.error({ userId: req.params.id, error }, "Error retrieving user");
+      logger.error({ userId: req.params['id'], error }, "Error retrieving user");
       return sendError(res, "Failed to get user");
     }
   });

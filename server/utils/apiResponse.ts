@@ -21,38 +21,40 @@ interface ApiResponse<T> {
 /**
  * Success response with optional data and message
  */
-const success = <T>(res: Response, data?: T, message?: string): Response => {
+function success<T>(res: Response, data?: T, message?: string): Response {
   const response: ApiResponse<T> = {
     success: true,
     ...(data !== undefined && { data }),
     ...(message && { message })
   };
   return res.status(200).json(response);
-};
+}
 
 /**
  * Created response with data and optional message (status 201)
  */
-const created = <T>(res: Response, data: T, message?: string): Response => {
+function created<T>(res: Response, data: T, message?: string): Response {
   const response: ApiResponse<T> = {
     success: true,
     data,
     ...(message && { message })
   };
   return res.status(201).json(response);
-};
+}
 
 /**
  * No content response (status 204)
  */
-const noContent = (res: Response): Response => {
+function noContent(res: Response): Response {
   return res.status(204).end();
-};
+}
 
 /**
  * Bad request error response (status 400)
  */
-const badRequest = (res: Response, message = 'Bad request'): Response => {
+function badRequest(res: Response, message?: string): void;
+function badRequest(res: Response, message: string): Response;
+function badRequest(res: Response, message = 'Bad request'): Response | void {
   const response: ApiResponse<null> = {
     success: false,
     message
@@ -62,19 +64,25 @@ const badRequest = (res: Response, message = 'Bad request'): Response => {
 
 /**
  * Unauthorized error response (status 401)
+ * This version can be used in both middleware and regular route handlers
  */
-const unauthorized = (res: Response, message = 'Unauthorized'): Response => {
+function unauthorized(res: Response, message?: string): void;
+function unauthorized(res: Response, message: string): Response;
+function unauthorized(res: Response, message = 'Unauthorized'): void | Response {
   const response: ApiResponse<null> = {
     success: false,
     message
   };
   return res.status(401).json(response);
-};
+}
 
 /**
  * Forbidden error response (status 403)
+ * This version can be used in both middleware and regular route handlers
  */
-const forbidden = (res: Response, message = 'Forbidden'): Response => {
+function forbidden(res: Response, message?: string): void;
+function forbidden(res: Response, message: string): Response;
+function forbidden(res: Response, message = 'Forbidden'): void | Response {
   const response: ApiResponse<null> = {
     success: false,
     message
@@ -84,8 +92,11 @@ const forbidden = (res: Response, message = 'Forbidden'): Response => {
 
 /**
  * Not found error response (status 404)
+ * This version can be used in both middleware and regular route handlers
  */
-const notFound = (res: Response, message = 'Resource not found'): Response => {
+function notFound(res: Response, message?: string): void;
+function notFound(res: Response, message: string): Response;
+function notFound(res: Response, message = 'Resource not found'): void | Response {
   const response: ApiResponse<null> = {
     success: false,
     message
@@ -95,8 +106,11 @@ const notFound = (res: Response, message = 'Resource not found'): Response => {
 
 /**
  * Conflict error response (status 409)
+ * This version can be used in both middleware and regular route handlers
  */
-const conflict = (res: Response, message = 'Resource conflict'): Response => {
+function conflict(res: Response, message?: string): void;
+function conflict(res: Response, message: string): Response;
+function conflict(res: Response, message = 'Resource conflict'): void | Response {
   const response: ApiResponse<null> = {
     success: false,
     message
