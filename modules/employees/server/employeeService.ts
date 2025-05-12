@@ -1,6 +1,6 @@
 import { storage } from '../../../server/storage';
 import { logger } from '../../../server/utils/logger';
-import { Employee, InsertEmployee, employeeStatusEnum } from '../../../core/src/schemas/employee';
+import { Employee, InsertEmployee, employeeStatusEnum } from '@shared/schema';
 import { bubbleApiService } from './bubbleApiService';
 
 /**

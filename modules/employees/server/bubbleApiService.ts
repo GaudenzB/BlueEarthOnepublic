@@ -1,5 +1,5 @@
 import fetch, { RequestInit, Response as NodeFetchResponse } from 'node-fetch';
-import { InsertEmployee, employeeStatusEnum, type EmployeeStatus } from '@blueearth/core/schemas';
+import { InsertEmployee, employeeStatusEnum, type EmployeeStatus } from '@shared/schema';
 import { logger } from '../../../server/utils/logger';
 import config from '../../../server/utils/config';
 

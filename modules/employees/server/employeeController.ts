@@ -72,11 +72,16 @@ export async function getAllEmployees(req: Request, res: Response) {
  */
 export async function getEmployeeById(req: Request, res: Response) {
   try {
-    const idParam = req.params['id'];
+    const idParam = req.params.id;
     if (!idParam) {
       return sendError(res, "Employee ID is required", 400);
     }
-    const id = parseInt(idParam);
+    
+    // Parse as integer and validate
+    const id = parseInt(idParam, 10);
+    if (isNaN(id) || id <= 0) {
+      return sendError(res, "Invalid employee ID format", 400);
+    }
     
     // Log detailed request information
     logger.info({
@@ -108,7 +113,7 @@ export async function getEmployeeById(req: Request, res: Response) {
     
     return sendSuccess(res, employee);
   } catch (error) {
-    logger.error({ employeeId: req.params['id'], error }, "Error retrieving employee");
+    logger.error({ employeeId: req.params.id, error: error instanceof Error ? error.message : String(error) }, "Error retrieving employee");
     return sendError(res, "Failed to get employee", 500);
   }
 }
