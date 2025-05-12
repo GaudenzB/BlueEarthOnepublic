@@ -6,7 +6,12 @@ import { documentRepository } from '../repositories/documentRepository';
 import { uploadFile, generateStorageKey, downloadFile, deleteFile } from '../services/documentStorage';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
-import { documentTypeZod, processingStatusZod } from '../../shared/schema/documents/documents';
+import { 
+  documentTypeZod, 
+  processingStatusZod,
+  type InsertDocument,
+  type DocumentType
+} from '../../shared/schema/documents/documents';
 
 const router = express.Router();
 
@@ -185,15 +190,15 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
             mimeType: file.mimetype
           });
           
-          // Build a payload object with only defined values
-          const createPayload: Record<string, any> = {
+          // Build a payload object with correct typing
+          const createPayload: InsertDocument = {
             filename: sanitizedFilename,
             originalFilename: file.originalname,
             mimeType: file.mimetype,
             fileSize: file.size.toString(),
             storageKey: uploadResult.storageKey,
             checksum: uploadResult.checksum,
-            title: documentData.title,
+            title: documentData.title || sanitizedFilename,
             uploadedBy: userId,
             tenantId,
             deleted: false,
@@ -212,12 +217,42 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
           }
 
           // Add optional fields only if they're defined
-          if (documentData.documentType) createPayload.documentType = documentData.documentType;
-          if (documentData.description) createPayload.description = documentData.description;
-          if (documentData.tags?.length > 0) createPayload.tags = documentData.tags;
-          if (documentData.isConfidential !== undefined) createPayload.isConfidential = documentData.isConfidential;
-          if (documentData.customMetadata) createPayload.customMetadata = documentData.customMetadata;
-          if (documentData.retentionDate) createPayload.retentionDate = documentData.retentionDate;
+          if (documentData.documentType) {
+            const docType = documentData.documentType.toString() as DocumentType;
+            if (documentTypeZod.safeParse(docType).success) {
+              createPayload.documentType = docType;
+            }
+          }
+          
+          if (documentData.description) {
+            createPayload.description = documentData.description.toString();
+          }
+          
+          if (documentData.tags && Array.isArray(documentData.tags) && documentData.tags.length > 0) {
+            createPayload.tags = documentData.tags.map(tag => tag.toString());
+          }
+          
+          if (documentData.isConfidential !== undefined) {
+            createPayload.isConfidential = Boolean(documentData.isConfidential);
+          }
+          
+          if (documentData.customMetadata && typeof documentData.customMetadata === 'object') {
+            const metadata: Record<string, string> = {};
+            Object.entries(documentData.customMetadata).forEach(([key, value]) => {
+              metadata[key] = String(value);
+            });
+            createPayload.customMetadata = metadata;
+          }
+          
+          if (documentData.retentionDate) {
+            try {
+              createPayload.retentionDate = new Date(documentData.retentionDate.toString());
+            } catch (error) {
+              logger.warn('Invalid retention date format, skipping field', { 
+                retentionDate: documentData.retentionDate
+              });
+            }
+          }
           
           // Step 2: Create database record
           document = await documentRepository.create(createPayload);
