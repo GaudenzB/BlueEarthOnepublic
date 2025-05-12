@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { 
   Table, 
@@ -21,7 +21,8 @@ import {
   ImageIcon,
   FileEditIcon,
   HelpCircleIcon,
-  Receipt
+  Receipt,
+  Trash2Icon
 } from "lucide-react";
 import { 
   DropdownMenu,
@@ -29,9 +30,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
+import { queryClient } from "@/lib/queryClient";
 
 interface DocumentListProps {
   documents: any[];
@@ -40,6 +53,51 @@ interface DocumentListProps {
 }
 
 export default function DocumentList({ documents, isLoading, filter = "all" }: DocumentListProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleDeleteClick = (documentId: string) => {
+    setDocumentToDelete(documentId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!documentToDelete) return;
+    
+    try {
+      const response = await fetch(`/api/documents/${documentToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete document');
+      }
+      
+      // Invalidate documents query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+      
+      toast({
+        title: "Document deleted",
+        description: "The document has been successfully deleted",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete the document. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Error deleting document:', error);
+    } finally {
+      setDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+    }
+  };
+
   const getDocumentTypeIcon = (type: string | null) => {
     switch (type) {
       case "CONTRACT":
@@ -78,7 +136,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     }
   };
 
-  const filteredDocuments = React.useMemo(() => {
+  const filteredDocuments = useMemo(() => {
     if (filter === "all") {
       return documents;
     } else if (filter === "recent") {
@@ -147,68 +205,93 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   }
 
   return (
-    <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[40%]">Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead className="w-[60px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredDocuments.map((document) => (
-            <TableRow key={document.id}>
-              <TableCell className="font-medium">
-                <Link href={`/documents/${document.id}`}>
-                  <div className="flex items-center gap-2 text-primary hover:underline cursor-pointer">
-                    {getDocumentTypeIcon(document.documentType)}
-                    <span>{document.title || document.originalFilename}</span>
-                  </div>
-                </Link>
-              </TableCell>
-              <TableCell>
-                {document.documentType || "Other"}
-              </TableCell>
-              <TableCell>
-                {getProcessingStatusBadge(document.processingStatus)}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {format(new Date(document.createdAt), "MMM d, yyyy")}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontalIcon className="h-4 w-4" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Link href={`/documents/${document.id}`}>
-                        <span>View details</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <PermissionGuard area="documents" permission="view">
-                      <DropdownMenuItem asChild>
-                        <a href={`/api/documents/${document.id}/download`}>
-                          Download
-                        </a>
-                      </DropdownMenuItem>
-                    </PermissionGuard>
-                    <PermissionGuard area="documents" permission="delete">
-                      <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                    </PermissionGuard>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+    <div>
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40%]">Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredDocuments.map((document) => (
+              <TableRow key={document.id}>
+                <TableCell className="font-medium">
+                  <Link href={`/documents/${document.id}`}>
+                    <div className="flex items-center gap-2 text-primary hover:underline cursor-pointer">
+                      {getDocumentTypeIcon(document.documentType)}
+                      <span>{document.title || document.originalFilename}</span>
+                    </div>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {document.documentType || "Other"}
+                </TableCell>
+                <TableCell>
+                  {getProcessingStatusBadge(document.processingStatus)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {format(new Date(document.createdAt), "MMM d, yyyy")}
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontalIcon className="h-4 w-4" />
+                        <span className="sr-only">Open menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Link href={`/documents/${document.id}`}>
+                          <span>View details</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <PermissionGuard area="documents" permission="view">
+                        <DropdownMenuItem asChild>
+                          <a href={`/api/documents/${document.id}/download`}>
+                            Download
+                          </a>
+                        </DropdownMenuItem>
+                      </PermissionGuard>
+                      <PermissionGuard area="documents" permission="delete">
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDeleteClick(document.id)}
+                        >
+                          <Trash2Icon className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </PermissionGuard>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Document Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this document? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

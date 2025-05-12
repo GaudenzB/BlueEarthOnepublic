@@ -65,7 +65,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
     setIsDragging(false);
   };
 
-  const validateAndSetFile = (file: File) => {
+  const validateAndSetFile = (file: File | undefined) => {
+    if (!file) return false;
     // File size validation (20MB max)
     const maxSizeInBytes = 20 * 1024 * 1024; // 20MB
     if (file.size > maxSizeInBytes) {
@@ -107,7 +108,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      validateAndSetFile(file);
+      if (file) {
+        validateAndSetFile(file);
+      }
     }
   };
 
