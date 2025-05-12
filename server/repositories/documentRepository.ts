@@ -82,6 +82,17 @@ export const documentRepository = {
         sortOrder = 'desc',
         tags 
       } = options;
+      
+      logger.debug('Getting documents with options', { 
+        tenantId, 
+        limit, 
+        offset, 
+        documentType,
+        search,
+        sortBy,
+        sortOrder,
+        tags 
+      });
 
       // Build query conditions
       const conditions = [
@@ -128,6 +139,16 @@ export const documentRepository = {
         .limit(limit)
         .offset(offset);
 
+      logger.debug('Document query results', { 
+        resultCount: results.length,
+        totalCount: Number(count),
+        sampleDocument: results.length > 0 ? {
+          id: results[0].id,
+          title: results[0].title,
+          filename: results[0].filename
+        } : null
+      });
+      
       return {
         documents: results,
         total: Number(count)
