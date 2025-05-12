@@ -154,13 +154,22 @@ export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: Unauthor
       // Use HTTP client to fetch data with auth token
       const response = await httpClient.get<T>(url, options);
       
-      // For specific API patterns that return standardized responses like employees/:id
-      // Return the full response object
-      if (url.match(/\/api\/employees\/\d+/) || url.includes('/api/auth/')) {
+      // Special handling for employee detail endpoints
+      if (url.match(/\/api\/employees\/\d+/)) {
+        // Always return the full response object for employee details
+        console.log("Employee detail endpoint detected, returning full response");
+        return response as unknown as T;
+      }
+      
+      // Special handling for auth endpoints
+      if (url.includes('/api/auth/')) {
+        // Return the full response for auth endpoints
+        console.log("Auth endpoint detected, returning full response");
         return response as unknown as T;
       }
       
       // For other endpoints, return data property of ApiResponse if it exists
+      console.log("Standard endpoint, returning data property from response");
       return response.data as T;
     } catch (error) {
       // Handle 401 (Unauthorized) as requested

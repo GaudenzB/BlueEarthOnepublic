@@ -1,0 +1,82 @@
+It looks like your detail page is still wired up to render only the mock object instead of loading the real employee data by ID. Here’s a step-by-step of what you need to change in your React code:
+
+Ensure your route is parameterized.
+In your router (e.g. AppRoutes.tsx), you should have something like:
+<Route path="/directory/:employeeId" element={<EmployeeDetail />} />
+Link to the detail page with the correct ID.
+In your EmployeeCard (or wherever you render the list), make sure you’re doing:
+<Link to={`/directory/${employee.id}`}>
+  <EmployeeCard data={employee} />
+</Link>
+Pull the ID from the URL in EmployeeDetail.
+Replace whatever static import of mock data you have with a dynamic fetch. For example, in EmployeeDetail.tsx:
+import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Employee } from '../shared/types';
+
+export function EmployeeDetail() {
+  const { employeeId } = useParams<{ employeeId: string }>();
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!employeeId) {
+      setError('No employee ID provided');
+      setLoading(false);
+      return;
+    }
+
+    fetch(`/api/employees/${employeeId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        return res.json();
+      })
+      .then((data: Employee) => {
+        setEmployee(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError('Could not load employee data');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [employeeId]);
+
+  if (loading) return <p>Loading…</p>;
+  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (!employee) return <p>No data found.</p>;
+
+  return (
+    <div>
+      <h1>
+        {employee.firstName} {employee.lastName}
+      </h1>
+      <p>Title: {employee.title}</p>
+      <p>Email: {employee.email}</p>
+      {/* etc. */}
+    </div>
+  );
+}
+Back-end endpoint.
+Make sure your server has something like:
+// server/routes/employees.ts
+router.get('/:employeeId', async (req, res, next) => {
+  try {
+    const id = req.params.employeeId;
+    const employee = await employeeService.findById(id);
+    if (!employee) return res.status(404).json({ message: 'Not found' });
+    res.json(employee);
+  } catch (err) {
+    next(err);
+  }
+});
+Shared types
+If you’re using a shared Employee interface or Zod schema, import it so your client and server agree on the shape.
+Why this fixes it
+
+You were always rendering the same imported object (your mock) rather than pulling the URL’s :employeeId.
+By using React Router’s useParams + a real API fetch, each click will load the correct data.
+The loading/error states ensure a smooth UX while the request is in flight.
+Let me know if you run into CORS issues or need help wiring up the service layer (e.g. with your Drizzle ORM).

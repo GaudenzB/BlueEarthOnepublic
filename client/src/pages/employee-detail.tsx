@@ -64,7 +64,21 @@ export default function EmployeeDetail() {
   });
   
   // Extract employee from response
-  const employee = apiResponse?.data;
+  // Handle both single object and array response formats
+  let employee = undefined;
+  
+  if (apiResponse?.data) {
+    // If response is an array, find the employee with matching ID
+    if (Array.isArray(apiResponse.data)) {
+      console.log("API returned array response, searching for employee with ID:", id);
+      employee = apiResponse.data.find(emp => emp.id === parseInt(id));
+    } else {
+      // If response is a single object, use it directly
+      employee = apiResponse.data;
+    }
+  }
+  
+  console.log("Final employee data:", employee);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -306,7 +320,13 @@ export default function EmployeeDetail() {
             <Avatar className="h-32 w-32 mx-auto">
               {employee?.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
               <AvatarFallback className="text-2xl">
-                {employee?.name ? employee.name.split(' ').map(n => n[0]).join('') : 'EM'}
+                {employee?.name 
+                  ? employee.name
+                      .split(' ')
+                      .map((part: string) => part.charAt(0))
+                      .join('')
+                  : 'EM'
+                }
               </AvatarFallback>
             </Avatar>
             <CardTitle className="mt-4">{employee?.name || 'Unknown'}</CardTitle>
