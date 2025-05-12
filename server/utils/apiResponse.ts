@@ -31,7 +31,12 @@ function success<T>(res: Response, data?: T, message?: string): Response {
     sample: Array.isArray(data) && data.length > 0 ? data[0] : null
   });
   
-  // Construct response
+  // Special case for employee endpoints - return raw data for compatibility with client
+  if (res.req?.url && res.req.url.includes('/api/employees')) {
+    return res.status(200).json(data);
+  }
+  
+  // Standard API response format
   const response: ApiResponse<T> = {
     success: true,
     data: data, // Always include data property, even if undefined
@@ -45,6 +50,11 @@ function success<T>(res: Response, data?: T, message?: string): Response {
  * Created response with data and optional message (status 201)
  */
 function created<T>(res: Response, data: T, message?: string): Response {
+  // Special case for employee endpoints - return raw data for compatibility with client
+  if (res.req?.url && res.req.url.includes('/api/employees')) {
+    return res.status(201).json(data);
+  }
+  
   const response: ApiResponse<T> = {
     success: true,
     data,

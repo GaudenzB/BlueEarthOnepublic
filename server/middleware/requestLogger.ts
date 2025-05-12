@@ -72,10 +72,19 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
     
     // Only log detailed response for API routes
     if (isApiRoute) {
-      // Attempt to parse the response body if it's JSON
-      let responseBody: any = {};
-      
-      if (res.statusCode >= 400 && res.statusCode < 600) {
+      // Skip logging the response body for employee routes to reduce noise
+      // We already log the relevant details in the controller before sending
+      if (req.path.includes('/api/employees')) {
+        logger.info({
+          requestId: req.id,
+          method: req.method,
+          path: req.path,
+          type: 'response',
+          statusCode: res.statusCode,
+          duration,
+          body: { employeeDataSkipped: true }
+        }, `Response: ${req.method} ${req.path} ${res.statusCode}`);
+      } else if (res.statusCode >= 400 && res.statusCode < 600) {
         // Log error responses with more detail
         logger.error({
           requestId: req.id,
@@ -84,18 +93,17 @@ export function requestLoggerMiddleware(req: Request, res: Response, next: NextF
           type: 'response',
           statusCode: res.statusCode,
           duration,
-          error: responseBody.error || responseBody.message || 'Unknown error',
+          error: 'See error logs for details'
         }, `Error response: ${req.method} ${req.path} ${res.statusCode}`);
       } else {
-        // Log successful responses
+        // Log successful responses without trying to parse the body
         logger.info({
           requestId: req.id,
           method: req.method,
           path: req.path,
           type: 'response',
           statusCode: res.statusCode,
-          duration,
-          body: truncateResponseBody(responseBody),
+          duration
         }, `Response: ${req.method} ${req.path} ${res.statusCode}`);
       }
     }
