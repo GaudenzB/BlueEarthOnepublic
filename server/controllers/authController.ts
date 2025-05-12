@@ -1,0 +1,293 @@
+/**
+ * Authentication controller
+ * 
+ * Handles user authentication operations like login, registration,
+ * password reset, and logout functionality.
+ */
+
+import { Request, Response } from 'express';
+import { storage } from '../storage';
+import { comparePassword, generateToken, revokeToken, hashPassword } from '../auth';
+import { wrapHandler } from '../utils/errorHandling';
+import { logger } from '../utils/logger';
+import { ApiError } from '../middleware/errorHandler';
+import { sendSuccess, sendUnauthorized } from '../utils/apiResponse';
+import { 
+  userLoginSchema, 
+  userRegistrationSchema, 
+  passwordResetRequestSchema,
+  passwordResetSchema 
+} from '@shared/validation/user';
+
+/**
+ * Login endpoint handler
+ * Validates credentials and returns a JWT token if successful
+ */
+const login = wrapHandler(async (req: Request, res: Response) => {
+  // Request body is validated by our validation schema
+  const loginData = userLoginSchema.parse(req.body);
+  
+  // Find user by username
+  const user = await storage.getUserByUsername(loginData.username);
+  if (!user) {
+    // Use a generic error message to prevent username enumeration
+    logger.info({ 
+      event: "failed_login_attempt",
+      username: loginData.username, 
+      reason: "user_not_found"
+    });
+    // Use our error handling
+    throw new ApiError("Invalid credentials", 401, "AUTH_INVALID_CREDENTIALS");
+  }
+  
+  // Check if user is active
+  if (!user.active) {
+    logger.info({ 
+      event: "failed_login_attempt", 
+      username: loginData.username, 
+      userId: user.id,
+      reason: "account_deactivated"
+    });
+    throw new ApiError("Your account has been deactivated", 401, "AUTH_ACCOUNT_DEACTIVATED");
+  }
+  
+  // Verify password
+  const isPasswordValid = await comparePassword(loginData.password, user.password);
+  if (!isPasswordValid) {
+    logger.info({ 
+      event: "failed_login_attempt", 
+      username: loginData.username, 
+      userId: user.id,
+      reason: "invalid_password" 
+    });
+    throw new ApiError("Invalid credentials", 401, "AUTH_INVALID_CREDENTIALS");
+  }
+  
+  // Generate token
+  const token = generateToken(user);
+  
+  // Log successful login
+  logger.info({ 
+    event: "successful_login", 
+    username: user.username, 
+    userId: user.id 
+  });
+  
+  // Return success with user info and token
+  return sendSuccess(res, "Login successful", {
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+    },
+    token
+  });
+});
+
+/**
+ * Register endpoint handler
+ * Creates a new user account
+ */
+const register = wrapHandler(async (req: Request, res: Response) => {
+  // Validate registration data
+  const registrationData = userRegistrationSchema.parse(req.body);
+  
+  // Check if username already exists
+  const existingUsername = await storage.getUserByUsername(registrationData.username);
+  if (existingUsername) {
+    throw new ApiError("Username already exists", 409, "AUTH_USERNAME_EXISTS");
+  }
+  
+  // Check if email already exists
+  if (registrationData.email) {
+    const existingEmail = await storage.getUserByEmail(registrationData.email);
+    if (existingEmail) {
+      throw new ApiError("Email already exists", 409, "AUTH_EMAIL_EXISTS");
+    }
+  }
+  
+  // Hash password
+  const hashedPassword = await hashPassword(registrationData.password);
+  
+  // Create user with hashed password (omit confirmPassword field)
+  const { confirmPassword, ...userData } = registrationData;
+  
+  const newUser = await storage.createUser({
+    ...userData,
+    password: hashedPassword,
+    role: 'user', // Default role for new registrations
+    active: true,
+  });
+  
+  // Log successful registration
+  logger.info({ 
+    event: "user_registered", 
+    username: newUser.username, 
+    userId: newUser.id 
+  });
+  
+  // Generate token for auto-login
+  const token = generateToken(newUser);
+  
+  // Return success with user info and token
+  return sendSuccess(res, "Registration successful", {
+    user: {
+      id: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      role: newUser.role,
+    },
+    token
+  }, 201);
+});
+
+/**
+ * Logout endpoint handler
+ * Revokes the current JWT token
+ */
+const logout = wrapHandler(async (req: Request, res: Response) => {
+  // Extract token from request
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    
+    // Revoke the token
+    revokeToken(token);
+    
+    // Log logout
+    logger.info({ 
+      event: "logout", 
+      userId: (req as any).user?.id 
+    });
+  }
+  
+  return sendSuccess(res, "Logout successful");
+});
+
+/**
+ * Gets current user information
+ */
+const getCurrentUser = wrapHandler(async (req: Request, res: Response) => {
+  // Get user ID from authenticated request
+  const userId = (req as any).user?.id;
+  
+  if (!userId) {
+    throw new ApiError("Unauthorized", 401, "AUTH_UNAUTHORIZED");
+  }
+  
+  // Fetch user from storage
+  const user = await storage.getUser(userId);
+  
+  if (!user) {
+    throw new ApiError("User not found", 404, "USER_NOT_FOUND");
+  }
+  
+  // Return user information (omit sensitive data)
+  return sendSuccess(res, "Operation successful", {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+    active: user.active,
+    createdAt: user.createdAt
+  });
+});
+
+/**
+ * Request password reset
+ * Sends a password reset email
+ */
+const forgotPassword = wrapHandler(async (req: Request, res: Response) => {
+  // Validate request data
+  const { email } = passwordResetRequestSchema.parse(req.body);
+  
+  // Check if user exists with this email
+  const user = await storage.getUserByEmail(email);
+  
+  // We don't want to reveal if the email exists or not for security reasons
+  // So we always return success, even if the email doesn't exist
+  if (!user) {
+    logger.info({ 
+      event: "password_reset_request", 
+      email,
+      success: false,
+      reason: "email_not_found"
+    });
+    
+    // Return success even though we didn't send an email
+    // This prevents email enumeration attacks
+    return sendSuccess(res, "If a user exists with this email address, a password reset link has been sent");
+  }
+  
+  // Generate reset token and set expiry
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+  
+  // Save reset token to user record
+  await storage.setResetToken(email, token, expiresAt);
+  
+  // In a real implementation, we would send an email here
+  // This is omitted for simplicity
+  logger.info({ 
+    event: "password_reset_request", 
+    email,
+    userId: user.id,
+    success: true
+  });
+  
+  return sendSuccess(res, "If a user exists with this email address, a password reset link has been sent");
+});
+
+/**
+ * Reset password using token
+ */
+const resetPassword = wrapHandler(async (req: Request, res: Response) => {
+  // Validate request data
+  const { token, password } = passwordResetSchema.parse(req.body);
+  
+  // Find user by reset token
+  const user = await storage.getUserByResetToken(token);
+  
+  if (!user) {
+    logger.info({ 
+      event: "password_reset", 
+      token,
+      success: false,
+      reason: "invalid_token"
+    });
+    
+    throw new ApiError("Invalid or expired reset token", 400, "AUTH_INVALID_RESET_TOKEN");
+  }
+  
+  // Hash new password
+  const hashedPassword = await hashPassword(password);
+  
+  // Update user password and clear reset token
+  await storage.resetUserPassword(user.id, hashedPassword);
+  
+  // Log password reset
+  logger.info({ 
+    event: "password_reset", 
+    userId: user.id,
+    success: true
+  });
+  
+  return sendSuccess(res, "Password has been reset successfully");
+});
+
+// Export controllers with named functions for easier debugging and logging
+export const authController = {
+  login,
+  register,
+  logout,
+  getCurrentUser,
+  forgotPassword,
+  resetPassword,
+};

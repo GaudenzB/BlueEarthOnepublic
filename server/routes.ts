@@ -42,6 +42,7 @@ import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rate
 import contractsRoutes from "./routes/contracts";
 import healthRoutes from "./routes/health";
 import monitoringRoutes from "./routes/monitoring";
+import { authController } from "./controllers/authController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Debug middleware to log all requests
@@ -116,65 +117,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Login (public route)
-  app.post("/api/auth/login", authLimiter, validate(userLoginSchema), async (req: Request, res: Response) => {
-    try {
-      // Request body is already validated by validate middleware
-      const loginData = req.body;
-      
-      // Find user by username
-      const user = await storage.getUserByUsername(loginData.username);
-      if (!user) {
-        // Use a generic error message to prevent username enumeration
-        logger.info({ 
-          event: "failed_login_attempt",
-          username: loginData.username, 
-          reason: "user_not_found"
-        });
-        return sendUnauthorized(res, "Invalid credentials", "AUTH_INVALID_CREDENTIALS");
-      }
-      
-      // Check if user is active
-      if (!user.active) {
-        logger.info({ 
-          event: "failed_login_attempt", 
-          username: loginData.username, 
-          userId: user.id,
-          reason: "account_deactivated"
-        });
-        return sendUnauthorized(res, "Your account has been deactivated", "AUTH_ACCOUNT_DEACTIVATED");
-      }
-      
-      // Verify password
-      const isPasswordValid = await comparePassword(loginData.password, user.password);
-      if (!isPasswordValid) {
-        logger.info({ 
-          event: "failed_login_attempt", 
-          username: loginData.username, 
-          userId: user.id,
-          reason: "invalid_password" 
-        });
-        return sendUnauthorized(res, "Invalid credentials", "AUTH_INVALID_CREDENTIALS");
-      }
-      
-      // Generate token
-      const token = generateToken(user);
-      
-      // Log successful login
-      logger.info({ 
-        event: "successful_login", 
-        username: user.username, 
-        userId: user.id,
-        userRole: user.role
-      });
-      
-      // Return user data without password and token
-      const { password, ...userWithoutPassword } = user;
-      return sendSuccess(res, { user: userWithoutPassword, token }, "Login successful");
-    } catch (error) {
-      logger.error({ 
-        event: "login_error", 
-        error: error instanceof Error ? error.message : String(error)
+  // Login (public route) - using the controller with error handling wrapper
+  app.post("/api/auth/login", authLimiter, authController.login);
       }, "Unexpected error during login");
       
       throw new ApiError("Authentication failed", 500, "AUTH_SYSTEM_ERROR");
