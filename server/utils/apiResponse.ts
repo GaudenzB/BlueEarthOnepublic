@@ -22,11 +22,22 @@ interface ApiResponse<T> {
  * Success response with optional data and message
  */
 function success<T>(res: Response, data?: T, message?: string): Response {
+  // Log what we're about to send
+  console.log("About to send success response with data:", {
+    dataExists: data !== undefined,
+    dataType: typeof data,
+    isArray: Array.isArray(data),
+    dataLength: Array.isArray(data) ? data.length : null,
+    sample: Array.isArray(data) && data.length > 0 ? data[0] : null
+  });
+  
+  // Construct response
   const response: ApiResponse<T> = {
     success: true,
-    ...(data !== undefined && { data }),
+    data: data, // Always include data property, even if undefined
     ...(message && { message })
   };
+  
   return res.status(200).json(response);
 }
 
@@ -200,6 +211,16 @@ export function sendSuccess(res: Response, data?: any, message?: string, statusC
   if (statusCode === 201) {
     return apiResponse.created(res, data, message);
   }
+  
+  // Ensure we don't lose data when using legacy function
+  // Log the response being sent for debugging purposes
+  console.log("sendSuccess called with data:", {
+    dataType: typeof data,
+    isArray: Array.isArray(data),
+    length: Array.isArray(data) ? data.length : null,
+    sampleData: Array.isArray(data) && data.length > 0 ? data[0] : null
+  });
+  
   return apiResponse.success(res, data, message);
 }
 
