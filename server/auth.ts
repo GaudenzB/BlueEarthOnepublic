@@ -143,12 +143,13 @@ export const authenticate = (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   // Get token from header
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
   if (!token) {
-    return apiResponse.unauthorized(res, "No token, authorization denied");
+    apiResponse.unauthorized(res, "No token, authorization denied");
+    return;
   }
 
   try {
@@ -160,7 +161,8 @@ export const authenticate = (
     
     // Check if token has been revoked
     if (decoded.jti && revokedTokens[decoded.jti]) {
-      return apiResponse.unauthorized(res, "Token has been revoked");
+      apiResponse.unauthorized(res, "Token has been revoked");
+      return;
     }
     
     // Set user in request
@@ -178,36 +180,43 @@ export const authenticate = (
     
     // Provide specific error responses based on verification failure type
     if (error.name === 'TokenExpiredError') {
-      return apiResponse.unauthorized(res, "Token has expired");
+      apiResponse.unauthorized(res, "Token has expired");
+      return;
     } else if (error.name === 'JsonWebTokenError') {
-      return apiResponse.unauthorized(res, "Invalid token");
+      apiResponse.unauthorized(res, "Invalid token");
+      return;
     } else if (error.name === 'NotBeforeError') {
-      return apiResponse.unauthorized(res, "Token not yet active");
+      apiResponse.unauthorized(res, "Token not yet active");
+      return;
     }
     
     // Default case for other JWT errors
-    return apiResponse.unauthorized(res, "Invalid authentication token");
+    apiResponse.unauthorized(res, "Invalid authentication token");
+    return;
   }
 };
 
 // Role-based access control middleware
-export const authorize = (roles: UserRole[] = []) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+export const authorize = (roles: UserRole[] = []): ((req: Request, res: Response, next: NextFunction) => void) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return apiResponse.unauthorized(res, "Authentication required");
+      apiResponse.unauthorized(res, "Authentication required");
+      return;
     }
 
     // If no roles are specified, allow all authenticated users
     if (roles.length === 0) {
-      return next();
+      next();
+      return;
     }
 
     // Check if the user's role is included in the allowed roles
     if (!roles.includes(req.user.role as UserRole)) {
-      return apiResponse.forbidden(
+      apiResponse.forbidden(
         res, 
         "Insufficient permissions for this resource"
       );
+      return;
     }
 
     next();
@@ -215,16 +224,18 @@ export const authorize = (roles: UserRole[] = []) => {
 };
 
 // Superadmin authorization middleware
-export const isSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
+export const isSuperAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
-    return apiResponse.unauthorized(res, "Authentication required");
+    apiResponse.unauthorized(res, "Authentication required");
+    return;
   }
 
   if (req.user.role !== "superadmin") {
-    return apiResponse.forbidden(
+    apiResponse.forbidden(
       res, 
       "This operation requires superadmin privileges"
     );
+    return;
   }
 
   next();
