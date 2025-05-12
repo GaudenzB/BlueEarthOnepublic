@@ -12,21 +12,24 @@ import config from './config';
 const { level, prettyPrint } = config.logging;
 const APP_NAME = 'blueearth-portal';
 
+// Type-safe transport configuration
+const transport = prettyPrint 
+  ? {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'SYS:standard',
+        ignore: 'pid,hostname',
+      },
+    } 
+  : undefined;
+
 // Configure pino logger
 const logger = pino({
   level,
   name: APP_NAME,
   base: { app: APP_NAME, env: config.env },
-  transport: prettyPrint 
-    ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        },
-      } 
-    : undefined,
+  ...(transport ? { transport } : {}), // Only include transport if defined
   timestamp: () => `,"time":"${new Date().toISOString()}"`,
   formatters: {
     level: (label) => {
