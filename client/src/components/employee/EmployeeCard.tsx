@@ -21,11 +21,11 @@ interface EmployeeCardProps {
 
 export function EmployeeCard({ employee }: EmployeeCardProps) {
   const nameParts = employee.name.split(' ')
-  const initials = nameParts.length > 1 
-    ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}` 
-    : nameParts[0].substring(0, 2)
+  const initials = nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]
+    ? `${nameParts[0]?.[0] || ''}${nameParts[nameParts.length - 1]?.[0] || ''}` 
+    : nameParts[0]?.substring(0, 2) || '??'
   
-  const statusConfig = statusColors[employee.status] || statusColors.inactive
+  const statusConfig = statusColors[employee.status] || statusColors['inactive']
   const formattedStatus = employee.status.replace('_', ' ')
   
   return (
@@ -59,8 +59,8 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
           </div>
           
           <div className="mt-4 pt-3 border-t border-border flex justify-between">
-            <Badge variant={statusConfig.variant} className="flex items-center">
-              <span className={`w-1.5 h-1.5 mr-1.5 rounded-full ${statusConfig.dot}`}></span>
+            <Badge variant={statusConfig?.variant || 'default'} className="flex items-center">
+              <span className={`w-1.5 h-1.5 mr-1.5 rounded-full ${statusConfig?.dot || 'bg-gray-500'}`}></span>
               {formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1)}
             </Badge>
             <div>

@@ -279,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       
       // Prevent deleting yourself
-      if (id === req.user!.id) {
+      if (id === req.user!['id']) {
         return sendError(res, "You cannot delete your own account", 400);
       }
       
@@ -289,10 +289,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sendNotFound(res, "User not found");
       }
       
-      logger.info({ userId: id, deletedBy: req.user!.id }, "User deleted");
+      logger.info({ userId: id, deletedBy: req.user!['id'] }, "User deleted");
       return sendSuccess(res, null, "User deleted successfully");
     } catch (error) {
-      logger.error({ userId: req.params.id, error }, "Error deleting user");
+      logger.error({ userId: req.params['id'], error }, "Error deleting user");
       return sendError(res, "Failed to delete user");
     }
   });
@@ -393,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return sendSuccess(res, employee);
     } catch (error) {
-      logger.error({ employeeId: req.params.id, error }, "Error retrieving employee");
+      logger.error({ employeeId: req.params['id'], error }, "Error retrieving employee");
       return sendError(res, "Failed to get employee");
     }
   });
