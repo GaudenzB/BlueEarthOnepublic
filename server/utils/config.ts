@@ -18,7 +18,7 @@ const IS_TEST = NODE_ENV === 'test';
 const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(5000),
   HOST: z.string().default('0.0.0.0'),
   
   // Database

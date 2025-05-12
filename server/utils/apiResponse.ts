@@ -6,7 +6,7 @@
  */
 
 import { Response } from 'express';
-import { ZodError } from 'zod';
+import { ZodError, ZodIssue } from 'zod';
 
 /**
  * Base interface for all API responses
@@ -173,14 +173,49 @@ export const apiResponse = {
 };
 
 // Legacy API for backward compatibility - will be deprecated
-export const sendSuccess = success;
-export const sendError = (res: Response, message = 'Internal server error', statusCode = 500): Response => {
+export function sendSuccess(res: Response, data?: any, message?: string, statusCode?: number): Response {
+  if (statusCode === 201) {
+    return apiResponse.created(res, data, message);
+  }
+  return apiResponse.success(res, data, message);
+}
+
+export function sendError(res: Response, message: string = 'Internal server error', statusCode: number = 500): Response {
   if (statusCode === 409) return apiResponse.conflict(res, message);
   if (statusCode === 404) return apiResponse.notFound(res, message);
   if (statusCode === 403) return apiResponse.forbidden(res, message);
   if (statusCode === 401) return apiResponse.unauthorized(res, message);
   if (statusCode === 400) return apiResponse.badRequest(res, message);
   return apiResponse.serverError(res, message);
-};
-export const sendValidationError = validationError;
-export const sendNotFound = notFound;
+}
+
+export function sendValidationError(res: Response, errors: any): Response {
+  if (errors instanceof ZodError) {
+    // Use the error directly if it's a ZodError
+    return apiResponse.validationError(res, errors);
+  } else if (Array.isArray(errors) && errors.length > 0 && errors[0].path && errors[0].message) {
+    // Handle arrays that look like ZodIssue[]
+    const formattedErrors: Record<string, string[]> = {};
+    errors.forEach(issue => {
+      const path = Array.isArray(issue.path) ? issue.path.join('.') : String(issue.path) || 'general';
+      if (!formattedErrors[path]) formattedErrors[path] = [];
+      formattedErrors[path].push(issue.message);
+    });
+    return apiResponse.validationError(res, formattedErrors);
+  } else if (typeof errors === 'object') {
+    // Handle Record<string, string | string[]>
+    const formattedErrors: Record<string, string[]> = {};
+    Object.keys(errors).forEach(key => {
+      const value = errors[key];
+      formattedErrors[key] = Array.isArray(value) ? value : [String(value)];
+    });
+    return apiResponse.validationError(res, formattedErrors);
+  } else {
+    // Default case - create a generic validation error
+    return apiResponse.validationError(res, { general: ['Validation failed'] });
+  }
+}
+
+export function sendNotFound(res: Response, message?: string): Response {
+  return apiResponse.notFound(res, message);
+}
