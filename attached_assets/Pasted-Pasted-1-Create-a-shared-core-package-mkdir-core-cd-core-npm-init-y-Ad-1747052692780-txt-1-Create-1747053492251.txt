@@ -1,0 +1,86 @@
+Pasted-1-Create-a-shared-core-package-mkdir-core-cd-core-npm-init-y-Ad-1747052692780.txt
+1. **Create a shared `core/` package**  
+   - `mkdir core && cd core`  
+   - `npm init -y`  
+   - Add `src/index.ts` exporting our common UI components, hooks, utils and types  
+   - Configure `tsconfig.json` (see step 4) and add a minimal `package.json` with any shared deps  
+
+2. **Introduce a `modules/` folder**  
+   - At repo root, run `mkdir modules`  
+   - Move each feature into its own module, e.g.:  
+     ```
+     mv client/src/features/hr modules/hr/client
+     mv server/src/services/hr modules/hr/server
+     mv shared/validation/hr modules/hr/shared/validation
+     ```  
+   - Repeat for any existing feature you want to modularize  
+
+3. **Centralize route constants**  
+   - Create `client/src/routes.ts` (and mirror in server if needed):  
+     ```ts
+     export const ROUTES = {
+       DIRECTORY: '/directory',
+       EMPLOYEE_DETAIL: (id: string) => `/directory/${id}`,
+       // …add more as we go
+     };
+     ```  
+   - Update `<Route>` definitions and all `<Link to={…}>` calls to import from `routes.ts`  
+
+4. **Enable strict TypeScript & linting**  
+   - In root `tsconfig.json`, set:
+     ```json
+     {
+       "compilerOptions": {
+         "strict": true,
+         "noImplicitAny": true,
+         // …other options
+       }
+     }
+     ```  
+   - Ensure only one root `.eslintrc.js` (extending `'eslint:recommended'` + your style guide) and remove any nested configs  
+
+5. **Define schema-first API contracts**  
+   - In `core/schemas/employee.ts`:
+     ```ts
+     import { z } from 'zod';
+
+     export const EmployeeSchema = z.object({
+       id: z.string(),
+       firstName: z.string(),
+       lastName: z.string(),
+       email: z.string().email(),
+       // …other fields
+     });
+     export type Employee = z.infer<typeof EmployeeSchema>;
+     ```  
+   - Use `EmployeeSchema.parse()` in your server controller and import the `Employee` type in the React client  
+
+6. **Add a minimal design-token stub**  
+   - In `core/theme.ts`:
+     ```ts
+     export const theme = {
+       colors: {
+         primary: '#0052cc',
+         secondary: '#edf2f7',
+       },
+       spacing: {
+         sm: '0.5rem',
+         md: '1rem',
+         lg: '2rem',
+       },
+     };
+     ```  
+
+7. **Drop in a global CSS reset**  
+   - In `client/src/index.css` (or your main CSS):
+     ```css
+     /* reset.css */
+     *, *::before, *::after {
+       box-sizing: border-box;
+       margin: 0; padding: 0;
+     }
+     html, body {
+       height: 100%;
+       font-family: sans-serif;
+     }
+     ```  
