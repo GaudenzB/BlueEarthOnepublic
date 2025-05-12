@@ -1,0 +1,75 @@
+import { Express, Request, Response } from 'express';
+import { z } from 'zod';
+import { authenticate, isSuperAdmin } from '../../../server/auth';
+import { validate, validateIdParameter } from '../../../server/middleware/validation';
+import { logger } from '../../../server/utils/logger';
+import { createSuccessResponse, createErrorResponse } from '@blueearth/core/utils';
+import { employeeService } from './employeeService';
+import { employeeController } from './index';
+import { insertEmployeeSchema } from '@blueearth/core/schemas';
+
+/**
+ * Register all employee-related routes
+ */
+export function registerEmployeeRoutes(app: Express) {
+  // Get all employees
+  app.get("/api/employees", authenticate, employeeController.getAllEmployees);
+  
+  // Get employee by ID
+  app.get("/api/employees/:id", authenticate, validateIdParameter(), employeeController.getEmployeeById);
+  
+  // Create employee (manual entry, not via Bubble sync)
+  app.post("/api/employees", 
+    authenticate, 
+    validate(z.object({ body: insertEmployeeSchema })), 
+    employeeController.createEmployee
+  );
+  
+  // Update employee
+  app.patch("/api/employees/:id", 
+    authenticate, 
+    validateIdParameter(), 
+    employeeController.updateEmployee
+  );
+  
+  // Delete employee
+  app.delete("/api/employees/:id", 
+    authenticate, 
+    validateIdParameter(), 
+    employeeController.deleteEmployee
+  );
+  
+  // Trigger manual employee sync from Bubble.io
+  app.post("/api/sync/employees", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
+    try {
+      // Check if the Bubble API key is configured
+      if (!process.env.BUBBLE_API_KEY) {
+        logger.error("Bubble API key not configured");
+        return res.status(400).json(createErrorResponse("External API key not configured"));
+      }
+      
+      logger.info({ initiatedBy: req.user!.id }, "Manual employee sync initiated");
+      const result = await employeeService.syncEmployeesFromBubble();
+      
+      logger.info({ 
+        totalEmployees: result.totalEmployees,
+        created: result.created,
+        updated: result.updated,
+        unchanged: result.unchanged,
+        errors: result.errors
+      }, "Employee sync completed");
+      
+      return res.json(createSuccessResponse({
+        totalEmployees: result.totalEmployees,
+        created: result.created,
+        updated: result.updated,
+        unchanged: result.unchanged,
+        errors: result.errors
+      }, "Employee sync completed successfully"));
+      
+    } catch (error) {
+      logger.error({ error }, "Employee sync error");
+      return res.status(500).json(createErrorResponse("Failed to sync employees from external system"));
+    }
+  });
+}
