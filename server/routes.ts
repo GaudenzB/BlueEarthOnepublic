@@ -119,11 +119,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Login (public route) - using the controller with error handling wrapper
   app.post("/api/auth/login", authLimiter, authController.login);
-      }, "Unexpected error during login");
-      
-      throw new ApiError("Authentication failed", 500, "AUTH_SYSTEM_ERROR");
-    }
-  });
   
   // Logout (protected route)
   app.post("/api/auth/logout", authenticate, async (req: Request, res: Response) => {

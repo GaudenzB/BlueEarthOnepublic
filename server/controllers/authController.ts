@@ -74,7 +74,7 @@ const login = wrapHandler(async (req: Request, res: Response) => {
   });
   
   // Return success with user info and token
-  return sendSuccess(res, "Login successful", {
+  return sendSuccess(res, { 
     user: {
       id: user.id,
       username: user.username,
@@ -84,7 +84,7 @@ const login = wrapHandler(async (req: Request, res: Response) => {
       role: user.role,
     },
     token
-  });
+  }, "Login successful");
 });
 
 /**
@@ -119,7 +119,6 @@ const register = wrapHandler(async (req: Request, res: Response) => {
     ...userData,
     password: hashedPassword,
     role: 'user', // Default role for new registrations
-    active: true,
   });
   
   // Log successful registration
@@ -133,7 +132,7 @@ const register = wrapHandler(async (req: Request, res: Response) => {
   const token = generateToken(newUser);
   
   // Return success with user info and token
-  return sendSuccess(res, "Registration successful", {
+  return sendSuccess(res, {
     user: {
       id: newUser.id,
       username: newUser.username,
@@ -143,7 +142,7 @@ const register = wrapHandler(async (req: Request, res: Response) => {
       role: newUser.role,
     },
     token
-  }, 201);
+  }, "Registration successful", 201);
 });
 
 /**
@@ -188,7 +187,7 @@ const getCurrentUser = wrapHandler(async (req: Request, res: Response) => {
   }
   
   // Return user information (omit sensitive data)
-  return sendSuccess(res, "Operation successful", {
+  return sendSuccess(res, {
     id: user.id,
     username: user.username,
     email: user.email,
