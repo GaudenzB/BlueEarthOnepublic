@@ -156,39 +156,46 @@ function mapBubbleEmployeeToAppEmployee(bubbleEmployee: BubbleEmployee): InsertE
     department: mapBubbleDepartmentToAppDepartment(bubbleEmployee.Department),
     status: mapBubbleStatusToAppStatus(bubbleEmployee.Status),
     avatarUrl: bubbleEmployee.Photo || '',
-    bubbleId: bubbleEmployee._id,
     location: `${bubbleEmployee.City || ''}${bubbleEmployee.City && bubbleEmployee.Country ? ', ' : ''}${bubbleEmployee.Country || ''}`.trim() || '',
     bio: bubbleEmployee.About || '',
+    responsibilities: ''
   };
 }
 
 /**
  * Map Bubble.io department values to our application's department values
+ * Maps to the standardized department values in the schema
  */
 function mapBubbleDepartmentToAppDepartment(bubbleDepartment?: string): string {
-  if (!bubbleDepartment) return 'OPERATIONS';
+  if (!bubbleDepartment) return 'operations';
   
-  const dept = bubbleDepartment.toUpperCase();
+  const dept = bubbleDepartment.toLowerCase();
   
-  if (dept.includes('FINANCE') || dept.includes('ACCOUNTING')) {
-    return 'FINANCE';
-  } else if (dept.includes('HR') || dept.includes('HUMAN')) {
-    return 'HUMAN_RESOURCES';
-  } else if (dept.includes('IT') || dept.includes('TECH')) {
-    return 'INFORMATION_TECHNOLOGY';
-  } else if (dept.includes('LEGAL') || dept.includes('LAW')) {
-    return 'LEGAL';
-  } else if (dept.includes('MARKETING')) {
-    return 'MARKETING';
-  } else if (dept.includes('SALES')) {
-    return 'SALES';
-  } else if (dept.includes('RESEARCH') || dept.includes('R&D')) {
-    return 'RESEARCH_AND_DEVELOPMENT';
-  } else if (dept.includes('EXEC') || dept.includes('BOARD')) {
-    return 'EXECUTIVE';
+  if (dept.includes('finance') || dept.includes('accounting')) {
+    return 'finance';
+  } else if (dept.includes('hr') || dept.includes('human')) {
+    return 'hr';
+  } else if (dept.includes('it') || dept.includes('tech')) {
+    return 'operations';
+  } else if (dept.includes('legal') || dept.includes('law')) {
+    return 'legal';
+  } else if (dept.includes('marketing')) {
+    return 'marketing';
+  } else if (dept.includes('sales')) {
+    return 'sales';
+  } else if (dept.includes('research') || dept.includes('r&d')) {
+    return 'product';
+  } else if (dept.includes('exec') || dept.includes('board')) {
+    return 'executive';
+  } else if (dept.includes('design')) {
+    return 'design';
+  } else if (dept.includes('product')) {
+    return 'product';
+  } else if (dept.includes('engineering')) {
+    return 'engineering';
   }
   
-  return 'OPERATIONS';
+  return 'operations';
 }
 
 /**
