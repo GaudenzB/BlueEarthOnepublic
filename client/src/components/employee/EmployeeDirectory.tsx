@@ -59,13 +59,20 @@ export function EmployeeDirectory() {
     data: Employee[];
   }
   
-  // Query to fetch employees
-  const { data: apiResponse, isLoading, isError } = useQuery<ApiResponse>({
-    queryKey: ["/api/employees"],
+  // Query to fetch employees with cache-busting timestamp to prevent 304 responses
+  const { data: apiResponse, isLoading, isError, refetch } = useQuery<ApiResponse>({
+    queryKey: ["/api/employees", { _t: Date.now() }], // Add timestamp as query param to bust cache
+    staleTime: 0, // Consider data immediately stale
+    gcTime: 0, // Don't keep this query in cache (gcTime replaces cacheTime in React Query v5)
   })
   
   // Extract employees from the response data structure
   const employees = apiResponse?.data || []
+  
+  // Force refetch data on component mount
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)

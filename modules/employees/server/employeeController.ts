@@ -36,12 +36,19 @@ function mapCoreStatusToSharedStatus(coreStatus?: string): "active" | "inactive"
  */
 export async function getAllEmployees(req: Request, res: Response) {
   try {
+    // Disable response caching for this endpoint
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+    
     // Define schema for query parameters
     const employeeQuerySchema = z.object({
       query: z.object({
         search: z.string().optional(),
         department: departmentEnum.optional(),
-        status: employeeStatusEnum.optional()
+        status: employeeStatusEnum.optional(),
+        _t: z.string().optional() // Allow cache-busting timestamp parameter
       })
     });
     
@@ -66,6 +73,15 @@ export async function getAllEmployees(req: Request, res: Response) {
     const search = req.query['search'] as string;
     const department = req.query['department'] as string;
     const status = req.query['status'] as string;
+    
+    // Log the query including cache-buster parameter if present
+    logger.debug({
+      requestPath: req.path,
+      search,
+      department,
+      status,
+      cacheBuster: req.query['_t']
+    }, 'Employee list request received');
     
     let employees;
     
