@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { passwordSchema } from '../utils/validation';
+import { pgEnum } from 'drizzle-orm/pg-core';
+
+/**
+ * User-related schemas and types
+ * These are used for authentication and user management
+ */
 
 /**
  * User role enum
@@ -8,7 +13,14 @@ export const userRoleEnum = z.enum([
   'SUPERADMIN',
   'ADMIN',
   'MANAGER',
-  'USER',
+  'USER'
+]);
+
+export const pgUserRoleEnum = pgEnum('user_role', [
+  'SUPERADMIN',
+  'ADMIN',
+  'MANAGER',
+  'USER'
 ]);
 
 export type UserRole = z.infer<typeof userRoleEnum>;
@@ -18,125 +30,116 @@ export type UserRole = z.infer<typeof userRoleEnum>;
  */
 export const permissionAreaEnum = z.enum([
   'FINANCE',
-  'HUMAN_RESOURCES',
-  'INFORMATION_TECHNOLOGY',
+  'HR',
+  'IT',
   'LEGAL',
-  'OPERATIONS',
+  'OPERATIONS'
+]);
+
+export const pgPermissionAreaEnum = pgEnum('permission_area', [
+  'FINANCE',
+  'HR',
+  'IT',
+  'LEGAL',
+  'OPERATIONS'
 ]);
 
 export type PermissionArea = z.infer<typeof permissionAreaEnum>;
 
 /**
- * User schema
+ * Permission type enum
  */
-export const userSchema = z.object({
+export const permissionTypeEnum = z.enum([
+  'VIEW',
+  'EDIT',
+  'DELETE'
+]);
+
+export const pgPermissionTypeEnum = pgEnum('permission_type', [
+  'VIEW',
+  'EDIT',
+  'DELETE'
+]);
+
+export type PermissionType = z.infer<typeof permissionTypeEnum>;
+
+/**
+ * User schema for insert operations
+ */
+export const insertUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: userRoleEnum.optional().default('USER'),
+  active: z.boolean().optional().default(true),
+});
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+/**
+ * User schema with ID
+ */
+export const userSchema = insertUserSchema.extend({
   id: z.number(),
-  username: z.string().min(3, { message: 'Username must be at least 3 characters' }),
-  email: z.string().email({ message: 'Invalid email address' }),
-  password: z.string(), // Hashed password in DB
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  role: userRoleEnum,
-  active: z.boolean().default(true),
-  resetToken: z.string().optional(),
-  resetTokenExpiry: z.string().datetime().optional(),
-  lastLogin: z.string().datetime().optional(),
-  createdAt: z.string().datetime().optional(),
-  updatedAt: z.string().datetime().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().nullable().optional(),
+  lastLogin: z.date().nullable().optional(),
+  passwordResetToken: z.string().nullable().optional(),
+  passwordResetExpires: z.date().nullable().optional(),
 });
 
-/**
- * Schema for creating a new user
- */
-export const createUserSchema = userSchema
-  .omit({ 
-    id: true,
-    resetToken: true,
-    resetTokenExpiry: true,
-    lastLogin: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-  .extend({
-    password: passwordSchema,
-    confirmPassword: z.string(),
-  })
-  .refine(data => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
+export type User = z.infer<typeof userSchema>;
 
 /**
- * Schema for updating a user
+ * User login schema
  */
-export const updateUserSchema = z.object({
-  username: z.string().min(3, { message: 'Username must be at least 3 characters' }).optional(),
-  email: z.string().email({ message: 'Invalid email address' }).optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  role: userRoleEnum.optional(),
-  active: z.boolean().optional(),
+export const userLoginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
-/**
- * Schema for user login
- */
-export const loginSchema = z.object({
-  username: z.string(),
-  password: z.string(),
-  rememberMe: z.boolean().optional(),
-});
+export type UserLogin = z.infer<typeof userLoginSchema>;
 
 /**
- * Schema for forgot password
+ * Forgot password schema
  */
 export const forgotPasswordSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
+  email: z.string().email("Invalid email address"),
 });
 
+export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
+
 /**
- * Schema for reset password
+ * Reset password schema
  */
 export const resetPasswordSchema = z.object({
   token: z.string(),
-  password: passwordSchema,
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
+export type ResetPassword = z.infer<typeof resetPasswordSchema>;
+
 /**
- * User permission schema
+ * User permission schema for insert operations
  */
-export const userPermissionSchema = z.object({
-  id: z.number(),
+export const insertUserPermissionSchema = z.object({
   userId: z.number(),
   area: permissionAreaEnum,
-  canView: z.boolean().default(false),
-  canEdit: z.boolean().default(false),
-  canDelete: z.boolean().default(false),
-  createdAt: z.string().datetime().optional(),
-  updatedAt: z.string().datetime().optional(),
+  permission: permissionTypeEnum,
 });
 
-/**
- * Schema for creating a user permission
- */
-export const createUserPermissionSchema = userPermissionSchema.omit({ 
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
 
 /**
- * Type definitions
+ * User permission schema with ID
  */
-export type User = z.infer<typeof userSchema>;
-export type CreateUser = z.infer<typeof createUserSchema>;
-export type UpdateUser = z.infer<typeof updateUserSchema>;
-export type Login = z.infer<typeof loginSchema>;
-export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
-export type ResetPassword = z.infer<typeof resetPasswordSchema>;
+export const userPermissionSchema = insertUserPermissionSchema.extend({
+  id: z.number(),
+  createdAt: z.date().optional(),
+});
+
 export type UserPermission = z.infer<typeof userPermissionSchema>;
-export type CreateUserPermission = z.infer<typeof createUserPermissionSchema>;

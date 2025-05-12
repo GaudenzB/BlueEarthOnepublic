@@ -1,23 +1,56 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
+  "include": ["client/src/**/*", "shared/**/*", "server/**/*", "core/**/*", "modules/**/*"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
+    // Project Options
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": true,
+    "target": "ES2020",
     "module": "ESNext",
-    "strict": true,
     "lib": ["esnext", "dom", "dom.iterable"],
     "jsx": "preserve",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": ".",
+    
+    // Module Resolution Options
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "types": ["node", "vite/client"],
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"]
-    }
+      "@shared/*": ["./shared/*"],
+      "@blueearth/core/*": ["./core/src/*"],
+      "@modules/*": ["./modules/*"],
+      "@assets/*": ["./attached_assets/*"]
+    },
+    
+    // Strict Type-Checking Options
+    "strict": true,                            // Enable all strict type-checking options
+    "noImplicitAny": true,                     // Raise error on expressions and declarations with an implied 'any' type
+    "strictNullChecks": true,                  // Enable strict null checks
+    "strictFunctionTypes": true,               // Enable strict checking of function types
+    "strictBindCallApply": true,               // Enable strict 'bind', 'call', and 'apply' methods on functions
+    "strictPropertyInitialization": true,      // Enable strict checking of property initialization in classes
+    "noImplicitThis": true,                    // Raise error on 'this' expressions with an implied 'any' type
+    "alwaysStrict": true,                      // Parse in strict mode and emit "use strict" for each source file
+    
+    // Additional Checks
+    "noUnusedLocals": true,                    // Report errors on unused locals
+    "noUnusedParameters": true,                // Report errors on unused parameters
+    "noImplicitReturns": true,                 // Report error when not all code paths in function return a value
+    "noFallthroughCasesInSwitch": true,        // Report errors for fallthrough cases in switch statement
+    "noUncheckedIndexedAccess": true,          // Add 'undefined' to a type when accessed using an index
+    "noImplicitOverride": true,                // Ensure overriding members in derived classes are marked with an override modifier
+    "noPropertyAccessFromIndexSignature": true, // Require the use of the keyof operator for property access from index signatures
+    
+    // Module Resolution & Integration
+    "forceConsistentCasingInFileNames": true,  // Disallow inconsistently-cased references to the same file
+    "esModuleInterop": true,                   // Enables emit interoperability between CommonJS and ES Modules
+    "allowSyntheticDefaultImports": true,      // Allow default imports from modules with no default export
+    "skipLibCheck": true,                      // Skip type checking of declaration files
+    "resolveJsonModule": true                  // Include modules imported with .json extension
   }
 }

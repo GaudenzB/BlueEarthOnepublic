@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { scheduleEmployeeSync } from "./services/employeeSync";
 import { runMigrations } from "./migrations";
 import { checkDatabaseConnection } from "./db";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
@@ -11,6 +10,9 @@ import { setupSwaggerDocs } from "./middleware/swagger";
 import { setupSession } from "./middleware/session";
 import { logger } from "./utils/logger";
 import config from "./utils/config";
+
+// Import the modular system
+import { initializeModules } from "../modules";
 
 /**
  * Express Application Setup
@@ -50,6 +52,12 @@ app.use(requestLoggerMiddleware);
   // Setup API documentation
   setupSwaggerDocs(app);
   
+  // Initialize all feature modules (before main routes)
+  logger.info('Initializing feature modules');
+  const appModules = initializeModules(app);
+  logger.info(`Initialized ${appModules.modules.length} feature modules`);
+  
+  // Register main application routes
   const server = await registerRoutes(app);
 
   // Set up Vite middleware for development or serve static files in production
@@ -75,13 +83,7 @@ app.use(requestLoggerMiddleware);
   }, () => {
     logger.info(`Server started successfully`, { port, host, environment: config.env.current });
     
-    // Schedule employee sync from Bubble.io if API key is available
-    const { apiKey, syncIntervalMinutes } = config.integrations.bubble;
-    if (apiKey) {
-      logger.info('Initializing Bubble.io employee sync', { syncIntervalMinutes });
-      scheduleEmployeeSync(syncIntervalMinutes);
-    } else {
-      logger.warn('Bubble.io API key not set, employee sync disabled');
-    }
+    // Module initialization has now replaced the direct scheduling of employee syncs
+    // Each module handles its own initialization through the setupXModule function
   });
 })();

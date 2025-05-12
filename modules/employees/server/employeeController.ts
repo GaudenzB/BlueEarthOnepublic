@@ -2,8 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../../../server/storage';
 import { logger } from '../../../server/utils/logger';
-import { departmentEnum, employeeStatusEnum, insertEmployeeSchema } from '@blueearth/core/schemas';
-import { createSuccessResponse, createErrorResponse } from '@blueearth/core/utils';
+import { departmentEnum, employeeStatusEnum, insertEmployeeSchema } from '../../../core/src/schemas/employee';
+import { sendSuccess, sendError } from '../../../server/utils/apiResponse';
 
 /**
  * Get all employees
@@ -38,7 +38,7 @@ export async function getAllEmployees(req: Request, res: Response) {
           errors: formattedErrors 
         }, 'Query parameter validation error');
         
-        return res.status(400).json(createErrorResponse('Invalid query parameters', formattedErrors));
+        return sendError(res, 'Invalid query parameters', 400);
       }
       throw error;
     }
@@ -60,10 +60,10 @@ export async function getAllEmployees(req: Request, res: Response) {
       employees = await storage.getAllEmployees();
     }
     
-    return res.json(createSuccessResponse(employees));
+    return sendSuccess(res, employees);
   } catch (error) {
     logger.error({ error }, "Failed to get employees");
-    return res.status(500).json(createErrorResponse("Failed to get employees"));
+    return sendError(res, "Failed to get employees", 500);
   }
 }
 
@@ -99,13 +99,13 @@ export async function getEmployeeById(req: Request, res: Response) {
     }, `Employee detail response for ID ${id}`);
     
     if (!employee) {
-      return res.status(404).json(createErrorResponse("Employee not found"));
+      return sendError(res, "Employee not found", 404);
     }
     
-    return res.json(createSuccessResponse(employee));
+    return sendSuccess(res, employee);
   } catch (error) {
     logger.error({ employeeId: req.params.id, error }, "Error retrieving employee");
-    return res.status(500).json(createErrorResponse("Failed to get employee"));
+    return sendError(res, "Failed to get employee", 500);
   }
 }
 
@@ -128,10 +128,10 @@ export async function createEmployee(req: Request, res: Response) {
     
     const employee = await storage.createEmployee(validatedData);
     
-    return res.status(201).json(createSuccessResponse(employee, "Employee created successfully"));
+    return sendSuccess(res, employee, "Employee created successfully", 201);
   } catch (error) {
     logger.error({ error }, "Error creating employee");
-    return res.status(500).json(createErrorResponse("Failed to create employee"));
+    return sendError(res, "Failed to create employee", 500);
   }
 }
 
@@ -158,13 +158,13 @@ export async function updateEmployee(req: Request, res: Response) {
     const employee = await storage.updateEmployee(id, validatedData);
     
     if (!employee) {
-      return res.status(404).json(createErrorResponse("Employee not found"));
+      return sendError(res, "Employee not found", 404);
     }
     
-    return res.json(createSuccessResponse(employee, "Employee updated successfully"));
+    return sendSuccess(res, employee, "Employee updated successfully");
   } catch (error) {
     logger.error({ employeeId: req.params.id, error }, "Error updating employee");
-    return res.status(500).json(createErrorResponse("Failed to update employee"));
+    return sendError(res, "Failed to update employee", 500);
   }
 }
 
@@ -177,13 +177,13 @@ export async function deleteEmployee(req: Request, res: Response) {
     const success = await storage.deleteEmployee(id);
     
     if (!success) {
-      return res.status(404).json(createErrorResponse("Employee not found"));
+      return sendError(res, "Employee not found", 404);
     }
     
     logger.info({ employeeId: id, deletedBy: req.user!.id }, "Employee deleted");
-    return res.json(createSuccessResponse(null, "Employee deleted successfully"));
+    return sendSuccess(res, null, "Employee deleted successfully");
   } catch (error) {
     logger.error({ employeeId: req.params.id, error }, "Error deleting employee");
-    return res.status(500).json(createErrorResponse("Failed to delete employee"));
+    return sendError(res, "Failed to delete employee", 500);
   }
 }

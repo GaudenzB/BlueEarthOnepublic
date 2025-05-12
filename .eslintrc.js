@@ -24,6 +24,7 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
     'plugin:import/errors',
@@ -44,17 +45,23 @@ module.exports = {
     'react', 
     '@typescript-eslint',
     'import',
+    'react-hooks',
   ],
   settings: {
     react: {
       version: 'detect',
     },
     'import/resolver': {
-      typescript: {},
+      typescript: {
+        project: './tsconfig.json',
+      },
       node: {
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
         moduleDirectory: ['node_modules', '.'],
       },
+    },
+    'import/parsers': {
+      '@typescript-eslint/parser': ['.ts', '.tsx']
     },
   },
   rules: {
@@ -65,9 +72,18 @@ module.exports = {
     'no-unused-expressions': 'error',
     'prefer-const': 'error',
     'eqeqeq': ['error', 'always', { null: 'ignore' }],
+    'no-return-await': 'error',
+    'no-irregular-whitespace': 'error',
+    'no-var': 'error',
     
     // Import organization
     'import/no-unresolved': 'error',
+    'import/named': 'error',
+    'import/default': 'error',
+    'import/namespace': 'error',
+    'import/no-absolute-path': 'error',
+    'import/no-self-import': 'error',
+    'import/first': 'error',
     'import/order': [
       'error',
       {
@@ -79,20 +95,60 @@ module.exports = {
           'sibling',
           'index'
         ],
+        'pathGroups': [
+          {
+            'pattern': '@/**',
+            'group': 'internal'
+          },
+          {
+            'pattern': '@shared/**',
+            'group': 'internal'
+          },
+          {
+            'pattern': '@blueearth/core/**',
+            'group': 'internal'
+          },
+          {
+            'pattern': '@modules/**',
+            'group': 'internal'
+          }
+        ],
         'newlines-between': 'always',
         'alphabetize': { order: 'asc' }
       }
     ],
     
     // TypeScript rules
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': ['warn', {
+      'allowArgumentsExplicitlyTypedAsAny': true,
+      'allowDirectConstAssertionInArrowFunctions': true,
+      'allowHigherOrderFunctions': true,
+      'allowTypedFunctionExpressions': true,
+    }],
     '@typescript-eslint/no-unused-vars': ['warn', { 
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_',
+      caughtErrorsIgnorePattern: '^_',
     }],
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/consistent-type-imports': 'error',
     '@typescript-eslint/no-non-null-assertion': 'warn',
+    '@typescript-eslint/ban-ts-comment': ['error', {
+      'ts-expect-error': 'allow-with-description',
+      'ts-ignore': 'allow-with-description',
+      'ts-nocheck': 'allow-with-description',
+      'minimumDescriptionLength': 10
+    }],
+    '@typescript-eslint/no-unnecessary-condition': 'warn',
+    '@typescript-eslint/prefer-optional-chain': 'error',
+    '@typescript-eslint/prefer-nullish-coalescing': 'error',
+    '@typescript-eslint/array-type': ['error', { default: 'array' }],
+    '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+    '@typescript-eslint/restrict-template-expressions': 'off', // Allow any type in template literals
+    '@typescript-eslint/no-unsafe-assignment': 'off', // Causes too many issues with external libraries
+    '@typescript-eslint/no-unsafe-member-access': 'off', // Causes too many issues with external libraries
+    '@typescript-eslint/no-unsafe-call': 'off', // Causes too many issues with external libraries
+    '@typescript-eslint/no-unsafe-return': 'off', // Causes too many issues with external libraries
     
     // React rules
     'react/prop-types': 'off',
@@ -101,6 +157,10 @@ module.exports = {
     'react-hooks/exhaustive-deps': 'warn',
     'react/no-array-index-key': 'warn',
     'react/jsx-pascal-case': 'error',
+    'react/jsx-curly-brace-presence': ['error', { props: 'never', children: 'never' }],
+    'react/jsx-boolean-value': ['error', 'never'],
+    'react/display-name': 'off',
+    'react/self-closing-comp': ['error', { component: true, html: true }],
   },
   ignorePatterns: [
     'dist', 
@@ -121,7 +181,7 @@ module.exports = {
     },
     // Server code overrides
     {
-      files: ['server/**/*.ts'],
+      files: ['server/**/*.ts', 'modules/*/server/**/*.ts'],
       rules: {
         'no-console': 'off', // Allow console.log in server code
         '@typescript-eslint/explicit-function-return-type': ['warn', {
@@ -137,6 +197,28 @@ module.exports = {
         'no-console': 'off',
       },
     },
+    // Core module override
+    {
+      files: ['core/**/*.ts'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': ['error', {
+          allowExpressions: true,
+          allowHigherOrderFunctions: true,
+          allowTypedFunctionExpressions: true,
+        }],
+        '@typescript-eslint/no-explicit-any': 'error',
+      },
+    },
+    // Module server code overrides
+    {
+      files: ['modules/*/server/**/*.ts'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': ['warn', {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+        }],
+      },
+    },
     // Test files override
     {
       files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
@@ -146,6 +228,7 @@ module.exports = {
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
+        '@typescript-eslint/unbound-method': 'off',
       },
     },
   ],

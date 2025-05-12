@@ -1,21 +1,14 @@
 import { z } from 'zod';
+import { pgEnum } from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
 
 /**
- * Employee status enum
+ * Common employee-related schemas and types
+ * These will be used throughout the application for validation and type safety
  */
-export const employeeStatusEnum = z.enum([
-  'ACTIVE',
-  'INACTIVE',
-  'ON_LEAVE',
-  'TERMINATED',
-  'CONTRACT',
-  'INTERN',
-]);
-
-export type EmployeeStatus = z.infer<typeof employeeStatusEnum>;
 
 /**
- * Department enum
+ * Employee department enum
  */
 export const departmentEnum = z.enum([
   'EXECUTIVE',
@@ -26,76 +19,107 @@ export const departmentEnum = z.enum([
   'MARKETING',
   'OPERATIONS',
   'RESEARCH_AND_DEVELOPMENT',
-  'SALES',
+  'SALES'
 ]);
 
+// For database schema
+export const pgDepartmentEnum = pgEnum('department', [
+  'EXECUTIVE',
+  'FINANCE',
+  'HUMAN_RESOURCES',
+  'INFORMATION_TECHNOLOGY',
+  'LEGAL',
+  'MARKETING',
+  'OPERATIONS',
+  'RESEARCH_AND_DEVELOPMENT',
+  'SALES'
+]);
+
+/**
+ * Employee status enum
+ */
+export const employeeStatusEnum = z.enum([
+  'ACTIVE',
+  'ON_LEAVE',
+  'CONTRACT',
+  'INACTIVE',
+  'INTERN'
+]);
+
+// For database schema
+export const pgEmployeeStatusEnum = pgEnum('employee_status', [
+  'ACTIVE',
+  'ON_LEAVE',
+  'CONTRACT',
+  'INACTIVE',
+  'INTERN'
+]);
+
+// Type for the employee status enum
+export type EmployeeStatus = z.infer<typeof employeeStatusEnum>;
+
+// Type for the department enum
 export type Department = z.infer<typeof departmentEnum>;
 
 /**
- * Base Employee schema
+ * Base employee schema for insert operations
  */
-export const employeeSchema = z.object({
-  id: z.number(),
-  firstName: z.string().min(1, { message: 'First name is required' }),
-  lastName: z.string().min(1, { message: 'Last name is required' }),
-  email: z.string().email({ message: 'Invalid email address' }),
-  phone: z.string().optional(),
-  position: z.string().min(1, { message: 'Position is required' }),
-  department: departmentEnum,
-  status: employeeStatusEnum,
-  hireDate: z.string().datetime({ message: 'Invalid date format' }).optional(),
-  endDate: z.string().datetime({ message: 'Invalid date format' }).optional(),
-  profileImage: z.string().optional(),
-  bio: z.string().optional(),
-  responsibilities: z.string().optional(),
-  syncedAt: z.string().datetime().optional(),
-  locationId: z.number().optional(),
-  managerId: z.number().optional(),
+export const insertEmployeeSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  position: z.string().optional(),
+  department: departmentEnum.optional().default('OPERATIONS'),
+  phone: z.string().nullable().optional(),
+  profileImage: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  responsibilities: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  status: employeeStatusEnum.optional().default('ACTIVE'),
   bubbleId: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
-  country: z.string().optional(),
-  emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().optional(),
-  emergencyContactRelationship: z.string().optional(),
-  createdAt: z.string().datetime().optional(),
-  updatedAt: z.string().datetime().optional(),
 });
 
+// Type for employee insert operations
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+
 /**
- * Schema for creating a new employee
+ * Employee schema with ID
  */
-export const createEmployeeSchema = employeeSchema.omit({ 
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  syncedAt: true,
+export const employeeSchema = insertEmployeeSchema.extend({
+  id: z.number(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().nullable().optional(),
+  syncedAt: z.date().nullable().optional(),
 });
 
-/**
- * Schema for updating an employee
- */
-export const updateEmployeeSchema = createEmployeeSchema.partial();
+// Type for employee records
+export type Employee = z.infer<typeof employeeSchema>;
 
 /**
- * Schema for searching employees
+ * Schema for employee search parameters
  */
 export const employeeSearchSchema = z.object({
   search: z.string().optional(),
   department: departmentEnum.optional(),
   status: employeeStatusEnum.optional(),
-  page: z.coerce.number().positive().default(1),
-  pageSize: z.coerce.number().positive().default(10),
-  sortBy: z.string().optional(),
-  sortDirection: z.enum(['asc', 'desc']).optional(),
+  page: z.number().optional().default(1),
+  limit: z.number().optional().default(20),
 });
 
+// Type for employee search parameters
+export type EmployeeSearchParams = z.infer<typeof employeeSearchSchema>;
+
 /**
- * Type definitions
+ * Schema for synchronization statistics
  */
-export type Employee = z.infer<typeof employeeSchema>;
-export type CreateEmployee = z.infer<typeof createEmployeeSchema>;
-export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;
-export type EmployeeSearch = z.infer<typeof employeeSearchSchema>;
+export const syncStatsSchema = z.object({
+  totalEmployees: z.number(),
+  created: z.number(),
+  updated: z.number(),
+  unchanged: z.number(),
+  errors: z.number(),
+});
+
+// Type for synchronization statistics
+export type SyncStats = z.infer<typeof syncStatsSchema>;

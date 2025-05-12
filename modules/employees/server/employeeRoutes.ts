@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { authenticate, isSuperAdmin } from '../../../server/auth';
 import { validate, validateIdParameter } from '../../../server/middleware/validation';
 import { logger } from '../../../server/utils/logger';
-import { createSuccessResponse, createErrorResponse } from '@blueearth/core/utils';
+import { sendSuccess, sendError } from '../../../server/utils/apiResponse';
 import { employeeService } from './employeeService';
 import { employeeController } from './index';
-import { insertEmployeeSchema } from '@blueearth/core/schemas';
+import { insertEmployeeSchema } from '../../../core/src/schemas/employee';
 
 /**
  * Register all employee-related routes
