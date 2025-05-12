@@ -29,10 +29,14 @@ export default function EmployeeDetail() {
     data: Employee;
   }
 
+  // Check if we have an auth token
+  const token = localStorage.getItem("token");
+  console.log("Auth token available:", !!token);
+
   // Fetch employee data
   const { data: apiResponse, isLoading, error } = useQuery<EmployeeResponse>({
     queryKey: ['/api/employees', id],
-    enabled: !!id,
+    enabled: !!id && !!token, // Only fetch if we have a token
   });
   
   // Extract employee from response
@@ -154,6 +158,43 @@ export default function EmployeeDetail() {
             </Card>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Log any errors for debugging
+  if (error) {
+    console.error("Error fetching employee:", error);
+  }
+
+  if (!token) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={goBack}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Authentication Error</CardTitle>
+            <CardDescription>
+              You need to be logged in to view employee details. Please log in and try again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={goBack}
+              style={{ backgroundColor: colors.primary.base }}
+            >
+              Return to Directory
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

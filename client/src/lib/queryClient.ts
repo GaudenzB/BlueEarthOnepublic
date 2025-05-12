@@ -112,8 +112,20 @@ export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: Unauthor
         }
       }
       
-      // Use HTTP client to fetch data
-      const response = await httpClient.get<T>(url);
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('token');
+      console.log("Query for URL:", url, "token available:", !!token);
+      
+      // Prepare request options with auth header if token exists
+      const options: RequestInit = {};
+      if (token) {
+        options.headers = {
+          'Authorization': `Bearer ${token}`
+        };
+      }
+      
+      // Use HTTP client to fetch data with auth token
+      const response = await httpClient.get<T>(url, options);
       
       // For specific API patterns that return standardized responses like employees/:id
       // Return the full response object
