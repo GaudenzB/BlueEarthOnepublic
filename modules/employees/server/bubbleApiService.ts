@@ -1,7 +1,7 @@
 import fetch, { RequestInit, Response as NodeFetchResponse } from 'node-fetch';
-import { InsertEmployee, employeeStatusEnum, type EmployeeStatus } from '@shared/schema';
+import { insertEmployeeSchema } from '@blueearth/core-server';
+import { type Employee } from '@blueearth/core-common';
 import { logger } from '../../../server/utils/logger';
-import config from '../../../server/utils/config';
 
 /**
  * Bubble.io API Integration
@@ -142,7 +142,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 /**
  * Convert a Bubble.io employee to our application's employee format
  */
-function mapBubbleEmployeeToAppEmployee(bubbleEmployee: BubbleEmployee): InsertEmployee {
+function mapBubbleEmployeeToAppEmployee(bubbleEmployee: BubbleEmployee): Omit<Employee, 'id' | 'createdAt' | 'updatedAt' | 'syncedAt'> {
   const firstName = bubbleEmployee['First name'] || '';
   const lastName = bubbleEmployee['Last name'] || '';
   // Combine first and last name into a single name field
@@ -336,7 +336,7 @@ async function fetchBubbleEmployees(): Promise<BubbleEmployee[]> {
 /**
  * Convert Bubble.io employees to our application format
  */
-function convertBubbleEmployees(bubbleEmployees: BubbleEmployee[]): InsertEmployee[] {
+function convertBubbleEmployees(bubbleEmployees: BubbleEmployee[]): Omit<Employee, 'id' | 'createdAt' | 'updatedAt' | 'syncedAt'>[] {
   return bubbleEmployees
     .filter(emp => !emp.Deleted) // Skip deleted employees
     .map(mapBubbleEmployeeToAppEmployee);
@@ -345,7 +345,7 @@ function convertBubbleEmployees(bubbleEmployees: BubbleEmployee[]): InsertEmploy
 /**
  * Fetch and convert employees from Bubble.io
  */
-async function getEmployeesFromBubble(): Promise<InsertEmployee[]> {
+async function getEmployeesFromBubble(): Promise<Omit<Employee, 'id' | 'createdAt' | 'updatedAt' | 'syncedAt'>[]> {
   const bubbleEmployees = await fetchBubbleEmployees();
   return convertBubbleEmployees(bubbleEmployees);
 }

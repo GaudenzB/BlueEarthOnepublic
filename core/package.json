@@ -1,25 +1,33 @@
 {
   "name": "@blueearth/core",
-  "version": "1.0.0",
-  "description": "Shared core package for BlueEarth application",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Core packages for the BlueEarth Capital portal",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "build": "npm run build:common && npm run build:client && npm run build:server",
+    "build:common": "cd packages/core-common && npm run build",
+    "build:client": "cd packages/core-client && npm run build",
+    "build:server": "cd packages/core-server && npm run build",
+    "clean": "npm run clean:common && npm run clean:client && npm run clean:server",
+    "clean:common": "cd packages/core-common && npm run clean",
+    "clean:client": "cd packages/core-client && npm run clean",
+    "clean:server": "cd packages/core-server && npm run clean",
+    "dev": "npm run dev:common",
+    "dev:common": "cd packages/core-common && npm run dev",
+    "dev:client": "cd packages/core-client && npm run dev",
+    "dev:server": "cd packages/core-server && npm run dev",
+    "lint": "npm run lint:common && npm run lint:client && npm run lint:server",
+    "lint:common": "cd packages/core-common && npm run lint",
+    "lint:client": "cd packages/core-client && npm run lint",
+    "lint:server": "cd packages/core-server && npm run lint"
   },
-  "dependencies": {
-    "zod": "^3.22.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "typescript": "^5.0.0"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "eslint": "^8.48.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.0.4",
+    "vitest": "^0.34.3"
   }
 }

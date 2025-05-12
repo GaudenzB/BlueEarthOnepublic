@@ -23,6 +23,9 @@
       "@/*": ["./client/src/*"],
       "@shared/*": ["./shared/*"],
       "@blueearth/core/*": ["./core/src/*"],
+      "@blueearth/core-common": ["./core/packages/core-common/src"],
+      "@blueearth/core-client": ["./core/packages/core-client/src"],
+      "@blueearth/core-server": ["./core/packages/core-server/src"],
       "@modules/*": ["./modules/*"],
       "@assets/*": ["./attached_assets/*"]
     },

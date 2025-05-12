@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@blueearth/core-common": ["./core/packages/core-common/src"],
+      "@blueearth/core-client": ["./core/packages/core-client/src"],
+      "@blueearth/core-server": ["./core/packages/core-server/src"]
+    }
+  }
+}
