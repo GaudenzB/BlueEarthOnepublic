@@ -194,3 +194,42 @@ export const sessions = pgTable("sessions", {
     expireIdx: index('IDX_session_expire').on(table.expire)
   };
 });
+
+/**
+ * Tenants Table
+ * Supports multi-tenancy for the application
+ */
+export const tenants = pgTable('tenants', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 100 }).notNull().unique(),
+  description: text('description'),
+  domain: varchar('domain', { length: 255 }),
+  logoUrl: varchar('logo_url', { length: 255 }),
+  primaryColor: varchar('primary_color', { length: 20 }),
+  secondaryColor: varchar('secondary_color', { length: 20 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  maxUsers: varchar('max_users', { length: 10 }),
+  maxStorage: varchar('max_storage', { length: 20 }),
+  settings: text('settings'),
+});
+
+/**
+ * Tenant Insert Schema
+ */
+export const insertTenantSchema = createInsertSchema(tenants)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true
+  });
+
+/**
+ * Tenant Select Schema
+ */
+export const selectTenantSchema = createInsertSchema(tenants);
+
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
