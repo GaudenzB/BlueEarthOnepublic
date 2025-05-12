@@ -256,6 +256,11 @@ export class DatabaseStorage implements IStorage {
     if (user?.role === 'admin' && permission === 'view') {
       return true;
     }
+    
+    // For admins, grant all permissions to documents area
+    if (user?.role === 'admin' && area === 'documents') {
+      return true;
+    }
 
     // Check specific permissions
     const permissions = await db.select()

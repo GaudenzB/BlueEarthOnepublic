@@ -470,19 +470,38 @@ export default function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.data?.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.username}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        {user.firstName} {user.lastName}
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        <Loader2 className="w-6 h-6 mx-auto animate-spin" />
                       </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={user.role === "superadmin" ? "destructive" : "secondary"}
-                        >
-                          {user.role}
-                        </Badge>
+                    </TableRow>
+                  ) : isError ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center text-red-500">
+                        Error loading users
+                      </TableCell>
+                    </TableRow>
+                  ) : users?.data?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        No users found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users?.data?.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          {user.firstName} {user.lastName}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={user.role === "superadmin" ? "destructive" : "secondary"}
+                          >
+                            {user.role}
+                          </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
