@@ -31,6 +31,7 @@ export const ROUTES = {
   CALENDAR: '/calendar',
   MESSAGES: '/messages',
   CHAKRA_TEST: '/chakra-test',
+  DOCUMENTS_EXAMPLE: '/documents-example',
 };
 
 // Admin Routes
@@ -77,6 +78,11 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       title: "Chakra UI Test",
       href: ROUTES.CHAKRA_TEST,
       icon: "Palette",
+    },
+    {
+      title: "Documents Example",
+      href: ROUTES.DOCUMENTS_EXAMPLE,
+      icon: "FileText",
     },
   ];
   
