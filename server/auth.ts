@@ -32,14 +32,14 @@ declare global {
 }
 
 // Configurable security settings with environment variable overrides
-const SALT_ROUNDS = parseInt(process.env.PASSWORD_SALT_ROUNDS || '10', 10);
-const TOKEN_EXPIRY = process.env.JWT_TOKEN_EXPIRY || '24h'; 
+const SALT_ROUNDS = parseInt(process.env['PASSWORD_SALT_ROUNDS'] || '10', 10);
+const TOKEN_EXPIRY = process.env['JWT_TOKEN_EXPIRY'] || '24h'; 
 const TOKEN_AUDIENCE = 'blueearth-portal';
 const TOKEN_ISSUER = 'blueearth-api';
 
 // Secret key for JWT
-const JWT_SECRET = process.env.JWT_SECRET || (
-  process.env.NODE_ENV === 'development' 
+const JWT_SECRET = process.env['JWT_SECRET'] || (
+  process.env['NODE_ENV'] === 'development' 
   ? 'development_only_secret_key_not_for_production' 
   : undefined
 );

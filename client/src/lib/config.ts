@@ -6,12 +6,12 @@
  */
 
 // Environment specific configuration
-const ENV = import.meta.env.MODE || 'development';
+const ENV = import.meta.env['MODE'] || 'development';
 const IS_DEV = ENV === 'development';
 const IS_PROD = ENV === 'production';
 
 // Base URL for API requests (empty string means same origin)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env['VITE_API_BASE_URL'] || '';
 
 // Configuration object
 const config = {

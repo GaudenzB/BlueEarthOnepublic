@@ -9,7 +9,7 @@ import 'dotenv/config';
 import { z } from 'zod';
 
 // Environment detection
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const NODE_ENV = process.env['NODE_ENV'] || 'development';
 const IS_PROD = NODE_ENV === 'production';
 const IS_DEV = NODE_ENV === 'development';
 const IS_TEST = NODE_ENV === 'test';
