@@ -79,7 +79,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   const statusCode = err.status || err.statusCode || 500;
   const message = statusCode < 500 
     ? err.message 
-    : process.env.NODE_ENV === 'production'
+    : process.env["NODE_ENV"] === 'production'
       ? 'Internal Server Error'  // Hide details in production
       : err.message || 'Internal Server Error';
       

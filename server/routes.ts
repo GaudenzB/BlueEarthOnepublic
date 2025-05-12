@@ -335,9 +335,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get sanitized parameters
-      const search = req.query.search as string;
-      const department = req.query.department as string;
-      const status = req.query.status as string;
+      const search = req.query["search"] as string;
+      const department = req.query["department"] as string;
+      const status = req.query["status"] as string;
       
       let employees;
       
@@ -361,14 +361,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get employee by ID
   app.get("/api/employees/:id", authenticate, validateIdParameter(), async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params["id"]);
       
       // Log detailed request information
       logger.info({
         employeeId: id,
         requestId: req.headers['x-request-id'] || 'none',
         authHeader: !!req.headers.authorization,
-        userId: req.user?.id || 'not-authenticated'
+        userId: req.user?.["id"] || 'not-authenticated'
       }, `Employee detail request received for ID ${id}`);
       
       // Disable response caching for this endpoint
@@ -482,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sync/employees", authenticate, isSuperAdmin, async (req, res) => {
     try {
       // Check if the Bubble API key is configured
-      if (!process.env.BUBBLE_API_KEY) {
+      if (!process.env["BUBBLE_API_KEY"]) {
         logger.error("Bubble API key not configured");
         return sendError(res, "External API key not configured", 400);
       }
