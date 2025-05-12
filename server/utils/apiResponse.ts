@@ -120,8 +120,11 @@ function conflict(res: Response, message = 'Resource conflict'): void | Response
 
 /**
  * Validation error response (status 422)
+ * This version can be used in both middleware and regular route handlers
  */
-const validationError = (res: Response, errors: Record<string, string[]> | ZodError): Response => {
+function validationError(res: Response): void;
+function validationError(res: Response, errors: Record<string, string[]> | ZodError): Response;
+function validationError(res: Response, errors?: Record<string, string[]> | ZodError): void | Response {
   const formattedErrors = errors instanceof ZodError ? formatErrors(errors) : errors;
   
   // Internal helper to format ZodError into a user-friendly format
@@ -148,8 +151,11 @@ const validationError = (res: Response, errors: Record<string, string[]> | ZodEr
 
 /**
  * Server error response (status 500)
+ * This version can be used in both middleware and regular route handlers
  */
-const serverError = (res: Response, message = 'Internal server error'): Response => {
+function serverError(res: Response, message?: string): void;
+function serverError(res: Response, message: string): Response;
+function serverError(res: Response, message = 'Internal server error'): void | Response {
   const response: ApiResponse<null> = {
     success: false,
     message
@@ -159,8 +165,11 @@ const serverError = (res: Response, message = 'Internal server error'): Response
 
 /**
  * Generic error response with custom status code
+ * This version can be used in both middleware and regular route handlers
  */
-const error = (res: Response, message: string, statusCode: number = 500, errors?: Record<string, string[]>): Response => {
+function error(res: Response): void;
+function error(res: Response, message: string, statusCode?: number, errors?: Record<string, string[]>): Response;
+function error(res: Response, message: string = 'Internal server error', statusCode: number = 500, errors?: Record<string, string[]>): void | Response {
   const response: ApiResponse<null> = {
     success: false,
     message,
@@ -194,7 +203,9 @@ export function sendSuccess(res: Response, data?: any, message?: string, statusC
   return apiResponse.success(res, data, message);
 }
 
-export function sendError(res: Response, message: string = 'Internal server error', statusCode: number = 500): Response {
+export function sendError(res: Response, message?: string): void;
+export function sendError(res: Response, message: string, statusCode?: number): Response;
+export function sendError(res: Response, message: string = 'Internal server error', statusCode: number = 500): Response | void {
   if (statusCode === 409) return apiResponse.conflict(res, message);
   if (statusCode === 404) return apiResponse.notFound(res, message);
   if (statusCode === 403) return apiResponse.forbidden(res, message);
@@ -203,7 +214,9 @@ export function sendError(res: Response, message: string = 'Internal server erro
   return apiResponse.serverError(res, message);
 }
 
-export function sendValidationError(res: Response, errors: any): Response {
+export function sendValidationError(res: Response, errors?: any): void;
+export function sendValidationError(res: Response, errors: any): Response;
+export function sendValidationError(res: Response, errors: any): Response | void {
   if (errors instanceof ZodError) {
     // Use the error directly if it's a ZodError
     return apiResponse.validationError(res, errors);
@@ -230,6 +243,8 @@ export function sendValidationError(res: Response, errors: any): Response {
   }
 }
 
-export function sendNotFound(res: Response, message?: string): Response {
+export function sendNotFound(res: Response, message?: string): void;
+export function sendNotFound(res: Response, message: string): Response;
+export function sendNotFound(res: Response, message?: string): Response | void {
   return apiResponse.notFound(res, message);
 }
