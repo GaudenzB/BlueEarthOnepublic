@@ -29,13 +29,13 @@ export function setupEmployeeModule(app: any) {
   registerEmployeeRoutes(app);
   
   // Calculate sync interval from environment configuration or use default
-  const syncIntervalMinutes = process.env.EMPLOYEE_SYNC_INTERVAL_MINUTES 
-    ? parseInt(process.env.EMPLOYEE_SYNC_INTERVAL_MINUTES, 10)
+  const syncIntervalMinutes = process.env["EMPLOYEE_SYNC_INTERVAL_MINUTES"] 
+    ? parseInt(process.env["EMPLOYEE_SYNC_INTERVAL_MINUTES"], 10)
     : 60; // Default to hourly if not specified
   
   // Schedule regular employee synchronization
   // Only if we're in a production or staging environment
-  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
+  if (process.env["NODE_ENV"] === 'production' || process.env["NODE_ENV"] === 'staging') {
     employeeService.scheduleEmployeeSync(syncIntervalMinutes);
   }
   

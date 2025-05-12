@@ -43,7 +43,7 @@ export function registerEmployeeRoutes(app: Express) {
   app.post("/api/sync/employees", authenticate, isSuperAdmin, async (req: Request, res: Response) => {
     try {
       // Check if the Bubble API key is configured
-      if (!process.env.BUBBLE_API_KEY) {
+      if (!process.env["BUBBLE_API_KEY"]) {
         logger.error("Bubble API key not configured");
         return sendError(res, "External API key not configured", 400);
       }

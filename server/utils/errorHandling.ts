@@ -180,14 +180,14 @@ export function convertZodError(error: ZodError): ValidationError {
 export function formatDatabaseError(error: Error | DrizzleError): Record<string, string[]> {
   // Extract meaningful information from database errors
   const formattedErrors: Record<string, string[]> = {
-    database: ['Database operation failed. Please try again later.']
+    ['database']: ['Database operation failed. Please try again later.']
   };
   
   // Handle PostgreSQL specific errors
   if (error.message.includes('duplicate key')) {
-    formattedErrors.database = ['A record with this value already exists.'];
+    formattedErrors['database'] = ['A record with this value already exists.'];
   } else if (error.message.includes('foreign key')) {
-    formattedErrors.database = ['Referenced record does not exist or cannot be deleted due to dependencies.'];
+    formattedErrors['database'] = ['Referenced record does not exist or cannot be deleted due to dependencies.'];
   }
   
   return formattedErrors;
