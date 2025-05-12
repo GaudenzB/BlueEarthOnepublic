@@ -362,7 +362,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/employees/:id", authenticate, validateIdParameter(), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Log detailed request information
+      logger.info({
+        employeeId: id,
+        requestId: req.headers['x-request-id'] || 'none',
+        authHeader: !!req.headers.authorization,
+        userId: req.user?.id || 'not-authenticated'
+      }, `Employee detail request received for ID ${id}`);
+      
+      // Disable response caching for this endpoint
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      res.set('Surrogate-Control', 'no-store');
+      
       const employee = await storage.getEmployee(id);
+      
+      // Log detailed response information
+      logger.info({
+        employeeId: id,
+        employeeFound: !!employee,
+        employeeName: employee?.name || 'unknown',
+        employeeDepartment: employee?.department || 'unknown',
+      }, `Employee detail response for ID ${id}`);
       
       if (!employee) {
         return sendNotFound(res, "Employee not found");

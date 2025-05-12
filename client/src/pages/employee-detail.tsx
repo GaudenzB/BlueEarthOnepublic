@@ -279,7 +279,7 @@ export default function EmployeeDetail() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center mb-6">
+      <div className="flex items-center justify-between mb-6">
         <Button
           variant="ghost"
           onClick={goBack}
@@ -287,6 +287,15 @@ export default function EmployeeDetail() {
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
           Back to Directory
+        </Button>
+        
+        <Button
+          variant="outline"
+          onClick={() => refreshData()}
+          className="flex items-center"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Refresh Data
         </Button>
       </div>
 
