@@ -57,6 +57,14 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   const [documentToDelete, setDocumentToDelete] = useState<{id: string, title: string} | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  
+  // Debug logging to help diagnose document data issues
+  console.log('DocumentList component:', {
+    receivedDocs: !!documents,
+    docsIsArray: Array.isArray(documents),
+    documentCount: Array.isArray(documents) ? documents.length : 0,
+    sampleDoc: Array.isArray(documents) && documents.length > 0 ? documents[0] : null
+  });
 
   const handleDeleteClick = (documentId: string, documentTitle: string) => {
     setDocumentToDelete({

@@ -456,8 +456,8 @@ router.get('/', authenticate, tenantContext, async (req: Request, res: Response)
   try {
     // Parse and validate query parameters
     const queryParams = {
-      limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-      offset: req.query.offset ? parseInt(req.query.offset as string) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+      offset: req.query.offset ? parseInt(req.query.offset as string, 10) : undefined,
       documentType: req.query.documentType as string,
       search: req.query.search as string,
       sortBy: req.query.sortBy as string,
@@ -467,6 +467,10 @@ router.get('/', authenticate, tenantContext, async (req: Request, res: Response)
 
     const validationResult = getDocumentsSchema.safeParse(queryParams);
     if (!validationResult.success) {
+      logger.warn('Invalid document query parameters', {
+        errors: validationResult.error.errors,
+        params: queryParams
+      });
       return res.status(400).json({
         success: false,
         message: 'Invalid query parameters',
@@ -475,24 +479,50 @@ router.get('/', authenticate, tenantContext, async (req: Request, res: Response)
     }
 
     const tenantId = (req as any).tenantId;
+    logger.info('📑 Fetching documents with params', {
+      ...validationResult.data,
+      tenantId
+    });
     
     // Get documents from repository
     const result = await documentRepository.getAll(tenantId, validationResult.data);
     
-    // Log response details for debugging
-    logger.info({
-      documentsCount: result.documents.length,
-      totalDocuments: result.total,
-      firstDocument: result.documents.length > 0 ? {
-        id: result.documents[0].id,
-        title: result.documents[0].title,
-        status: result.documents[0].processingStatus,
-        createdAt: result.documents[0].createdAt
-      } : null,
-      tenantId
-    }, '📄 Documents retrieved for response');
+    // Enhanced logging for debugging
+    if (result.documents.length === 0) {
+      logger.info('No documents found for request', {
+        tenantId,
+        queryParams: validationResult.data
+      });
+    } else {
+      // Log response details for debugging
+      logger.info({
+        documentsCount: result.documents.length,
+        totalDocuments: result.total,
+        firstDocument: result.documents.length > 0 ? {
+          id: result.documents[0].id,
+          title: result.documents[0].title,
+          status: result.documents[0].processingStatus,
+          createdAt: result.documents[0].createdAt
+        } : null,
+        tenantId
+      }, '📄 Documents retrieved for response');
+      
+      // Print the first 3 documents for detailed debugging
+      if (result.documents.length > 0) {
+        logger.debug('Sample documents:', 
+          result.documents.slice(0, 3).map(doc => ({
+            id: doc.id,
+            title: doc.title,
+            type: doc.documentType,
+            status: doc.processingStatus,
+            createdAt: doc.createdAt
+          }))
+        );
+      }
+    }
     
-    res.json({
+    // Ensure we're sending a proper response format
+    const response = {
       success: true,
       message: 'Documents retrieved successfully',
       data: result.documents,
@@ -501,7 +531,15 @@ router.get('/', authenticate, tenantContext, async (req: Request, res: Response)
         limit: validationResult.data.limit,
         offset: validationResult.data.offset
       }
+    };
+    
+    logger.info('Response structure:', {
+      keys: Object.keys(response),
+      dataPresent: Array.isArray(response.data),
+      dataCount: Array.isArray(response.data) ? response.data.length : 0
     });
+    
+    res.json(response);
   } catch (error) {
     logger.error('Error getting documents', { error });
     res.status(500).json({

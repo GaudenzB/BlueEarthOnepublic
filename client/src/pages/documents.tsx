@@ -17,7 +17,7 @@ export default function Documents() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const { toast } = useToast();
   
-  const { data: documents, isLoading, refetch, error } = useQuery({
+  const { data: documentsResponse, isLoading, refetch, error } = useQuery({
     queryKey: ['/api/documents'],
     retry: false,
     // Enable some console logging for debugging
@@ -33,6 +33,27 @@ export default function Documents() {
       console.error('Documents query failed:', err);
     }
   });
+  
+  // Extract the documents array from the response
+  // The API returns { success: true, data: [...documents], pagination: {...} }
+  const documents = React.useMemo(() => {
+    if (!documentsResponse) return [];
+    
+    // Check if response has the expected structure
+    if (documentsResponse && 'success' in documentsResponse && 'data' in documentsResponse) {
+      // This is the standard API response format
+      return documentsResponse.data || [];
+    }
+    
+    // If it's already an array, return it directly (fall back for direct array responses)
+    if (Array.isArray(documentsResponse)) {
+      return documentsResponse;
+    }
+    
+    // Default case: we couldn't find documents
+    console.warn('Unexpected document response format:', documentsResponse);
+    return [];
+  }, [documentsResponse]);
 
   const handleUploadSuccess = () => {
     toast({
@@ -96,15 +117,16 @@ export default function Documents() {
             
             <TabsContent value="all">
               <DocumentList 
-                documents={documents?.data || []} 
+                documents={documents} 
                 isLoading={isLoading} 
                 filter="all"
               />
-              {documents && !documents.data && (
+              {documentsResponse && (
                 <div className="p-4 bg-muted/20 rounded-md mt-4 text-center">
                   <p className="text-sm text-muted-foreground">
-                    Debug Info: Found {Array.isArray(documents) ? documents.length : 0} documents in direct format.
-                    {Object.keys(documents || {}).length > 0 && ` Response keys: ${Object.keys(documents || {}).join(', ')}`}
+                    Debug Info: Found {documents.length} documents.
+                    Response format: {Array.isArray(documentsResponse) ? 'Direct array' : 
+                      ('success' in documentsResponse) ? 'API standard format' : 'Unknown'}
                   </p>
                 </div>
               )}
@@ -112,7 +134,7 @@ export default function Documents() {
             
             <TabsContent value="recent">
               <DocumentList 
-                documents={documents?.data || []} 
+                documents={documents} 
                 isLoading={isLoading} 
                 filter="recent"
               />
@@ -120,7 +142,7 @@ export default function Documents() {
             
             <TabsContent value="contracts">
               <DocumentList 
-                documents={documents?.data || []} 
+                documents={documents} 
                 isLoading={isLoading} 
                 filter="CONTRACT"
               />
