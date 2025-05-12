@@ -148,7 +148,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       formData.append("isConfidential", String(data.isConfidential));
       
       // Debug log to verify FormData contents
-      if (process.env['NODE_ENV'] === 'development') {
+      // In Vite, we use import.meta.env instead of process.env
+      if (import.meta.env.DEV) {
         console.log('FormData contents:');
         for (let [key, value] of formData.entries()) {
           console.log(`${key}: ${value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value}`);
