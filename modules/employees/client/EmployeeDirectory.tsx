@@ -7,8 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Employee } from "@blueearth/core/schemas"
-import { API_ROUTES } from "@blueearth/core/utils"
-import { ApiResponse } from "@blueearth/core/utils"
+import { ApiResponse } from "@/lib/types"
 
 export function EmployeeDirectory() {
   const [location, setLocation] = useLocation();
@@ -55,11 +54,11 @@ export function EmployeeDirectory() {
 
   // Query to fetch employees
   const { data: apiResponse, isLoading, isError } = useQuery<ApiResponse<Employee[]>>({
-    queryKey: [API_ROUTES.EMPLOYEES.BASE],
+    queryKey: ['/api/employees'],
   })
   
-  // Extract employees from the response data structure
-  const employees = apiResponse?.data || []
+  // Extract employees from the response data structure safely
+  const employees = apiResponse && 'data' in apiResponse ? apiResponse.data : []
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
@@ -107,7 +106,7 @@ export function EmployeeDirectory() {
       const search = searchTerm.toLowerCase()
       filtered = filtered.filter(
         employee => 
-          `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(search) ||
+          employee.name?.toLowerCase().includes(search) ||
           employee.position?.toLowerCase().includes(search) ||
           employee.department?.toLowerCase().includes(search) ||
           employee.email?.toLowerCase().includes(search)
@@ -127,8 +126,8 @@ export function EmployeeDirectory() {
     // Sort employees
     if (sortBy === "name") {
       filtered.sort((a, b) => {
-        const aName = `${a.firstName} ${a.lastName}`;
-        const bName = `${b.firstName} ${b.lastName}`;
+        const aName = a.name || '';
+        const bName = b.name || '';
         const comparison = aName.localeCompare(bName);
         return sortDirection === "asc" ? comparison : -comparison;
       });
