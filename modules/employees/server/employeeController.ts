@@ -2,8 +2,27 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../../../server/storage';
 import { logger } from '../../../server/utils/logger';
-import { departmentEnum, employeeStatusEnum, insertEmployeeSchema } from '../../../core/src/schemas/employee';
+import { departmentEnum, employeeStatusEnum, insertEmployeeSchema } from '@shared/schema';
+import { employeeStatusEnum as coreEmployeeStatusEnum } from '../../../core/src/schemas/employee';
 import { sendSuccess, sendError, sendValidationError } from '../../../server/utils/apiResponse';
+
+/**
+ * Maps the core schema status values to the shared schema status values
+ * This helps maintain compatibility between the two different enum definitions
+ */
+function mapCoreStatusToSharedStatus(coreStatus?: string): "active" | "inactive" | "on_leave" | "remote" | undefined {
+  if (!coreStatus) return undefined;
+  
+  // Map from uppercase format to lowercase with underscores
+  switch (coreStatus.toUpperCase()) {
+    case "ACTIVE": return "active";
+    case "INACTIVE": return "inactive";
+    case "ON_LEAVE": return "on_leave";
+    case "CONTRACT": 
+    case "INTERN": return "active"; // Consider contractors and interns as active employees
+    default: return undefined;
+  }
+}
 
 /**
  * Get all employees
@@ -162,6 +181,11 @@ export async function updateEmployee(req: Request, res: Response) {
     // Create a partial schema based on the insertEmployeeSchema 
     // to validate update operations for complete type safety
     const updateEmployeeSchema = insertEmployeeSchema.partial();
+    
+    // Map status if provided to ensure compatibility between schemas
+    if (req.body.status) {
+      req.body.status = mapCoreStatusToSharedStatus(req.body.status) || "active";
+    }
     
     // Validate request body
     let validatedData;

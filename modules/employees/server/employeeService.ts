@@ -33,20 +33,34 @@ export async function syncEmployeesFromBubble(): Promise<{
       const firstEmployee = bubbleEmployees[0];
       
       // Log specific fields individually for better debugging
-      logger.debug('First Bubble employee data (name):', { name: firstEmployee.name });
-      logger.debug('First Bubble employee data (email):', { email: firstEmployee.email });
-      logger.debug('First Bubble employee data (status):', { status: firstEmployee.status });
-      
-      // Also add more error catching
-      try {
-        // Attempt to parse this status with our enum to see if that's the issue
-        const validStatus = employeeStatusEnum.parse(firstEmployee.status);
-        logger.debug('Status validation successful:', { validStatus });
-      } catch (error) {
-        logger.error('Status validation failed:', { 
-          status: firstEmployee.status,
-          error: error instanceof Error ? error.message : String(error)
+      if (firstEmployee) {
+        logger.debug('First Bubble employee data (name):', { 
+          name: firstEmployee.name || 'undefined' 
         });
+        logger.debug('First Bubble employee data (email):', { 
+          email: firstEmployee.email || 'undefined' 
+        });
+        logger.debug('First Bubble employee data (status):', { 
+          status: firstEmployee.status || 'undefined' 
+        });
+        
+        // Also add more error catching
+        try {
+          // Attempt to parse this status with our enum to see if that's the issue
+          if (firstEmployee.status) {
+            const validStatus = employeeStatusEnum.parse(firstEmployee.status);
+            logger.debug('Status validation successful:', { validStatus });
+          } else {
+            logger.warn('Cannot validate empty status field');
+          }
+        } catch (error) {
+          logger.error('Status validation failed:', { 
+            status: firstEmployee.status || 'undefined',
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      } else {
+        logger.warn('First employee in array is undefined');
       }
     }
     
