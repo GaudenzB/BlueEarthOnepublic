@@ -24,11 +24,16 @@ export default function EmployeeDetail() {
   const [, setLocation] = useLocation();
   const { hasPermissionCached, permissionResults } = usePermissionsContext();
 
-  // Define the API response structure
+  // Define the nested API response structure for this endpoint
+  interface EmployeeApiData {
+    success: boolean;
+    data: Employee;
+  }
+  
   interface EmployeeResponse {
     success: boolean;
     message: string;
-    data: Employee;
+    data: EmployeeApiData;
   }
 
   // Check if we have an auth token
@@ -65,9 +70,9 @@ export default function EmployeeDetail() {
     retryDelay: 1000, // Wait 1 second between retries
   });
   
-  // Extract employee from response
-  // Just use the data property directly since we're calling the single-employee endpoint
-  const employee = apiResponse?.data;
+  // Extract employee from nested response
+  // Our API returns { success, data: { success, data: Employee } }
+  const employee = apiResponse?.data?.data;
   
   // Log for debugging
   console.log("Employee data from detail endpoint:", employee);
