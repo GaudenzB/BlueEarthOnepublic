@@ -398,14 +398,14 @@ export default function UserManagement() {
                         Error loading users
                       </TableCell>
                     </TableRow>
-                  ) : !users?.data || users.data.length === 0 ? (
+                  ) : !users || users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center">
                         No users found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    users.data.map((user) => (
+                    users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
