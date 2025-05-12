@@ -158,10 +158,10 @@ export async function createEmployee(req: Request, res: Response) {
     
     const employee = await storage.createEmployee(validatedData);
     
-    return sendSuccess(res, employee, "Employee created successfully", 201);
+    return sendSuccess(res, employee, "Employee created successfully", HttpStatus.CREATED);
   } catch (error) {
     logger.error({ error }, "Error creating employee");
-    return sendError(res, "Failed to create employee", 500);
+    return sendServerError(res, "Failed to create employee");
   }
 }
 
@@ -170,15 +170,15 @@ export async function createEmployee(req: Request, res: Response) {
  */
 export async function updateEmployee(req: Request, res: Response) {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params['id'];
     if (!idParam) {
-      return sendError(res, "Employee ID is required", 400);
+      return sendError(res, "Employee ID is required", HttpStatus.BAD_REQUEST);
     }
     
     // Parse as integer and validate
     const id = parseInt(idParam, 10);
     if (isNaN(id) || id <= 0) {
-      return sendError(res, "Invalid employee ID format", 400);
+      return sendError(res, "Invalid employee ID format", HttpStatus.BAD_REQUEST);
     }
     
     // Create a partial schema based on the insertEmployeeSchema 
@@ -210,16 +210,16 @@ export async function updateEmployee(req: Request, res: Response) {
     const employee = await storage.updateEmployee(id, validatedData);
     
     if (!employee) {
-      return sendError(res, "Employee not found", 404);
+      return sendNotFound(res, "Employee not found");
     }
     
     return sendSuccess(res, employee, "Employee updated successfully");
   } catch (error) {
     logger.error({ 
-      employeeId: req.params.id, 
+      employeeId: req.params['id'], 
       error: error instanceof Error ? error.message : String(error) 
     }, "Error updating employee");
-    return sendError(res, "Failed to update employee", 500);
+    return sendServerError(res, "Failed to update employee");
   }
 }
 
@@ -228,40 +228,40 @@ export async function updateEmployee(req: Request, res: Response) {
  */
 export async function deleteEmployee(req: Request, res: Response) {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params['id'];
     if (!idParam) {
-      return sendError(res, "Employee ID is required", 400);
+      return sendError(res, "Employee ID is required", HttpStatus.BAD_REQUEST);
     }
     
     // Parse as integer and validate
     const id = parseInt(idParam, 10);
     if (isNaN(id) || id <= 0) {
-      return sendError(res, "Invalid employee ID format", 400);
+      return sendError(res, "Invalid employee ID format", HttpStatus.BAD_REQUEST);
     }
     
     // Log the delete operation attempt
     logger.warn({
       employeeId: id,
-      requestedBy: req.user?.id || 'unknown'
+      requestedBy: req.user?.['id'] || 'unknown'
     }, `Attempting to delete employee with ID ${id}`);
     
     const success = await storage.deleteEmployee(id);
     
     if (!success) {
-      return sendError(res, "Employee not found", 404);
+      return sendNotFound(res, "Employee not found");
     }
     
     logger.info({ 
       employeeId: id, 
-      deletedBy: req.user?.id || 'unknown'
+      deletedBy: req.user?.['id'] || 'unknown'
     }, "Employee deleted");
     
     return sendSuccess(res, null, "Employee deleted successfully");
   } catch (error) {
     logger.error({ 
-      employeeId: req.params.id, 
+      employeeId: req.params['id'], 
       error: error instanceof Error ? error.message : String(error)
     }, "Error deleting employee");
-    return sendError(res, "Failed to delete employee", 500);
+    return sendServerError(res, "Failed to delete employee");
   }
 }
