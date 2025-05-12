@@ -480,7 +480,7 @@ export default function EmployeeDetail() {
                     <h3 className="text-lg font-medium">Responsibilities</h3>
                     <p className="mt-2 text-gray-600">
                       {employee ? 
-                        `As a ${employee.position || 'team member'} in the ${employee.department || 'company'} department, ${employee.responsibilities || 'this employee is responsible for managing departmental tasks and collaborating with team members to achieve company goals.'}` 
+                        `As a ${employee?.position || 'team member'} in the ${employee?.department || 'company'} department, ${employee?.responsibilities || 'this employee is responsible for managing departmental tasks and collaborating with team members to achieve company goals.'}` 
                         : 'No responsibility information available.'
                       }
                     </p>
@@ -494,13 +494,13 @@ export default function EmployeeDetail() {
                       {employee?.email && (
                         <div>
                           <p className="text-sm text-gray-500">Email</p>
-                          <p className="font-medium">{employee.email}</p>
+                          <p className="font-medium">{employee?.email || 'Not provided'}</p>
                         </div>
                       )}
                       {employee?.phone && (
                         <div>
                           <p className="text-sm text-gray-500">Business Phone</p>
-                          <p className="font-medium">{employee.phone}</p>
+                          <p className="font-medium">{employee?.phone || 'Not provided'}</p>
                         </div>
                       )}
                     </div>

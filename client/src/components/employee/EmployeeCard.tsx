@@ -20,41 +20,55 @@ interface EmployeeCardProps {
 }
 
 export function EmployeeCard({ employee }: EmployeeCardProps) {
-  const nameParts = employee.name.split(' ')
+  // Add null safety for name property
+  const nameParts = (employee.name || '').split(' ')
   const initials = nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]
     ? `${nameParts[0]?.[0] || ''}${nameParts[nameParts.length - 1]?.[0] || ''}` 
     : nameParts[0]?.substring(0, 2) || '??'
   
-  const statusConfig = statusColors[employee.status] || statusColors['inactive']
-  const formattedStatus = employee.status.replace('_', ' ')
+  // Add null safety for status property
+  const statusConfig = statusColors[employee.status || 'inactive'] || statusColors['inactive']
+  const formattedStatus = (employee.status || 'inactive').replace('_', ' ')
+  
+  // Safely create the detail URL with id validation
+  const getEmployeeDetailUrl = (id: number | undefined) => {
+    if (id === undefined) {
+      return '/'; // Fallback to home if no ID
+    }
+    return ROUTES.EMPLOYEES.DETAIL(id);
+  };
   
   return (
     <Card className="overflow-hidden border border-border hover:shadow-md transition-shadow duration-300">
-      <Link href={ROUTES.EMPLOYEES.DETAIL(employee.id)} className="block cursor-pointer">
+      <Link href={getEmployeeDetailUrl(employee.id)} className="block cursor-pointer">
         <CardContent className="p-4">
           <div className="flex items-center">
             <Avatar className="h-12 w-12">
-              {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
+              {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name || 'Employee'} />}
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="ml-3">
-              <h3 className="text-base font-semibold text-foreground">{employee.name}</h3>
-              <p className="text-sm text-muted-foreground">{employee.position}</p>
+              <h3 className="text-base font-semibold text-foreground">{employee.name || 'Unknown'}</h3>
+              <p className="text-sm text-muted-foreground">{employee.position || 'No position'}</p>
             </div>
           </div>
           
           <div className="mt-4 space-y-2">
             <div className="flex items-center text-sm">
               <Building className="text-muted-foreground h-4 w-4 mr-2" />
-              <span>{employee.department.charAt(0).toUpperCase() + employee.department.slice(1)} Department</span>
+              <span>{employee.department 
+                ? `${employee.department.charAt(0).toUpperCase()}${employee.department.slice(1)} Department` 
+                : 'Unknown Department'}</span>
             </div>
-            <div className="flex items-center text-sm">
-              <MapPin className="text-muted-foreground h-4 w-4 mr-2" />
-              <span>{employee.location}</span>
-            </div>
+            {employee.location && (
+              <div className="flex items-center text-sm">
+                <MapPin className="text-muted-foreground h-4 w-4 mr-2" />
+                <span>{employee.location}</span>
+              </div>
+            )}
             <div className="flex items-center text-sm">
               <Mail className="text-muted-foreground h-4 w-4 mr-2" />
-              <span>{employee.email}</span>
+              <span>{employee.email || 'No email'}</span>
             </div>
           </div>
           
