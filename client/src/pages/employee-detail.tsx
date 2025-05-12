@@ -22,10 +22,21 @@ export default function EmployeeDetail() {
   const [, setLocation] = useLocation();
   const { hasPermissionCached, permissionResults } = usePermissionsContext();
 
-  const { data: employee, isLoading, error } = useQuery<Employee>({
+  // Define the API response structure
+  interface EmployeeResponse {
+    success: boolean;
+    message: string;
+    data: Employee;
+  }
+
+  // Fetch employee data
+  const { data: apiResponse, isLoading, error } = useQuery<EmployeeResponse>({
     queryKey: ['/api/employees', id],
     enabled: !!id,
   });
+  
+  // Extract employee from response
+  const employee = apiResponse?.data;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -147,7 +158,7 @@ export default function EmployeeDetail() {
     );
   }
 
-  if (error || !employee) {
+  if (error || !apiResponse || !apiResponse.success || !employee) {
     return (
       <div className="container mx-auto p-6">
         <div className="mb-6">
@@ -163,7 +174,9 @@ export default function EmployeeDetail() {
           <CardHeader>
             <CardTitle>Error</CardTitle>
             <CardDescription>
-              Could not load employee data. The employee may not exist or there was a server error.
+              {!apiResponse?.success 
+                ? apiResponse?.message || "Server returned an error response" 
+                : "Could not load employee data. The employee may not exist or there was a server error."}
             </CardDescription>
           </CardHeader>
           <CardContent>

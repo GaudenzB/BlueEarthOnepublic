@@ -115,7 +115,13 @@ export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: Unauthor
       // Use HTTP client to fetch data
       const response = await httpClient.get<T>(url);
       
-      // Return data property of ApiResponse if it exists
+      // For specific API patterns that return standardized responses like employees/:id
+      // Return the full response object
+      if (url.match(/\/api\/employees\/\d+/) || url.includes('/api/auth/')) {
+        return response as unknown as T;
+      }
+      
+      // For other endpoints, return data property of ApiResponse if it exists
       return response.data as T;
     } catch (error) {
       // Handle 401 (Unauthorized) as requested
