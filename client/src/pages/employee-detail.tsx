@@ -42,7 +42,7 @@ export default function EmployeeDetail() {
   // Force refresh function
   const refreshData = () => {
     // Force cache invalidation for this employee
-    queryClient.invalidateQueries({queryKey: ['/api/employees', id]});
+    queryClient.invalidateQueries({queryKey: [`/api/employees/${id}`]});
     // Update timestamp to force query key change
     setTimestamp(Date.now());
     console.log("Forcing refresh of employee data for ID:", id);
@@ -53,9 +53,9 @@ export default function EmployeeDetail() {
     refreshData();
   }, [id]);
   
-  // Fetch employee data with cache-busting timestamp
+  // Fetch employee data directly from the single-employee endpoint
   const { data: apiResponse, isLoading, error, refetch } = useQuery<EmployeeResponse>({
-    queryKey: ['/api/employees', id, { _t: timestamp }],
+    queryKey: [`/api/employees/${id}`, { _t: timestamp }], // Use the specific endpoint for a single employee
     enabled: !!id && !!token, // Only fetch if we have a token
     refetchOnMount: true, // Always refetch when component mounts
     staleTime: 0, // Consider data immediately stale
@@ -64,21 +64,11 @@ export default function EmployeeDetail() {
   });
   
   // Extract employee from response
-  // Handle both single object and array response formats
-  let employee = undefined;
+  // Just use the data property directly since we're calling the single-employee endpoint
+  const employee = apiResponse?.data;
   
-  if (apiResponse?.data) {
-    // If response is an array, find the employee with matching ID
-    if (Array.isArray(apiResponse.data)) {
-      console.log("API returned array response, searching for employee with ID:", id);
-      employee = apiResponse.data.find(emp => emp.id === parseInt(id));
-    } else {
-      // If response is a single object, use it directly
-      employee = apiResponse.data;
-    }
-  }
-  
-  console.log("Final employee data:", employee);
+  // Log for debugging
+  console.log("Employee data from detail endpoint:", employee);
 
   const getStatusColor = (status: string) => {
     switch (status) {
