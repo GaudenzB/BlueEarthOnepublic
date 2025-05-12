@@ -248,3 +248,9 @@ export function sendNotFound(res: Response, message: string): Response;
 export function sendNotFound(res: Response, message?: string): Response | void {
   return apiResponse.notFound(res, message);
 }
+
+export function sendServerError(res: Response, message?: string): void;
+export function sendServerError(res: Response, message: string): Response;
+export function sendServerError(res: Response, message?: string): Response | void {
+  return apiResponse.serverError(res, message);
+}

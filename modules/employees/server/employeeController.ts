@@ -3,8 +3,15 @@ import { z } from 'zod';
 import { storage } from '../../../server/storage';
 import { logger } from '../../../server/utils/logger';
 import { departmentEnum, employeeStatusEnum, insertEmployeeSchema } from '@shared/schema';
-import { employeeStatusEnum as coreEmployeeStatusEnum } from '../../../core/src/schemas/employee';
-import { sendSuccess, sendError, sendValidationError } from '../../../server/utils/apiResponse';
+import { employeeStatusEnum as coreEmployeeStatusEnum } from '../../../core/packages/core-common/src/schemas/employee';
+import { 
+  sendSuccess, 
+  sendError, 
+  sendValidationError, 
+  sendNotFound, 
+  sendServerError 
+} from '../../../server/utils/apiResponse';
+import { ErrorCode, HttpStatus } from '../../../core/packages/core-common/src/types/api';
 
 /**
  * Maps the core schema status values to the shared schema status values
@@ -45,19 +52,12 @@ export async function getAllEmployees(req: Request, res: Response) {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const formattedErrors = error.errors.reduce((acc: Record<string, string[]>, curr) => {
-          const path = curr.path.join('.').replace(/^query\./, '');
-          if (!acc[path]) acc[path] = [];
-          acc[path].push(curr.message);
-          return acc;
-        }, {});
-        
         logger.debug({ 
           path: req.path, 
-          errors: formattedErrors 
+          errors: error.format()
         }, 'Query parameter validation error');
         
-        return sendError(res, 'Invalid query parameters', 400);
+        return sendValidationError(res, error);
       }
       throw error;
     }
@@ -79,10 +79,10 @@ export async function getAllEmployees(req: Request, res: Response) {
       employees = await storage.getAllEmployees();
     }
     
-    return sendSuccess(res, employees);
+    return sendSuccess(res, employees, "Employees retrieved successfully");
   } catch (error) {
     logger.error({ error }, "Failed to get employees");
-    return sendError(res, "Failed to get employees", 500);
+    return sendServerError(res, "Failed to get employees");
   }
 }
 
@@ -91,15 +91,15 @@ export async function getAllEmployees(req: Request, res: Response) {
  */
 export async function getEmployeeById(req: Request, res: Response) {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params['id'];
     if (!idParam) {
-      return sendError(res, "Employee ID is required", 400);
+      return sendError(res, "Employee ID is required", HttpStatus.BAD_REQUEST);
     }
     
     // Parse as integer and validate
     const id = parseInt(idParam, 10);
     if (isNaN(id) || id <= 0) {
-      return sendError(res, "Invalid employee ID format", 400);
+      return sendError(res, "Invalid employee ID format", HttpStatus.BAD_REQUEST);
     }
     
     // Log detailed request information
@@ -127,13 +127,16 @@ export async function getEmployeeById(req: Request, res: Response) {
     }, `Employee detail response for ID ${id}`);
     
     if (!employee) {
-      return sendError(res, "Employee not found", 404);
+      return sendNotFound(res, "Employee not found");
     }
     
-    return sendSuccess(res, employee);
+    return sendSuccess(res, employee, "Employee retrieved successfully");
   } catch (error) {
-    logger.error({ employeeId: req.params.id, error: error instanceof Error ? error.message : String(error) }, "Error retrieving employee");
-    return sendError(res, "Failed to get employee", 500);
+    logger.error({ 
+      employeeId: req.params['id'], 
+      error: error instanceof Error ? error.message : String(error) 
+    }, "Error retrieving employee");
+    return sendServerError(res, "Failed to get employee");
   }
 }
 
