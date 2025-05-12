@@ -59,11 +59,14 @@ export function EmployeeDirectory() {
     data: Employee[];
   }
   
-  // Query to fetch employees with cache-busting timestamp to prevent 304 responses
+  // Add a cache buster that doesn't change on every render
+  const cacheBuster = React.useMemo(() => ({ _t: Date.now() }), []);
+  
+  // Query to fetch employees
   const { data: apiResponse, isLoading, isError, refetch } = useQuery<Employee[] | ApiResponse>({
-    queryKey: ["/api/employees", { _t: Date.now() }], // Add timestamp as query param to bust cache
+    queryKey: ["/api/employees", cacheBuster], // Static query key that only changes on mount
     staleTime: 0, // Consider data immediately stale
-    gcTime: 0, // Don't keep this query in cache (gcTime replaces cacheTime in React Query v5)
+    gcTime: 60 * 1000, // Keep in cache for 1 minute (gcTime replaces cacheTime in React Query v5)
   })
   
   // Extract employees from the response data structure
