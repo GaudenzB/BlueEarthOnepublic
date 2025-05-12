@@ -11,7 +11,7 @@ import { comparePassword, generateToken, revokeToken, hashPassword } from '../au
 import { errorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
-import apiResponse from '../utils/apiResponse';
+import { apiResponse } from '../utils/apiResponse';
 const { wrapHandler } = errorHandling;
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../email/sendgrid';
@@ -135,7 +135,7 @@ const register = errorHandling.wrapHandler(async (req: Request, res: Response) =
   const token = generateToken(newUser);
   
   // Return success with user info and token
-  return sendSuccess(res, {
+  return apiResponse.created(res, {
     user: {
       id: newUser.id,
       username: newUser.username,
@@ -145,7 +145,7 @@ const register = errorHandling.wrapHandler(async (req: Request, res: Response) =
       role: newUser.role,
     },
     token
-  }, "Registration successful", 201);
+  }, "Registration successful");
 });
 
 /**
@@ -225,7 +225,7 @@ const forgotPassword = wrapHandler(async (req: Request, res: Response) => {
     
     // Return success even though we didn't send an email
     // This prevents email enumeration attacks
-    return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
+    return apiResponse.success(res, null, "If your email is registered, you will receive a password reset link shortly");
   }
   
   // Generate reset token and set expiry
@@ -258,7 +258,7 @@ const forgotPassword = wrapHandler(async (req: Request, res: Response) => {
     userId: user?.id
   });
   
-  return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
+  return apiResponse.success(res, null, "If your email is registered, you will receive a password reset link shortly");
 });
 
 /**
@@ -302,7 +302,7 @@ const resetPassword = wrapHandler(async (req: Request, res: Response) => {
     userId: user.id
   });
   
-  return sendSuccess(res, null, "Password has been reset successfully");
+  return apiResponse.success(res, null, "Password has been reset successfully");
 });
 
 // Export controllers with named functions for easier debugging and logging

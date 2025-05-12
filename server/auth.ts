@@ -3,7 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 import { User, UserRole } from "@shared/schema";
-import apiResponse from "./utils/apiResponse";
+import { apiResponse } from "./utils/apiResponse";
 
 /**
  * Enhanced Authentication System

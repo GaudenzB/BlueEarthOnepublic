@@ -80,15 +80,21 @@ const env = envSchema.parse(process.env);
 // Configuration object with sections
 const config = {
   // Environment
-  env: env.NODE_ENV,
-  isProd: IS_PROD,
-  isDev: IS_DEV,
-  isTest: IS_TEST,
+  env: {
+    current: env.NODE_ENV,
+    isProd: IS_PROD,
+    isDev: IS_DEV,
+    isTest: IS_TEST,
+    isDevelopment: IS_DEV,
+    isProduction: IS_PROD,
+  },
   
   // Server
   server: {
     port: env.PORT,
     host: env.HOST,
+    trustProxy: IS_PROD,
+    bodyLimit: '1mb',
   },
   
   // Database
@@ -128,14 +134,32 @@ const config = {
       maxRequests: env.AUTH_RATE_LIMIT_MAX_REQUESTS,
     },
     passwordReset: {
-      window: env.PASSWORD_RESET_RATE_LIMIT_WINDOW || 60 * 60 * 1000, // 1 hour
-      maxRequests: env.PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS || 3,
+      window: 60 * 60 * 1000, // 1 hour
+      maxRequests: 3, // Limit password reset attempts
     },
   },
   
   // CORS
   cors: {
     origin: env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400, // 24 hours in seconds
+  },
+  
+  // Security settings
+  security: {
+    contentSecurityPolicy: IS_PROD,
+    hsts: IS_PROD,
+    sessionSecret: env.SESSION_SECRET,
+    sessionTtl: env.SESSION_TTL,
+  },
+  
+  // Redis configuration
+  redis: {
+    url: env.REDIS_URL,
+    enabled: !!env.REDIS_URL,
+    prefix: 'blueearth:',
   },
   
   // Logging
@@ -149,6 +173,7 @@ const config = {
     bubble: {
       apiKey: env.BUBBLE_API_KEY,
       apiUrl: env.BUBBLE_API_URL,
+      syncIntervalMinutes: 60, // Sync employee data every 60 minutes
     },
   },
   

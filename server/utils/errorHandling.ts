@@ -8,8 +8,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { logger } from './logger';
-import apiResponse from './apiResponse';
-import { DatabaseError } from 'pg';
+import { apiResponse } from './apiResponse';
 import { DrizzleError } from 'drizzle-orm';
 
 /**
@@ -106,9 +105,9 @@ export class ConflictError extends AppError {
 }
 
 /**
- * Database error class
+ * Application Database error class (distinct from pg.DatabaseError)
  */
-export class DatabaseError extends AppError {
+export class AppDatabaseError extends AppError {
   constructor(
     message: string = 'Database operation failed',
     errors?: Record<string, string[]>
@@ -152,10 +151,9 @@ export class ServerError extends AppError {
 }
 
 /**
- * Convert a ZodError to a ValidationError
+ * Format ZodError to a client-friendly format
  */
-export function convertZodError(error: ZodError): ValidationError {
-  // Format errors for client consumption
+export function formatZodError(error: ZodError): Record<string, string[]> {
   const formattedErrors: Record<string, string[]> = {};
   
   error.errors.forEach(err => {
@@ -166,25 +164,30 @@ export function convertZodError(error: ZodError): ValidationError {
     formattedErrors[path].push(err.message);
   });
   
-  return new ValidationError('Validation failed', formattedErrors);
+  return formattedErrors;
+}
+
+/**
+ * Convert a ZodError to a ValidationError
+ */
+export function convertZodError(error: ZodError): ValidationError {
+  return new ValidationError('Validation failed', formatZodError(error));
 }
 
 /**
  * Format a database error for client consumption
  */
-export function formatDatabaseError(error: DatabaseError | DrizzleError): Record<string, string[]> {
+export function formatDatabaseError(error: Error | DrizzleError): Record<string, string[]> {
   // Extract meaningful information from database errors
   const formattedErrors: Record<string, string[]> = {
     database: ['Database operation failed. Please try again later.']
   };
   
-  if (error instanceof DatabaseError) {
-    // Handle PostgreSQL specific errors
-    if (error.message.includes('duplicate key')) {
-      formattedErrors.database = ['A record with this value already exists.'];
-    } else if (error.message.includes('foreign key')) {
-      formattedErrors.database = ['Referenced record does not exist or cannot be deleted due to dependencies.'];
-    }
+  // Handle PostgreSQL specific errors
+  if (error.message.includes('duplicate key')) {
+    formattedErrors.database = ['A record with this value already exists.'];
+  } else if (error.message.includes('foreign key')) {
+    formattedErrors.database = ['Referenced record does not exist or cannot be deleted due to dependencies.'];
   }
   
   return formattedErrors;
@@ -227,7 +230,7 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
   // Handle ZodError validation errors
   if (err instanceof ZodError) {
     const validationError = convertZodError(err);
-    return apiResponse.validationError(res, validationError.errors || {}, validationError.message);
+    return apiResponse.validationError(res, validationError.errors || {});
   }
   
   // Handle application errors
@@ -236,7 +239,7 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
     
     switch (err.type) {
       case ErrorType.VALIDATION:
-        return apiResponse.validationError(res, sanitizedErrors || {}, err.message);
+        return apiResponse.validationError(res, sanitizedErrors || {});
       case ErrorType.AUTHENTICATION:
         return apiResponse.unauthorized(res, err.message);
       case ErrorType.AUTHORIZATION:
@@ -244,32 +247,32 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
       case ErrorType.NOT_FOUND:
         return apiResponse.notFound(res, err.message);
       case ErrorType.CONFLICT:
-        return apiResponse.conflict(res, err.message, sanitizedErrors);
+        return apiResponse.conflict(res, err.message);
       case ErrorType.DATABASE:
       case ErrorType.INTEGRATION:
       case ErrorType.SERVER:
-        return apiResponse.error(res, 'An unexpected error occurred. Please try again later.', 500);
+        return apiResponse.serverError(res, 'An unexpected error occurred. Please try again later.');
       case ErrorType.RATE_LIMIT:
         return apiResponse.error(res, err.message, 429);
       default:
-        return apiResponse.error(res, 'An unexpected error occurred. Please try again later.', 500);
+        return apiResponse.serverError(res, 'An unexpected error occurred. Please try again later.');
     }
   }
   
-  // Handle PostgreSQL errors
-  if (err instanceof DatabaseError) {
+  // Handle PostgreSQL errors by checking for common error patterns
+  if (err.message && (err.message.includes('database') || err.message.includes('sql') || err.message.includes('query') || err.message.includes('pg'))) {
     const formattedErrors = formatDatabaseError(err);
-    return apiResponse.error(res, 'Database operation failed', 500, formattedErrors);
+    return apiResponse.serverError(res, 'Database operation failed');
   }
   
   // Handle Drizzle ORM errors
   if (err instanceof DrizzleError) {
     const formattedErrors = formatDatabaseError(err as any);
-    return apiResponse.error(res, 'Database operation failed', 500, formattedErrors);
+    return apiResponse.serverError(res, 'Database operation failed');
   }
   
   // Handle all other errors as 500 Internal Server Error
-  return apiResponse.error(res, 'An unexpected error occurred. Please try again later.', 500);
+  return apiResponse.serverError(res, 'An unexpected error occurred. Please try again later.');
 }
 
 /**
@@ -288,7 +291,7 @@ export const errorHandling = {
   AuthorizationError,
   NotFoundError,
   ConflictError,
-  DatabaseError,
+  AppDatabaseError,
   IntegrationError,
   RateLimitError,
   ServerError,

@@ -24,7 +24,7 @@ import {
   insertEmployeeSchema,
   employeeSearchSchema
 } from "@shared/schema";
-import apiResponse from "./utils/apiResponse";
+import { apiResponse, sendSuccess, sendError, sendValidationError, sendNotFound } from "./utils/apiResponse";
 import { logger } from "./utils/logger";
 import { sendPasswordResetEmail } from "./email/sendgrid";
 import { validate, validateIdParameter } from "./middleware/validation";
@@ -101,13 +101,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return user data without password and token
       const { password, ...userWithoutPassword } = user;
-      return sendSuccess(res, { user: userWithoutPassword, token }, "User registered successfully", 201);
+      return apiResponse.created(res, { user: userWithoutPassword, token }, "User registered successfully");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return sendValidationError(res, error.errors);
+        return apiResponse.validationError(res, error);
       }
       console.error("Registration error:", error);
-      return sendError(res, "Failed to register user");
+      return apiResponse.serverError(res, "Failed to register user");
     }
   });
   

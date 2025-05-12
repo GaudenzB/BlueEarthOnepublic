@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { logger } from '../utils/logger';
-import apiResponse from '../utils/apiResponse';
+import { apiResponse } from '../utils/apiResponse';
 import { errorHandling } from '../utils/errorHandling';
 
 /**
@@ -62,17 +62,17 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
       }
     });
     
-    return apiResponse.validationError(res, formattedErrors, 'Validation failed');
+    return apiResponse.validationError(res, formattedErrors);
   }
   
   // Handle ApiError (our custom error class)
   if (err instanceof ApiError) {
-    return apiResponse.error(
-      res, 
-      err.message, 
-      err.statusCode, 
-      err.details || (err.errorCode ? { errorCode: err.errorCode } : undefined)
-    );
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      ...(err.details && { details: err.details }),
+      ...(err.errorCode && { errorCode: err.errorCode })
+    });
   }
   
   // Handle general errors
