@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useLocation, useSearch } from "wouter"
 import { SearchFilters } from "@/components/employee/SearchFilters"
 import { EmployeeCard } from "@/components/employee/EmployeeCard"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { type Employee } from "@shared/schema"
+import { ROUTES } from "@/lib/routes"
 
 export function EmployeeDirectory() {
   const [searchTerm, setSearchTerm] = useState("")
