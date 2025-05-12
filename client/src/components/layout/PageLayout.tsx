@@ -5,8 +5,8 @@ interface PageLayoutProps {
   children: ReactNode;
   title?: string;
   maxW?: string;
-  px?: number;
-  py?: number;
+  px?: number | string;
+  py?: number | string;
 }
 
 /**
@@ -27,7 +27,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
   return (
     <Box as="main" w="full" bg="gray.50">
       <Container maxW={maxW} px={px} py={py}>
-        <VStack spacing={8} align="stretch">
+        <VStack spacing="8" align="stretch">
           {title && (
             <Heading as="h1" size="xl" color="brand.500">
               {title}
