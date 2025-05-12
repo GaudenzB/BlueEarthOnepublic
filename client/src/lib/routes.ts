@@ -18,7 +18,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   EMPLOYEES: {
     LIST: '/',
-    DETAIL: (id: string | number) => `/employees/${id}`,
+    DETAIL: (id: string | number) => `/employee/${id}`,
   },
   DOCUMENTS: {
     LIST: '/documents',

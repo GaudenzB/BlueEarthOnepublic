@@ -29,7 +29,7 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
   
   return (
     <Card className="overflow-hidden border border-border hover:shadow-md transition-shadow duration-300">
-      <Link href={`/employees/${employee.id}`} className="block cursor-pointer">
+      <Link href={`/employee/${employee.id}`} className="block cursor-pointer">
         <CardContent className="p-4">
           <div className="flex items-center">
             <Avatar className="h-12 w-12">
