@@ -52,6 +52,7 @@ export const userLoginSchema = z.object({
  */
 export const passwordResetRequestSchema = z.object({
   email: z.string().email(ValidationMessages.email),
+  resetUrl: z.string().url().optional(),
 });
 
 /**

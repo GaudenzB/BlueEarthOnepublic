@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { sendSuccess, sendUnauthorized } from '../utils/apiResponse';
 import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../email/sendgrid';
 import { 
   userLoginSchema, 
   userRegistrationSchema, 
@@ -206,43 +207,57 @@ const getCurrentUser = wrapHandler(async (req: Request, res: Response) => {
  */
 const forgotPassword = wrapHandler(async (req: Request, res: Response) => {
   // Validate request data
-  const { email } = passwordResetRequestSchema.parse(req.body);
+  const data = passwordResetRequestSchema.parse(req.body);
   
   // Check if user exists with this email
-  const user = await storage.getUserByEmail(email);
+  const user = await storage.getUserByEmail(data.email);
   
   // We don't want to reveal if the email exists or not for security reasons
   // So we always return success, even if the email doesn't exist
   if (!user) {
     logger.info({ 
       event: "password_reset_request", 
-      email,
+      email: data.email,
       success: false,
       reason: "email_not_found"
     });
     
     // Return success even though we didn't send an email
     // This prevents email enumeration attacks
-    return sendSuccess(res, "If a user exists with this email address, a password reset link has been sent");
+    return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
   }
   
   // Generate reset token and set expiry
-  const token = crypto.randomBytes(32).toString('hex');
+  const resetToken = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
   
   // Save reset token to user record
-  await storage.setResetToken(email, token, expiresAt);
+  await storage.setResetToken(data.email, resetToken, expiresAt);
   
-  // In a real implementation, we would send an email here
-  // This is omitted for simplicity
-  logger.info({ 
-    event: "password_reset_request", 
-    email,
-    userId: user.id,
-    success: true
+  // Create reset link
+  const resetLink = `${data.resetUrl || 'https://portal.blueearthcapital.com'}/reset-password?token=${resetToken}`;
+  
+  // Send reset email
+  const emailSent = await sendPasswordResetEmail(data.email, resetToken, resetLink);
+  
+  if (!emailSent) {
+    logger.error({
+      event: "password_reset_email_failure",
+      email: data.email
+    }, "Failed to send password reset email");
+    
+    // Don't expose this error to the user for security
+    // Just log it and continue with success response
+  }
+  
+  // Log successful reset request
+  logger.info({
+    event: "password_reset_requested",
+    email: data.email,
+    userId: user?.id
   });
   
-  return sendSuccess(res, "If a user exists with this email address, a password reset link has been sent");
+  return sendSuccess(res, null, "If your email is registered, you will receive a password reset link shortly");
 });
 
 /**
@@ -250,36 +265,43 @@ const forgotPassword = wrapHandler(async (req: Request, res: Response) => {
  */
 const resetPassword = wrapHandler(async (req: Request, res: Response) => {
   // Validate request data
-  const { token, password } = passwordResetSchema.parse(req.body);
+  const data = passwordResetSchema.parse(req.body);
   
   // Find user by reset token
-  const user = await storage.getUserByResetToken(token);
+  const user = await storage.getUserByResetToken(data.token);
   
   if (!user) {
     logger.info({ 
-      event: "password_reset", 
-      token,
-      success: false,
-      reason: "invalid_token"
+      event: "password_reset_failure", 
+      reason: "invalid_token",
+      token: data.token
     });
     
-    throw new ApiError("Invalid or expired reset token", 400, "AUTH_INVALID_RESET_TOKEN");
+    throw new ApiError("Invalid or expired reset token", 400, "RESET_TOKEN_INVALID");
   }
   
   // Hash new password
-  const hashedPassword = await hashPassword(password);
+  const hashedPassword = await hashPassword(data.password);
   
   // Update user password and clear reset token
-  await storage.resetUserPassword(user.id, hashedPassword);
+  const success = await storage.resetUserPassword(user.id, hashedPassword);
+  
+  if (!success) {
+    logger.error({ 
+      event: "password_reset_failure", 
+      reason: "db_update_error",
+      userId: user.id 
+    });
+    throw new ApiError("Failed to reset password", 500, "RESET_SYSTEM_ERROR");
+  }
   
   // Log password reset
   logger.info({ 
-    event: "password_reset", 
-    userId: user.id,
-    success: true
+    event: "password_reset_success", 
+    userId: user.id
   });
   
-  return sendSuccess(res, "Password has been reset successfully");
+  return sendSuccess(res, null, "Password has been reset successfully");
 });
 
 // Export controllers with named functions for easier debugging and logging
