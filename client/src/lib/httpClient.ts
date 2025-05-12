@@ -17,16 +17,16 @@ const isDevelopment = import.meta.env.MODE === 'development';
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
-  data?: T;
-  errors?: Record<string, string[]>;
+  data?: T | undefined;
+  errors?: Record<string, string[]> | undefined;
 }
 
 // Error class for API responses
 export class ApiError extends Error {
   public status: number;
-  public errors?: Record<string, string[]>;
+  public errors?: Record<string, string[]> | undefined;
 
-  constructor(status: number, message: string, errors?: Record<string, string[]>) {
+  constructor(status: number, message: string, errors?: Record<string, string[]> | undefined) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -36,11 +36,11 @@ export class ApiError extends Error {
 
 // HTTP client configuration
 export interface HttpClientConfig {
-  baseUrl?: string;
-  defaultHeaders?: Record<string, string>;
-  timeout?: number;
-  retries?: number;
-  retryDelay?: number;
+  baseUrl?: string | undefined;
+  defaultHeaders?: Record<string, string> | undefined;
+  timeout?: number | undefined;
+  retries?: number | undefined;
+  retryDelay?: number | undefined;
 }
 
 // Default configuration values
@@ -57,10 +57,8 @@ const DEFAULT_CONFIG: HttpClientConfig = {
 
 /**
  * Get authentication token from storage
+ * Note: This is now used directly in buildHeaders via localStorage.getItem
  */
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('token');
-};
 
 /**
  * Set authentication token in storage
