@@ -1,78 +1,101 @@
 /**
- * Centralized route constants for the application
+ * Centralized route definitions for the application
  * 
- * These are used to ensure consistency between frontend routing and backend API endpoints.
+ * This ensures consistency between frontend and backend route references
  */
 
+/**
+ * Frontend routes
+ */
 export const ROUTES = {
+  // Auth routes
+  LOGIN: '/login',
+  LOGOUT: '/logout',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+  
+  // Main routes
   HOME: '/',
+  DASHBOARD: '/dashboard',
   
-  AUTH: {
-    LOGIN: '/login',
-    LOGOUT: '/logout',
-    FORGOT_PASSWORD: '/forgot-password',
-    RESET_PASSWORD: '/reset-password',
-  },
+  // Employee routes
+  DIRECTORY: '/directory',
+  EMPLOYEE_DETAIL: (id: string | number) => `/directory/${id}`,
   
-  EMPLOYEES: {
-    LIST: '/employees',
-    DETAIL: (id: string | number) => `/employees/${id}`,
-    CREATE: '/employees/create',
-    EDIT: (id: string | number) => `/employees/${id}/edit`,
-  },
+  // User management routes
+  USERS: '/users',
+  USER_DETAIL: (id: string | number) => `/users/${id}`,
+  USER_CREATE: '/users/new',
+  USER_EDIT: (id: string | number) => `/users/${id}/edit`,
   
-  USERS: {
-    LIST: '/admin/users',
-    DETAIL: (id: string | number) => `/admin/users/${id}`,
-    CREATE: '/admin/users/create',
-    EDIT: (id: string | number) => `/admin/users/${id}/edit`,
-  },
+  // Document routes
+  DOCUMENTS: '/documents',
+  DOCUMENT_DETAIL: (id: string | number) => `/documents/${id}`,
+  DOCUMENT_UPLOAD: '/documents/upload',
   
-  DOCUMENTS: {
-    LIST: '/documents',
-    DETAIL: (id: string | number) => `/documents/${id}`,
-    CREATE: '/documents/create',
-    EDIT: (id: string | number) => `/documents/${id}/edit`,
-  },
+  // Contract routes
+  CONTRACTS: '/contracts',
+  CONTRACT_DETAIL: (id: string | number) => `/contracts/${id}`,
+  CONTRACT_CREATE: '/contracts/new',
   
-  CONTRACTS: {
-    LIST: '/contracts',
-    DETAIL: (id: string | number) => `/contracts/${id}`,
-    CREATE: '/contracts/create',
-    EDIT: (id: string | number) => `/contracts/${id}/edit`,
-  },
+  // Admin routes
+  ADMIN: '/admin',
+  ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_BUBBLE_SYNC: '/admin/bubble-sync',
+};
 
-  API: {
-    AUTH: {
-      LOGIN: '/api/auth/login',
-      LOGOUT: '/api/auth/logout',
-      REGISTER: '/api/auth/register',
-      ME: '/api/auth/me',
-      FORGOT_PASSWORD: '/api/auth/forgot-password',
-      RESET_PASSWORD: '/api/auth/reset-password',
-    },
-    
-    EMPLOYEES: {
-      BASE: '/api/employees',
-      DETAIL: (id: string | number) => `/api/employees/${id}`,
-      SEARCH: '/api/employees/search',
-    },
-    
-    USERS: {
-      BASE: '/api/users',
-      DETAIL: (id: string | number) => `/api/users/${id}`,
-      PERMISSIONS: (id: string | number) => `/api/users/${id}/permissions`,
-    },
-    
-    DOCUMENTS: {
-      BASE: '/api/documents',
-      DETAIL: (id: string | number) => `/api/documents/${id}`,
-      UPLOAD: '/api/documents/upload',
-    },
-    
-    CONTRACTS: {
-      BASE: '/api/contracts',
-      DETAIL: (id: string | number) => `/api/contracts/${id}`,
-    },
+/**
+ * API routes
+ */
+export const API_ROUTES = {
+  // Auth API routes
+  AUTH: {
+    BASE: '/api/auth',
+    LOGIN: '/api/auth/login',
+    LOGOUT: '/api/auth/logout',
+    REGISTER: '/api/auth/register',
+    ME: '/api/auth/me',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD: '/api/auth/reset-password',
+  },
+  
+  // User API routes
+  USERS: {
+    BASE: '/api/users',
+    DETAIL: (id: string | number) => `/api/users/${id}`,
+    PERMISSIONS: (userId: string | number) => `/api/users/${userId}/permissions`,
+  },
+  
+  // Employee API routes
+  EMPLOYEES: {
+    BASE: '/api/employees',
+    DETAIL: (id: string | number) => `/api/employees/${id}`,
+    SEARCH: '/api/employees/search',
+    DEPARTMENTS: '/api/employees/departments',
+  },
+  
+  // Document API routes
+  DOCUMENTS: {
+    BASE: '/api/documents',
+    DETAIL: (id: string | number) => `/api/documents/${id}`,
+    UPLOAD: '/api/documents/upload',
+    SEARCH: '/api/documents/search',
+    TYPES: '/api/documents/types',
+  },
+  
+  // Contract API routes
+  CONTRACTS: {
+    BASE: '/api/contracts',
+    DETAIL: (id: string | number) => `/api/contracts/${id}`,
+    TYPES: '/api/contracts/types',
+    STATUSES: '/api/contracts/statuses',
+  },
+  
+  // Admin API routes
+  ADMIN: {
+    BASE: '/api/admin',
+    BUBBLE_SYNC: '/api/admin/bubble-sync',
+    SETTINGS: '/api/admin/settings',
+    STATS: '/api/admin/stats',
   },
 };

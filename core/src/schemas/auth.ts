@@ -1,95 +1,142 @@
 import { z } from 'zod';
+import { passwordSchema } from '../utils/validation';
 
 /**
- * User roles enum
+ * User role enum
  */
-export const UserRoleEnum = z.enum(['user', 'manager', 'admin', 'superadmin']);
-export type UserRole = z.infer<typeof UserRoleEnum>;
+export const userRoleEnum = z.enum([
+  'SUPERADMIN',
+  'ADMIN',
+  'MANAGER',
+  'USER',
+]);
 
-/**
- * User schema
- */
-export const UserSchema = z.object({
-  id: z.number(),
-  username: z.string().min(3),
-  email: z.string().email(),
-  role: UserRoleEnum,
-  firstName: z.string().nullable().optional(),
-  lastName: z.string().nullable().optional(),
-  createdAt: z.string().nullable().optional(),
-  updatedAt: z.string().nullable().optional(),
-});
-
-export type User = z.infer<typeof UserSchema>;
-
-/**
- * Login credentials schema
- */
-export const LoginSchema = z.object({
-  username: z.string().min(3),
-  password: z.string().min(6),
-  rememberMe: z.boolean().optional().default(false),
-});
-
-export type LoginCredentials = z.infer<typeof LoginSchema>;
-
-/**
- * Schema for password reset request
- */
-export const ForgotPasswordSchema = z.object({
-  email: z.string().email(),
-});
-
-export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordSchema>;
-
-/**
- * Schema for password reset
- */
-export const ResetPasswordSchema = z.object({
-  token: z.string(),
-  password: z.string().min(6),
-  confirmPassword: z.string().min(6),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
-export type ResetPasswordRequest = z.infer<typeof ResetPasswordSchema>;
+export type UserRole = z.infer<typeof userRoleEnum>;
 
 /**
  * Permission area enum
  */
-export const PermissionAreaEnum = z.enum([
-  'employees', 
-  'users', 
-  'documents', 
-  'contracts', 
-  'finance', 
-  'hr', 
-  'it', 
-  'legal', 
-  'operations'
+export const permissionAreaEnum = z.enum([
+  'FINANCE',
+  'HUMAN_RESOURCES',
+  'INFORMATION_TECHNOLOGY',
+  'LEGAL',
+  'OPERATIONS',
 ]);
 
-export type PermissionArea = z.infer<typeof PermissionAreaEnum>;
+export type PermissionArea = z.infer<typeof permissionAreaEnum>;
 
 /**
- * Permission action enum
+ * User schema
  */
-export const PermissionActionEnum = z.enum(['view', 'edit', 'delete']);
-export type PermissionAction = z.infer<typeof PermissionActionEnum>;
+export const userSchema = z.object({
+  id: z.number(),
+  username: z.string().min(3, { message: 'Username must be at least 3 characters' }),
+  email: z.string().email({ message: 'Invalid email address' }),
+  password: z.string(), // Hashed password in DB
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  role: userRoleEnum,
+  active: z.boolean().default(true),
+  resetToken: z.string().optional(),
+  resetTokenExpiry: z.string().datetime().optional(),
+  lastLogin: z.string().datetime().optional(),
+  createdAt: z.string().datetime().optional(),
+  updatedAt: z.string().datetime().optional(),
+});
+
+/**
+ * Schema for creating a new user
+ */
+export const createUserSchema = userSchema
+  .omit({ 
+    id: true,
+    resetToken: true,
+    resetTokenExpiry: true,
+    lastLogin: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine(data => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+/**
+ * Schema for updating a user
+ */
+export const updateUserSchema = z.object({
+  username: z.string().min(3, { message: 'Username must be at least 3 characters' }).optional(),
+  email: z.string().email({ message: 'Invalid email address' }).optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  role: userRoleEnum.optional(),
+  active: z.boolean().optional(),
+});
+
+/**
+ * Schema for user login
+ */
+export const loginSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+  rememberMe: z.boolean().optional(),
+});
+
+/**
+ * Schema for forgot password
+ */
+export const forgotPasswordSchema = z.object({
+  email: z.string().email({ message: 'Invalid email address' }),
+});
+
+/**
+ * Schema for reset password
+ */
+export const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: passwordSchema,
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 /**
  * User permission schema
  */
-export const UserPermissionSchema = z.object({
+export const userPermissionSchema = z.object({
   id: z.number(),
   userId: z.number(),
-  area: PermissionAreaEnum,
-  action: PermissionActionEnum,
-  granted: z.boolean().default(true),
-  createdAt: z.string().nullable().optional(),
-  updatedAt: z.string().nullable().optional(),
+  area: permissionAreaEnum,
+  canView: z.boolean().default(false),
+  canEdit: z.boolean().default(false),
+  canDelete: z.boolean().default(false),
+  createdAt: z.string().datetime().optional(),
+  updatedAt: z.string().datetime().optional(),
 });
 
-export type UserPermission = z.infer<typeof UserPermissionSchema>;
+/**
+ * Schema for creating a user permission
+ */
+export const createUserPermissionSchema = userPermissionSchema.omit({ 
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+/**
+ * Type definitions
+ */
+export type User = z.infer<typeof userSchema>;
+export type CreateUser = z.infer<typeof createUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
+export type Login = z.infer<typeof loginSchema>;
+export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
+export type ResetPassword = z.infer<typeof resetPasswordSchema>;
+export type UserPermission = z.infer<typeof userPermissionSchema>;
+export type CreateUserPermission = z.infer<typeof createUserPermissionSchema>;
