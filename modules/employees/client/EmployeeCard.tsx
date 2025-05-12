@@ -8,13 +8,17 @@ import { Building, MapPin, Mail, User, MessageSquare } from "lucide-react"
 import { Employee } from "@blueearth/core/schemas"
 import { ROUTES } from "@blueearth/core/utils"
 
-const statusColors: Record<string, { variant: "success" | "warning" | "danger" | "default", dot: string }> = {
-  ACTIVE: { variant: "success", dot: "bg-green-500" },
-  ON_LEAVE: { variant: "warning", dot: "bg-amber-500" },
-  TERMINATED: { variant: "danger", dot: "bg-red-500" },
-  INACTIVE: { variant: "default", dot: "bg-gray-500" },
-  CONTRACT: { variant: "warning", dot: "bg-purple-500" },
-  INTERN: { variant: "default", dot: "bg-blue-500" }
+// Define safe status mapping with bracket notation
+const statusColors = {
+  ['ACTIVE']: { variant: "success" as const, dot: "bg-green-500" },
+  ['ON_LEAVE']: { variant: "warning" as const, dot: "bg-amber-500" },
+  ['TERMINATED']: { variant: "danger" as const, dot: "bg-red-500" },
+  ['INACTIVE']: { variant: "default" as const, dot: "bg-gray-500" },
+  ['CONTRACT']: { variant: "warning" as const, dot: "bg-purple-500" },
+  ['INTERN']: { variant: "default" as const, dot: "bg-blue-500" },
+  ['REMOTE']: { variant: "success" as const, dot: "bg-blue-400" },
+  // Default fallback
+  ['DEFAULT']: { variant: "default" as const, dot: "bg-gray-500" }
 }
 
 interface EmployeeCardProps {
@@ -22,16 +26,29 @@ interface EmployeeCardProps {
 }
 
 export function EmployeeCard({ employee }: EmployeeCardProps) {
-  const firstName = employee.firstName || '';
-  const lastName = employee.lastName || '';
-  const fullName = `${firstName} ${lastName}`.trim();
+  // Extract first and last name from the name field
+  const nameParts = (employee.name || '').split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+  const fullName = employee.name || '';
   
-  const initials = firstName && lastName 
-    ? `${firstName[0]}${lastName[0]}` 
-    : (firstName.substring(0, 2) || 'N/A');
+  // Create initials from name parts
+  const initials = nameParts.length > 1
+    ? `${nameParts[0][0]}${nameParts[1][0]}`
+    : (nameParts[0]?.substring(0, 2) || 'N/A');
   
+  // Get status in a type-safe way with fallbacks
   const statusKey = employee.status?.toUpperCase() || 'INACTIVE';
-  const statusConfig = statusColors[statusKey] || statusColors['INACTIVE'];
+  
+  // Use type-safe approach with explicit key checking
+  const getStatusConfig = (key: string) => {
+    if (key in statusColors) {
+      return statusColors[key as keyof typeof statusColors];
+    }
+    return statusColors['DEFAULT'];
+  };
+  
+  const statusConfig = getStatusConfig(statusKey);
   const formattedStatus = statusKey.replace('_', ' ');
   
   return (
@@ -40,7 +57,7 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
         <CardContent className="p-4">
           <div className="flex items-center">
             <Avatar className="h-12 w-12">
-              {employee.profileImage && <AvatarImage src={employee.profileImage} alt={fullName} />}
+              {employee.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={fullName} />}
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="ml-3">
@@ -54,10 +71,10 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
               <Building className="text-muted-foreground h-4 w-4 mr-2" />
               <span>{employee.department} Department</span>
             </div>
-            {employee.city && (
+            {employee.location && (
               <div className="flex items-center text-sm">
                 <MapPin className="text-muted-foreground h-4 w-4 mr-2" />
-                <span>{employee.city}</span>
+                <span>{employee.location}</span>
               </div>
             )}
             <div className="flex items-center text-sm">
