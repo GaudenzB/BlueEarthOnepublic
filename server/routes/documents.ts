@@ -244,12 +244,41 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
             createPayload.customMetadata = metadata;
           }
           
-          if (documentData.retentionDate) {
+          // Note: retentionDate is not in the current schema
+          // If we need to store this, consider adding it to customMetadata
+          if (documentData && 'retentionDate' in documentData && documentData['retentionDate']) {
             try {
-              createPayload.retentionDate = new Date(documentData.retentionDate.toString());
+              const retentionDate = new Date(documentData['retentionDate'].toString());
+              if (!createPayload.customMetadata) {
+                createPayload.customMetadata = {};
+              }
+              // Store as ISO string in customMetadata
+              // Initialize as empty object if not already set
+              if (!createPayload.customMetadata || typeof createPayload.customMetadata !== 'object') {
+                createPayload.customMetadata = {};
+              }
+              
+              // Add the retention date to the custom metadata
+              // TypeScript doesn't allow direct property assignment on jsonb fields
+              // So we need to create a new object and cast it
+              const updatedMetadata: Record<string, string> = {};
+              
+              // Copy existing properties if any
+              if (createPayload.customMetadata) {
+                Object.entries(createPayload.customMetadata as Record<string, unknown>).forEach(([key, value]) => {
+                  updatedMetadata[key] = String(value);
+                });
+              }
+              
+              // Add the new property
+              updatedMetadata['retentionDate'] = retentionDate.toISOString();
+              
+              // Update the customMetadata field
+              createPayload.customMetadata = updatedMetadata;
+              logger.debug('Added retention date to customMetadata', { retentionDate });
             } catch (error) {
               logger.warn('Invalid retention date format, skipping field', { 
-                retentionDate: documentData.retentionDate
+                retentionDate: documentData['retentionDate']
               });
             }
           }
@@ -337,7 +366,8 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
         }
         
         // Generic error with different detail level based on environment
-        const message = process.env.NODE_ENV === 'production'
+        const isProduction = process.env['NODE_ENV'] === 'production';
+        const message = isProduction
           ? 'Server error during document upload. Please try again later.'
           : `Upload error: ${error.message || 'Unknown error'}`;
           
@@ -387,7 +417,8 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
       }
       
       // Generic error with different detail level based on environment
-      const message = process.env.NODE_ENV === 'production'
+      const isProduction = process.env['NODE_ENV'] === 'production';
+      const message = isProduction
         ? 'Server error during document upload. Please try again later.'
         : `Upload error: ${error instanceof Error ? error.message : 'Unknown error'}`;
         
