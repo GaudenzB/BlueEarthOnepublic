@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/hooks/useAuth"
 import blueEarthLogo from "@/assets/BlueEarth-Capital_white.png"
 import { colors } from "@/lib/colors"
+import { getNavItems } from "@/lib/routes"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -28,56 +29,43 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const { isOpen, toggleSidebar } = useSidebar()
   const { user, logout, isSuperAdmin } = useAuth()
 
-  // Basic navigation items
-  const baseNavItems = [
-    {
-      title: "Employee Directory",
-      href: "/",
-      icon: <Users className="mr-3 h-5 w-5" />,
-    },
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: <LayoutDashboard className="mr-3 h-5 w-5" />,
-    },
-    {
-      title: "Calendar",
-      href: "/calendar",
-      icon: <Calendar className="mr-3 h-5 w-5" />,
-    },
-    {
-      title: "Documents",
-      href: "/documents",
-      icon: <FileText className="mr-3 h-5 w-5" />,
-    },
-    {
-      title: "Contracts",
-      href: "/contracts",
-      icon: <GanttChart className="mr-3 h-5 w-5" />,
-    },
-    {
-      title: "Messages",
-      href: "/messages",
-      icon: <MessageSquare className="mr-3 h-5 w-5" />,
-    },
-  ]
-  
-  // Admin navigation items - only visible to superadmins
-  const adminNavItems = isSuperAdmin ? [
-    {
-      title: "User Management",
-      href: "/users",
-      icon: <UserCog className="mr-3 h-5 w-5" />,
-    },
-    {
-      title: "Integrations",
-      href: "/integrations",
-      icon: <LinkIcon className="mr-3 h-5 w-5" />,
+  // Get navigation items from centralized routes configuration
+  const navItems = getNavItems(isSuperAdmin).map(item => {
+    // Map the icon string to the corresponding Lucide icon component
+    let icon;
+    switch (item.icon) {
+      case 'Users':
+        icon = <Users className="mr-3 h-5 w-5" />;
+        break;
+      case 'LayoutDashboard':
+        icon = <LayoutDashboard className="mr-3 h-5 w-5" />;
+        break;
+      case 'Calendar':
+        icon = <Calendar className="mr-3 h-5 w-5" />;
+        break;
+      case 'FileText':
+        icon = <FileText className="mr-3 h-5 w-5" />;
+        break;
+      case 'GanttChart':
+        icon = <GanttChart className="mr-3 h-5 w-5" />;
+        break;
+      case 'MessageSquare':
+        icon = <MessageSquare className="mr-3 h-5 w-5" />;
+        break;
+      case 'UserCog':
+        icon = <UserCog className="mr-3 h-5 w-5" />;
+        break;
+      case 'Link':
+        icon = <LinkIcon className="mr-3 h-5 w-5" />;
+        break;
+      default:
+        icon = <div className="mr-3 h-5 w-5" />;
     }
-  ] : []
-  
-  // Combine all navigation items
-  const navItems = [...baseNavItems, ...adminNavItems]
+    return {
+      ...item,
+      icon
+    };
+  });
 
   return (
     <>

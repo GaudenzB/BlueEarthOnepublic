@@ -55,7 +55,7 @@ function PublicRoute({ component: Component, ...rest }: any) {
   // Handle redirect to home as a side effect if authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      setLocation("/");
+      setLocation(ROUTES.HOME);
     }
   }, [isAuthenticated, setLocation]);
   
@@ -71,26 +71,26 @@ function Router() {
   return (
     <Switch>
       {/* Public routes */}
-      <Route path="/login" component={(props) => <PublicRoute component={Login} {...props} />} />
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password/:token" component={ResetPassword} />
+      <Route path={AUTH_ROUTES.LOGIN} component={(props) => <PublicRoute component={Login} {...props} />} />
+      <Route path={AUTH_ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
+      <Route path={`${AUTH_ROUTES.RESET_PASSWORD}/:token`} component={ResetPassword} />
       
       {/* Protected routes */}
-      <Route path="/" component={(props) => <ProtectedRoute component={EmployeeDirectory} {...props} />} />
-      <Route path="/employees/:id" component={(props) => <ProtectedRoute component={EmployeeDetail} {...props} />} />
-      <Route path="/dashboard" component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
-      <Route path="/documents" component={(props) => <ProtectedRoute component={Documents} {...props} />} />
-      <Route path="/documents/:id" component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
-      <Route path="/contracts" component={(props) => <ProtectedRoute component={Contracts} {...props} />} />
+      <Route path={ROUTES.HOME} component={(props) => <ProtectedRoute component={EmployeeDirectory} {...props} />} />
+      <Route path={`${ROUTES.EMPLOYEES.LIST}/:id`} component={(props) => <ProtectedRoute component={EmployeeDetail} {...props} />} />
+      <Route path={ROUTES.DASHBOARD} component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
+      <Route path={ROUTES.DOCUMENTS.LIST} component={(props) => <ProtectedRoute component={Documents} {...props} />} />
+      <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
+      <Route path={ROUTES.CONTRACTS.LIST} component={(props) => <ProtectedRoute component={Contracts} {...props} />} />
       
       {/* Super admin routes */}
       <Route 
-        path="/users" 
+        path={ADMIN_ROUTES.USERS} 
         component={(props) => <ProtectedRoute component={UserManagement} requireSuperAdmin={true} {...props} />} 
       />
       
       <Route 
-        path="/integrations" 
+        path={ADMIN_ROUTES.INTEGRATIONS} 
         component={(props) => <ProtectedRoute component={Integrations} requireSuperAdmin={true} {...props} />} 
       />
       
@@ -105,12 +105,7 @@ function AppContent() {
   const [location] = useLocation();
   
   // Don't use MainLayout for auth-related pages
-  if (
-    location === "/login" || 
-    location === "/forgot-password" || 
-    location.startsWith("/reset-password") || 
-    !isAuthenticated
-  ) {
+  if (isAuthRoute(location) || !isAuthenticated) {
     return <Router />;
   }
   

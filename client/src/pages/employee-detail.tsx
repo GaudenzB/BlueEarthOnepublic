@@ -15,6 +15,7 @@ import { colors } from "@/lib/colors";
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ROUTES } from "@/lib/routes";
 
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -57,7 +58,7 @@ export default function EmployeeDetail() {
   };
 
   const goBack = () => {
-    setLocation('/');
+    setLocation(ROUTES.HOME);
   };
 
   if (isLoading) {
