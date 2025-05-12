@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Employee } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar, ShieldAlert, RefreshCw } from "lucide-react";
+import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,63 +19,46 @@ import { ROUTES } from "@/lib/routes";
 import { httpClient } from "@/lib/httpClient";
 import type { ApiResponse } from "@/lib/types";
 
+/**
+ * Employee detail page component
+ * Displays detailed information about an employee
+ */
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
-  const { hasPermissionCached, permissionResults } = usePermissionsContext();
-
-  // Define the nested API response structure for this endpoint
-  interface EmployeeApiData {
-    success: boolean;
-    data: Employee;
-  }
-  
-  interface EmployeeResponse {
-    success: boolean;
-    message: string;
-    data: EmployeeApiData;
-  }
+  const { hasPermissionCached } = usePermissionsContext();
 
   // Check if we have an auth token
   const token = localStorage.getItem("token");
-  console.log("Auth token available:", !!token);
-
-  // Create a reference to the query client
-  const queryClient = useQueryClient();
   
-  // Create a state for timestamp to force refresh
-  const [timestamp, setTimestamp] = useState(Date.now());
+  // Fetch employee data directly from the single-employee endpoint
+  const { 
+    data: apiResponse, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery<ApiResponse<Employee>>({
+    queryKey: ["employee", id], 
+    queryFn: () => httpClient.get<ApiResponse<Employee>>(`/api/employees/${id}`),
+    enabled: Boolean(id), 
+    refetchOnMount: true,
+    staleTime: 0,
+    retry: 3,
+    retryDelay: 1000,
+  });
   
-  // Force refresh function - simplified to use refetch directly
+  // Extract employee from response
+  const employee = apiResponse?.data;
+  
+  // Force refresh function
   const refreshData = () => {
-    console.log("Forcing refresh of employee data for ID:", id);
-    // Simply refetch the data, no need for invalidation or timestamp updates
     if (id) refetch();
   };
   
   // Effect to refresh data when component mounts or id changes
   useEffect(() => {
     refreshData();
-  }, [id]);
-  
-  // Fetch employee data directly from the single-employee endpoint
-  // Only require an ID, not a token (API can handle auth checks)
-  const { data: apiResponse, isLoading, error, refetch } = useQuery<ApiResponse<Employee>>({
-    queryKey: ["employee", id], // Simpler, more stable query key
-    queryFn: () => httpClient.get<ApiResponse<Employee>>(`/api/employees/${id}`),
-    enabled: Boolean(id), // Only require ID, not token (let API handle auth)
-    refetchOnMount: true, // Always refetch when component mounts
-    staleTime: 0, // Consider data immediately stale
-    retry: 3, // Retry failed requests 3 times
-    retryDelay: 1000, // Wait 1 second between retries
-  });
-  
-  // Extract employee from nested response
-  // Our API returns { success, data: { success, data: Employee } }
-  const employee = apiResponse?.data?.data;
-  
-  // Log for debugging
-  console.log("Employee data from detail endpoint:", employee);
+  }, [id, refetch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -254,7 +237,7 @@ export default function EmployeeDetail() {
     );
   }
 
-  if (error || !apiResponse || !apiResponse.success || !employee) {
+  if (error || !apiResponse || !employee) {
     return (
       <div className="container mx-auto p-6">
         <div className="mb-6">
@@ -270,9 +253,9 @@ export default function EmployeeDetail() {
           <CardHeader>
             <CardTitle>Error</CardTitle>
             <CardDescription>
-              {!apiResponse?.success 
-                ? apiResponse?.message || "Server returned an error response" 
-                : "Could not load employee data. The employee may not exist or there was a server error."}
+              {!apiResponse 
+                ? "Could not load employee data. The employee may not exist or there was a server error."
+                : apiResponse.message || "Server returned an error response"}
             </CardDescription>
           </CardHeader>
           <CardContent>
