@@ -439,6 +439,20 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
  * @access Authenticated users
  */
 router.get('/', authenticate, tenantContext, async (req: Request, res: Response) => {
+  // Enhanced debugging to diagnose documents API issues
+  logger.info({
+    method: req.method,
+    path: req.path,
+    auth: !!req.headers.authorization,
+    userInfo: req.user ? {
+      id: req.user.id,
+      username: req.user.username,
+      role: req.user.role
+    } : null,
+    tenantId: (req as any).tenantId,
+    queryParams: req.query
+  }, '🔍 Documents API request received');
+  
   try {
     // Parse and validate query parameters
     const queryParams = {
@@ -464,6 +478,19 @@ router.get('/', authenticate, tenantContext, async (req: Request, res: Response)
     
     // Get documents from repository
     const result = await documentRepository.getAll(tenantId, validationResult.data);
+    
+    // Log response details for debugging
+    logger.info({
+      documentsCount: result.documents.length,
+      totalDocuments: result.total,
+      firstDocument: result.documents.length > 0 ? {
+        id: result.documents[0].id,
+        title: result.documents[0].title,
+        status: result.documents[0].processingStatus,
+        createdAt: result.documents[0].createdAt
+      } : null,
+      tenantId
+    }, '📄 Documents retrieved for response');
     
     res.json({
       success: true,

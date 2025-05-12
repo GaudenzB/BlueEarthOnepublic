@@ -17,9 +17,20 @@ export default function Documents() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const { toast } = useToast();
   
-  const { data: documents, isLoading, refetch } = useQuery<any>({
+  const { data: documents, isLoading, refetch, error } = useQuery<any>({
     queryKey: ['/api/documents'],
     retry: false,
+    // Enable some console logging for debugging
+    onSuccess: (data) => {
+      console.log('Documents query succeeded:', {
+        dataExists: !!data,
+        dataIsArray: Array.isArray(data?.data),
+        documentCount: Array.isArray(data?.data) ? data.data.length : 0
+      });
+    },
+    onError: (err) => {
+      console.error('Documents query failed:', err);
+    }
   });
 
   const handleUploadSuccess = () => {
