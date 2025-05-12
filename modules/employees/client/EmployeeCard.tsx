@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Building, MapPin, Mail, User, MessageSquare } from "lucide-react"
 import { Employee } from "@blueearth/core/schemas"
-import { ROUTES } from "@blueearth/core/utils"
+import { ROUTES } from "@/lib/routes"
 
 // Define safe status mapping with bracket notation
 const statusColors = {
@@ -26,15 +26,14 @@ interface EmployeeCardProps {
 }
 
 export function EmployeeCard({ employee }: EmployeeCardProps) {
-  // Extract first and last name from the name field
+  // Extract name parts for generating initials
   const nameParts = (employee.name || '').split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+  // Use fullName directly from employee.name
   const fullName = employee.name || '';
   
-  // Create initials from name parts
-  const initials = nameParts.length > 1
-    ? `${nameParts[0][0]}${nameParts[1][0]}`
+  // Create initials from name parts with null safety
+  const initials = nameParts.length > 1 && nameParts[0] && nameParts[1]
+    ? `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`
     : (nameParts[0]?.substring(0, 2) || 'N/A');
   
   // Get status in a type-safe way with fallbacks
@@ -51,9 +50,18 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
   const statusConfig = getStatusConfig(statusKey);
   const formattedStatus = statusKey.replace('_', ' ');
   
+  // Safely create the detail URL with id validation
+  const getEmployeeDetailUrl = (id: number | undefined) => {
+    if (id === undefined) {
+      return '/'; // Fallback to home if no ID
+    }
+    // Use the ROUTES constant safely
+    return ROUTES.EMPLOYEES.DETAIL(id);
+  };
+
   return (
     <Card className="overflow-hidden border border-border hover:shadow-md transition-shadow duration-300">
-      <Link href={ROUTES.EMPLOYEE_DETAIL(employee.id)} className="block cursor-pointer">
+      <Link href={getEmployeeDetailUrl(employee.id)} className="block cursor-pointer">
         <CardContent className="p-4">
           <div className="flex items-center">
             <Avatar className="h-12 w-12">
