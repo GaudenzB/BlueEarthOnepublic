@@ -133,8 +133,11 @@ export class HttpClient {
       }
     }
     
-    // Add authentication token if available
-    const token = getAuthToken();
+    // Add authentication token if available - ALWAYS check directly from localStorage
+    // This ensures we always get the latest token, even if getAuthToken() is outdated
+    const token = localStorage.getItem('token');
+    console.log("httpClient directly accessing token from localStorage:", !!token);
+    
     if (token && !headers.has('Authorization')) {
       headers.set('Authorization', `Bearer ${token}`);
     }

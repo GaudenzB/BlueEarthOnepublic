@@ -33,10 +33,15 @@ export default function EmployeeDetail() {
   const token = localStorage.getItem("token");
   console.log("Auth token available:", !!token);
 
-  // Fetch employee data
+  // Disable browser cache for this request
+  const timestamp = Date.now();
+  
+  // Fetch employee data with cache-busting timestamp
   const { data: apiResponse, isLoading, error } = useQuery<EmployeeResponse>({
-    queryKey: ['/api/employees', id],
+    queryKey: ['/api/employees', id, { _t: timestamp }],
     enabled: !!id && !!token, // Only fetch if we have a token
+    refetchOnMount: true, // Always refetch when component mounts
+    staleTime: 0, // Consider data immediately stale
   });
   
   // Extract employee from response
@@ -165,7 +170,27 @@ export default function EmployeeDetail() {
   // Log any errors for debugging
   if (error) {
     console.error("Error fetching employee:", error);
+    // Detailed error information
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      
+      // API-specific error information
+      if ('status' in error) {
+        console.error("API Error status:", (error as any).status);
+      }
+    }
   }
+  
+  // Log API response for debugging
+  console.log("Employee API response:", {
+    id,
+    apiResponse,
+    token: !!token,
+    isLoading,
+    error: !!error
+  });
 
   if (!token) {
     return (

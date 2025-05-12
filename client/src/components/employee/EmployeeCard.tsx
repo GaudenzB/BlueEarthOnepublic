@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Building, MapPin, Mail, User, MessageSquare } from "lucide-react"
 import { type Employee } from "@shared/schema"
+import { ROUTES } from "@/lib/routes"
 
 const statusColors: Record<string, { variant: "success" | "warning" | "danger" | "default", dot: string }> = {
   active: { variant: "success", dot: "bg-green-500" },
@@ -29,7 +30,7 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
   
   return (
     <Card className="overflow-hidden border border-border hover:shadow-md transition-shadow duration-300">
-      <Link href={`/employee/${employee.id}`} className="block cursor-pointer">
+      <Link href={ROUTES.EMPLOYEES.DETAIL(employee.id)} className="block cursor-pointer">
         <CardContent className="p-4">
           <div className="flex items-center">
             <Avatar className="h-12 w-12">

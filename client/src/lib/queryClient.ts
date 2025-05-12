@@ -88,26 +88,53 @@ export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: Unauthor
       // Build the URL from the queryKey
       // If queryKey has multiple segments, construct the URL with path parameters
       let url = queryKey[0] as string;
+      console.log("Building URL from queryKey:", queryKey);
+      
       if (queryKey.length > 1) {
         const params = queryKey.slice(1);
+        console.log("Query params:", params);
         
         // If only one additional parameter and it's a simple type, append it directly
         if (params.length === 1 && (typeof params[0] === 'string' || typeof params[0] === 'number')) {
           url = url.endsWith('/') ? url : `${url}/`;
           url = `${url}${params[0]}`;
+          console.log("Appending ID parameter to URL:", url);
         } 
         // If one or more parameters and first is an object, treat as query params
         else if (params.length >= 1 && typeof params[0] === 'object' && params[0] !== null) {
-          const queryParams = new URLSearchParams();
-          Object.entries(params[0]).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              queryParams.append(key, String(value));
+          // Let's handle special case where first param is ID and second is query params
+          if (params.length >= 2 && (typeof params[0] === 'string' || typeof params[0] === 'number') && 
+              typeof params[1] === 'object' && params[1] !== null) {
+            url = url.endsWith('/') ? url : `${url}/`;
+            url = `${url}${params[0]}`;
+            console.log("Special case: ID + query params. URL with ID:", url);
+            
+            const queryParams = new URLSearchParams();
+            Object.entries(params[1]).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                queryParams.append(key, String(value));
+              }
+            });
+            
+            const queryString = queryParams.toString();
+            if (queryString) {
+              url = `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+              console.log("Final URL with query params:", url);
             }
-          });
-          
-          const queryString = queryParams.toString();
-          if (queryString) {
-            url = `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+          } else {
+            // Handle standard query params case
+            const queryParams = new URLSearchParams();
+            Object.entries(params[0]).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                queryParams.append(key, String(value));
+              }
+            });
+            
+            const queryString = queryParams.toString();
+            if (queryString) {
+              url = `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+              console.log("Final URL with query params (standard case):", url);
+            }
           }
         }
       }
