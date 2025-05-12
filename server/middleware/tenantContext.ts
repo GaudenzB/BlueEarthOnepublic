@@ -27,7 +27,7 @@ export const tenantContext = async (req: Request, res: Response, next: NextFunct
     // If no tenant ID is found in the request, use the default for development/testing
     if (!tenantId) {
       // In production, this might be more restrictive
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env['NODE_ENV'] === 'production') {
         logger.warn('No tenant ID found in request, using default tenant', { 
           url: req.url, 
           method: req.method 

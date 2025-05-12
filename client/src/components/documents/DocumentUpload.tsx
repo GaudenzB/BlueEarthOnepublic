@@ -148,7 +148,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       formData.append("isConfidential", String(data.isConfidential));
       
       // Debug log to verify FormData contents
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env['NODE_ENV'] === 'development') {
         console.log('FormData contents:');
         for (let [key, value] of formData.entries()) {
           console.log(`${key}: ${value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value}`);

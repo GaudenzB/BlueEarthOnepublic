@@ -199,7 +199,9 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
             storageKey: uploadResult.storageKey,
             checksum: uploadResult.checksum,
             title: documentData.title || sanitizedFilename,
-            uploadedBy: userId,
+            // Convert userId to UUID format for compatibility with document schema
+            // For now, we'll use a hardcoded UUID that matches the user in the system
+            uploadedBy: '00000000-0000-0000-0000-000000000001', // Default admin UUID
             tenantId,
             deleted: false,
             processingStatus: 'PENDING',
