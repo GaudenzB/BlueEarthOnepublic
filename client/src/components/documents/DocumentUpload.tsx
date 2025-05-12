@@ -132,7 +132,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       formData.append("isConfidential", String(data.isConfidential));
       
       // Make API request
-      const response = await fetch("/api/documents/upload", {
+      const response = await fetch("/api/documents", {
         method: "POST",
         body: formData,
         // No Content-Type header - browser will set it with boundary for FormData
