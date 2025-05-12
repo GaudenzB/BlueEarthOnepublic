@@ -193,7 +193,11 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
                       </Link>
                     </DropdownMenuItem>
                     <PermissionGuard area="documents" permission="view">
-                      <DropdownMenuItem>Download</DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <a href={`/api/documents/${document.id}/download`}>
+                          Download
+                        </a>
+                      </DropdownMenuItem>
                     </PermissionGuard>
                     <PermissionGuard area="documents" permission="delete">
                       <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>

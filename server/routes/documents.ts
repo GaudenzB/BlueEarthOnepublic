@@ -56,11 +56,26 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
         });
       }
 
+      // Parse JSON array & boolean strings before validation
+      if (typeof req.body.tags === 'string') {
+        try { 
+          req.body.tags = JSON.parse(req.body.tags); 
+        } catch (e) { 
+          /* let Zod catch invalid JSON */ 
+          logger.warn('Failed to parse tags JSON string', { tags: req.body.tags });
+        }
+      }
+      
+      if (typeof req.body.isConfidential === 'string') {
+        req.body.isConfidential = req.body.isConfidential === 'true';
+      }
+      
       // Validate request body
       const validationResult = uploadDocumentSchema.safeParse(req.body);
       if (!validationResult.success) {
         logger.warn('Document upload validation failed', { 
-          errors: validationResult.error.errors 
+          errors: validationResult.error.errors,
+          body: req.body 
         });
         return res.status(400).json({
           success: false,

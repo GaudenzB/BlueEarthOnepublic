@@ -65,6 +65,31 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
     setIsDragging(false);
   };
 
+  const validateAndSetFile = (file: File) => {
+    // File size validation (20MB max)
+    const maxSizeInBytes = 20 * 1024 * 1024; // 20MB
+    if (file.size > maxSizeInBytes) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 20MB",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    // Set the file in the form
+    setSelectedFile(file);
+    form.setValue("file", file);
+    
+    // If title is empty, use filename as default title
+    if (!form.getValues("title")) {
+      const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+      form.setValue("title", fileName);
+    }
+    
+    return true;
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -72,13 +97,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      setSelectedFile(file);
-      form.setValue("file", file);
-      
-      // If title is empty, use filename as default title
-      if (!form.getValues("title")) {
-        const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-        form.setValue("title", fileName);
+      if (file) {
+        validateAndSetFile(file);
       }
     }
   };
@@ -87,14 +107,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      setSelectedFile(file);
-      form.setValue("file", file);
-      
-      // If title is empty, use filename as default title
-      if (!form.getValues("title")) {
-        const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-        form.setValue("title", fileName);
-      }
+      validateAndSetFile(file);
     }
   };
 
@@ -278,8 +291,10 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                       <FormLabel>Upload File</FormLabel>
                       <FormControl>
                         <div 
-                          className={`border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center cursor-pointer h-[212px] transition-colors ${
-                            isDragging ? "border-primary bg-primary/5" : "border-input"
+                          className={`border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center cursor-pointer h-[212px] transition-all ${
+                            isDragging 
+                              ? "border-primary bg-primary/10 scale-[1.01] shadow-md" 
+                              : "border-input"
                           } ${selectedFile ? "border-success bg-success/5" : ""}`}
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}

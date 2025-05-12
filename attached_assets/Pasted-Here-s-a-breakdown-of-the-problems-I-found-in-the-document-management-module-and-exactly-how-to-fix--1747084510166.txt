@@ -1,0 +1,82 @@
+Here’s a breakdown of the problems I found in the document-management module and exactly how to fix them — plus a number of other tweaks and enhancements you can make to harden and polish the whole feature.
+
+1. Upload is broken by type mismatches
+
+What’s happening
+Front-end sends everything as strings (FormData), e.g.
+formData.append("tags", JSON.stringify(tagsArray));
+formData.append("isConfidential", String(data.isConfidential));
+Back-end uses a strict Zod schema:
+const uploadDocumentSchema = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().optional(),
+  documentType: documentTypeZod.optional(),
+  tags: z.array(z.string()).optional(),
+  isConfidential: z.boolean().optional(),
+  …
+});
+Because req.body.tags is a JSON string (not an array) and req.body.isConfidential is "true"/"false" (not a boolean), safeParse(req.body) fails and you get a 400 “Invalid document data.”
+How to fix
+A) Pre-parse those fields before validation
+
+In server/routes/documents.ts, right after singleFileUpload hands off to your callback and before you call uploadDocumentSchema.safeParse, do something like:
+
+// parse JSON array & boolean strings
+if (typeof req.body.tags === 'string') {
+  try { req.body.tags = JSON.parse(req.body.tags); }
+  catch { /* let Zod catch invalid JSON */ }
+}
+if (typeof req.body.isConfidential === 'string') {
+  req.body.isConfidential = req.body.isConfidential === 'true';
+}
+That way Zod sees real string[] and boolean values.
+
+B) Or use Zod preprocessors/coercion
+
+Instead of the plain schema, switch to something like:
+
+import { z } from 'zod';
+
+const uploadDocumentSchema = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().optional(),
+  documentType: documentTypeZod.optional(),
+  tags: z
+    .preprocess((val) => typeof val === 'string' ? JSON.parse(val) : val,
+                z.array(z.string()).optional()),
+  isConfidential: z
+    .preprocess((val) => val === 'true', z.boolean().optional()),
+  // …other fields…
+});
+Either approach will get you past the 400 error.
+
+2. Wire up the Download button
+
+In DocumentList.tsx, your “Download” menu item currently has no link or click handler:
+
+<DropdownMenuItem>Download</DropdownMenuItem>
+Fix it by turning it into an anchor (and pointing at your /api/documents/:id/download route). For example:
+
+<PermissionGuard area="documents" permission="view">
+  <DropdownMenuItem asChild>
+    <a href={`/api/documents/${document.id}/download`}>
+      Download
+    </a>
+  </DropdownMenuItem>
+</PermissionGuard>
+This will trigger the browser’s download flow against your Express handler:
+
+// server/routes/documents.ts
+res.setHeader('Content-Type', document.mimeType);
+res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
+res.setHeader('Content-Length', fileBuffer.length);
+res.send(fileBuffer);
+3. Improve front-end validation & UX
+
+File type & size: You already show allowed types, but you can enforce size limits client-side:
+if (selectedFile.size > 20 * 1024 * 1024) {
+  toast({ title: "File too large", description: "Max is 20 MB" });
+  return;
+}
+Progress bar: Wrap your fetch in an XMLHttpRequest or use axios with an onUploadProgress callback to show upload progress.
+Drag & drop styling: Add a visual highlight on isDragging to make it clearer when you can drop.
