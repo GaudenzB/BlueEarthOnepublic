@@ -6,70 +6,14 @@
  * and makes client-side error handling more predictable.
  */
 
-import { ZodIssue, ZodError } from 'zod';
+import { ZodError } from 'zod';
 import { Response } from 'express';
-
-/**
- * Standard API Success Response Interface
- */
-export interface ApiSuccessResponse<T> {
-  success: true;
-  data: T;
-  message?: string;
-  meta?: {
-    page?: number;
-    limit?: number;
-    total?: number;
-    totalPages?: number;
-  };
-}
-
-/**
- * Standard API Error Response Interface
- */
-export interface ApiErrorResponse {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-}
-
-/**
- * Error Codes Enum
- * Standardized error codes for API responses
- */
-export enum ErrorCode {
-  BAD_REQUEST = 'BAD_REQUEST',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-  NOT_FOUND = 'NOT_FOUND',
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  CONFLICT = 'CONFLICT',
-  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  DATABASE_ERROR = 'DATABASE_ERROR',
-  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
-  PERMISSION_ERROR = 'PERMISSION_ERROR'
-}
-
-/**
- * HTTP Status Codes
- */
-export enum HttpStatus {
-  OK = 200,
-  CREATED = 201,
-  NO_CONTENT = 204,
-  BAD_REQUEST = 400,
-  UNAUTHORIZED = 401,
-  FORBIDDEN = 403,
-  NOT_FOUND = 404,
-  CONFLICT = 409,
-  UNPROCESSABLE_ENTITY = 422,
-  INTERNAL_SERVER_ERROR = 500,
-  SERVICE_UNAVAILABLE = 503
-}
+import { 
+  ApiSuccessResponse, 
+  ApiErrorResponse, 
+  ErrorCode, 
+  HttpStatus 
+} from '@blueearth/core-common/src/types/api';
 
 /**
  * Send a success response

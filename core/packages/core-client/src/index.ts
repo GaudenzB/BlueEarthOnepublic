@@ -18,4 +18,4 @@ export * from '@blueearth/core-common';
 // export * from './components';
 
 // Export client utilities
-// export * from './utils';
+export * from './utils';
