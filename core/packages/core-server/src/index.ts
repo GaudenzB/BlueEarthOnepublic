@@ -1,17 +1,21 @@
 /**
  * Core Server Package
  * 
- * This package provides server-specific utilities, database schema helpers, and validation
+ * This package contains server-specific code, models,
+ * database schemas, and utilities for the backend.
  */
 
-// Re-export types from core-common for convenience
-export * from '@blueearth/core-common';
+// Import common package
+import * as coreCommon from '@blueearth/core-common';
 
-// Export server-specific utilities
-export * from './utils';
+// Re-export common for convenience
+export { coreCommon };
 
-// Export server-specific schemas and database models
+// Export server utilities when created
+// export * from './utils';
+
+// Export server models
 export * from './models';
 
-// Export validation utilities
-export * from './validation';
+// Export server validation when created
+// export * from './validation';

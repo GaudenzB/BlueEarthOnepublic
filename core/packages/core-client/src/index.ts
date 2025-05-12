@@ -1,18 +1,22 @@
 /**
  * Core Client Package
  * 
- * This package provides React hooks, components, and client-specific utilities
+ * This package contains client-specific code, UI utilities,
+ * themes, styles, and React hooks for the frontend.
  */
 
-// Re-export types from core-common for convenience
-export * from '@blueearth/core-common';
+// Import common package
+import * as coreCommon from '@blueearth/core-common';
 
-// Export React hooks
-export * from './hooks';
+// Re-export common for convenience
+export { coreCommon };
 
-// Export client-specific utilities
-export * from './utils';
+// Export client hooks when created
+// export * from './hooks';
 
-// Export theme and styling
-export * from './theme';
-export * from './styles';
+// Export client utilities when created
+// export * from './utils';
+
+// Export theme and styles when created
+// export * from './theme';
+// export * from './styles';

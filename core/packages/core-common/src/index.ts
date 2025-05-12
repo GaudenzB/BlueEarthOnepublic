@@ -1,14 +1,15 @@
 /**
  * Core Common Package
  * 
- * This package provides shared types, schemas, and utilities used by both client and server
+ * This package contains shared types, schemas, and utilities
+ * used by both client and server code.
  */
 
-// Export schema types that are shared between client and server
+// Export all schemas
 export * from './schemas';
 
-// Export shared utilities
-export * from './utils';
+// Export utilities when created
+// export * from './utils';
 
-// Export shared constants
-export * from './constants';
+// Export constants when created
+// export * from './constants';

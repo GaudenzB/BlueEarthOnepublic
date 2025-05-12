@@ -1,20 +1,29 @@
 {
   "name": "@blueearth/core-server",
-  "version": "1.0.0",
-  "description": "Server-side core utilities and schemas",
+  "version": "0.1.0",
+  "description": "Server-side models, utilities, and database integrations for the BlueEarth Capital portal",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "clean": "rimraf dist",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
   },
+  "files": [
+    "dist"
+  ],
   "dependencies": {
-    "@blueearth/core-common": "^1.0.0",
-    "zod": "^3.22.4",
-    "drizzle-orm": "^0.28.6",
-    "drizzle-zod": "^0.5.1"
+    "@blueearth/core-common": "^0.1.0",
+    "drizzle-orm": "^0.28.5",
+    "drizzle-zod": "^0.5.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "rimraf": "^5.0.5",
+    "typescript": "^5.0.4",
+    "eslint": "^8.48.0",
+    "vitest": "^0.34.3"
   }
 }
