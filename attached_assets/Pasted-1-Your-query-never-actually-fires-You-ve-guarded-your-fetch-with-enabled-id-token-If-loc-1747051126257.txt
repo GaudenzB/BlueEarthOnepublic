@@ -1,0 +1,119 @@
+1. Your query never actually fires
+
+You’ve guarded your fetch with enabled: !!id && !!token.
+
+If localStorage.getItem("token") is ever null or undefined (e.g. you’re in a fresh browser session), enabled will be false and React-Query will never call your default queryFn.
+Result: apiResponse stays undefined, so your const employee = apiResponse?.data; is also undefined — and whatever mock you had in your JSX (or default fall-backs) stays on screen.
+👉 Fix: Either make sure a valid token is in localStorage before rendering this page, or remove the token check altogether if this endpoint is meant to be public.
+
+// Before
+const { data: apiResponse, isLoading, error } = useQuery<EmployeeResponse>({
+  queryKey: [`/api/employees/${id}`, { _t: timestamp }],
+  enabled: !!id && !!token,
+  …  
+})
+
+// After (let it fire as soon as you have an ID)
+const { data: apiResponse, isLoading, error } = useQuery<EmployeeResponse>({
+  queryKey: [`/api/employees/${id}`, { _t: timestamp }],
+  enabled: Boolean(id),
+  …  
+})
+2. Your route-param name doesn’t match useParams
+
+You’ve defined your route as
+
+<Route
+  path={ROUTES.EMPLOYEES.DETAIL(":id")}   // yields “/employee/:id”
+  component={EmployeeDetail}
+/>
+but if you accidentally wrote…
+
+// In your TS routes file
+DETAIL: (id: string|number) => `/employees/${id}`,  // plural “employees”
+…and still do
+
+const { id } = useParams<{ id: string }>();  
+then Wouter never populates id (it sticks to the old “/employee” path), so again enabled is false and you never pull live data.
+
+👉 Fix:
+
+Make sure your path + factory + link + useParams all agree on exactly the same shape.
+// routes.ts
+DETAIL: (id) => `/employee/${id}`,       // singular
+…
+<Link to={ROUTES.EMPLOYEES.DETAIL(employee.id)}>…</Link>
+<Route path={ROUTES.EMPLOYEES.DETAIL(":id")} …/>
+In your detail page:
+// employee-detail.tsx
+const { id } = useParams<{ id: string }>(); 
+3. You never actually refetch after clicking
+
+Your current effect does:
+
+useEffect(() => {
+  refreshData();    // calls invalidateQueries + bumps timestamp
+}, [id]);
+But if your invalidateQueries filter doesn’t match the exact key shape, React-Query won’t refetch the new ID.
+
+👉 Simplify by using the built-in refetch handle:
+
+const { data: apiResponse, isLoading, error, refetch } = useQuery<EmployeeResponse>({
+  queryKey: [`/api/employees/${id}`],
+  queryFn: () => httpClient.get<ApiResponse<Employee>>(`/api/employees/${id}`),
+  enabled: Boolean(id),
+});
+
+useEffect(() => {
+  if (id) refetch();
+}, [id]);
+4. Double-check your network tab & console logs
+
+Network — do you actually see a GET /api/employees/123?_t=… request fire when you click the card?
+Logs — you have console.log("Building URL…") and console.log("Query for URL…") in your getQueryFn. Are those ever appearing?
+If not, your QueryClientProvider may not be wrapping this component, or you’re importing a different queryClient instance.
+Put it all together
+Here’s a minimal, end-to-end example you can drop into your EmployeeDetail.tsx to eliminate all the above:
+
+import React, { useEffect } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { httpClient } from "@/lib/httpClient";
+import { Employee } from "@shared/schema";
+
+export default function EmployeeDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
+
+  // 1) Fetch exactly once we have a valid ID
+  const { data, isLoading, error, refetch } = useQuery(
+    ["employee", id],
+    () => httpClient.get<{ data: Employee }>(`/api/employees/${id}`),
+    { enabled: Boolean(id) }
+  );
+
+  // 2) Refetch if the route param ever changes
+  useEffect(() => {
+    if (id) refetch();
+  }, [id]);
+
+  if (isLoading)   return <p>Loading employee…</p>;
+  if (error)       return <p>Error loading employee</p>;
+  if (!data?.data) return <p>No employee found.</p>;
+
+  const emp = data.data;
+
+  return (
+    <div>
+      <button onClick={() => setLocation("/")}>Back</button>
+      <h1>{emp.firstName} {emp.lastName}</h1>
+      <p>Email: {emp.email}</p>
+      <p>Department: {emp.department}</p>
+      {/* …and so on… */}
+    </div>
+  );
+}
+We switch to a hard query key of ["employee", id] so invalidation is trivial.
+We pass an explicit queryFn so nothing magical can go wrong with defaults.
+We only gate on Boolean(id) — no token gating, so you’ll always see the real data (and move token validation into your API if needed).
+Try that out, check the network tab, and let me know which of the console logs or network requests you don’t see. We can then pin down exactly where your real payload is getting short-circuited back to mocks.

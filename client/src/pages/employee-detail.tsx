@@ -16,6 +16,8 @@ import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ROUTES } from "@/lib/routes";
+import { httpClient } from "@/lib/httpClient";
+import type { ApiResponse } from "@/lib/types";
 
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,13 +41,11 @@ export default function EmployeeDetail() {
   // Create a state for timestamp to force refresh
   const [timestamp, setTimestamp] = useState(Date.now());
   
-  // Force refresh function
+  // Force refresh function - simplified to use refetch directly
   const refreshData = () => {
-    // Force cache invalidation for this employee
-    queryClient.invalidateQueries({queryKey: [`/api/employees/${id}`]});
-    // Update timestamp to force query key change
-    setTimestamp(Date.now());
     console.log("Forcing refresh of employee data for ID:", id);
+    // Simply refetch the data, no need for invalidation or timestamp updates
+    if (id) refetch();
   };
   
   // Effect to refresh data when component mounts or id changes
@@ -54,9 +54,11 @@ export default function EmployeeDetail() {
   }, [id]);
   
   // Fetch employee data directly from the single-employee endpoint
-  const { data: apiResponse, isLoading, error, refetch } = useQuery<EmployeeResponse>({
-    queryKey: [`/api/employees/${id}`, { _t: timestamp }], // Use the specific endpoint for a single employee
-    enabled: !!id && !!token, // Only fetch if we have a token
+  // Only require an ID, not a token (API can handle auth checks)
+  const { data: apiResponse, isLoading, error, refetch } = useQuery<ApiResponse<Employee>>({
+    queryKey: ["employee", id], // Simpler, more stable query key
+    queryFn: () => httpClient.get<ApiResponse<Employee>>(`/api/employees/${id}`),
+    enabled: Boolean(id), // Only require ID, not token (let API handle auth)
     refetchOnMount: true, // Always refetch when component mounts
     staleTime: 0, // Consider data immediately stale
     retry: 3, // Retry failed requests 3 times
