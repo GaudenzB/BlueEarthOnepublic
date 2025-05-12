@@ -299,12 +299,12 @@ export default function EmployeeDetail() {
         <Card className="md:col-span-1">
           <CardHeader className="text-center">
             <Avatar className="h-32 w-32 mx-auto">
-              {employee?.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee.name} />}
+              {employee?.avatarUrl && <AvatarImage src={employee.avatarUrl} alt={employee?.name || 'Employee'} />}
               <AvatarFallback className="text-2xl">
                 {employee?.name 
                   ? employee.name
                       .split(' ')
-                      .map((part: string) => part.charAt(0))
+                      .map((part: string) => part.charAt(0) || '')
                       .join('')
                   : 'EM'
                 }
