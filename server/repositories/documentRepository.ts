@@ -83,7 +83,7 @@ export const documentRepository = {
         tags 
       } = options;
       
-      logger.debug('Getting documents with options', { 
+      logger.info('🔍 Getting documents with options', { 
         tenantId, 
         limit, 
         offset, 
@@ -96,7 +96,8 @@ export const documentRepository = {
 
       // Build query conditions
       const conditions = [
-        eq(documents.tenantId, tenantId)
+        eq(documents.tenantId, tenantId),
+        eq(documents.deleted, false) // Only retrieve non-deleted documents
       ];
 
       if (documentType) {
@@ -120,6 +121,16 @@ export const documentRepository = {
         }
       }
 
+      // Log the SQL query for debugging (in development only)
+      if (process.env.NODE_ENV !== 'production') {
+        const queryConditions = and(...conditions);
+        logger.debug('Document query conditions:', { 
+          conditionsCount: conditions.length,
+          tenantCondition: conditions[0],
+          deletedCondition: conditions[1]
+        });
+      }
+
       // Count total records for pagination
       const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
@@ -139,15 +150,29 @@ export const documentRepository = {
         .limit(limit)
         .offset(offset);
 
-      logger.debug('Document query results', { 
+      // Enhanced logging for document results
+      logger.info('📄 Document query results', { 
         resultCount: results.length,
         totalCount: Number(count),
         sampleDocument: results.length > 0 ? {
           id: results[0].id,
           title: results[0].title,
-          filename: results[0].filename
-        } : null
+          filename: results[0].filename,
+          status: results[0].processingStatus,
+          docType: results[0].documentType,
+          createdAt: results[0].createdAt
+        } : 'No documents found',
+        tenantId
       });
+      
+      // For troubleshooting, dump all documents if there are fewer than 5
+      if (results.length > 0 && results.length < 5) {
+        logger.debug('All documents in result:', results.map(doc => ({
+          id: doc.id,
+          title: doc.title,
+          status: doc.processingStatus
+        })));
+      }
       
       return {
         documents: results,

@@ -17,15 +17,16 @@ export default function Documents() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const { toast } = useToast();
   
-  const { data: documents, isLoading, refetch, error } = useQuery<any>({
+  const { data: documents, isLoading, refetch, error } = useQuery({
     queryKey: ['/api/documents'],
     retry: false,
     // Enable some console logging for debugging
     onSuccess: (data) => {
       console.log('Documents query succeeded:', {
         dataExists: !!data,
-        dataIsArray: Array.isArray(data?.data),
-        documentCount: Array.isArray(data?.data) ? data.data.length : 0
+        response: data,
+        isWrappedFormat: !!(data && 'success' in data && 'data' in data),
+        documentCount: data && 'data' in data && Array.isArray(data.data) ? data.data.length : 0
       });
     },
     onError: (err) => {
@@ -99,6 +100,14 @@ export default function Documents() {
                 isLoading={isLoading} 
                 filter="all"
               />
+              {documents && !documents.data && (
+                <div className="p-4 bg-muted/20 rounded-md mt-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Debug Info: Found {Array.isArray(documents) ? documents.length : 0} documents in direct format.
+                    {Object.keys(documents || {}).length > 0 && ` Response keys: ${Object.keys(documents || {}).join(', ')}`}
+                  </p>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="recent">
