@@ -1,8 +1,8 @@
 /**
  * Core Server Models
  * 
- * This module exports server-specific database models,
- * schemas, and types for ORM integration.
+ * This file exports all server-side models and schemas
+ * which are extended from the core common types.
  */
 
 export * from './employee';

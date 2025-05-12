@@ -1,21 +1,18 @@
 /**
  * Core Server Package
  * 
- * This package contains server-specific code, models,
- * database schemas, and utilities for the backend.
+ * This package contains server-specific functionality, models,
+ * and utilities for the BlueEarth Capital portal.
  */
 
-// Import common package
-import * as coreCommon from '@blueearth/core-common';
+// Re-export common types from core-common for convenience
+export * from '@blueearth/core-common';
 
-// Re-export common for convenience
-export { coreCommon };
-
-// Export server utilities when created
-// export * from './utils';
-
-// Export server models
+// Export server-specific models and types
 export * from './models';
 
-// Export server validation when created
-// export * from './validation';
+// Re-export utilities
+// export * from './utils';
+
+// Re-export services
+// export * from './services';

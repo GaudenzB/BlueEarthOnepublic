@@ -1,56 +1,31 @@
-import { pgEnum } from 'drizzle-orm/pg-core';
-import { createInsertSchema } from 'drizzle-zod';
+/**
+ * Server-side Employee Models
+ * 
+ * This file extends the common employee types with server-specific
+ * schemas and utilities for database operations.
+ */
+
 import { z } from 'zod';
-import { departmentEnum, employeeStatusEnum, employeeBaseSchema } from '@blueearth/core-common';
+import { createInsertSchema } from 'drizzle-zod';
+import { employeeSchema, employeeBaseSchema, departmentEnum, employeeStatusEnum } from '@blueearth/core-common';
 
 /**
- * PostgreSQL enums for database schema definition
- * These are used when defining the database schema in Drizzle ORM
+ * Insert Employee Schema
+ * This schema is used for inserting a new employee into the database
+ * It omits auto-generated fields like id and timestamps
  */
-
-// For database schema
-export const pgDepartmentEnum = pgEnum('department', [
-  'EXECUTIVE',
-  'FINANCE',
-  'HUMAN_RESOURCES',
-  'INFORMATION_TECHNOLOGY',
-  'LEGAL',
-  'MARKETING',
-  'OPERATIONS',
-  'RESEARCH_AND_DEVELOPMENT',
-  'SALES'
-]);
-
-// For database schema
-export const pgEmployeeStatusEnum = pgEnum('employee_status', [
-  'ACTIVE',
-  'ON_LEAVE',
-  'CONTRACT',
-  'INACTIVE',
-  'INTERN'
-]);
+export const insertEmployeeSchema = employeeBaseSchema;
 
 /**
- * Employee schema for insert operations
- * Extends the base schema with database-specific fields
+ * Update Employee Schema
+ * This schema is used for updating an existing employee
+ * All fields are optional to allow partial updates
  */
-export const insertEmployeeSchema = employeeBaseSchema.extend({
-  bubbleId: z.string().optional(),
-});
+export const updateEmployeeSchema = employeeBaseSchema.partial();
 
-// Type for employee insert operations
+/**
+ * Type definitions
+ * These are used for database operations
+ */
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
-
-/**
- * Schema for synchronization statistics
- */
-export const syncStatsSchema = z.object({
-  totalEmployees: z.number(),
-  created: z.number(),
-  updated: z.number(),
-  unchanged: z.number(),
-  errors: z.number(),
-});
-
-// Type for synchronization statistics
-export type SyncStats = z.infer<typeof syncStatsSchema>;
+export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;

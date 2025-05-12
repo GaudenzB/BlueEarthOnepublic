@@ -1,97 +1,121 @@
+/**
+ * Authentication Schema
+ * 
+ * This file defines the common authentication and user-related
+ * types and schema that are used across both client and server.
+ */
+
 import { z } from 'zod';
 
 /**
- * User-related schemas and types
- * These are used for authentication and user management
- */
-
-/**
- * User role enum
+ * User Roles Enum
+ * Defines the possible roles a user can have
  */
 export const userRoleEnum = z.enum([
-  'SUPERADMIN',
-  'ADMIN',
-  'MANAGER',
-  'USER'
+  'superadmin',
+  'admin',
+  'manager',
+  'user'
 ]);
 
 export type UserRole = z.infer<typeof userRoleEnum>;
 
 /**
- * Permission area enum
+ * Functional Area Permissions Enum
+ * Defines the functional areas a user can have permissions for
  */
-export const permissionAreaEnum = z.enum([
-  'FINANCE',
-  'HR',
-  'IT',
-  'LEGAL',
-  'OPERATIONS'
+export const functionalAreaEnum = z.enum([
+  'finance',
+  'hr',
+  'it',
+  'legal',
+  'operations'
 ]);
 
-export type PermissionArea = z.infer<typeof permissionAreaEnum>;
+export type FunctionalArea = z.infer<typeof functionalAreaEnum>;
 
 /**
- * Permission type enum
+ * Permission Level Enum
+ * Defines the level of permission a user can have in a functional area
  */
-export const permissionTypeEnum = z.enum([
-  'VIEW',
-  'EDIT',
-  'DELETE'
+export const permissionLevelEnum = z.enum([
+  'read',
+  'write',
+  'admin'
 ]);
 
-export type PermissionType = z.infer<typeof permissionTypeEnum>;
+export type PermissionLevel = z.infer<typeof permissionLevelEnum>;
 
 /**
- * User schema for client validation
+ * Permission Schema
+ * Defines a specific permission with functional area and level
+ */
+export const permissionSchema = z.object({
+  area: functionalAreaEnum,
+  level: permissionLevelEnum
+});
+
+export type Permission = z.infer<typeof permissionSchema>;
+
+/**
+ * Base User Schema
+ * This represents the core user data without DB-specific fields
  */
 export const userBaseSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Invalid email address"),
-  role: userRoleEnum.optional().default('USER'),
-  active: z.boolean().optional().default(true),
+  username: z.string().min(3),
+  email: z.string().email(),
+  role: userRoleEnum,
+  permissions: z.array(permissionSchema).optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  isActive: z.boolean().default(true)
 });
 
 /**
- * User schema with ID
+ * Full User Schema (with ID and timestamps)
  */
 export const userSchema = userBaseSchema.extend({
   id: z.number(),
-  createdAt: z.string().or(z.date()).optional(),
-  updatedAt: z.string().or(z.date()).nullable().optional(),
-  lastLogin: z.string().or(z.date()).nullable().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  lastLogin: z.date().optional()
 });
 
-export type User = z.infer<typeof userSchema>;
-
 /**
- * User login schema
+ * Login Request Schema
  */
-export const userLoginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+export const loginSchema = z.object({
+  username: z.string(),
+  password: z.string()
 });
 
-export type UserLogin = z.infer<typeof userLoginSchema>;
-
 /**
- * Forgot password schema
+ * Forgot Password Request Schema
  */
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string().email()
 });
 
-export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
-
 /**
- * Reset password schema
+ * Reset Password Request Schema
  */
 export const resetPasswordSchema = z.object({
   token: z.string(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Password confirmation must be at least 8 characters"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+  password: z.string().min(8)
 });
 
-export type ResetPassword = z.infer<typeof resetPasswordSchema>;
+/**
+ * Change Password Request Schema
+ */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string(),
+  newPassword: z.string().min(8)
+});
+
+// Type definitions
+export type UserBase = z.infer<typeof userBaseSchema>;
+export type User = z.infer<typeof userSchema>;
+export type LoginRequest = z.infer<typeof loginSchema>;
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;

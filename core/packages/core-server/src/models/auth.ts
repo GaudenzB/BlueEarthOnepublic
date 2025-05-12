@@ -1,78 +1,71 @@
+/**
+ * Server-side Auth Models
+ * 
+ * This file extends the common auth types with server-specific
+ * schemas and utilities for database operations.
+ */
+
 import { z } from 'zod';
-import { pgEnum } from 'drizzle-orm/pg-core';
-import {
+import { createInsertSchema } from 'drizzle-zod';
+import { 
+  userSchema, 
+  userBaseSchema,
   userRoleEnum,
-  permissionAreaEnum,
-  permissionTypeEnum,
-  userBaseSchema
+  functionalAreaEnum, 
+  permissionLevelEnum,
+  permissionSchema 
 } from '@blueearth/core-common';
 
 /**
- * PostgreSQL enums for database schema definition
- * These are used when defining the database schema in Drizzle ORM
- */
-export const pgUserRoleEnum = pgEnum('user_role', [
-  'SUPERADMIN',
-  'ADMIN',
-  'MANAGER',
-  'USER'
-]);
-
-export const pgPermissionAreaEnum = pgEnum('permission_area', [
-  'FINANCE',
-  'HR',
-  'IT',
-  'LEGAL',
-  'OPERATIONS'
-]);
-
-export const pgPermissionTypeEnum = pgEnum('permission_type', [
-  'VIEW',
-  'EDIT',
-  'DELETE'
-]);
-
-/**
- * User schema for insert operations
- * Extends the user base schema with server-specific fields
+ * Database Insert User Schema
+ * This schema is used for inserting a new user into the database
+ * It includes the password field and omits auto-generated fields
  */
 export const insertUserSchema = userBaseSchema.extend({
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8)
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+/**
+ * Database Update User Schema
+ * This schema is used for updating an existing user
+ * All fields are optional to allow partial updates
+ */
+export const updateUserSchema = userBaseSchema.extend({
+  password: z.string().min(8).optional()
+}).partial();
 
 /**
- * Extended User schema with password reset fields
+ * Reset Password Token Schema
+ * This schema is used for storing password reset tokens
  */
-export const userWithPasswordResetSchema = insertUserSchema.extend({
-  id: z.number(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().nullable().optional(),
-  lastLogin: z.date().nullable().optional(),
-  passwordResetToken: z.string().nullable().optional(),
-  passwordResetExpires: z.date().nullable().optional(),
-});
-
-export type UserWithPasswordReset = z.infer<typeof userWithPasswordResetSchema>;
-
-/**
- * User permission schema for insert operations
- */
-export const insertUserPermissionSchema = z.object({
+export const resetTokenSchema = z.object({
   userId: z.number(),
-  area: permissionAreaEnum,
-  permission: permissionTypeEnum,
+  token: z.string(),
+  expires: z.date(),
+  used: z.boolean().default(false)
 });
-
-export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
 
 /**
- * User permission schema with ID
+ * Session Schema
+ * This schema is used for user sessions
  */
-export const userPermissionSchema = insertUserPermissionSchema.extend({
-  id: z.number(),
-  createdAt: z.date().optional(),
+export const sessionSchema = z.object({
+  id: z.string(),
+  userId: z.number(),
+  token: z.string(),
+  expires: z.date(),
+  createdAt: z.date().default(() => new Date()),
+  updatedAt: z.date().default(() => new Date()),
+  ip: z.string().optional(),
+  userAgent: z.string().optional(),
+  lastActivity: z.date().default(() => new Date())
 });
 
-export type UserPermission = z.infer<typeof userPermissionSchema>;
+/**
+ * Type definitions
+ * These are used for database operations
+ */
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
+export type ResetToken = z.infer<typeof resetTokenSchema>;
+export type Session = z.infer<typeof sessionSchema>;

@@ -1,83 +1,90 @@
+/**
+ * Employee Schema
+ * 
+ * This file defines the common employee-related types and
+ * schemas that are used across both client and server.
+ */
+
 import { z } from 'zod';
 
 /**
- * Common employee-related schemas and types
- * These will be used throughout the application for validation and type safety
- */
-
-/**
- * Employee department enum
+ * Department Enum
+ * Defines all possible departments in the organization
  */
 export const departmentEnum = z.enum([
-  'EXECUTIVE',
-  'FINANCE',
-  'HUMAN_RESOURCES',
-  'INFORMATION_TECHNOLOGY',
-  'LEGAL',
-  'MARKETING',
-  'OPERATIONS',
-  'RESEARCH_AND_DEVELOPMENT',
-  'SALES'
+  'engineering',
+  'marketing',
+  'design',
+  'product',
+  'hr',
+  'sales',
+  'finance',
+  'legal',
+  'operations',
+  'executive'
 ]);
 
-/**
- * Employee status enum
- */
-export const employeeStatusEnum = z.enum([
-  'ACTIVE',
-  'ON_LEAVE',
-  'CONTRACT',
-  'INACTIVE',
-  'INTERN'
-]);
-
-// Type for the employee status enum
-export type EmployeeStatus = z.infer<typeof employeeStatusEnum>;
-
-// Type for the department enum
 export type Department = z.infer<typeof departmentEnum>;
 
 /**
- * Base employee schema for client-side validation
+ * Employee Status Enum
+ * Defines all possible employee statuses
+ */
+export const employeeStatusEnum = z.enum([
+  'active',
+  'inactive',
+  'on_leave',
+  'remote'
+]);
+
+export type EmployeeStatus = z.infer<typeof employeeStatusEnum>;
+
+/**
+ * Base Employee Schema
+ * This represents the core employee data without DB-specific fields
  */
 export const employeeBaseSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  position: z.string().optional(),
-  department: departmentEnum.optional().default('OPERATIONS'),
+  email: z.string().email(),
+  name: z.string(),
+  status: employeeStatusEnum,
+  position: z.string(),
+  department: departmentEnum,
+  location: z.string(),
   phone: z.string().nullable().optional(),
-  profileImage: z.string().nullable().optional(),
-  bio: z.string().nullable().optional(),
-  responsibilities: z.string().nullable().optional(),
-  city: z.string().nullable().optional(),
-  country: z.string().nullable().optional(),
-  status: employeeStatusEnum.optional().default('ACTIVE'),
+  avatarUrl: z.string().url().optional(),
+  bio: z.string().optional(),
+  responsibilities: z.string().optional(),
+  startDate: z.date().optional(),
+  reportsTo: z.number().optional(),
+  skills: z.array(z.string()).optional(),
 });
 
 /**
- * Base employee schema with ID
+ * Full Employee Schema (with ID and timestamps)
  */
 export const employeeSchema = employeeBaseSchema.extend({
   id: z.number(),
-  createdAt: z.string().or(z.date()).optional(),
-  updatedAt: z.string().or(z.date()).nullable().optional(),
-  syncedAt: z.string().or(z.date()).nullable().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  lastSyncedAt: z.date().optional()
 });
 
 /**
- * Schema for employee search parameters
+ * Employee Search Schema
+ * For searching and filtering employees
  */
 export const employeeSearchSchema = z.object({
-  search: z.string().optional(),
+  query: z.string().optional(),
   department: departmentEnum.optional(),
   status: employeeStatusEnum.optional(),
-  page: z.number().optional().default(1),
-  limit: z.number().optional().default(20),
+  location: z.string().optional(),
+  sort: z.enum(['name', 'position', 'department', 'startDate']).optional(),
+  order: z.enum(['asc', 'desc']).optional().default('asc'),
+  page: z.number().int().positive().optional().default(1),
+  limit: z.number().int().positive().optional().default(10)
 });
 
-// Type for employee records
+// Type definitions
+export type EmployeeBase = z.infer<typeof employeeBaseSchema>;
 export type Employee = z.infer<typeof employeeSchema>;
-
-// Type for employee search parameters
-export type EmployeeSearchParams = z.infer<typeof employeeSearchSchema>;
+export type EmployeeSearch = z.infer<typeof employeeSearchSchema>;
