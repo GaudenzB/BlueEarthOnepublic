@@ -33,7 +33,7 @@ export async function syncEmployeesFromBubble(): Promise<{
       const firstEmployee = bubbleEmployees[0];
       
       // Log specific fields individually for better debugging
-      logger.debug('First Bubble employee data (firstName):', { firstName: firstEmployee.firstName });
+      logger.debug('First Bubble employee data (name):', { name: firstEmployee.name });
       logger.debug('First Bubble employee data (email):', { email: firstEmployee.email });
       logger.debug('First Bubble employee data (status):', { status: firstEmployee.status });
       
@@ -75,12 +75,11 @@ export async function syncEmployeesFromBubble(): Promise<{
         if (existingEmployee) {
           // Employee exists, check if we need to update
           const needsUpdate = 
-            existingEmployee.firstName !== bubbleEmployee.firstName ||
-            existingEmployee.lastName !== bubbleEmployee.lastName ||
+            existingEmployee.name !== bubbleEmployee.name ||
             existingEmployee.position !== bubbleEmployee.position ||
             existingEmployee.department !== bubbleEmployee.department ||
             existingEmployee.phone !== bubbleEmployee.phone ||
-            existingEmployee.profileImage !== bubbleEmployee.profileImage ||
+            existingEmployee.avatarUrl !== bubbleEmployee.avatarUrl ||
             existingEmployee.status !== bubbleEmployee.status;
           
           if (needsUpdate) {

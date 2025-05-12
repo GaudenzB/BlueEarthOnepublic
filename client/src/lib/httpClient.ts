@@ -216,24 +216,31 @@ export class HttpClient {
     options: RequestInit,
     retries: number = this.config.retries || 0
   ): Promise<ApiResponse<T>> {
-    // Add timeout to request
+    // Create an AbortController for this request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    
+    // Create a new options object with the signal
+    const fetchOptions = {
+      ...options,
+      signal: controller.signal
+    };
+    
+    // Set up the timeout if configured
+    if (this.config.timeout) {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+      }, this.config.timeout);
+    }
     
     try {
       // Execute request
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
+      const response = await fetch(url, fetchOptions);
       
       // Process response
       return await this.processResponse<T>(response);
     } catch (error) {
-      // Clear timeout
-      clearTimeout(timeoutId);
-      
-      // Handle abort error
+      // Handle abort error (timeout)
       if (error instanceof DOMException && error.name === 'AbortError') {
         throw new ApiError(408, 'Request timeout');
       }
@@ -260,7 +267,10 @@ export class HttpClient {
         error instanceof Error ? error.message : 'Unknown error'
       );
     } finally {
-      clearTimeout(timeoutId);
+      // Clean up timeout if it exists
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
     }
   }
   

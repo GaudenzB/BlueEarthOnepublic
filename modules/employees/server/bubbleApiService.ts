@@ -145,20 +145,20 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 function mapBubbleEmployeeToAppEmployee(bubbleEmployee: BubbleEmployee): InsertEmployee {
   const firstName = bubbleEmployee['First name'] || '';
   const lastName = bubbleEmployee['Last name'] || '';
+  // Combine first and last name into a single name field
+  const fullName = `${firstName} ${lastName}`.trim();
   
   return {
-    firstName: firstName,
-    lastName: lastName,
+    name: fullName,
     email: bubbleEmployee['Email business'] || bubbleEmployee['Email personal'] || '',
     phone: bubbleEmployee['Phone business mobile'] || bubbleEmployee['Phone business office'] || bubbleEmployee['Phone personal'] || '',
     position: bubbleEmployee['Job Title'] || bubbleEmployee.Job || bubbleEmployee.Function || '',
     department: mapBubbleDepartmentToAppDepartment(bubbleEmployee.Department),
     status: mapBubbleStatusToAppStatus(bubbleEmployee.Status),
-    profileImage: bubbleEmployee.Photo || '',
+    avatarUrl: bubbleEmployee.Photo || '',
     bubbleId: bubbleEmployee._id,
-    city: bubbleEmployee.City || '',
-    country: bubbleEmployee.Country || '',
-    bio: bubbleEmployee.About || '',
+    location: `${bubbleEmployee.City || ''}${bubbleEmployee.City && bubbleEmployee.Country ? ', ' : ''}${bubbleEmployee.Country || ''}`.trim() || null,
+    bio: bubbleEmployee.About || null,
   };
 }
 
