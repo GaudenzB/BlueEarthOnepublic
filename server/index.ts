@@ -9,6 +9,7 @@ import { setupSecurityMiddleware } from "./middleware/security";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { setupSession } from "./middleware/session";
 import { logger } from "./utils/logger";
+import { setupDefaultTenant } from "./utils/setupDefaultTenant";
 import config from "./utils/config";
 
 // Import the modular system

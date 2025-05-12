@@ -72,10 +72,14 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     try {
       setIsDeleting(true);
       
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('authToken');
+      
       const response = await fetch(`/api/documents/${documentToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
         }
       });
       

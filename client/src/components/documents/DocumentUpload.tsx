@@ -155,11 +155,18 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         }
       }
       
-      // Make API request
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('authToken');
+      
+      // Make API request with authentication
       const response = await fetch("/api/documents", {
         method: "POST",
         body: formData,
         // No Content-Type header - browser will set it with boundary for FormData
+        headers: {
+          // Include the Authorization header with the token
+          'Authorization': token ? `Bearer ${token}` : '',
+        }
       });
       
       if (!response.ok) {
