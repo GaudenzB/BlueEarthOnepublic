@@ -233,3 +233,10 @@ export const selectTenantSchema = createInsertSchema(tenants);
 
 export type Tenant = typeof tenants.$inferSelect;
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
+
+// Import document schema from subdirectories
+import { documents, processingStatusEnum as docProcessingStatusEnum, documentTypeEnum } from './schema/documents/documents';
+import { analysisVersions, analysisStatusEnum } from './schema/documents/analysisVersions';
+
+// Re-export for easy access
+export { documents, analysisVersions, docProcessingStatusEnum, documentTypeEnum, analysisStatusEnum };

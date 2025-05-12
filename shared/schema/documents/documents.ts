@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, varchar, boolean, jsonb, pgEnum, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, varchar, boolean, jsonb, pgEnum, index, integer } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -61,8 +61,8 @@ export const documents = pgTable('documents', {
   aiMetadata: jsonb('ai_metadata'),
   
   // References
-  uploadedBy: uuid('uploaded_by').references(() => users.id),
-  tenantId: uuid('tenant_id').references(() => tenants.id),
+  uploadedBy: uuid('uploaded_by'),
+  tenantId: uuid('tenant_id'),
   versionId: uuid('version_id'),
   
   // Additional metadata

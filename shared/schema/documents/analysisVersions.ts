@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, pgEnum, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, jsonb, pgEnum, index, varchar } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -22,8 +22,8 @@ export const analysisStatusEnum = pgEnum('analysis_status', [
  */
 export const analysisVersions = pgTable('analysis_versions', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
-  documentId: uuid('document_id').notNull().references(() => documents.id),
-  tenantId: uuid('tenant_id').references(() => tenants.id),
+  documentId: uuid('document_id').notNull(),
+  tenantId: uuid('tenant_id'),
   version: text('version').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
