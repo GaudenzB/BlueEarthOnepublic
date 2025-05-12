@@ -1,159 +1,303 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+/**
+ * Error Handling Utilities
+ * 
+ * This module provides utilities for handling errors consistently across
+ * controllers and middleware.
+ */
+
+import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { logger, logFormats } from './logger';
-import { ApiError } from '../middleware/errorHandler';
+import { logger } from './logger';
+import apiResponse from './apiResponse';
+import { DatabaseError } from 'pg';
+import { DrizzleError } from 'drizzle-orm';
 
 /**
- * Transforms various error types into standardized ApiError instances
- * 
- * This ensures consistent error handling across the application
+ * Error types that can be handled specifically by the error handler
  */
-export function transformError(error: unknown): Error {
-  // Already an ApiError, just pass it through
-  if (error instanceof ApiError) {
-    return error;
-  }
-  
-  // Handle Zod validation errors
-  if (error instanceof ZodError) {
-    return new ApiError(
-      'Validation failed',
-      400,
-      'VALIDATION_ERROR',
-      { errors: error.format() }
-    );
-  }
-  
-  // Handle database errors (specific to Postgres)
-  if (error instanceof Error && (error as any).code) {
-    const pgError = error as any;
-    
-    // Unique constraint violation
-    if (pgError.code === '23505') {
-      return new ApiError(
-        'A record with this information already exists',
-        409,
-        'CONFLICT',
-        { detail: pgError.detail }
-      );
-    }
-    
-    // Foreign key constraint violation
-    if (pgError.code === '23503') {
-      return new ApiError(
-        'Referenced record does not exist',
-        400,
-        'REFERENCE_ERROR',
-        { detail: pgError.detail }
-      );
-    }
-    
-    // Other database errors
-    if (pgError.code.startsWith('22') || pgError.code.startsWith('23')) {
-      return new ApiError(
-        'Database constraint violation',
-        400,
-        'DATABASE_CONSTRAINT',
-        { detail: pgError.detail }
-      );
-    }
-  }
-  
-  // Handle JWT errors
-  if (error instanceof Error && error.name === 'JsonWebTokenError') {
-    return new ApiError(
-      'Invalid token',
-      401,
-      'INVALID_TOKEN'
-    );
-  }
-  
-  if (error instanceof Error && error.name === 'TokenExpiredError') {
-    return new ApiError(
-      'Token expired',
-      401,
-      'TOKEN_EXPIRED'
-    );
-  }
-  
-  // Handle generic errors
-  if (error instanceof Error) {
-    // For security, don't expose internal error details in production
-    const isProduction = process.env.NODE_ENV === 'production';
-    const message = isProduction ? 'Internal server error' : error.message;
-    
-    return new ApiError(
-      message,
-      500,
-      'INTERNAL_ERROR',
-      isProduction ? undefined : { stack: error.stack }
-    );
-  }
-  
-  // For unknown error types, create a generic error
-  return new ApiError(
-    'An unexpected error occurred',
-    500,
-    'UNKNOWN_ERROR'
-  );
+export enum ErrorType {
+  VALIDATION = 'ValidationError',
+  DATABASE = 'DatabaseError',
+  AUTHENTICATION = 'AuthenticationError',
+  AUTHORIZATION = 'AuthorizationError',
+  NOT_FOUND = 'NotFoundError',
+  CONFLICT = 'ConflictError',
+  INTEGRATION = 'IntegrationError',
+  RATE_LIMIT = 'RateLimitError',
+  SERVER = 'ServerError'
 }
 
 /**
- * Wraps a request handler to standardize error handling
- * 
- * Benefits:
- * - Controllers can focus on core logic without try/catch boilerplate
- * - Errors are consistently transformed and passed to error middleware
- * - Request context is captured for better logging
- * 
- * @param handler The original request handler function
- * @returns Wrapped handler with standardized error handling
+ * Base application error class
  */
-export function wrapHandler(handler: RequestHandler): RequestHandler {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      await handler(req, res, next);
-    } catch (error) {
-      // Log the error with request context
-      logger.error({
-        ...logFormats.formatRequest(req),
-        ...logFormats.formatError(error),
-      }, 'Request handler error');
-      
-      // Transform and pass to error middleware
-      next(transformError(error));
+export class AppError extends Error {
+  public type: ErrorType;
+  public statusCode: number;
+  public errors?: Record<string, string[]>;
+
+  constructor(
+    message: string,
+    type: ErrorType = ErrorType.SERVER,
+    statusCode: number = 500,
+    errors?: Record<string, string[]>
+  ) {
+    super(message);
+    this.name = this.constructor.name;
+    this.type = type;
+    this.statusCode = statusCode;
+    this.errors = errors;
+    
+    // Properly capture stack trace
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
     }
+  }
+}
+
+/**
+ * Validation error class
+ */
+export class ValidationError extends AppError {
+  constructor(
+    message: string = 'Validation failed',
+    errors?: Record<string, string[]>
+  ) {
+    super(message, ErrorType.VALIDATION, 422, errors);
+  }
+}
+
+/**
+ * Authentication error class
+ */
+export class AuthenticationError extends AppError {
+  constructor(message: string = 'Authentication failed') {
+    super(message, ErrorType.AUTHENTICATION, 401);
+  }
+}
+
+/**
+ * Authorization error class
+ */
+export class AuthorizationError extends AppError {
+  constructor(message: string = 'Not authorized') {
+    super(message, ErrorType.AUTHORIZATION, 403);
+  }
+}
+
+/**
+ * Not found error class
+ */
+export class NotFoundError extends AppError {
+  constructor(message: string = 'Resource not found') {
+    super(message, ErrorType.NOT_FOUND, 404);
+  }
+}
+
+/**
+ * Conflict error class
+ */
+export class ConflictError extends AppError {
+  constructor(
+    message: string = 'Resource already exists',
+    errors?: Record<string, string[]>
+  ) {
+    super(message, ErrorType.CONFLICT, 409, errors);
+  }
+}
+
+/**
+ * Database error class
+ */
+export class DatabaseError extends AppError {
+  constructor(
+    message: string = 'Database operation failed',
+    errors?: Record<string, string[]>
+  ) {
+    super(message, ErrorType.DATABASE, 500, errors);
+  }
+}
+
+/**
+ * Integration error class
+ */
+export class IntegrationError extends AppError {
+  constructor(
+    message: string = 'External service integration failed',
+    statusCode: number = 500,
+    errors?: Record<string, string[]>
+  ) {
+    super(message, ErrorType.INTEGRATION, statusCode, errors);
+  }
+}
+
+/**
+ * Rate limit error class
+ */
+export class RateLimitError extends AppError {
+  constructor(message: string = 'Too many requests') {
+    super(message, ErrorType.RATE_LIMIT, 429);
+  }
+}
+
+/**
+ * Server error class
+ */
+export class ServerError extends AppError {
+  constructor(
+    message: string = 'Internal server error',
+    errors?: Record<string, string[]>
+  ) {
+    super(message, ErrorType.SERVER, 500, errors);
+  }
+}
+
+/**
+ * Convert a ZodError to a ValidationError
+ */
+export function convertZodError(error: ZodError): ValidationError {
+  // Format errors for client consumption
+  const formattedErrors: Record<string, string[]> = {};
+  
+  error.errors.forEach(err => {
+    const path = err.path.join('.');
+    if (!formattedErrors[path]) {
+      formattedErrors[path] = [];
+    }
+    formattedErrors[path].push(err.message);
+  });
+  
+  return new ValidationError('Validation failed', formattedErrors);
+}
+
+/**
+ * Format a database error for client consumption
+ */
+export function formatDatabaseError(error: DatabaseError | DrizzleError): Record<string, string[]> {
+  // Extract meaningful information from database errors
+  const formattedErrors: Record<string, string[]> = {
+    database: ['Database operation failed. Please try again later.']
+  };
+  
+  if (error instanceof DatabaseError) {
+    // Handle PostgreSQL specific errors
+    if (error.message.includes('duplicate key')) {
+      formattedErrors.database = ['A record with this value already exists.'];
+    } else if (error.message.includes('foreign key')) {
+      formattedErrors.database = ['Referenced record does not exist or cannot be deleted due to dependencies.'];
+    }
+  }
+  
+  return formattedErrors;
+}
+
+/**
+ * Sanitize errors to avoid leaking sensitive information
+ */
+export function sanitizeErrors(errors: Record<string, string[]>): Record<string, string[]> {
+  const sensitiveFields = ['password', 'token', 'secret', 'key', 'apiKey'];
+  
+  // Create a new object to avoid mutation
+  const sanitized: Record<string, string[]> = {};
+  
+  Object.entries(errors).forEach(([key, messages]) => {
+    // Check if key contains any sensitive field
+    const isSensitive = sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()));
+    
+    if (isSensitive) {
+      sanitized[key] = ['Invalid value'];
+    } else {
+      sanitized[key] = messages;
+    }
+  });
+  
+  return sanitized;
+}
+
+/**
+ * Global error handler middleware
+ */
+export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+  logger.error({
+    err,
+    path: req.path,
+    method: req.method,
+    statusCode: res.statusCode
+  }, `Error: ${err.message}`);
+  
+  // Handle ZodError validation errors
+  if (err instanceof ZodError) {
+    const validationError = convertZodError(err);
+    return apiResponse.validationError(res, validationError.errors || {}, validationError.message);
+  }
+  
+  // Handle application errors
+  if (err instanceof AppError) {
+    const sanitizedErrors = err.errors ? sanitizeErrors(err.errors) : undefined;
+    
+    switch (err.type) {
+      case ErrorType.VALIDATION:
+        return apiResponse.validationError(res, sanitizedErrors || {}, err.message);
+      case ErrorType.AUTHENTICATION:
+        return apiResponse.unauthorized(res, err.message);
+      case ErrorType.AUTHORIZATION:
+        return apiResponse.forbidden(res, err.message);
+      case ErrorType.NOT_FOUND:
+        return apiResponse.notFound(res, err.message);
+      case ErrorType.CONFLICT:
+        return apiResponse.conflict(res, err.message, sanitizedErrors);
+      case ErrorType.DATABASE:
+      case ErrorType.INTEGRATION:
+      case ErrorType.SERVER:
+        return apiResponse.error(res, 'An unexpected error occurred. Please try again later.', 500);
+      case ErrorType.RATE_LIMIT:
+        return apiResponse.error(res, err.message, 429);
+      default:
+        return apiResponse.error(res, 'An unexpected error occurred. Please try again later.', 500);
+    }
+  }
+  
+  // Handle PostgreSQL errors
+  if (err instanceof DatabaseError) {
+    const formattedErrors = formatDatabaseError(err);
+    return apiResponse.error(res, 'Database operation failed', 500, formattedErrors);
+  }
+  
+  // Handle Drizzle ORM errors
+  if (err instanceof DrizzleError) {
+    const formattedErrors = formatDatabaseError(err as any);
+    return apiResponse.error(res, 'Database operation failed', 500, formattedErrors);
+  }
+  
+  // Handle all other errors as 500 Internal Server Error
+  return apiResponse.error(res, 'An unexpected error occurred. Please try again later.', 500);
+}
+
+/**
+ * Async handler to catch errors in async/await route handlers
+ */
+export function wrapHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
 
-/**
- * Utility to create a controller with all methods wrapped in error handling
- * 
- * @param controllers Object with handler methods
- * @returns Object with the same methods, but wrapped with error handling
- */
-export function createController<T extends Record<string, RequestHandler>>(controllers: T): T {
-  const wrappedController: Record<string, RequestHandler> = {};
-  
-  // Wrap each method in the controller
-  for (const [key, handler] of Object.entries(controllers)) {
-    wrappedController[key] = wrapHandler(handler);
-  }
-  
-  return wrappedController as T;
-}
+export const errorHandling = {
+  AppError,
+  ValidationError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ConflictError,
+  DatabaseError,
+  IntegrationError,
+  RateLimitError,
+  ServerError,
+  errorHandler,
+  wrapHandler,
+  convertZodError,
+  formatDatabaseError,
+  sanitizeErrors,
+  ErrorType
+};
 
-/**
- * Helper function to validate request parameters
- * This reduces boilerplate in controllers
- */
-export function validateRequest<T>(schema: any, req: Request): T {
-  try {
-    return schema.parse(req.body) as T;
-  } catch (error) {
-    if (error instanceof ZodError) {
-      throw new ApiError('Validation failed', 400, 'VALIDATION_ERROR', { errors: error.format() });
-    }
-    throw error;
-  }
-}
+export default errorHandling;

@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { logger, logFormats } from '../utils/logger';
-import { sendError, sendValidationError } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
+import apiResponse from '../utils/apiResponse';
+import { errorHandling } from '../utils/errorHandling';
 
 /**
  * Custom Error class for API errors
@@ -40,7 +41,8 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   
   logger.error('Request error', {
     ...errorContext,
-    ...logFormats.formatError(err)
+    error: err,
+    stack: err.stack
   });
   
   // Already sent response - don't try to send again
@@ -51,12 +53,21 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
 
   // Handle ZodError (validation errors)
   if (err instanceof ZodError) {
-    return sendValidationError(res, err.format(), 'Validation failed');
+    const formattedErrors: Record<string, string[]> = {};
+    const errors = err.format();
+    
+    Object.entries(errors).forEach(([field, error]: [string, any]) => {
+      if (field !== '_errors' && error._errors && error._errors.length > 0) {
+        formattedErrors[field] = error._errors;
+      }
+    });
+    
+    return apiResponse.validationError(res, formattedErrors, 'Validation failed');
   }
   
   // Handle ApiError (our custom error class)
   if (err instanceof ApiError) {
-    return sendError(
+    return apiResponse.error(
       res, 
       err.message, 
       err.statusCode, 
@@ -72,7 +83,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
       ? 'Internal Server Error'  // Hide details in production
       : err.message || 'Internal Server Error';
       
-  return sendError(res, message, statusCode);
+  return apiResponse.error(res, message, statusCode);
 }
 
 /**
@@ -85,7 +96,7 @@ export function notFoundHandler(req: Request, res: Response) {
   // Only handle API routes with the error handler
   if (req.path.startsWith('/api/')) {
     logger.debug({ path: req.path, method: req.method }, 'API route not found');
-    return sendError(res, `Route ${req.method} ${req.path} not found`, 404, { errorCode: 'ROUTE_NOT_FOUND' });
+    return apiResponse.notFound(res, `Route ${req.method} ${req.path} not found`);
   }
   
   // For client-side routes, this should be unreachable in development

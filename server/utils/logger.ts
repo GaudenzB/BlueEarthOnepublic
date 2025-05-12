@@ -1,22 +1,23 @@
+/**
+ * Logger Utility
+ * 
+ * A centralized logging system with structured JSON output and filtering capabilities.
+ * Configurable log levels and pretty printing for development.
+ */
+
 import pino from 'pino';
 import config from './config';
 
-// Configure log levels and transport options
-const loggerOptions = {
-  level: config.logging.level,
-  name: 'blueearth-portal',
-  timestamp: pino.stdTimeFunctions.isoTime,
-  formatters: {
-    level: (label: string) => {
-      return { level: label.toUpperCase() };
-    },
-  },
-  base: {
-    app: 'blueearth-portal',
-    env: config.env.current,
-  },
-  // Only use pretty printing in development
-  transport: config.logging.prettyPrint
+// Get log configuration from centralized config
+const { level, prettyPrint } = config.logging;
+const APP_NAME = 'blueearth-portal';
+
+// Configure pino logger
+const logger = pino({
+  level,
+  name: APP_NAME,
+  base: { app: APP_NAME, env: config.env },
+  transport: prettyPrint 
     ? {
         target: 'pino-pretty',
         options: {
@@ -24,81 +25,124 @@ const loggerOptions = {
           translateTime: 'SYS:standard',
           ignore: 'pid,hostname',
         },
-      }
+      } 
     : undefined,
-};
+  timestamp: () => `,"time":"${new Date().toISOString()}"`,
+  formatters: {
+    level: (label) => {
+      return { level: label };
+    },
+  },
+  redact: [
+    'req.headers.authorization',
+    'req.headers.cookie',
+    'body.password',
+    'body.token',
+    'body.refreshToken',
+    'data.password',
+    'data.token',
+    'data.refreshToken',
+  ],
+});
 
-// Create the shared logger instance
-export const logger = pino(loggerOptions);
+/**
+ * Create a child logger with additional context
+ * @param context Additional context to include with log entries
+ */
+export function createLogger(context: Record<string, any> = {}) {
+  return logger.child(context);
+}
 
-// Utility functions for log formatting
-export const logFormats = {
-  // Format error objects for better logging
-  formatError: (error: any) => {
-    if (!error) return { error: 'Unknown error' };
-    
-    const errorObj: Record<string, any> = {
-      message: error.message || 'Unknown error',
-      name: error.name || 'Error',
-      stack: config.env.isDevelopment ? error.stack : undefined,
-    };
-    
-    // Include additional error properties if available
-    if (error.code) errorObj.code = error.code;
-    if (error.status || error.statusCode) errorObj.statusCode = error.status || error.statusCode;
-    if (error.path) errorObj.path = error.path;
-    if (error.type) errorObj.type = error.type;
-    
-    // Include validation errors if available (common with Zod, express-validator, etc.)
-    if (error.errors || error.details) {
-      errorObj.details = error.errors || error.details;
+/**
+ * Log HTTP request details
+ * @param req Express request object
+ * @param res Express response object
+ */
+export function logRequest(req: any, res: any) {
+  const requestId = req.id || '';
+  const method = req.method;
+  const path = req.path;
+  const query = req.query;
+  const ip = req.ip;
+
+  logger.debug(
+    {
+      requestId,
+      method,
+      path,
+      type: 'request',
+      query,
+      ip,
+    },
+    `Request: ${method} ${path}`
+  );
+
+  logger.debug(`Received request: ${method} ${path}`);
+
+  // Log response when it completes
+  res.on('finish', () => {
+    const statusCode = res.statusCode;
+    const duration = Date.now() - req.startTime;
+
+    if (statusCode >= 400) {
+      logger.error(
+        {
+          requestId,
+          method,
+          path,
+          type: 'response',
+          statusCode,
+          duration: `${duration}ms`,
+          error: res.statusMessage || 'Unknown error',
+        },
+        `Error response: ${method} ${path} ${statusCode}`
+      );
+    } else if (statusCode >= 300) {
+      logger.info(
+        {
+          requestId,
+          method,
+          path,
+          type: 'response',
+          statusCode,
+          duration: `${duration}ms`,
+          redirectUrl: res.getHeader('Location'),
+        },
+        `Redirect response: ${method} ${path} ${statusCode}`
+      );
+    } else {
+      logger.debug(
+        {
+          requestId,
+          method,
+          path,
+          type: 'response',
+          statusCode,
+          duration: `${duration}ms`,
+        },
+        `Success response: ${method} ${path} ${statusCode}`
+      );
     }
-    
-    return { error: errorObj };
-  },
-  
-  // Format request objects for logging
-  formatRequest: (req: any) => {
-    if (!req) return {};
-    
-    return {
-      method: req.method,
-      url: req.url,
-      path: req.path,
-      query: req.query,
-      params: req.params,
-      ip: req.ip,
-      headers: config.env.isDevelopment
-        ? req.headers
-        : {
-            'user-agent': req.headers['user-agent'],
-            'content-type': req.headers['content-type'],
-            'x-request-id': req.headers['x-request-id'],
-          },
-    };
-  },
-  
-  // Format response objects for logging
-  formatResponse: (res: any) => {
-    if (!res) return {};
-    
-    return {
-      statusCode: res.statusCode,
-      duration: res.responseTime,
-      headers: config.env.isDevelopment
-        ? res.getHeaders()
-        : {
-            'content-type': res.getHeader('content-type'),
-            'content-length': res.getHeader('content-length'),
-          },
-    };
-  }
-};
+  });
+}
 
-// Create child loggers for specific components
-export const createLogger = (component: string, context?: any) => {
-  return logger.child({ component, ...(context || {}) });
-};
+/**
+ * Create middleware for HTTP request logging
+ */
+export function createRequestLogger() {
+  return (req: any, res: any, next: any) => {
+    // Add request start time for duration calculation
+    req.startTime = Date.now();
+    
+    // Generate a unique ID for each request
+    req.id = Math.random().toString(36).substring(2, 15);
+    
+    // Log the request
+    logRequest(req, res);
+    
+    // Continue to next middleware
+    next();
+  };
+}
 
-// Export default logger
-export default logger;
+export { logger };

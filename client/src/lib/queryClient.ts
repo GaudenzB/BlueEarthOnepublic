@@ -77,11 +77,8 @@ export async function apiRequest<T = any>(
 /**
  * Create a query function that handles unauthorized responses
  */
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: UnauthorizedBehavior }): QueryFunction<T> => {
+  return async ({ queryKey }) => {
     try {
       // Build the URL from the queryKey
       // If queryKey has multiple segments, construct the URL with path parameters
@@ -112,12 +109,14 @@ export const getQueryFn: <T>(options: {
       
       // Use HTTP client to fetch data
       const response = await httpClient.get<T>(url);
+      
+      // Return data property of ApiResponse if it exists
       return response.data as T;
     } catch (error) {
       // Handle 401 (Unauthorized) as requested
       if (error instanceof ApiError && error.status === 401) {
         if (unauthorizedBehavior === "returnNull") {
-          return null as T;
+          return null as unknown as T;
         }
       }
       
@@ -125,6 +124,7 @@ export const getQueryFn: <T>(options: {
       throw error;
     }
   };
+};
 
 /**
  * Configured QueryClient with default options

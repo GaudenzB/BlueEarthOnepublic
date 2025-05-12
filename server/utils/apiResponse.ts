@@ -1,19 +1,45 @@
-import { Response } from 'express';
-
 /**
- * Standardized API Response Utility
+ * API Response Utilities
  * 
- * This utility provides consistent response formatting across all API endpoints.
- * It helps ensure that error handling and response structures follow a uniform pattern.
+ * This module provides standardized response functions for API endpoints
+ * to ensure consistent response format across the application.
  */
 
-// Success response with optional data
-export function sendSuccess(
+import { Response } from 'express';
+import { logger } from './logger';
+
+// Standard API response interface
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+  errors?: Record<string, string[]>;
+}
+
+// HTTP status codes
+export enum StatusCode {
+  OK = 200,
+  CREATED = 201,
+  NO_CONTENT = 204,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
+  NOT_FOUND = 404,
+  CONFLICT = 409,
+  UNPROCESSABLE_ENTITY = 422,
+  INTERNAL_SERVER_ERROR = 500,
+  SERVICE_UNAVAILABLE = 503,
+}
+
+/**
+ * Send a successful response with data
+ */
+export function success<T = any>(
   res: Response, 
-  data: any = null, 
-  message: string = 'Operation successful', 
-  statusCode: number = 200
-) {
+  data: T, 
+  message: string = 'Success', 
+  statusCode: number = StatusCode.OK
+): Response<ApiResponse<T>> {
   return res.status(statusCode).json({
     success: true,
     message,
@@ -21,13 +47,50 @@ export function sendSuccess(
   });
 }
 
-// Error response with standardized format
-export function sendError(
+/**
+ * Send a successful response with no data (for DELETE operations)
+ */
+export function noContent(
+  res: Response, 
+  message: string = 'Resource deleted successfully'
+): Response<ApiResponse<null>> {
+  return res.status(StatusCode.NO_CONTENT).json({
+    success: true,
+    message,
+  });
+}
+
+/**
+ * Send a created response (for POST operations)
+ */
+export function created<T = any>(
+  res: Response, 
+  data: T, 
+  message: string = 'Resource created successfully'
+): Response<ApiResponse<T>> {
+  return res.status(StatusCode.CREATED).json({
+    success: true,
+    message,
+    data,
+  });
+}
+
+/**
+ * Send an error response
+ */
+export function error(
   res: Response, 
   message: string = 'An error occurred', 
-  statusCode: number = 500, 
-  errors: any = null
-) {
+  statusCode: number = StatusCode.INTERNAL_SERVER_ERROR,
+  errors?: Record<string, string[]>
+): Response<ApiResponse<null>> {
+  // Log server errors
+  if (statusCode >= 500) {
+    logger.error({ statusCode, message, errors }, 'Server error in API response');
+  } else {
+    logger.debug({ statusCode, message, errors }, 'Client error in API response');
+  }
+
   return res.status(statusCode).json({
     success: false,
     message,
@@ -35,55 +98,93 @@ export function sendError(
   });
 }
 
-// Authentication error (401 Unauthorized)
-export function sendUnauthorized(
+/**
+ * Send a bad request error response
+ */
+export function badRequest(
   res: Response, 
-  message: string = 'Authentication required',
-  errorCode: string = 'AUTH_REQUIRED'
-) {
-  return sendError(res, message, 401, { errorCode });
+  message: string = 'Bad request', 
+  errors?: Record<string, string[]>
+): Response<ApiResponse<null>> {
+  return error(res, message, StatusCode.BAD_REQUEST, errors);
 }
 
-// Authorization error (403 Forbidden)
-export function sendForbidden(
+/**
+ * Send an unauthorized error response
+ */
+export function unauthorized(
   res: Response, 
-  message: string = 'Insufficient permissions',
-  errorCode: string = 'PERMISSION_DENIED'
-) {
-  return sendError(res, message, 403, { errorCode });
+  message: string = 'Unauthorized'
+): Response<ApiResponse<null>> {
+  return error(res, message, StatusCode.UNAUTHORIZED);
 }
 
-// Authentication specific errors
-export function sendTokenExpired(res: Response) {
-  return sendUnauthorized(
-    res, 
-    'Your session has expired, please log in again', 
-    'TOKEN_EXPIRED'
-  );
+/**
+ * Send a forbidden error response
+ */
+export function forbidden(
+  res: Response, 
+  message: string = 'Forbidden'
+): Response<ApiResponse<null>> {
+  return error(res, message, StatusCode.FORBIDDEN);
 }
 
-export function sendTokenInvalid(res: Response) {
-  return sendUnauthorized(
-    res, 
-    'Invalid authentication token', 
-    'TOKEN_INVALID'
-  );
+/**
+ * Send a not found error response
+ */
+export function notFound(
+  res: Response, 
+  message: string = 'Resource not found'
+): Response<ApiResponse<null>> {
+  return error(res, message, StatusCode.NOT_FOUND);
 }
 
-export function sendTokenRevoked(res: Response) {
-  return sendUnauthorized(
-    res, 
-    'Your session has been revoked', 
-    'TOKEN_REVOKED'
-  );
+/**
+ * Send a conflict error response
+ */
+export function conflict(
+  res: Response, 
+  message: string = 'Resource already exists',
+  errors?: Record<string, string[]>
+): Response<ApiResponse<null>> {
+  return error(res, message, StatusCode.CONFLICT, errors);
 }
 
-// Not found error (404)
-export function sendNotFound(res: Response, message: string = 'Resource not found') {
-  return sendError(res, message, 404);
+/**
+ * Send a validation error response
+ */
+export function validationError(
+  res: Response, 
+  errors: Record<string, string[]>,
+  message: string = 'Validation error'
+): Response<ApiResponse<null>> {
+  return error(res, message, StatusCode.UNPROCESSABLE_ENTITY, errors);
 }
 
-// Validation error (400 Bad Request)
-export function sendValidationError(res: Response, errors: any, message: string = 'Validation failed') {
-  return sendError(res, message, 400, errors);
+/**
+ * Send a service unavailable error response
+ */
+export function serviceUnavailable(
+  res: Response, 
+  message: string = 'Service temporarily unavailable'
+): Response<ApiResponse<null>> {
+  return error(res, message, StatusCode.SERVICE_UNAVAILABLE);
 }
+
+// Export all functions and types as a single object
+export const apiResponse = {
+  success,
+  created,
+  noContent,
+  error,
+  badRequest,
+  unauthorized,
+  forbidden,
+  notFound,
+  conflict,
+  validationError,
+  serviceUnavailable,
+  StatusCode,
+};
+
+export default apiResponse;

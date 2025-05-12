@@ -9,10 +9,10 @@ import { logger } from './utils/logger';
 neonConfig.webSocketConstructor = ws;
 
 // Get database configuration from centralized config
-const { connectionString, poolSize, idleTimeout, connectionTimeoutMs } = config.database;
+const dbUrl = config.database.url;
 
 // Validate required environment variables
-if (!connectionString) {
+if (!dbUrl) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );
@@ -20,12 +20,11 @@ if (!connectionString) {
 
 // Configure connection pool with optimized settings
 export const pool = new Pool({
-  connectionString,
-  max: poolSize,                     // Maximum number of clients the pool should contain
-  idleTimeoutMillis: idleTimeout,    // How long a client is allowed to remain idle before being closed
-  connectionTimeoutMillis: connectionTimeoutMs, // How long to wait before timing out when connecting a new client
-  maxUses: 7500,                     // Close and replace a connection after it has been used this many times
-  statement_timeout: config.database.statementTimeout, // Timeout for individual queries
+  connectionString: dbUrl,
+  max: 10,                       // Maximum number of clients the pool should contain
+  idleTimeoutMillis: 30000,      // How long a client is allowed to remain idle before being closed (30s)
+  connectionTimeoutMillis: 5000, // How long to wait before timing out when connecting a new client (5s)
+  maxUses: 7500,                 // Close and replace a connection after it has been used this many times
 });
 
 // Add event listeners for connection issues

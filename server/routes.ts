@@ -24,13 +24,7 @@ import {
   insertEmployeeSchema,
   employeeSearchSchema
 } from "@shared/schema";
-import { 
-  sendSuccess, 
-  sendError, 
-  sendUnauthorized, 
-  sendNotFound, 
-  sendValidationError 
-} from "./utils/apiResponse";
+import apiResponse from "./utils/apiResponse";
 import { logger } from "./utils/logger";
 import { sendPasswordResetEmail } from "./email/sendgrid";
 import { validate, validateIdParameter } from "./middleware/validation";

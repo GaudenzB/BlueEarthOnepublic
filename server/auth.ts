@@ -3,13 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 import { User, UserRole } from "@shared/schema";
-import { 
-  sendUnauthorized, 
-  sendForbidden, 
-  sendTokenExpired, 
-  sendTokenInvalid, 
-  sendTokenRevoked 
-} from "./utils/apiResponse";
+import apiResponse from "./utils/apiResponse";
 
 /**
  * Enhanced Authentication System
@@ -154,7 +148,7 @@ export const authenticate = (
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
   if (!token) {
-    return sendUnauthorized(res, "No token, authorization denied", "TOKEN_MISSING");
+    return apiResponse.unauthorized(res, "No token, authorization denied");
   }
 
   try {
@@ -166,7 +160,7 @@ export const authenticate = (
     
     // Check if token has been revoked
     if (decoded.jti && revokedTokens[decoded.jti]) {
-      return sendTokenRevoked(res);
+      return apiResponse.unauthorized(res, "Token has been revoked");
     }
     
     // Set user in request
@@ -184,15 +178,15 @@ export const authenticate = (
     
     // Provide specific error responses based on verification failure type
     if (error.name === 'TokenExpiredError') {
-      return sendTokenExpired(res);
+      return apiResponse.unauthorized(res, "Token has expired");
     } else if (error.name === 'JsonWebTokenError') {
-      return sendTokenInvalid(res);
+      return apiResponse.unauthorized(res, "Invalid token");
     } else if (error.name === 'NotBeforeError') {
-      return sendUnauthorized(res, "Token not yet active", "TOKEN_NOT_ACTIVE");
+      return apiResponse.unauthorized(res, "Token not yet active");
     }
     
     // Default case for other JWT errors
-    return sendTokenInvalid(res);
+    return apiResponse.unauthorized(res, "Invalid authentication token");
   }
 };
 
@@ -200,7 +194,7 @@ export const authenticate = (
 export const authorize = (roles: UserRole[] = []) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return sendUnauthorized(res, "Authentication required", "AUTH_REQUIRED");
+      return apiResponse.unauthorized(res, "Authentication required");
     }
 
     // If no roles are specified, allow all authenticated users
@@ -210,10 +204,9 @@ export const authorize = (roles: UserRole[] = []) => {
 
     // Check if the user's role is included in the allowed roles
     if (!roles.includes(req.user.role as UserRole)) {
-      return sendForbidden(
+      return apiResponse.forbidden(
         res, 
-        "Insufficient permissions for this resource",
-        "ROLE_INSUFFICIENT"
+        "Insufficient permissions for this resource"
       );
     }
 
@@ -224,14 +217,13 @@ export const authorize = (roles: UserRole[] = []) => {
 // Superadmin authorization middleware
 export const isSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
-    return sendUnauthorized(res, "Authentication required", "AUTH_REQUIRED");
+    return apiResponse.unauthorized(res, "Authentication required");
   }
 
   if (req.user.role !== "superadmin") {
-    return sendForbidden(
+    return apiResponse.forbidden(
       res, 
-      "This operation requires superadmin privileges",
-      "SUPERADMIN_REQUIRED"
+      "This operation requires superadmin privileges"
     );
   }
 

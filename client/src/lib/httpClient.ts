@@ -10,7 +10,8 @@
  * - Automatic retries
  */
 
-import config from './config';
+// Environment detection
+const isDevelopment = import.meta.env.MODE === 'development';
 
 // Standardized API response format
 export interface ApiResponse<T = any> {
@@ -42,6 +43,7 @@ export interface HttpClientConfig {
   retryDelay?: number;
 }
 
+// Default configuration values
 const DEFAULT_CONFIG: HttpClientConfig = {
   baseUrl: '',
   defaultHeaders: {
@@ -49,7 +51,7 @@ const DEFAULT_CONFIG: HttpClientConfig = {
     'Accept': 'application/json',
   },
   timeout: 30000, // 30 seconds
-  retries: 0,
+  retries: isDevelopment ? 0 : 2, // No retries in development
   retryDelay: 1000, // 1 second
 };
 
@@ -124,7 +126,9 @@ export class HttpClient {
         });
       } else {
         Object.entries(customHeaders).forEach(([key, value]) => {
-          headers.set(key, value);
+          if (value !== undefined && value !== null) {
+            headers.set(key, String(value));
+          }
         });
       }
     }

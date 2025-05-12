@@ -8,10 +8,11 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { comparePassword, generateToken, revokeToken, hashPassword } from '../auth';
-import { wrapHandler } from '../utils/errorHandling';
+import { errorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
-import { sendSuccess, sendUnauthorized } from '../utils/apiResponse';
+import apiResponse from '../utils/apiResponse';
+const { wrapHandler } = errorHandling;
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../email/sendgrid';
 import { 
@@ -25,7 +26,7 @@ import {
  * Login endpoint handler
  * Validates credentials and returns a JWT token if successful
  */
-const login = wrapHandler(async (req: Request, res: Response) => {
+const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   // Request body is validated by our validation schema
   const loginData = userLoginSchema.parse(req.body);
   
@@ -76,7 +77,7 @@ const login = wrapHandler(async (req: Request, res: Response) => {
   });
   
   // Return success with user info and token
-  return sendSuccess(res, { 
+  return apiResponse.success(res, { 
     user: {
       id: user.id,
       username: user.username,
@@ -93,7 +94,7 @@ const login = wrapHandler(async (req: Request, res: Response) => {
  * Register endpoint handler
  * Creates a new user account
  */
-const register = wrapHandler(async (req: Request, res: Response) => {
+const register = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   // Validate registration data
   const registrationData = userRegistrationSchema.parse(req.body);
   
@@ -151,7 +152,7 @@ const register = wrapHandler(async (req: Request, res: Response) => {
  * Logout endpoint handler
  * Revokes the current JWT token
  */
-const logout = wrapHandler(async (req: Request, res: Response) => {
+const logout = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   // Extract token from request
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -167,7 +168,7 @@ const logout = wrapHandler(async (req: Request, res: Response) => {
     });
   }
   
-  return sendSuccess(res, "Logout successful");
+  return apiResponse.success(res, null, "Logout successful");
 });
 
 /**
@@ -189,7 +190,7 @@ const getCurrentUser = wrapHandler(async (req: Request, res: Response) => {
   }
   
   // Return user information (omit sensitive data)
-  return sendSuccess(res, {
+  return apiResponse.success(res, {
     id: user.id,
     username: user.username,
     email: user.email,
