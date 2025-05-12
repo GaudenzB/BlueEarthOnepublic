@@ -16,8 +16,7 @@ import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ROUTES } from "@/lib/routes";
-import { httpClient } from "@/lib/httpClient";
-import type { ApiResponse } from "@/lib/types";
+import { httpClient, ApiResponse } from "@/lib/httpClient";
 
 /**
  * Employee detail page component
@@ -48,7 +47,7 @@ export default function EmployeeDetail() {
   });
   
   // Extract employee from response
-  const employee = apiResponse?.data;
+  const employee = apiResponse?.data as Employee | undefined;
   
   // Force refresh function
   const refreshData = () => {
