@@ -13,7 +13,7 @@ import {
   ApiErrorResponse, 
   ErrorCode, 
   HttpStatus 
-} from '@blueearth/core-common/src/types/api';
+} from '@blueearth/core-common';
 
 /**
  * Send a success response

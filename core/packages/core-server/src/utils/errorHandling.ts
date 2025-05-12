@@ -8,7 +8,8 @@
 
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
-import { sendServerError, sendValidationError, ErrorCode, HttpStatus } from './apiResponse';
+import { sendServerError, sendValidationError } from './apiResponse';
+import { ErrorCode, HttpStatus } from '@blueearth/core-common';
 
 /**
  * Custom API Error Class

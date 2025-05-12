@@ -6,7 +6,8 @@
  * and response parsing.
  */
 
-import { ApiErrorResponse, ApiSuccessResponse } from '@blueearth/core-common/src/types/api';
+// Import from core-common package
+import { ApiErrorResponse, ApiSuccessResponse } from '@blueearth/core-common';
 
 /**
  * Default fetch options
