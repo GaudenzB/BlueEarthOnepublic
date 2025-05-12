@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { colors } from "@/lib/colors";
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ROUTES } from "@/lib/routes";
 import { httpClient, ApiResponse, ApiError } from "@/lib/httpClient";
 

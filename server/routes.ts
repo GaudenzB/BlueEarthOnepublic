@@ -209,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user
   app.patch("/api/users/:id", authenticate, isSuperAdmin, validateIdParameter(), async (req: Request, res: Response) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params["id"]);
       
       // Define reusable validation schema for user updates
       const updateUserSchema = z.object({

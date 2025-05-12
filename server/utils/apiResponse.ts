@@ -13,9 +13,9 @@ import { ZodError, ZodIssue } from 'zod';
  */
 interface ApiResponse<T> {
   success: boolean;
-  data?: T;
-  message?: string;
-  errors?: Record<string, string[]>;
+  data?: T | undefined;
+  message?: string | undefined;
+  errors?: Record<string, string[]> | undefined;
 }
 
 /**

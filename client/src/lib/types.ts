@@ -7,8 +7,9 @@ import { Employee } from "@shared/schema";
  */
 export interface ApiResponse<T> {
   success: boolean;
-  message?: string;
+  message?: string | undefined;
   data: T;
+  errors?: Record<string, string[]> | undefined;
 }
 
 /**
@@ -18,7 +19,7 @@ export interface ApiResponse<T> {
 export interface ApiError {
   success: boolean;
   message: string;
-  errors?: Record<string, unknown>;
+  errors?: Record<string, unknown> | undefined;
 }
 
 /**
