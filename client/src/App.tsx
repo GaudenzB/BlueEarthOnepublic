@@ -77,7 +77,8 @@ function Router() {
       
       {/* Protected routes */}
       <Route path={ROUTES.HOME} component={(props) => <ProtectedRoute component={EmployeeDirectory} {...props} />} />
-      <Route path="/employee/:id" component={(props) => <ProtectedRoute component={EmployeeDetail} {...props} />} />
+      {/* Use the ROUTES constant with regex pattern to match dynamic route */}
+      <Route path={ROUTES.EMPLOYEES.DETAIL(':id')} component={(props) => <ProtectedRoute component={EmployeeDetail} {...props} />} />
       <Route path={ROUTES.DASHBOARD} component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
       <Route path={ROUTES.DOCUMENTS.LIST} component={(props) => <ProtectedRoute component={Documents} {...props} />} />
       <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />

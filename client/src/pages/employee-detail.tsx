@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Employee } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar, ShieldAlert } from "lucide-react";
+import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar, ShieldAlert, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,15 +33,34 @@ export default function EmployeeDetail() {
   const token = localStorage.getItem("token");
   console.log("Auth token available:", !!token);
 
-  // Disable browser cache for this request
-  const timestamp = Date.now();
+  // Create a reference to the query client
+  const queryClient = useQueryClient();
+  
+  // Create a state for timestamp to force refresh
+  const [timestamp, setTimestamp] = useState(Date.now());
+  
+  // Force refresh function
+  const refreshData = () => {
+    // Force cache invalidation for this employee
+    queryClient.invalidateQueries({queryKey: ['/api/employees', id]});
+    // Update timestamp to force query key change
+    setTimestamp(Date.now());
+    console.log("Forcing refresh of employee data for ID:", id);
+  };
+  
+  // Effect to refresh data when component mounts or id changes
+  useEffect(() => {
+    refreshData();
+  }, [id]);
   
   // Fetch employee data with cache-busting timestamp
-  const { data: apiResponse, isLoading, error } = useQuery<EmployeeResponse>({
+  const { data: apiResponse, isLoading, error, refetch } = useQuery<EmployeeResponse>({
     queryKey: ['/api/employees', id, { _t: timestamp }],
     enabled: !!id && !!token, // Only fetch if we have a token
     refetchOnMount: true, // Always refetch when component mounts
     staleTime: 0, // Consider data immediately stale
+    retry: 3, // Retry failed requests 3 times
+    retryDelay: 1000, // Wait 1 second between retries
   });
   
   // Extract employee from response
