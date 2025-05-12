@@ -17,12 +17,11 @@ import {
   Card,
   CardBody,
   Divider,
-  Stack,
-  useColorModeValue,
   Icon,
 } from "@chakra-ui/react";
 import { AddIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
 
 // Custom Radio Tab Component
 function RadioTab(props: any) {
@@ -109,7 +108,7 @@ function CardTab({ isSelected, label, icon, onClick }: { isSelected: boolean; la
 }
 
 export default function DocumentsPage() {
-  const [tabStyle, setTabStyle] = useState<'default' | 'line' | 'enclosed' | 'soft-rounded' | 'radio' | 'pill' | 'card'>('default');
+  const [tabStyle, setTabStyle] = useState<'default' | 'line' | 'enclosed' | 'soft-rounded' | 'radio' | 'pill' | 'card' | 'segmented'>('segmented');
   const [tabIndex, setTabIndex] = useState(0);
   
   // Tab style for radio tabs
@@ -260,6 +259,35 @@ export default function DocumentsPage() {
             </Box>
           </Flex>
         );
+        
+      case 'segmented':
+        return (
+          <Box>
+            <Box mb={6}>
+              <SegmentedControl 
+                options={[
+                  { value: "all", label: "All Documents", icon: "📁" },
+                  { value: "recent", label: "Recent", icon: "🕒" },
+                  { value: "contracts", label: "Contracts", icon: "📄" }
+                ]}
+                value={tabIndex === 0 ? "all" : tabIndex === 1 ? "recent" : "contracts"}
+                onChange={(value) => {
+                  switch (value) {
+                    case "all": setTabIndex(0); break;
+                    case "recent": setTabIndex(1); break;
+                    case "contracts": setTabIndex(2); break;
+                  }
+                }}
+              />
+            </Box>
+            
+            <Box p={6} bg="white" borderRadius="md" shadow="sm">
+              {tabIndex === 0 && <Text>No documents yet. (Segmented style)</Text>}
+              {tabIndex === 1 && <Text>No recent documents. (Segmented style)</Text>}
+              {tabIndex === 2 && <Text>No contracts available. (Segmented style)</Text>}
+            </Box>
+          </Box>
+        );
     }
   };
 
@@ -317,6 +345,13 @@ export default function DocumentsPage() {
               onClick={() => setTabStyle('card')}
             >
               Card
+            </Button>
+            <Button 
+              size="sm" 
+              colorScheme={tabStyle === 'segmented' ? 'brand' : 'gray'} 
+              onClick={() => setTabStyle('segmented')}
+            >
+              Segmented
             </Button>
           </HStack>
         </CardBody>
