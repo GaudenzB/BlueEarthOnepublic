@@ -239,29 +239,107 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
           throw error;
         }
       } catch (error: any) {
-        logger.error('Error in document upload', { error });
+        logger.error('Error in document upload transaction', { 
+          error: error.message,
+          stack: error.stack,
+          code: error.code
+        });
         
-        // More detailed error message in development
+        // Handle specific error types
+        if (error.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({
+            success: false,
+            message: 'File is too large. Maximum size is 20MB.',
+            error: 'FILE_TOO_LARGE'
+          });
+        } else if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+          return res.status(400).json({
+            success: false,
+            message: 'Unexpected file field. Use "file" as the form field name.',
+            error: 'INVALID_FORM_FIELD'
+          });
+        } else if (error.code === 'EACCES' || error.code === 'EPERM') {
+          // File system permission errors
+          return res.status(500).json({
+            success: false,
+            message: 'Server permission error occurred while saving the file.',
+            error: 'PERMISSION_ERROR'
+          });
+        } else if (error.message && error.message.includes('storage credentials')) {
+          // Storage provider authentication errors
+          return res.status(500).json({
+            success: false,
+            message: 'Document storage service unavailable. Please try again later or contact support.',
+            error: 'STORAGE_UNAVAILABLE'
+          });
+        } else if (error.message && error.message.includes('Missing required columns')) {
+          // Schema/validation errors
+          return res.status(400).json({
+            success: false,
+            message: error.message,
+            error: 'SCHEMA_VALIDATION_ERROR'
+          });
+        }
+        
+        // Generic error with different detail level based on environment
         const message = process.env.NODE_ENV === 'production'
-          ? 'Server error during document upload'
-          : `Upload error: ${error.message}`;
+          ? 'Server error during document upload. Please try again later.'
+          : `Upload error: ${error.message || 'Unknown error'}`;
           
-        res.status(500).json({
+        return res.status(500).json({
           success: false,
-          message
+          message,
+          error: 'UNKNOWN_ERROR'
         });
       }
     } catch (error) {
-      logger.error('Error in document upload middleware', { error });
+      // Handle middleware-level errors (multer, etc.)
+      logger.error('Error in document upload middleware', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        code: error instanceof Error ? (error as any).code : undefined
+      });
       
-      // More detailed error message in development
+      // Specific middleware error handling
+      if (error instanceof Error) {
+        const multerError = error as any;
+        
+        if (multerError.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({
+            success: false,
+            message: 'File is too large. Maximum size is 20MB.',
+            error: 'FILE_TOO_LARGE'
+          });
+        } else if (multerError.code === 'LIMIT_UNEXPECTED_FILE') {
+          return res.status(400).json({
+            success: false,
+            message: 'Unexpected file field. Use "file" as the form field name.',
+            error: 'INVALID_FORM_FIELD'
+          });
+        } else if (multerError.code === 'LIMIT_FILE_COUNT') {
+          return res.status(400).json({
+            success: false,
+            message: 'Too many files uploaded. Please upload one file at a time.',
+            error: 'TOO_MANY_FILES'
+          });
+        } else if (multerError.message && multerError.message.includes('File type not allowed')) {
+          return res.status(415).json({
+            success: false,
+            message: multerError.message,
+            error: 'UNSUPPORTED_FILE_TYPE'
+          });
+        }
+      }
+      
+      // Generic error with different detail level based on environment
       const message = process.env.NODE_ENV === 'production'
-        ? 'Server error during document upload'
+        ? 'Server error during document upload. Please try again later.'
         : `Upload error: ${error instanceof Error ? error.message : 'Unknown error'}`;
         
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        message
+        message,
+        error: 'MIDDLEWARE_ERROR'
       });
     }
   });

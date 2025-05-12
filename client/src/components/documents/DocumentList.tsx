@@ -54,11 +54,15 @@ interface DocumentListProps {
 
 export default function DocumentList({ documents, isLoading, filter = "all" }: DocumentListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<{id: string, title: string} | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
-  const handleDeleteClick = (documentId: string) => {
-    setDocumentToDelete(documentId);
+  const handleDeleteClick = (documentId: string, documentTitle: string) => {
+    setDocumentToDelete({
+      id: documentId,
+      title: documentTitle || 'Untitled Document'
+    });
     setDeleteDialogOpen(true);
   };
 
@@ -66,7 +70,9 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     if (!documentToDelete) return;
     
     try {
-      const response = await fetch(`/api/documents/${documentToDelete}`, {
+      setIsDeleting(true);
+      
+      const response = await fetch(`/api/documents/${documentToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +80,8 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       });
       
       if (!response.ok) {
-        throw new Error('Failed to delete document');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete document');
       }
       
       // Invalidate documents query to refresh the list
@@ -82,17 +89,18 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       
       toast({
         title: "Document deleted",
-        description: "The document has been successfully deleted",
+        description: `"${documentToDelete.title}" has been successfully deleted`,
         variant: "default",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to delete the document. Please try again.",
+        title: "Error deleting document",
+        description: error.message || "Failed to delete the document. Please try again.",
         variant: "destructive",
       });
       console.error('Error deleting document:', error);
     } finally {
+      setIsDeleting(false);
       setDeleteDialogOpen(false);
       setDocumentToDelete(null);
     }
@@ -261,7 +269,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
                       <PermissionGuard area="documents" permission="delete">
                         <DropdownMenuItem 
                           className="text-destructive"
-                          onClick={() => handleDeleteClick(document.id)}
+                          onClick={() => handleDeleteClick(document.id, document.title || document.originalFilename)}
                         >
                           <Trash2Icon className="h-4 w-4 mr-2" />
                           Delete
@@ -280,14 +288,28 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Document Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this document? This action cannot be undone.
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Are you sure you want to delete the following document?
+              </p>
+              {documentToDelete && (
+                <p className="font-medium text-foreground">
+                  "{documentToDelete.title}"
+                </p>
+              )}
+              <p className="text-destructive">
+                This action cannot be undone and all associated data will be permanently removed.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Document"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
