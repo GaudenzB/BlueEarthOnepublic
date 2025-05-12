@@ -60,14 +60,31 @@ export function EmployeeDirectory() {
   }
   
   // Query to fetch employees with cache-busting timestamp to prevent 304 responses
-  const { data: apiResponse, isLoading, isError, refetch } = useQuery<ApiResponse>({
+  const { data: apiResponse, isLoading, isError, refetch } = useQuery<Employee[] | ApiResponse>({
     queryKey: ["/api/employees", { _t: Date.now() }], // Add timestamp as query param to bust cache
     staleTime: 0, // Consider data immediately stale
     gcTime: 0, // Don't keep this query in cache (gcTime replaces cacheTime in React Query v5)
   })
   
   // Extract employees from the response data structure
-  const employees = apiResponse?.data || []
+  // Handle both response formats: either direct array or wrapped in ApiResponse
+  let employees: Employee[] = [];
+  
+  if (apiResponse) {
+    console.log("API response received:", apiResponse);
+    
+    if (Array.isArray(apiResponse)) {
+      // If the response is an array, use it directly
+      employees = apiResponse;
+      console.log("Direct array response, employees count:", employees.length);
+    } else if (apiResponse.data) {
+      // If the response is an object with data property, use that
+      employees = apiResponse.data;
+      console.log("Object response with data property, employees count:", employees.length);
+    } else {
+      console.error("Unexpected response format:", apiResponse);
+    }
+  }
   
   // Force refetch data on component mount
   useEffect(() => {
