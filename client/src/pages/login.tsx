@@ -43,9 +43,10 @@ export default function Login() {
       // Don't navigate here - let the useEffect handle redirect
       // to avoid component unmounting during state updates
     } catch (error) {
+      console.error("Login error:", error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to login",
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : "Authentication failed. Please check your credentials and try again.",
         variant: "destructive",
       });
     }

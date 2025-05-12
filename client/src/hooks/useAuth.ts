@@ -24,17 +24,29 @@ interface ApiSuccessResponse<T> {
   data: T;
 }
 
-interface AuthResponse extends ApiSuccessResponse<{
-  user: User;
-  token: string;
-}> {}
+// Updated interface to match the actual server response structure
+interface AuthResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
+}
 
 export function useAuth() {
   // Check if there's a token in localStorage
   const token = localStorage.getItem("token");
   
+  // Define interface for me endpoint response
+  interface MeResponse {
+    success: boolean;
+    message: string;
+    data: User;
+  }
+
   // Query to fetch the current user, but only if we have a token
-  const { data, isLoading, error, refetch } = useQuery<ApiSuccessResponse<User> | null>({
+  const { data, isLoading, error, refetch } = useQuery<MeResponse | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -45,7 +57,6 @@ export function useAuth() {
   });
   
   // Extract the user from the standardized API response
-  // Ensure we're correctly handling the API response structure
   const user = data?.data || null;
 
   // Handle auth errors
@@ -70,12 +81,16 @@ export function useAuth() {
         body: JSON.stringify(credentials),
       });
       
-      // Handle different response structures - the API returns standardized format
-      const token = response.data?.token;
-      const user = response.data?.user;
+      // Check for valid response
+      if (!response || !response.success || !response.data) {
+        throw new Error("Invalid response from server");
+      }
+      
+      // Access token and user from the correct response structure
+      const { token, user } = response.data;
       
       if (!token || !user) {
-        throw new Error("Invalid response format from server");
+        throw new Error("Missing token or user data in server response");
       }
       
       // Store token in local storage
