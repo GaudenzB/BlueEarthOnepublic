@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { storage } from '../../../server/storage';
 import { logger } from '../../../server/utils/logger';
 import { departmentEnum, employeeStatusEnum, insertEmployeeSchema } from '../../../core/src/schemas/employee';
-import { sendSuccess, sendError } from '../../../server/utils/apiResponse';
+import { sendSuccess, sendError, sendValidationError } from '../../../server/utils/apiResponse';
 
 /**
  * Get all employees
@@ -148,14 +148,31 @@ export async function createEmployee(req: Request, res: Response) {
  */
 export async function updateEmployee(req: Request, res: Response) {
   try {
-    const id = req.params.id ? parseInt(req.params.id) : 0;
+    const idParam = req.params.id;
+    if (!idParam) {
+      return sendError(res, "Employee ID is required", 400);
+    }
+    
+    // Parse as integer and validate
+    const id = parseInt(idParam, 10);
+    if (isNaN(id) || id <= 0) {
+      return sendError(res, "Invalid employee ID format", 400);
+    }
     
     // Create a partial schema based on the insertEmployeeSchema 
     // to validate update operations for complete type safety
     const updateEmployeeSchema = insertEmployeeSchema.partial();
     
-    // Validate request
-    const validatedData = await updateEmployeeSchema.parseAsync(req.body);
+    // Validate request body
+    let validatedData;
+    try {
+      validatedData = await updateEmployeeSchema.parseAsync(req.body);
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return sendValidationError(res, validationError);
+      }
+      throw validationError;
+    }
     
     // Log the update operation
     logger.debug('Updating employee', {
@@ -171,7 +188,10 @@ export async function updateEmployee(req: Request, res: Response) {
     
     return sendSuccess(res, employee, "Employee updated successfully");
   } catch (error) {
-    logger.error({ employeeId: req.params.id, error }, "Error updating employee");
+    logger.error({ 
+      employeeId: req.params.id, 
+      error: error instanceof Error ? error.message : String(error) 
+    }, "Error updating employee");
     return sendError(res, "Failed to update employee", 500);
   }
 }
@@ -181,17 +201,40 @@ export async function updateEmployee(req: Request, res: Response) {
  */
 export async function deleteEmployee(req: Request, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const idParam = req.params.id;
+    if (!idParam) {
+      return sendError(res, "Employee ID is required", 400);
+    }
+    
+    // Parse as integer and validate
+    const id = parseInt(idParam, 10);
+    if (isNaN(id) || id <= 0) {
+      return sendError(res, "Invalid employee ID format", 400);
+    }
+    
+    // Log the delete operation attempt
+    logger.warn({
+      employeeId: id,
+      requestedBy: req.user?.id || 'unknown'
+    }, `Attempting to delete employee with ID ${id}`);
+    
     const success = await storage.deleteEmployee(id);
     
     if (!success) {
       return sendError(res, "Employee not found", 404);
     }
     
-    logger.info({ employeeId: id, deletedBy: req.user!.id }, "Employee deleted");
+    logger.info({ 
+      employeeId: id, 
+      deletedBy: req.user?.id || 'unknown'
+    }, "Employee deleted");
+    
     return sendSuccess(res, null, "Employee deleted successfully");
   } catch (error) {
-    logger.error({ employeeId: req.params.id, error }, "Error deleting employee");
+    logger.error({ 
+      employeeId: req.params.id, 
+      error: error instanceof Error ? error.message : String(error)
+    }, "Error deleting employee");
     return sendError(res, "Failed to delete employee", 500);
   }
 }
