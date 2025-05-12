@@ -76,29 +76,57 @@ export function useAuth() {
   // Login mutation
   const login = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await apiRequest<AuthResponse>("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify(credentials),
-      });
-      
-      // Check for valid response
-      if (!response || !response.success || !response.data) {
-        throw new Error("Invalid response from server");
+      try {
+        // Log the request for debugging
+        console.log("Sending login request:", { username: credentials.username });
+        
+        const response = await apiRequest<any>("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify(credentials),
+        });
+        
+        // Log entire response for debugging
+        console.log("Login response received:", response);
+        
+        // Verify response structure
+        if (!response) {
+          throw new Error("No response received from server");
+        }
+        
+        if (!response.success) {
+          throw new Error(response.message || "Server returned unsuccessful response");
+        }
+        
+        if (!response.data) {
+          throw new Error("Response missing data property");
+        }
+        
+        // Extract token and user from the correct response structure
+        const { token, user } = response.data;
+        
+        // Log token and user for debugging
+        console.log("Token received:", !!token);
+        console.log("User data received:", !!user);
+        
+        if (!token) {
+          throw new Error("Token missing from server response");
+        }
+        
+        if (!user) {
+          throw new Error("User data missing from server response");
+        }
+        
+        // Store token in local storage
+        localStorage.setItem("token", token);
+        
+        return user;
+      } catch (error) {
+        console.error("Login mutation error:", error);
+        throw error;
       }
-      
-      // Access token and user from the correct response structure
-      const { token, user } = response.data;
-      
-      if (!token || !user) {
-        throw new Error("Missing token or user data in server response");
-      }
-      
-      // Store token in local storage
-      localStorage.setItem("token", token);
-      
-      return user;
     },
     onSuccess: (userData) => {
+      console.log("Login successful, setting user data");
       setUser(userData);
     },
   });

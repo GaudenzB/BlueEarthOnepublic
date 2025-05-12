@@ -54,7 +54,12 @@ export async function apiRequest<T = any>(
         throw new Error(`Unsupported HTTP method: ${method}`);
     }
     
-    // Return data property of ApiResponse if it exists, otherwise return entire response
+    // For auth endpoints, return the full response object with success, message, and data
+    if (url.includes('/api/auth/')) {
+      return response as unknown as T;
+    }
+    
+    // For other endpoints, return the data property of ApiResponse if it exists
     return response.data !== undefined ? response.data : (response as unknown as T);
   } catch (error) {
     // Log error in development
