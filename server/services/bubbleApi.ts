@@ -1,6 +1,7 @@
 import fetch, { RequestInit, Response as NodeFetchResponse } from 'node-fetch';
 import { InsertEmployee, employeeStatusEnum, type EmployeeStatus } from '@shared/schema';
 import { logger } from '../utils/logger';
+import config from '../utils/config';
 
 /**
  * Bubble.io API Integration
@@ -9,16 +10,15 @@ import { logger } from '../utils/logger';
  * It includes retry logic with exponential backoff for handling network issues.
  */
 
-// Configuration constants
-const BUBBLE_API_KEY = process.env.BUBBLE_API_KEY;
-const BUBBLE_API_URL = 'https://blueearth.team/version-test/api/1.1/obj';
+// Get configuration from centralized config
+const { apiKey: BUBBLE_API_KEY, apiUrl: BUBBLE_API_URL } = config.integrations.bubble;
 const BUBBLE_DATA_TYPE = 'Employees';
 
 // Retry configuration
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
 const MAX_RETRY_DELAY = 30000; // 30 seconds
-const REQUEST_TIMEOUT = 10000; // 10 seconds
+const REQUEST_TIMEOUT = config.timeouts.default; // Default request timeout from config
 
 if (!BUBBLE_API_KEY) {
   logger.warn('BUBBLE_API_KEY not set. Bubble.io integration will not function.');

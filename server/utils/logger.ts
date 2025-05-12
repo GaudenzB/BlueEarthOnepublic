@@ -3,7 +3,7 @@ import config from './config';
 
 // Configure log levels and transport options
 const loggerOptions = {
-  level: config.logLevel,
+  level: config.logging.level,
   name: 'blueearth-portal',
   timestamp: pino.stdTimeFunctions.isoTime,
   formatters: {
@@ -13,10 +13,10 @@ const loggerOptions = {
   },
   base: {
     app: 'blueearth-portal',
-    env: config.nodeEnv,
+    env: config.env.current,
   },
   // Only use pretty printing in development
-  transport: config.logPrettyPrint
+  transport: config.logging.prettyPrint
     ? {
         target: 'pino-pretty',
         options: {
@@ -40,7 +40,7 @@ export const logFormats = {
     const errorObj: Record<string, any> = {
       message: error.message || 'Unknown error',
       name: error.name || 'Error',
-      stack: config.isDevelopment ? error.stack : undefined,
+      stack: config.env.isDevelopment ? error.stack : undefined,
     };
     
     // Include additional error properties if available
@@ -68,7 +68,7 @@ export const logFormats = {
       query: req.query,
       params: req.params,
       ip: req.ip,
-      headers: config.isDevelopment
+      headers: config.env.isDevelopment
         ? req.headers
         : {
             'user-agent': req.headers['user-agent'],
@@ -85,7 +85,7 @@ export const logFormats = {
     return {
       statusCode: res.statusCode,
       duration: res.responseTime,
-      headers: config.isDevelopment
+      headers: config.env.isDevelopment
         ? res.getHeaders()
         : {
             'content-type': res.getHeader('content-type'),

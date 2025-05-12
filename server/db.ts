@@ -2,32 +2,35 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
+import config from './utils/config';
+import { logger } from './utils/logger';
 
 // Configure Neon to use WebSockets
 neonConfig.webSocketConstructor = ws;
 
+// Get database configuration from centralized config
+const { connectionString, poolSize, idleTimeout, connectionTimeoutMs } = config.database;
+
 // Validate required environment variables
-if (!process.env.DATABASE_URL) {
+if (!connectionString) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
 
-// Optimize pool configuration based on environment
-const isProduction = process.env.NODE_ENV === 'production';
-
 // Configure connection pool with optimized settings
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: isProduction ? 20 : 10,     // Maximum number of clients the pool should contain
-  idleTimeoutMillis: 30000,        // How long a client is allowed to remain idle before being closed
-  connectionTimeoutMillis: 5000,   // How long to wait before timing out when connecting a new client
-  maxUses: 7500,                   // Close and replace a connection after it has been used this many times
+  connectionString,
+  max: poolSize,                     // Maximum number of clients the pool should contain
+  idleTimeoutMillis: idleTimeout,    // How long a client is allowed to remain idle before being closed
+  connectionTimeoutMillis: connectionTimeoutMs, // How long to wait before timing out when connecting a new client
+  maxUses: 7500,                     // Close and replace a connection after it has been used this many times
+  statement_timeout: config.database.statementTimeout, // Timeout for individual queries
 });
 
 // Add event listeners for connection issues
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle database client', err);
+  logger.error('Unexpected error on idle database client', { error: err.message });
   // In production, this could trigger monitoring or restart mechanisms
 });
 
@@ -41,12 +44,15 @@ export async function checkDatabaseConnection(): Promise<boolean> {
     const client = await pool.connect();
     try {
       await client.query('SELECT 1');
+      logger.info('Database connection check successful');
       return true;
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Database connection check failed:', error);
+    logger.error('Database connection check failed', { 
+      error: error instanceof Error ? error.message : String(error)
+    });
     return false;
   }
 }

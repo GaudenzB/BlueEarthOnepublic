@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { logger } from '../utils/logger';
+import config from '../utils/config';
 
 /**
  * Middleware to secure Express applications
@@ -9,80 +10,44 @@ import { logger } from '../utils/logger';
  * - HTTP security headers via Helmet
  */
 export function setupSecurityMiddleware(app: express.Application): void {
-  // Configure CORS settings
+  // Configure CORS settings from centralized config
   const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-      ? [/\.blueearth\.capital$/, /\.replit\.app$/] // Allow only specific domains in production
-      : '*', // Allow all origins in development
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    maxAge: 86400 // 24 hours
+    origin: config.cors.origin,
+    methods: config.cors.methods,
+    allowedHeaders: config.cors.allowedHeaders,
+    maxAge: config.cors.maxAge
   };
   app.use(cors(corsOptions));
   
   // Set up Helmet for HTTP security headers
   app.use(helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production',
+    contentSecurityPolicy: config.security.contentSecurityPolicy,
     crossOriginEmbedderPolicy: false, 
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     hidePoweredBy: true,
-    hsts: process.env.NODE_ENV === 'production' ? {
-      maxAge: 15552000, // 180 days
-      includeSubDomains: true,
-      preload: true
-    } : false,
+    hsts: config.security.hsts,
     noSniff: true,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     xssFilter: true
   }));
   
-  // Validate required environment variables
-  app.use(validateRequiredEnvVars);
+  // Configure trust proxy settings for production environments behind load balancers
+  if (config.server.trustProxy) {
+    app.set('trust proxy', 1);
+  }
+  
+  // Set body size limits to prevent DoS attacks
+  app.use(express.json({ limit: config.server.bodyLimit }));
+  app.use(express.urlencoded({ extended: false, limit: config.server.bodyLimit }));
   
   // Add a health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      environment: config.env.current
+    });
   });
-}
-
-/**
- * Environment Variables Validation
- * Ensures required environment variables are set before the application starts
- */
-function validateRequiredEnvVars(req: Request, res: Response, next: NextFunction): void {
-  // Only check on the first request (excluding health checks)
-  if (req.path !== '/api/health' && !(req as any).app.locals.envValidated) {
-    const requiredVars = [
-      'DATABASE_URL',
-      'JWT_SECRET',
-      'SESSION_SECRET'
-    ];
-    
-    const missingVars = requiredVars.filter(varName => !process.env[varName]);
-    
-    if (missingVars.length > 0) {
-      const errorMessage = `Missing required environment variables: ${missingVars.join(', ')}`;
-      logger.error(errorMessage);
-      
-      // In production, fail hard
-      if (process.env.NODE_ENV === 'production') {
-        res.status(500).json({ 
-          success: false, 
-          message: 'Server configuration error', 
-          errors: { errorCode: 'ENV_VARS_MISSING' } 
-        });
-        return;
-      }
-      
-      // In development, just log a warning
-      logger.warn('Continuing in development mode despite missing environment variables');
-    }
-    
-    // Mark as validated to avoid checking on every request
-    (req as any).app.locals.envValidated = true;
-  }
-  
-  next();
 }
 
 /**
