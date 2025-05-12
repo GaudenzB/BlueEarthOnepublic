@@ -39,6 +39,7 @@ export const permissionAreaEnum = z.enum([
   "it",
   "legal",
   "operations",
+  "documents",
 ]);
 
 export type PermissionArea = z.infer<typeof permissionAreaEnum>;

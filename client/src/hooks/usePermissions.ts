@@ -13,7 +13,7 @@ interface Permission {
 }
 
 interface AddPermissionData {
-  area: 'finance' | 'hr' | 'it' | 'legal' | 'operations';
+  area: 'finance' | 'hr' | 'it' | 'legal' | 'operations' | 'documents';
   canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
