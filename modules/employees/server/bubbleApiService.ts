@@ -12,7 +12,8 @@ import { logger } from '../../../server/utils/logger';
 
 // Get configuration from centralized config - using a fallback for now until proper config access
 const BUBBLE_API_KEY = process.env["BUBBLE_API_KEY"];
-const BUBBLE_API_URL = process.env["BUBBLE_API_URL"] || 'https://api.bubble.io/version-test/api/1.1/obj';
+// Updated URL to use bubble.io directly instead of api.bubble.io subdomain
+const BUBBLE_API_URL = process.env["BUBBLE_API_URL"] || 'https://bubble.io/api/1.1/obj';
 const BUBBLE_DATA_TYPE = 'Employees';
 
 // Retry configuration
