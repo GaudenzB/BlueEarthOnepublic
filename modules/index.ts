@@ -21,44 +21,51 @@ interface ModuleManager {
  */
 export async function initializeModules(app: any): Promise<ModuleManager> {
   const modules: ModuleInfo[] = [];
-  const modulePromises: Promise<void>[] = [];
   
-  // Import and set up employee module dynamically
-  const employeeModulePromise = import('./employees/server')
-    .then(({ setupEmployeeModule }) => {
-      try {
-        const employeeModule = setupEmployeeModule(app);
-        modules.push({ name: 'employees', module: employeeModule });
-        console.log(`Initialized module: employees`);
-      } catch (error) {
-        console.error('Error setting up employee module:', error);
+  // Define a helper function to load and initialize a module
+  async function loadModule(moduleName: string, importPath: string): Promise<ModuleInfo | null> {
+    try {
+      // Dynamically import the module
+      const moduleExports = await import(importPath);
+      
+      // Get the setup function based on the module name
+      const setupFunctionName = `setup${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Module`;
+      const setupFunction = moduleExports[setupFunctionName];
+      
+      if (typeof setupFunction !== 'function') {
+        console.error(`Setup function ${setupFunctionName} not found in module ${moduleName}`);
+        return null;
       }
-    })
-    .catch(error => {
-      console.error('Error importing employee module:', error);
-    });
+      
+      // Initialize the module
+      const moduleInstance = await setupFunction(app);
+      console.log(`Initialized module: ${moduleName}`);
+      
+      return { 
+        name: moduleName, 
+        module: moduleInstance 
+      };
+    } catch (error) {
+      console.error(`Error initializing module ${moduleName}:`, error);
+      return null;
+    }
+  }
   
-  modulePromises.push(employeeModulePromise);
+  // Define all modules to be initialized
+  const moduleDefinitions = [
+    { name: 'employees', path: './employees/server' },
+    // Add more modules here as they are developed
+    // { name: 'documents', path: './documents/server' },
+  ];
   
-  // Add more modules here as they are developed
-  // For example:
-  // const documentsModulePromise = import('./documents/server')
-  //   .then(({ setupDocumentsModule }) => {
-  //     try {
-  //       const documentsModule = setupDocumentsModule(app);
-  //       modules.push({ name: 'documents', module: documentsModule });
-  //       console.log(`Initialized module: documents`);
-  //     } catch (error) {
-  //       console.error('Error setting up documents module:', error);
-  //     }
-  //   })
-  //   .catch(error => {
-  //     console.error('Error importing documents module:', error);
-  //   });
-  // modulePromises.push(documentsModulePromise);
+  // Load all modules in parallel
+  const loadedModules = await Promise.all(
+    moduleDefinitions.map(def => loadModule(def.name, def.path))
+  );
   
-  // Wait for all modules to initialize
-  await Promise.all(modulePromises);
+  // Filter out any modules that failed to load
+  const validModules = loadedModules.filter((mod): mod is ModuleInfo => mod !== null);
+  modules.push(...validModules);
   
   console.log(`Initialized ${modules.length} modules: ${modules.map(m => m.name).join(', ')}`);
   
