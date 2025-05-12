@@ -95,6 +95,17 @@ export async function getAllEmployees(req: Request, res: Response) {
       employees = await storage.getAllEmployees();
     }
     
+    // Debugging - log employee count
+    logger.debug({
+      employeeCount: employees?.length || 0,
+      isArray: Array.isArray(employees),
+      sampleEmployee: employees && employees.length > 0 ? { 
+        id: employees[0].id,
+        name: employees[0].name,
+        department: employees[0].department
+      } : null
+    }, 'Employee data retrieved');
+    
     return sendSuccess(res, employees, "Employees retrieved successfully");
   } catch (error) {
     logger.error({ error }, "Failed to get employees");
