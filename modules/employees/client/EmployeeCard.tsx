@@ -31,7 +31,7 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
     : (firstName.substring(0, 2) || 'N/A');
   
   const statusKey = employee.status?.toUpperCase() || 'INACTIVE';
-  const statusConfig = statusColors[statusKey] || statusColors.INACTIVE;
+  const statusConfig = statusColors[statusKey] || statusColors['INACTIVE'];
   const formattedStatus = statusKey.replace('_', ' ');
   
   return (

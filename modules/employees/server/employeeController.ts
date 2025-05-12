@@ -44,9 +44,9 @@ export async function getAllEmployees(req: Request, res: Response) {
     }
     
     // Get sanitized parameters
-    const search = req.query.search as string;
-    const department = req.query.department as string;
-    const status = req.query.status as string;
+    const search = req.query['search'] as string;
+    const department = req.query['department'] as string;
+    const status = req.query['status'] as string;
     
     let employees;
     
@@ -72,14 +72,14 @@ export async function getAllEmployees(req: Request, res: Response) {
  */
 export async function getEmployeeById(req: Request, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params['id']);
     
     // Log detailed request information
     logger.info({
       employeeId: id,
       requestId: req.headers['x-request-id'] || 'none',
-      authHeader: !!req.headers.authorization,
-      userId: req.user?.id || 'not-authenticated'
+      authHeader: !!req.headers['authorization'],
+      userId: req.user?.['id'] || 'not-authenticated'
     }, `Employee detail request received for ID ${id}`);
     
     // Disable response caching for this endpoint
@@ -140,7 +140,7 @@ export async function createEmployee(req: Request, res: Response) {
  */
 export async function updateEmployee(req: Request, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params['id']);
     
     // Create a partial schema based on the insertEmployeeSchema 
     // to validate update operations for complete type safety
