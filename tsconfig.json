@@ -45,6 +45,9 @@
     "noUncheckedIndexedAccess": true,          // Add 'undefined' to a type when accessed using an index
     "noImplicitOverride": true,                // Ensure overriding members in derived classes are marked with an override modifier
     "noPropertyAccessFromIndexSignature": true, // Require the use of the keyof operator for property access from index signatures
+    "exactOptionalPropertyTypes": true,        // Disable the 'undefined' from being a valid value for an optional property
+    "allowUnreachableCode": false,             // Report error for unreachable code
+    "allowUnusedLabels": false,                // Report error for unused labels
     
     // Module Resolution & Integration
     "forceConsistentCasingInFileNames": true,  // Disallow inconsistently-cased references to the same file

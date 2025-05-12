@@ -144,6 +144,33 @@ module.exports = {
     '@typescript-eslint/prefer-nullish-coalescing': 'error',
     '@typescript-eslint/array-type': ['error', { default: 'array' }],
     '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+    '@typescript-eslint/consistent-indexed-object-style': ['error', 'record'],
+    '@typescript-eslint/consistent-generic-constructors': ['error', 'type-annotation'],
+    '@typescript-eslint/naming-convention': [
+      'warn',
+      {
+        selector: 'interface',
+        format: ['PascalCase'],
+        custom: {
+          regex: '^I[A-Z]',
+          match: false
+        }
+      },
+      {
+        selector: 'enum',
+        format: ['PascalCase']
+      },
+      {
+        selector: 'typeAlias',
+        format: ['PascalCase']
+      },
+      {
+        selector: 'typeParameter',
+        format: ['PascalCase']
+      }
+    ],
+    '@typescript-eslint/prefer-for-of': 'error',
+    '@typescript-eslint/prefer-function-type': 'error',
     '@typescript-eslint/restrict-template-expressions': 'off', // Allow any type in template literals
     '@typescript-eslint/no-unsafe-assignment': 'off', // Causes too many issues with external libraries
     '@typescript-eslint/no-unsafe-member-access': 'off', // Causes too many issues with external libraries
@@ -161,6 +188,19 @@ module.exports = {
     'react/jsx-boolean-value': ['error', 'never'],
     'react/display-name': 'off',
     'react/self-closing-comp': ['error', { component: true, html: true }],
+    'react/jsx-key': ['error', { checkFragmentShorthand: true }],
+    'react/jsx-no-duplicate-props': 'error',
+    'react/jsx-no-useless-fragment': 'warn',
+    'react/jsx-sort-props': ['warn', {
+      callbacksLast: true,
+      shorthandFirst: true,
+      ignoreCase: true,
+      reservedFirst: true,
+    }],
+    'react/function-component-definition': ['warn', {
+      namedComponents: 'function-declaration',
+      unnamedComponents: 'arrow-function'
+    }],
   },
   ignorePatterns: [
     'dist', 
