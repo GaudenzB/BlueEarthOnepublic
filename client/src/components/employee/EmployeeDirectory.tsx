@@ -10,13 +10,47 @@ import { type Employee } from "@shared/schema"
 import { ROUTES } from "@/lib/routes"
 
 export function EmployeeDirectory() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [department, setDepartment] = useState("")
-  const [activeOnly, setActiveOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<"name" | "department" | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-  const [currentPage, setCurrentPage] = useState(1)
+  const [location, setLocation] = useLocation();
+  
+  // Parse existing query params from URL
+  const getQueryParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      search: params.get('search') || '',
+      department: params.get('department') || '',
+      active: params.get('active') === 'true',
+      sortBy: (params.get('sortBy') as "name" | "department" | null) || null,
+      sortDirection: (params.get('sortDirection') as "asc" | "desc") || "asc",
+      page: parseInt(params.get('page') || '1'),
+    };
+  };
+  
+  // Initialize state from URL query params
+  const queryParams = getQueryParams();
+  const [searchTerm, setSearchTerm] = useState(queryParams.search)
+  const [department, setDepartment] = useState(queryParams.department)
+  const [activeOnly, setActiveOnly] = useState(queryParams.active)
+  const [sortBy, setSortBy] = useState<"name" | "department" | null>(queryParams.sortBy)
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">(queryParams.sortDirection)
+  const [currentPage, setCurrentPage] = useState(queryParams.page)
   const itemsPerPage = 8
+  
+  // Update URL whenever filters change
+  const updateQueryParams = () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (department) params.set('department', department);
+    if (activeOnly) params.set('active', 'true');
+    if (sortBy) params.set('sortBy', sortBy);
+    if (sortDirection !== 'asc') params.set('sortDirection', sortDirection);
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    
+    const queryString = params.toString();
+    const newUrl = location + (queryString ? `?${queryString}` : '');
+    
+    // Update URL without causing full page reload
+    window.history.replaceState(null, '', newUrl);
+  };
 
   // Define the API response type
   interface ApiResponse {
@@ -36,26 +70,34 @@ export function EmployeeDirectory() {
   const handleSearch = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1)
+    setTimeout(updateQueryParams, 0) // Queue update to execute after state changes
   }
 
   const handleDepartmentFilter = (value: string) => {
     setDepartment(value)
     setCurrentPage(1)
+    setTimeout(updateQueryParams, 0)
   }
 
   const handleStatusFilter = () => {
     setActiveOnly(!activeOnly)
     setCurrentPage(1)
+    setTimeout(updateQueryParams, 0)
   }
 
   const handleSortBy = (sortType: "name" | "department") => {
     if (sortType === sortBy) {
       // If already sorting by this field, toggle direction
-      setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc")
+      setSortDirection(prevDirection => {
+        const newDirection = prevDirection === "asc" ? "desc" : "asc";
+        setTimeout(updateQueryParams, 0)
+        return newDirection;
+      })
     } else {
       // If sorting by a new field, set it and default to ascending
       setSortBy(sortType)
       setSortDirection("asc")
+      setTimeout(updateQueryParams, 0)
     }
     setCurrentPage(1)
   }
@@ -111,17 +153,31 @@ export function EmployeeDirectory() {
   )
 
   const handlePreviousPage = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1))
+    setCurrentPage(prev => {
+      const newPage = Math.max(prev - 1, 1);
+      setTimeout(() => updateQueryParams(), 0);
+      return newPage;
+    })
   }
 
   const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages))
+    setCurrentPage(prev => {
+      const newPage = Math.min(prev + 1, totalPages);
+      setTimeout(() => updateQueryParams(), 0);
+      return newPage;
+    })
   }
 
   // Reset to page 1 when filters change significantly
   useEffect(() => {
     setCurrentPage(1)
+    setTimeout(updateQueryParams, 0)
   }, [searchTerm, department, activeOnly, sortBy])
+  
+  // Sync URL params to state when the component mounts or location changes
+  useEffect(() => {
+    updateQueryParams()
+  }, [location, searchTerm, department, activeOnly, sortBy, sortDirection, currentPage])
 
   // Loading skeleton
   if (isLoading) {
