@@ -51,7 +51,7 @@ export const tenantContext = async (req: Request, res: Response, next: NextFunct
     }
 
     // If tenant is not active, deny access
-    if (!tenant.active) {
+    if (!tenant.isActive) {
       logger.warn('Attempted access to inactive tenant', { tenantId, tenant: tenant.name });
       return res.status(403).json({ 
         success: false, 
