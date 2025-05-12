@@ -1,0 +1,62 @@
+Here’s a deep-dive on the remaining gotchas in your document-upload flow, plus a few polish-and-hardening tweaks for the rest of the module.
+
+1. Multer + field-name alignment
+
+Ensure you’re actually hitting the right multer instance
+In your upload middleware you export three different multer configs:
+export const singleFileUpload = multer({ … }).single('file');
+export const documentUpload    = (fieldName='document') => multer({ … }).single(fieldName);
+export const contractUpload    = multer({ … }).single('contract');
+Your document route is using singleFileUpload(req,res,…), which expects the form field file.
+But your front-end is doing:
+formData.append("file", data.file);
+So that aligns.
+Double-check you didn’t accidentally switch to documentUpload() or contractUpload in your newest code. If you ever call
+documentUpload()  // defaults to .single('document')
+you’ll end up never seeing req.file because your client is still posting under "file".
+Add a quick sanity log at the top of your multer callback to verify:
+singleFileUpload(req, res, async (err) => {
+  console.log('→ multer err:', err, '   req.file:', req.file, '   req.body:', req.body);
+  …
+});
+That will immediately tell you:
+
+whether multer ever saw a file
+whether the fileFilter is rejecting your MIME type
+whether your FormData is arriving intact
+2. Zod schema vs. actual req.body
+
+You’re already JSON-parsing the tags, isConfidential and customMetadata strings before calling:
+
+const validationResult = uploadDocumentSchema.safeParse(req.body);
+A couple of gotchas to watch for:
+
+Unparsed fields: if you ever add another JSON field (e.g. retentionDate or a future metadata object), you must JSON.parse it the same way—otherwise Zod will reject it.
+Error feedback: right now you return
+return res.status(400).json({
+  success: false,
+  message: 'Invalid document data',
+  errors: validationResult.error.errors
+});
+but on the client you only read error.message. To surface field-level feedback, pull error.errors out of the JSON and show each message under the appropriate form field.
+3. Database insert shape
+
+You’ve done well to only build your createPayload with defined values. A few final checks:
+
+Column coverage: compare your payload keys one-for-one against the Drizzle table definition. If you miss a required column or ever rename one in the schema, drizzle-orm will throw an insert error.
+Orphans & transactions: you already delete the blob on DB failure—nice. To tighten it further, you can wrap the entire S3 upload + DB insert in a transaction-style helper, ensuring you never commit half the work.
+4. Front-end form + React-Query
+
+Verify FormData contents
+In your onSubmit, before you call fetch, temporarily log:
+for (let [key, val] of formData.entries()) {
+  console.log(key, val);
+}
+Make sure exactly the fields your Zod schema expects are present.
+Show validation errors
+After if (!response.ok) you do:
+const errorData = await response.json();
+throw new Error(errorData.message || "Failed to upload");
+Consider including errorData.errors in your thrown payload so you can render field-level toasts.
+Refetch the list
+You call refetch() in your handleUploadSuccess—good. Just be sure that useQuery in your page is configured with the same key (['/api/documents']) and that your default getQueryFn will map .data into the array your list expects.

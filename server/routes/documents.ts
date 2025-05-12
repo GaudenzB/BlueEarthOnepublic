@@ -40,6 +40,16 @@ const getDocumentsSchema = z.object({
 router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
   singleFileUpload(req, res, async (err) => {
     try {
+      // Debug logging to help diagnose upload issues
+      logger.debug('→ multer upload debug:', {
+        error: err, 
+        hasFile: !!req.file, 
+        bodyKeys: Object.keys(req.body),
+        bodyValues: Object.fromEntries(
+          Object.entries(req.body).map(([k, v]) => [k, typeof v === 'string' ? `${v.substring(0, 30)}${v.length > 30 ? '...' : ''}` : typeof v])
+        )
+      });
+
       if (err) {
         logger.error('File upload error', { error: err });
         return res.status(400).json({
@@ -79,6 +89,30 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
         }
       }
       
+      // Additional parsing for any future JSON fields
+      if (typeof req.body.retentionDate === 'string' && req.body.retentionDate) {
+        // Ensure the date is in proper ISO format for validation
+        try {
+          const date = new Date(req.body.retentionDate);
+          req.body.retentionDate = date.toISOString();
+        } catch (e) {
+          logger.warn('Failed to parse retentionDate', { value: req.body.retentionDate });
+          // Let Zod validation handle the error
+        }
+      }
+      
+      // Log the pre-validation state of request body for debugging
+      logger.debug('Document upload pre-validation body:', {
+        body: {
+          ...req.body,
+          file: req.file ? {
+            filename: req.file.originalname,
+            size: req.file.size,
+            mimetype: req.file.mimetype
+          } : null
+        }
+      });
+      
       // Validate request body
       const validationResult = uploadDocumentSchema.safeParse(req.body);
       if (!validationResult.success) {
@@ -89,7 +123,8 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
         return res.status(400).json({
           success: false,
           message: 'Invalid document data',
-          errors: validationResult.error.errors
+          errors: validationResult.error.errors,
+          fieldErrors: validationResult.error.format() // Include formatted field errors for UI
         });
       }
 
@@ -109,60 +144,99 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
       );
 
       try {
-        // Upload file to storage
-        const uploadResult = await uploadFile(
-          file.buffer,
-          storageKey,
-          file.mimetype
-        );
-
-        // Build a payload object with only defined values
-        const createPayload: Record<string, any> = {
-          filename: sanitizedFilename,
-          originalFilename: file.originalname,
-          mimeType: file.mimetype,
-          fileSize: file.size.toString(),
-          storageKey: uploadResult.storageKey,
-          checksum: uploadResult.checksum,
-          title: documentData.title,
-          uploadedBy: userId,
-          tenantId,
-          deleted: false,
-          processingStatus: 'PENDING',
-        };
-
-        // Add optional fields only if they're defined
-        if (documentData.documentType) createPayload.documentType = documentData.documentType;
-        if (documentData.description) createPayload.description = documentData.description;
-        if (documentData.tags?.length > 0) createPayload.tags = documentData.tags;
-        if (documentData.isConfidential) createPayload.isConfidential = documentData.isConfidential;
-        if (documentData.customMetadata) createPayload.customMetadata = documentData.customMetadata;
-        // Note: retentionDate is not included since it's not in our schema yet
-
+        // Implement pseudo-transaction for storage + DB operations
+        // Step 1: Upload file to storage but don't commit it yet
+        let uploadResult;
+        let document;
+        let uploadSuccess = false;
+        let dbSuccess = false;
+        
         try {
-          // Create document record in database
-          const document = await documentRepository.create(createPayload);
+          // Upload file to storage
+          uploadResult = await uploadFile(
+            file.buffer,
+            storageKey,
+            file.mimetype
+          );
+          uploadSuccess = true;
+          logger.debug('File uploaded to storage successfully', { 
+            storageKey, 
+            checksum: uploadResult.checksum,
+            mimeType: file.mimetype
+          });
+          
+          // Build a payload object with only defined values
+          const createPayload: Record<string, any> = {
+            filename: sanitizedFilename,
+            originalFilename: file.originalname,
+            mimeType: file.mimetype,
+            fileSize: file.size.toString(),
+            storageKey: uploadResult.storageKey,
+            checksum: uploadResult.checksum,
+            title: documentData.title,
+            uploadedBy: userId,
+            tenantId,
+            deleted: false,
+            processingStatus: 'PENDING',
+          };
 
-          // Queue the document for AI processing
+          // Verify all required columns from schema are included
+          const requiredColumns = [
+            'filename', 'originalFilename', 'mimeType', 'fileSize', 
+            'storageKey', 'checksum', 'title', 'uploadedBy', 'tenantId'
+          ];
+          
+          const missingColumns = requiredColumns.filter(col => !(col in createPayload));
+          if (missingColumns.length > 0) {
+            throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+          }
+
+          // Add optional fields only if they're defined
+          if (documentData.documentType) createPayload.documentType = documentData.documentType;
+          if (documentData.description) createPayload.description = documentData.description;
+          if (documentData.tags?.length > 0) createPayload.tags = documentData.tags;
+          if (documentData.isConfidential !== undefined) createPayload.isConfidential = documentData.isConfidential;
+          if (documentData.customMetadata) createPayload.customMetadata = documentData.customMetadata;
+          if (documentData.retentionDate) createPayload.retentionDate = documentData.retentionDate;
+          
+          // Step 2: Create database record
+          document = await documentRepository.create(createPayload);
+          dbSuccess = true;
+          logger.debug('Document record created in database', { documentId: document.id });
+
+          // Step 3: Queue the document for AI processing if both operations succeeded
           // TODO: Implement AI processing queue
-
+          
+          // Return success response
           res.status(201).json({
             success: true,
             message: 'Document uploaded successfully',
             data: document
           });
-        } catch (dbError) {
-          // Clean up the uploaded file if database insert fails
-          try {
-            await deleteFile(storageKey);
-            logger.warn('Cleaned up orphaned file after DB insert failure', { storageKey });
-          } catch (cleanupError) {
-            logger.error('Failed to clean up orphaned file', { storageKey, cleanupError });
+        } catch (error) {
+          // Transaction error handling
+          logger.error('Error in document upload transaction', { 
+            error, 
+            uploadSuccess, 
+            dbSuccess, 
+            storageKey
+          });
+          
+          // Clean up orphaned resources if partial success
+          if (uploadSuccess && !dbSuccess) {
+            try {
+              await deleteFile(storageKey);
+              logger.info('Cleaned up orphaned file after DB insert failure', { storageKey });
+            } catch (cleanupError) {
+              logger.error('Failed to clean up orphaned file', { 
+                storageKey, 
+                error: cleanupError 
+              });
+            }
           }
-
-          // Log the database error
-          logger.error('Database error during document creation', { dbError });
-          throw dbError; // Re-throw to be caught by outer catch
+          
+          // Re-throw to be caught by outer error handler
+          throw error;
         }
       } catch (error: any) {
         logger.error('Error in document upload', { error });

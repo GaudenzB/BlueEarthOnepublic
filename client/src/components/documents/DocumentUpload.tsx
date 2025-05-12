@@ -141,11 +141,19 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       if (data.tags) {
         // Split tags by comma and trim whitespace
-        const tagsArray = data.tags.split(",").map(tag => tag.trim());
+        const tagsArray = data.tags.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0);
         formData.append("tags", JSON.stringify(tagsArray));
       }
       
       formData.append("isConfidential", String(data.isConfidential));
+      
+      // Debug log to verify FormData contents
+      if (process.env.NODE_ENV === 'development') {
+        console.log('FormData contents:');
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value}`);
+        }
+      }
       
       // Make API request
       const response = await fetch("/api/documents", {
@@ -156,8 +164,43 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Check for field-level validation errors
+        if (errorData.fieldErrors) {
+          // Set field errors in the form
+          const fieldErrors: Record<string, string> = {};
+          
+          // Extract the first error message for each field
+          Object.entries(errorData.fieldErrors).forEach(([field, error]: [string, any]) => {
+            if (error && error._errors && error._errors.length > 0) {
+              fieldErrors[field] = error._errors[0];
+            }
+          });
+          
+          // Set errors in the form
+          Object.entries(fieldErrors).forEach(([field, message]) => {
+            form.setError(field as any, { 
+              type: 'server', 
+              message 
+            });
+          });
+          
+          throw new Error(errorData.message || "Please fix the validation errors");
+        }
+        
+        // If no specific field errors, throw general error
         throw new Error(errorData.message || "Failed to upload document");
       }
+      
+      // Success handling
+      const responseData = await response.json();
+      
+      // Show success message
+      toast({
+        title: "Upload successful",
+        description: "Your document was uploaded successfully.",
+        variant: "default",
+      });
       
       // Invalidate documents query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
