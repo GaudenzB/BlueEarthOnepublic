@@ -40,14 +40,34 @@ const getDocumentsSchema = z.object({
 router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
   singleFileUpload(req, res, async (err) => {
     try {
-      // Debug logging to help diagnose upload issues
+      // Enhanced debug logging to help diagnose upload issues
       logger.debug('→ multer upload debug:', {
-        error: err, 
-        hasFile: !!req.file, 
+        error: err ? {
+          message: err.message,
+          name: err.name,
+          code: err.code,
+          stack: err.stack
+        } : null, 
+        hasFile: !!req.file,
+        fileDetails: req.file ? {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          fieldname: req.file.fieldname,
+          encoding: req.file.encoding,
+          buffer: req.file.buffer ? 'Buffer present' : 'No buffer'
+        } : 'No file',
         bodyKeys: Object.keys(req.body),
         bodyValues: Object.fromEntries(
           Object.entries(req.body).map(([k, v]) => [k, typeof v === 'string' ? `${v.substring(0, 30)}${v.length > 30 ? '...' : ''}` : typeof v])
-        )
+        ),
+        isAuthenticated: !!(req as any).user,
+        userId: (req as any).user?.id,
+        tenantId: (req as any).tenantId,
+        headers: {
+          contentType: req.headers['content-type'],
+          authorization: req.headers.authorization ? 'Present' : 'Missing',
+        }
       });
 
       if (err) {

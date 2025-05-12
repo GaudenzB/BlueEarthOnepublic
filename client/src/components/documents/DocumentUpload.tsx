@@ -155,8 +155,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         }
       }
       
-      // Get the auth token from localStorage
-      const token = localStorage.getItem('authToken');
+      // Get the auth token from localStorage (check both possible storage keys)
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      console.log("Upload using token from localStorage:", !!token);
       
       // Make API request with authentication
       const response = await fetch("/api/documents", {
@@ -166,7 +167,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         headers: {
           // Include the Authorization header with the token
           'Authorization': token ? `Bearer ${token}` : '',
-        }
+        },
+        credentials: 'include', // Include cookies for session-based auth as fallback
       });
       
       if (!response.ok) {

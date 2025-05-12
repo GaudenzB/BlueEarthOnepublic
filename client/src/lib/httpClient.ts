@@ -62,16 +62,20 @@ const DEFAULT_CONFIG: HttpClientConfig = {
 
 /**
  * Set authentication token in storage
+ * Stores in both 'token' (for httpClient) and 'authToken' (for components) for consistency
  */
 export const setAuthToken = (token: string): void => {
   localStorage.setItem('token', token);
+  localStorage.setItem('authToken', token);
 };
 
 /**
  * Remove authentication token from storage
+ * Removes both 'token' (for httpClient) and 'authToken' (for components) for consistency
  */
 export const removeAuthToken = (): void => {
   localStorage.removeItem('token');
+  localStorage.removeItem('authToken');
 };
 
 /**
@@ -133,7 +137,8 @@ export class HttpClient {
     
     // Add authentication token if available - ALWAYS check directly from localStorage
     // This ensures we always get the latest token, even if getAuthToken() is outdated
-    const token = localStorage.getItem('token');
+    // IMPORTANT: We look for both 'token' (used by httpClient) and 'authToken' (used in components)
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
     console.log("httpClient directly accessing token from localStorage:", !!token);
     
     if (token && !headers.has('Authorization')) {
@@ -288,6 +293,7 @@ export class HttpClient {
       ...options,
       method: 'GET',
       headers,
+      credentials: 'include', // Always include credentials for auth cookies
     });
   }
   
@@ -300,7 +306,23 @@ export class HttpClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = this.buildUrl(path);
-    const headers = this.buildHeaders(options.headers);
+    
+    // If FormData is being sent, don't set Content-Type header
+    // The browser will set it automatically with the correct boundary
+    let customHeaders = options.headers || {};
+    
+    if (data instanceof FormData) {
+      // Remove Content-Type for FormData requests to let browser set it
+      if (customHeaders instanceof Headers) {
+        customHeaders.delete('Content-Type');
+      } else if (typeof customHeaders === 'object') {
+        delete (customHeaders as Record<string, string>)['Content-Type'];
+      }
+      
+      console.log('HttpClient: Detected FormData request, handling specially');
+    }
+    
+    const headers = this.buildHeaders(customHeaders);
     
     // If data is provided and not already a string, stringify it
     let body = options.body || data;
@@ -313,6 +335,7 @@ export class HttpClient {
       method: 'POST',
       headers,
       body,
+      credentials: 'include', // Always include credentials for auth cookies
     });
   }
   

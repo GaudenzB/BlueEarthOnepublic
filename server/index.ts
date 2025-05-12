@@ -45,6 +45,10 @@ async function bootstrap(): Promise<void> {
     try {
       await runMigrations();
       logger.info('Database migrations completed successfully');
+      
+      // Set up default tenant
+      await setupDefaultTenant();
+      logger.info('Default tenant setup completed');
     } catch (error) {
       logger.error('Database migration failed', { error });
       throw new Error('Database migration failed');
