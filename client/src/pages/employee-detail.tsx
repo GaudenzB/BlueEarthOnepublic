@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Employee } from "@shared/schema";
+import type { Employee } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -16,7 +16,7 @@ import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ROUTES } from "@/lib/routes";
-import { httpClient, ApiResponse } from "@/lib/httpClient";
+import { httpClient, ApiResponse, ApiError } from "@/lib/httpClient";
 
 /**
  * Employee detail page component
@@ -36,9 +36,9 @@ export default function EmployeeDetail() {
     isLoading, 
     error, 
     refetch 
-  } = useQuery<ApiResponse<Employee>>({
+  } = useQuery({
     queryKey: ["employee", id], 
-    queryFn: () => httpClient.get<ApiResponse<Employee>>(`/api/employees/${id}`),
+    queryFn: () => httpClient.get<Employee>(`/api/employees/${id}`),
     enabled: Boolean(id), 
     refetchOnMount: true,
     staleTime: 0,
@@ -189,8 +189,11 @@ export default function EmployeeDetail() {
       console.error("Error stack:", error.stack);
       
       // API-specific error information
-      if ('status' in error) {
-        console.error("API Error status:", (error as any).status);
+      if (error instanceof ApiError) {
+        console.error("API Error status:", error.status);
+        if (error.errors) {
+          console.error("API Error details:", error.errors);
+        }
       }
     }
   }
@@ -254,7 +257,7 @@ export default function EmployeeDetail() {
             <CardDescription>
               {!apiResponse 
                 ? "Could not load employee data. The employee may not exist or there was a server error."
-                : apiResponse.message || "Server returned an error response"}
+                : (apiResponse as ApiResponse<Employee>).message || "Server returned an error response"}
             </CardDescription>
           </CardHeader>
           <CardContent>
