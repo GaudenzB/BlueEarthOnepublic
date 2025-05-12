@@ -1,62 +1,203 @@
 /* 
  * Global CSS Reset
- * This standardizes the base styling across all browsers
+ * This provides a consistent base styling across all browsers.
  */
 
-*, *::before, *::after {
+/* Box sizing reset */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
-  height: 100%;
-  width: 100%;
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
+/* Document */
+html {
   line-height: 1.5;
-  font-size: 16px;
-  color: #1f2937;
-  background-color: #f9fafb;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
+  scroll-behavior: smooth;
 }
 
-img, picture, video, canvas, svg {
-  display: block;
-  max-width: 100%;
+/* Body */
+body {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", 
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  line-height: inherit;
+  height: 100%;
+  min-height: 100vh;
 }
 
-input, button, textarea, select {
-  font: inherit;
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
 }
 
-p, h1, h2, h3, h4, h5, h6 {
-  overflow-wrap: break-word;
-}
-
-ul, ol {
+/* Lists */
+ol,
+ul {
   list-style: none;
 }
 
+/* Links */
 a {
-  text-decoration: none;
   color: inherit;
+  text-decoration: inherit;
 }
 
+/* Tables */
 table {
   border-collapse: collapse;
   border-spacing: 0;
 }
 
-/* Remove animations and transitions for people who've turned them off */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* Buttons & Inputs */
+button,
+input,
+optgroup,
+select,
+textarea {
+  color: inherit;
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+button,
+select {
+  text-transform: none;
+}
+
+/* Button */
+button,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  -webkit-appearance: button;
+  background-color: transparent;
+  background-image: none;
+}
+
+/* Hidden attribute */
+[hidden] {
+  display: none;
+}
+
+/* Remove spinners from number inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox specific */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Remove the default styling of search inputs */
+input[type="search"] {
+  -webkit-appearance: textfield;
+  outline-offset: -2px;
+}
+
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/* Image and SVG */
+img,
+svg {
+  display: block;
+  vertical-align: middle;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Focus styling */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid #324D6F;
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+[disabled] {
+  cursor: not-allowed;
+}
+
+/* Better default hover state */
+@media (hover: hover) {
+  a:hover {
+    text-decoration: underline;
   }
+}
+
+/* Accessibility: visually hide content but keep it accessible to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Container for the app */
+#root {
+  isolation: isolate;
+  height: 100%;
+}
+
+/* Define a root container to hold global CSS variables */
+:root {
+  /* Colors (from theme) */
+  --color-primary-50: #E5EBF3;
+  --color-primary-100: #C1CDE2;
+  --color-primary-200: #9AABCF;
+  --color-primary-300: #7289BC;
+  --color-primary-400: #536FAD;
+  --color-primary-500: #324D6F;
+  --color-primary-600: #2A3A55;
+  --color-primary-700: #1A2B47;
+  --color-primary-800: #0C1C36;
+  --color-primary-900: #000C22;
+  
+  /* Grays */
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EB;
+  --color-gray-300: #D1D5DB;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-600: #4B5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
+  
+  /* Status colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
 }

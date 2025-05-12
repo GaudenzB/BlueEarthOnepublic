@@ -1,6 +1,5 @@
-import './reset.css';
+/**
+ * Export styles used in the application
+ */
 
-// Export any style utilities or constants here
-export const styleConstants = {
-  // This can be expanded in the future
-};
+export { default as resetStyles } from './reset.css';
