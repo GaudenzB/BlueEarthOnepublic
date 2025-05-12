@@ -45,6 +45,7 @@ export function useAuth() {
   });
   
   // Extract the user from the standardized API response
+  // Ensure we're correctly handling the API response structure
   const user = data?.data || null;
 
   // Handle auth errors
@@ -69,10 +70,18 @@ export function useAuth() {
         body: JSON.stringify(credentials),
       });
       
-      // Store token in local storage
-      localStorage.setItem("token", response.data.token);
+      // Handle different response structures - the API returns standardized format
+      const token = response.data?.token;
+      const user = response.data?.user;
       
-      return response.data.user;
+      if (!token || !user) {
+        throw new Error("Invalid response format from server");
+      }
+      
+      // Store token in local storage
+      localStorage.setItem("token", token);
+      
+      return user;
     },
     onSuccess: (userData) => {
       setUser(userData);
