@@ -32,7 +32,7 @@ export enum ErrorType {
 export class AppError extends Error {
   public type: ErrorType;
   public statusCode: number;
-  public errors?: Record<string, string[]>;
+  public errors: Record<string, string[]> | undefined;
 
   constructor(
     message: string,
@@ -261,13 +261,13 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
   
   // Handle PostgreSQL errors by checking for common error patterns
   if (err.message && (err.message.includes('database') || err.message.includes('sql') || err.message.includes('query') || err.message.includes('pg'))) {
-    const formattedErrors = formatDatabaseError(err);
+    formatDatabaseError(err); // Just format for logging, not used in response
     return apiResponse.serverError(res, 'Database operation failed');
   }
   
   // Handle Drizzle ORM errors
   if (err instanceof DrizzleError) {
-    const formattedErrors = formatDatabaseError(err as any);
+    formatDatabaseError(err as any); // Just format for logging, not used in response
     return apiResponse.serverError(res, 'Database operation failed');
   }
   

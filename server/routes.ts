@@ -424,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update employee
   app.patch("/api/employees/:id", authenticate, validateIdParameter(), async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params['id']);
       
       // Create a partial schema based on the insertEmployeeSchema 
       // to validate update operations for complete type safety
@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return sendSuccess(res, employee, "Employee updated successfully");
     } catch (error) {
-      logger.error({ employeeId: req.params.id, error }, "Error updating employee");
+      logger.error({ employeeId: req.params['id'], error }, "Error updating employee");
       return sendError(res, "Failed to update employee");
     }
   });
@@ -463,17 +463,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete employee
   app.delete("/api/employees/:id", authenticate, validateIdParameter(), async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params['id']);
       const success = await storage.deleteEmployee(id);
       
       if (!success) {
         return sendNotFound(res, "Employee not found");
       }
       
-      logger.info({ employeeId: id, deletedBy: req.user!.id }, "Employee deleted");
+      logger.info({ employeeId: id, deletedBy: req.user!['id'] }, "Employee deleted");
       return sendSuccess(res, null, "Employee deleted successfully");
     } catch (error) {
-      logger.error({ employeeId: req.params.id, error }, "Error deleting employee");
+      logger.error({ employeeId: req.params['id'], error }, "Error deleting employee");
       return sendError(res, "Failed to delete employee");
     }
   });
