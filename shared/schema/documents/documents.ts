@@ -67,6 +67,7 @@ export const documents = pgTable('documents', {
   
   // Additional metadata
   customMetadata: jsonb('custom_metadata'),
+  deleted: boolean('deleted').default(false),
 }, (table) => {
   return {
     tenantIdx: index('documents_tenant_idx').on(table.tenantId),

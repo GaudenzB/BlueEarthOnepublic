@@ -46,8 +46,7 @@ export const documentRepository = {
         .where(
           and(
             eq(documents.id, id),
-            eq(documents.tenantId, tenantId),
-            eq(documents.deleted, false)
+            eq(documents.tenantId, tenantId)
           )
         );
       return result;
@@ -86,8 +85,7 @@ export const documentRepository = {
 
       // Build query conditions
       const conditions = [
-        eq(documents.tenantId, tenantId),
-        eq(documents.deleted, false)
+        eq(documents.tenantId, tenantId)
       ];
 
       if (documentType) {
