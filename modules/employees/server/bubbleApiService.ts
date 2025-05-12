@@ -12,8 +12,14 @@ import { logger } from '../../../server/utils/logger';
 
 // Get configuration from centralized config - using a fallback for now until proper config access
 const BUBBLE_API_KEY = process.env["BUBBLE_API_KEY"];
-// Updated URL to use bubble.io directly instead of api.bubble.io subdomain
-const BUBBLE_API_URL = process.env["BUBBLE_API_URL"] || 'https://bubble.io/api/1.1/obj';
+// Bubble API typically requires the application name/ID in the URL
+const BUBBLE_APP_ID = process.env["BUBBLE_APP_ID"] || 'blueearth-capital';
+// Try different URL formats for Bubble.io API
+// Common formats:
+// 1. https://bubble.io/api/1.1/obj/{app_id}
+// 2. https://{app_id}.bubbleapps.io/api/1.1/obj
+// 3. https://{app_id}.bubble.io/api/1.1/obj
+const BUBBLE_API_URL = process.env["BUBBLE_API_URL"] || `https://${BUBBLE_APP_ID}.bubbleapps.io/api/1.1/obj`;
 const BUBBLE_DATA_TYPE = 'Employees';
 
 // Retry configuration
@@ -233,6 +239,11 @@ async function fetchBubbleData(url: string): Promise<BubbleApiResponse> {
     throw new Error('BUBBLE_API_KEY is not set');
   }
 
+  // Check if url already has parameters
+  const separator = url.includes('?') ? '&' : '?';
+  // Add API key as a query parameter instead of header
+  const urlWithApiKey = `${url}${separator}api_token=${BUBBLE_API_KEY}`;
+  
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -243,11 +254,10 @@ async function fetchBubbleData(url: string): Promise<BubbleApiResponse> {
       const timeout = REQUEST_TIMEOUT * attempt;
       
       const response = await fetchWithTimeout(
-        url,
+        urlWithApiKey,
         {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${BUBBLE_API_KEY}`,
             'Content-Type': 'application/json',
           }
         },
@@ -268,6 +278,14 @@ async function fetchBubbleData(url: string): Promise<BubbleApiResponse> {
 
       // Handle other error responses
       if (!response.ok) {
+        // Get more detailed error information from the response
+        const errorText = await response.text();
+        logger.error(`Bubble API error (${response.status} ${response.statusText}): ${errorText}`);
+        logger.error(`Request URL was: ${url}`);
+        logger.error(`Auth headers used: ${JSON.stringify({
+          Authorization: BUBBLE_API_KEY ? 'PRESENT (not shown)' : 'MISSING',
+          'X-Bubble-API-Key': BUBBLE_API_KEY ? 'PRESENT (not shown)' : 'MISSING'
+        })}`);
         throw new Error(`Bubble API error: ${response.status} ${response.statusText}`);
       }
 
