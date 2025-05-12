@@ -59,7 +59,7 @@ async function bootstrap(): Promise<void> {
       logger.info(`Successfully initialized ${appModules.modules.length} feature modules`);
       
       // Store the module manager in app.locals for access in routes and middleware
-      app.locals.modules = appModules;
+      app.locals['moduleManager'] = appModules;
     } catch (error) {
       logger.error('Feature module initialization failed', { error });
       throw new Error('Feature module initialization failed');
@@ -97,7 +97,7 @@ async function bootstrap(): Promise<void> {
         host, 
         environment: config.env.current,
         nodeVersion: process.version,
-        moduleCount: app.locals.modules.modules.length
+        moduleCount: app.locals['moduleManager'] ? app.locals['moduleManager']['modules'].length : 0
       });
     });
     

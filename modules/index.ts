@@ -75,10 +75,10 @@ export async function initializeModules(app: Express): Promise<ModuleManager> {
   
   // Define all modules to be initialized
   const moduleDefinitions: ModuleDefinition[] = [
-    { name: 'employees', path: './employees/server' },
+    { name: 'employee', path: './employees/server' }, // Changed 'employees' to 'employee' to match setupEmployeeModule function
     // Add more modules here as they are developed
-    // { name: 'documents', path: './documents/server' },
-    // { name: 'contracts', path: './contracts/server' },
+    // { name: 'document', path: './documents/server' }, // Same singular naming convention for consistency
+    // { name: 'contract', path: './contracts/server' }, // Same singular naming convention for consistency
   ];
   
   try {
