@@ -54,7 +54,7 @@ app.use(requestLoggerMiddleware);
   
   // Initialize all feature modules (before main routes)
   logger.info('Initializing feature modules');
-  const appModules = initializeModules(app);
+  const appModules = await initializeModules(app);
   logger.info(`Initialized ${appModules.modules.length} feature modules`);
   
   // Register main application routes
