@@ -72,7 +72,11 @@ export async function getAllEmployees(req: Request, res: Response) {
  */
 export async function getEmployeeById(req: Request, res: Response) {
   try {
-    const id = parseInt(req.params['id']);
+    const idParam = req.params['id'];
+    if (!idParam) {
+      return sendError(res, "Employee ID is required", 400);
+    }
+    const id = parseInt(idParam);
     
     // Log detailed request information
     logger.info({
@@ -94,7 +98,7 @@ export async function getEmployeeById(req: Request, res: Response) {
     logger.info({
       employeeId: id,
       employeeFound: !!employee,
-      employeeName: employee?.firstName || 'unknown',
+      employeeName: employee?.name || 'unknown',
       employeeDepartment: employee?.department || 'unknown',
     }, `Employee detail response for ID ${id}`);
     
@@ -104,7 +108,7 @@ export async function getEmployeeById(req: Request, res: Response) {
     
     return sendSuccess(res, employee);
   } catch (error) {
-    logger.error({ employeeId: req.params.id, error }, "Error retrieving employee");
+    logger.error({ employeeId: req.params['id'], error }, "Error retrieving employee");
     return sendError(res, "Failed to get employee", 500);
   }
 }
@@ -119,8 +123,7 @@ export async function createEmployee(req: Request, res: Response) {
     
     // Log the validated employee data
     logger.debug('Creating employee with validated data', {
-      firstName: validatedData.firstName,
-      lastName: validatedData.lastName,
+      name: validatedData.name,
       email: validatedData.email,
       department: validatedData.department,
       status: validatedData.status
