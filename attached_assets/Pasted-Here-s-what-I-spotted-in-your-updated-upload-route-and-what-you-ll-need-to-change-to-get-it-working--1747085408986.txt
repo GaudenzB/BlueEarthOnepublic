@@ -1,0 +1,103 @@
+Here’s what I spotted in your updated upload route and what you’ll need to change to get it working:
+
+1. You’re always passing an undefined retentionDate into your DB insert
+
+Your table definition (and InsertDocument schema) doesn’t actually have a retention_date column, but your route always does:
+
+const document = await documentRepository.create({
+  …,
+  customMetadata: documentData.customMetadata,
+  retentionDate: documentData.retentionDate
+    ? new Date(documentData.retentionDate)
+    : undefined,
+});
+Drizzle-ORM will try to insert a column named retentionDate (which doesn’t exist) and blow up. You’ve wrapped it in a try/catch so you see the generic 500 rather than the SQL error.
+
+How to fix: only include retentionDate when the user actually provided it (and ideally only after you’ve added that column to the table). For now remove it:
+
+   const createPayload: Partial<InsertDocument> = {
+     filename: sanitizedFilename,
+     originalFilename: file.originalname,
+     mimeType: file.mimetype,
+     fileSize: file.size.toString(),
+     storageKey: uploadResult.storageKey,
+     checksum: uploadResult.checksum,
+     documentType: documentData.documentType,
+     title: documentData.title,
+     description: documentData.description,
+     tags,
+     uploadedBy: userId,
+     tenantId,
+     deleted: false,
+     processingStatus: 'PENDING',
+     isConfidential: documentData.isConfidential || false,
+-    customMetadata: documentData.customMetadata,
+-    retentionDate: documentData.retentionDate
+-      ? new Date(documentData.retentionDate)
+-      : undefined,
++    customMetadata: documentData.customMetadata,
+   };
+
+   const document = await documentRepository.create(createPayload);
+If you do want to support retention dates, you’ll need to:
+
+Add a retention_date column in your Drizzle table.
+Regenerate your InsertDocument schema.
+(Optionally) parse req.body.retentionDate in the same way you do tags and isConfidential before validating.
+2. Don’t pass undefined fields into your insert object
+
+Similarly, if customMetadata or any other optional field is undefined, it’s safest to only include it when present. Otherwise Drizzle-ORM may generate an INSERT with an extraneous NULL or throw if the column is non-nullable. You can build your payload like this:
+
+const payload: Record<string, any> = {
+  filename: sanitizedFilename,
+  originalFilename: file.originalname,
+  /* …required fields… */
+};
+
+if (documentData.tags?.length)   payload.tags   = documentData.tags;
+if (documentData.isConfidential) payload.isConfidential = true;
+if (documentData.customMetadata) payload.customMetadata = documentData.customMetadata;
+// …etc.
+3. Clean up orphaned uploads on DB error
+
+Right now, if uploadFile succeeds but .create() fails, you’ll leave a dangling file in S3/local. Wrap them in a try/catch and delete on error:
+
+const storageKey = generateStorageKey(…);
+await uploadFile(buffer, storageKey, file.mimetype);
+
+try {
+  const doc = await documentRepository.create(payload);
+  return res.status(201).json({ success: true, data: doc });
+} catch (dbErr) {
+  await deleteFile(storageKey).catch(() => {/* log but swallow */});
+  logger.error('DB insert failed, deleted blob', { storageKey, dbErr });
+  return res.status(500).json({ success: false, message: 'Server error during document upload' });
+}
+4. Add JSON.parse for any other JSON fields
+
+You already preprocess tags and isConfidential. If in the future you allow customMetadata or retentionDate as JSON, you’ll want to do the same:
+
+if (typeof req.body.customMetadata === 'string') {
+  try { req.body.customMetadata = JSON.parse(req.body.customMetadata); }
+  catch { logger.warn('Failed to parse customMetadata', { raw: req.body.customMetadata }); }
+}
+5. Surface the real error in development
+
+Right now every failure in the big try/catch just becomes “Server error during document upload.” In dev you’ll want to see the real exception:
+
+} catch (error) {
+  logger.error('Error in document upload', { error });
+  const msg = process.env.NODE_ENV === 'production'
+    ? 'Server error during document upload'
+    : error.message;
+  return res.status(500).json({ success: false, message: msg });
+}
+That way you’ll catch mistakes quicker.
+
+Summary of next steps
+Remove the retentionDate line (or conditionally include it once you’ve added the column).
+Build your insert payload dynamically so you never send undefined keys.
+Wrap your DB insert in its own try/catch and delete the blob on error to avoid orphans.
+(Optional) Add JSON parsing for any other structured fields.
+Improve your error logging/responding in dev to see exactly what went wrong.
+With those in place, your upload route should stop throwing and actually return that 201 with your new document record. Let me know if you run into anything else!

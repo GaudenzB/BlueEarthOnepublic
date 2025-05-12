@@ -3,7 +3,7 @@ import { authenticate } from '../auth';
 import { tenantContext } from '../middleware/tenantContext';
 import { singleFileUpload, sanitizeFile } from '../middleware/upload';
 import { documentRepository } from '../repositories/documentRepository';
-import { uploadFile, generateStorageKey, downloadFile } from '../services/documentStorage';
+import { uploadFile, generateStorageKey, downloadFile, deleteFile } from '../services/documentStorage';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 import { documentTypeZod, processingStatusZod } from '../../shared/schema/documents/documents';
@@ -70,6 +70,15 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
         req.body.isConfidential = req.body.isConfidential === 'true';
       }
       
+      if (typeof req.body.customMetadata === 'string') {
+        try {
+          req.body.customMetadata = JSON.parse(req.body.customMetadata);
+        } catch (e) {
+          logger.warn('Failed to parse customMetadata JSON string', { raw: req.body.customMetadata });
+          // Don't set to undefined, let Zod handle validation
+        }
+      }
+      
       // Validate request body
       const validationResult = uploadDocumentSchema.safeParse(req.body);
       if (!validationResult.success) {
@@ -99,53 +108,86 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
         sanitizedFilename
       );
 
-      // Upload file to storage
-      const uploadResult = await uploadFile(
-        file.buffer,
-        storageKey,
-        file.mimetype
-      );
+      try {
+        // Upload file to storage
+        const uploadResult = await uploadFile(
+          file.buffer,
+          storageKey,
+          file.mimetype
+        );
 
-      // Prepare tags if provided
-      let tags: string[] | undefined;
-      if (documentData.tags && documentData.tags.length > 0) {
-        tags = documentData.tags;
+        // Build a payload object with only defined values
+        const createPayload: Record<string, any> = {
+          filename: sanitizedFilename,
+          originalFilename: file.originalname,
+          mimeType: file.mimetype,
+          fileSize: file.size.toString(),
+          storageKey: uploadResult.storageKey,
+          checksum: uploadResult.checksum,
+          title: documentData.title,
+          uploadedBy: userId,
+          tenantId,
+          deleted: false,
+          processingStatus: 'PENDING',
+        };
+
+        // Add optional fields only if they're defined
+        if (documentData.documentType) createPayload.documentType = documentData.documentType;
+        if (documentData.description) createPayload.description = documentData.description;
+        if (documentData.tags?.length > 0) createPayload.tags = documentData.tags;
+        if (documentData.isConfidential) createPayload.isConfidential = documentData.isConfidential;
+        if (documentData.customMetadata) createPayload.customMetadata = documentData.customMetadata;
+        // Note: retentionDate is not included since it's not in our schema yet
+
+        try {
+          // Create document record in database
+          const document = await documentRepository.create(createPayload);
+
+          // Queue the document for AI processing
+          // TODO: Implement AI processing queue
+
+          res.status(201).json({
+            success: true,
+            message: 'Document uploaded successfully',
+            data: document
+          });
+        } catch (dbError) {
+          // Clean up the uploaded file if database insert fails
+          try {
+            await deleteFile(storageKey);
+            logger.warn('Cleaned up orphaned file after DB insert failure', { storageKey });
+          } catch (cleanupError) {
+            logger.error('Failed to clean up orphaned file', { storageKey, cleanupError });
+          }
+
+          // Log the database error
+          logger.error('Database error during document creation', { dbError });
+          throw dbError; // Re-throw to be caught by outer catch
+        }
+      } catch (error: any) {
+        logger.error('Error in document upload', { error });
+        
+        // More detailed error message in development
+        const message = process.env.NODE_ENV === 'production'
+          ? 'Server error during document upload'
+          : `Upload error: ${error.message}`;
+          
+        res.status(500).json({
+          success: false,
+          message
+        });
       }
-
-      // Create document record in database
-      const document = await documentRepository.create({
-        filename: sanitizedFilename,
-        originalFilename: file.originalname,
-        mimeType: file.mimetype,
-        fileSize: file.size.toString(),
-        storageKey: uploadResult.storageKey,
-        checksum: uploadResult.checksum,
-        documentType: documentData.documentType,
-        title: documentData.title,
-        description: documentData.description,
-        tags,
-        uploadedBy: userId,
-        tenantId,
-        deleted: false,
-        processingStatus: 'PENDING',
-        isConfidential: documentData.isConfidential || false,
-        customMetadata: documentData.customMetadata,
-        retentionDate: documentData.retentionDate ? new Date(documentData.retentionDate) : undefined,
-      });
-
-      // Queue the document for AI processing
-      // TODO: Implement AI processing queue
-
-      res.status(201).json({
-        success: true,
-        message: 'Document uploaded successfully',
-        data: document
-      });
     } catch (error) {
-      logger.error('Error in document upload', { error });
+      logger.error('Error in document upload middleware', { error });
+      
+      // More detailed error message in development
+      const message = process.env.NODE_ENV === 'production'
+        ? 'Server error during document upload'
+        : `Upload error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        
       res.status(500).json({
         success: false,
-        message: 'Server error during document upload'
+        message
       });
     }
   });
