@@ -7,3 +7,5 @@
 
 export * from './employee';
 export * from './auth';
+export * from './document';
+export * from './contract';

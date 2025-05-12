@@ -1,22 +1,21 @@
 /**
  * Core Client Package
  * 
- * This package contains client-specific code, UI utilities,
- * themes, styles, and React hooks for the frontend.
+ * This package contains client-specific functionality, hooks,
+ * and utilities for the BlueEarth Capital portal.
  */
 
-// Import common package
-import * as coreCommon from '@blueearth/core-common';
+// Re-export common types from core-common for convenience
+export * from '@blueearth/core-common';
 
-// Re-export common for convenience
-export { coreCommon };
+// Export client-specific models and types
+// export * from './models';
 
-// Export client hooks when created
+// Export client hooks
 // export * from './hooks';
 
-// Export client utilities when created
-// export * from './utils';
+// Export UI components
+// export * from './components';
 
-// Export theme and styles when created
-// export * from './theme';
-// export * from './styles';
+// Export client utilities
+// export * from './utils';
