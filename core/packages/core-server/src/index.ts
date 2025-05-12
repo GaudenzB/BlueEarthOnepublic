@@ -12,7 +12,7 @@ export * from '@blueearth/core-common';
 export * from './models';
 
 // Re-export utilities
-// export * from './utils';
+export * from './utils';
 
 // Re-export services
 // export * from './services';

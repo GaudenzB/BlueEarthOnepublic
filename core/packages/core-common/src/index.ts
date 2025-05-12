@@ -9,7 +9,7 @@
 export * from './schemas';
 
 // Export utility types and functions
-// export * from './utils';
+export * from './utils';
 
 // Export constants
 // export * from './constants';
