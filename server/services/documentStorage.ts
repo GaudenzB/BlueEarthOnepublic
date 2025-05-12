@@ -4,22 +4,38 @@ import { Readable } from 'stream';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
+import * as fs from 'fs';
+import * as path from 'path';
+import { promisify } from 'util';
 
 // Check if required environment variables are set
 if (!process.env.S3_BUCKET_NAME && process.env.NODE_ENV === 'production') {
   logger.error('S3_BUCKET_NAME environment variable must be set in production');
 }
 
-// S3 Client configuration
-const s3Client = new S3Client({
+// Determine if we're using AWS S3 or local storage
+const hasAwsCredentials = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+const useLocalStorage = !hasAwsCredentials || process.env.FORCE_LOCAL_STORAGE === 'true';
+
+logger.info(`Document storage mode: ${useLocalStorage ? 'LOCAL STORAGE' : 'AWS S3'}`);
+
+// Create local storage directory if needed
+const LOCAL_STORAGE_DIR = path.join(process.cwd(), 'uploads');
+if (useLocalStorage) {
+  if (!fs.existsSync(LOCAL_STORAGE_DIR)) {
+    fs.mkdirSync(LOCAL_STORAGE_DIR, { recursive: true });
+    logger.info(`Created local storage directory: ${LOCAL_STORAGE_DIR}`);
+  }
+}
+
+// S3 Client configuration (only when using AWS)
+const s3Client = !useLocalStorage ? new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
-  credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-    ? {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      }
-    : undefined,
-});
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  }
+}) : null;
 
 // Default bucket name for development
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'blueearth-documents-dev';
@@ -50,10 +66,10 @@ export function calculateChecksum(buffer: Buffer): string {
 }
 
 /**
- * Upload a file to S3 with the provided storage key
+ * Upload a file to storage with the provided storage key
  * 
  * @param buffer - File buffer
- * @param storageKey - S3 storage key
+ * @param storageKey - Storage key
  * @param contentType - MIME type of the file
  * @returns Object with storage information
  */
@@ -66,90 +82,138 @@ export async function uploadFile(buffer: Buffer, storageKey: string, contentType
     // Calculate checksum
     const checksum = calculateChecksum(buffer);
     
-    // Upload to S3
-    const upload = new Upload({
-      client: s3Client,
-      params: {
-        Bucket: BUCKET_NAME,
-        Key: storageKey,
-        Body: buffer,
-        ContentType: contentType,
-        ContentMD5: checksum,
-        ServerSideEncryption: 'AES256', // Enable server-side encryption
-        // Optionally use KMS for enhanced security
-        ...(process.env.KMS_KEY_ID && { 
-          ServerSideEncryption: 'aws:kms',
-          SSEKMSKeyId: process.env.KMS_KEY_ID
-        }),
-        Metadata: {
-          'original-checksum': checksum
-        }
+    if (useLocalStorage) {
+      // Create directory structure if it doesn't exist
+      const filePath = path.join(LOCAL_STORAGE_DIR, storageKey);
+      const dirPath = path.dirname(filePath);
+      
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
       }
-    });
+      
+      // Write file to local storage
+      fs.writeFileSync(filePath, buffer);
+      
+      logger.info(`File uploaded to local storage: ${filePath}`);
+      
+      return {
+        storageKey,
+        checksum,
+        size: buffer.length
+      };
+    } else {
+      // Upload to S3
+      const upload = new Upload({
+        client: s3Client!,
+        params: {
+          Bucket: BUCKET_NAME,
+          Key: storageKey,
+          Body: buffer,
+          ContentType: contentType,
+          ContentMD5: checksum,
+          ServerSideEncryption: 'AES256', // Enable server-side encryption
+          // Optionally use KMS for enhanced security
+          ...(process.env.KMS_KEY_ID && { 
+            ServerSideEncryption: 'aws:kms',
+            SSEKMSKeyId: process.env.KMS_KEY_ID
+          }),
+          Metadata: {
+            'original-checksum': checksum
+          }
+        }
+      });
 
-    await upload.done();
-    
-    return {
-      storageKey,
-      checksum,
-      size: buffer.length
-    };
-  } catch (error) {
-    logger.error('Error uploading file to S3', { error, storageKey });
+      await upload.done();
+      
+      return {
+        storageKey,
+        checksum,
+        size: buffer.length
+      };
+    }
+  } catch (error: any) {
+    logger.error('Error uploading file', { error, storageKey, useLocalStorage });
     throw new Error(`Failed to upload file: ${error.message}`);
   }
 }
 
 /**
- * Download a file from S3
+ * Download a file from storage
  * 
- * @param storageKey - S3 storage key
+ * @param storageKey - Storage key
  * @returns Buffer containing the file data
  */
 export async function downloadFile(storageKey: string): Promise<Buffer> {
   try {
-    const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: storageKey
-    });
-    
-    const response = await s3Client.send(command);
-    if (!response.Body) {
-      throw new Error('Empty response body');
+    if (useLocalStorage) {
+      // Read file from local storage
+      const filePath = path.join(LOCAL_STORAGE_DIR, storageKey);
+      
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+      
+      return fs.readFileSync(filePath);
+    } else {
+      // Download from S3
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: storageKey
+      });
+      
+      const response = await s3Client!.send(command);
+      if (!response.Body) {
+        throw new Error('Empty response body');
+      }
+      
+      // Convert readable stream to buffer
+      const stream = response.Body as Readable;
+      const chunks: Buffer[] = [];
+      
+      return new Promise<Buffer>((resolve, reject) => {
+        stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+        stream.on('error', (err) => reject(err));
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+      });
     }
-    
-    // Convert readable stream to buffer
-    const stream = response.Body as Readable;
-    const chunks: Buffer[] = [];
-    
-    return new Promise<Buffer>((resolve, reject) => {
-      stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-      stream.on('error', (err) => reject(err));
-      stream.on('end', () => resolve(Buffer.concat(chunks)));
-    });
-  } catch (error) {
-    logger.error('Error downloading file from S3', { error, storageKey });
+  } catch (error: any) {
+    logger.error('Error downloading file', { error, storageKey, useLocalStorage });
     throw new Error(`Failed to download file: ${error.message}`);
   }
 }
 
 /**
- * Delete a file from S3
+ * Delete a file from storage
  * 
- * @param storageKey - S3 storage key
+ * @param storageKey - Storage key
  * @returns true if the file was deleted successfully
  */
 export async function deleteFile(storageKey: string): Promise<boolean> {
   try {
-    const command = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: storageKey
-    });
-    
-    await s3Client.send(command);
-    return true;
-  } catch (error) {
-    logger.error('Error deleting file from S3', { error, storageKey });
+    if (useLocalStorage) {
+      // Delete from local storage
+      const filePath = path.join(LOCAL_STORAGE_DIR, storageKey);
+      
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        logger.info(`File deleted from local storage: ${filePath}`);
+      } else {
+        logger.warn(`File not found for deletion: ${filePath}`);
+      }
+      
+      return true;
+    } else {
+      // Delete from S3
+      const command = new DeleteObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: storageKey
+      });
+      
+      await s3Client!.send(command);
+      return true;
+    }
+  } catch (error: any) {
+    logger.error('Error deleting file', { error, storageKey, useLocalStorage });
     throw new Error(`Failed to delete file: ${error.message}`);
   }
 }

@@ -1,21 +1,25 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserDetails } from "@/components/admin/UserDetails";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { USER_ROLES } from "@/constants";
 
+// Define user type
 interface User {
   id: number;
   username: string;
@@ -27,6 +31,7 @@ interface User {
   createdAt: string;
 }
 
+// Define form data types
 interface UserFormData {
   username: string;
   email: string;
@@ -36,15 +41,19 @@ interface UserFormData {
   role: string;
 }
 
+// Main component
 export default function UserManagement() {
-  const { user: currentUser, isAuthenticated, isSuperAdmin } = useAuth();
-  const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const { user: currentUser, isAuthenticated, isSuperAdmin } = useAuth();
+
+  // State for dialogs
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showUserDetail, setShowUserDetail] = useState(false);
-  const [detailUserId, setDetailUserId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+
+  // Form data for create/edit
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
     email: "",
@@ -61,12 +70,15 @@ export default function UserManagement() {
   }
 
   // Fetch all users
-  const { data: users, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["/api/users"],
     queryFn: async () => {
       return await apiRequest<User[]>("/api/users");
     },
   });
+  
+  // Extract users from data response
+  const users = data as User[];
 
   // Create user mutation
   const createUser = useMutation({
@@ -109,8 +121,6 @@ export default function UserManagement() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsEditDialogOpen(false);
-      setSelectedUser(null);
-      resetForm();
     },
     onError: (error) => {
       toast({
@@ -121,34 +131,10 @@ export default function UserManagement() {
     },
   });
 
-  // Toggle user active status
-  const toggleUserStatus = useMutation({
-    mutationFn: async ({ id, active }: { id: number; active: boolean }) => {
-      return await apiRequest<User>(`/api/users/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ active }),
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "User status updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update user status",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Delete user mutation
   const deleteUser = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest<{ message: string }>(`/api/users/${id}`, {
+      return await apiRequest<void>(`/api/users/${id}`, {
         method: "DELETE",
       });
     },
@@ -168,7 +154,40 @@ export default function UserManagement() {
     },
   });
 
-  // Reset form
+  // Toggle user status mutation
+  const toggleUserStatus = useMutation({
+    mutationFn: async ({ id, active }: { id: number; active: boolean }) => {
+      return await apiRequest<User>(`/api/users/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !active }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User status updated",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update user status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Form handlers
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const resetForm = () => {
     setFormData({
       username: "",
@@ -180,181 +199,78 @@ export default function UserManagement() {
     });
   };
 
-  // Handle form change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle select change
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle create user form submit
+  // Action handlers
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createUser.mutate(formData);
   };
 
-  // Handle edit user form submit
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUser) return;
-    
-    // Only include changed fields
-    const changedData: Partial<UserFormData> = {};
-    if (formData.username !== selectedUser.username) changedData.username = formData.username;
-    if (formData.email !== selectedUser.email) changedData.email = formData.email;
-    if (formData.firstName !== selectedUser.firstName) changedData.firstName = formData.firstName;
-    if (formData.lastName !== selectedUser.lastName) changedData.lastName = formData.lastName;
-    if (formData.role !== selectedUser.role) changedData.role = formData.role;
-    if (formData.password) changedData.password = formData.password;
-    
-    updateUser.mutate({ id: selectedUser.id, data: changedData });
+    if (!selectedUserId) return;
+
+    // If password is empty, omit it from the update
+    const dataToUpdate = { ...formData };
+    if (!dataToUpdate.password) {
+      delete dataToUpdate.password;
+    }
+
+    updateUser.mutate({ id: selectedUserId, data: dataToUpdate });
   };
 
-  // Handle edit user click
   const handleEditClick = (user: User) => {
-    setSelectedUser(user);
+    setSelectedUserId(user.id);
     setFormData({
       username: user.username,
       email: user.email,
       firstName: user.firstName || "",
       lastName: user.lastName || "",
-      password: "", // Don't set password
+      password: "", // Don't set the password, it will be updated only if provided
       role: user.role,
     });
     setIsEditDialogOpen(true);
   };
 
-  // Handle delete user click
-  const handleDeleteClick = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      deleteUser.mutate(id);
+  const handleDeleteClick = (userId: number) => {
+    if (confirm("Are you sure you want to delete this user?")) {
+      deleteUser.mutate(userId);
     }
   };
 
-  // Handle toggle user status
-  const handleToggleStatus = (id: number, active: boolean) => {
-    toggleUserStatus.mutate({ id, active: !active });
+  const handleToggleStatus = (userId: number, currentStatus: boolean) => {
+    toggleUserStatus.mutate({ id: userId, active: currentStatus });
   };
 
-  // If loading, show skeleton
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>Manage users and permissions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <Skeleton className="h-10 w-32" />
-              </div>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If error, show error message
-  if (isError) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader>
-            <CardTitle className="text-red-800">Error</CardTitle>
-            <CardDescription className="text-red-700">Failed to fetch users</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-700">
-              There was an error loading the user data. Please try again later.
-            </p>
-            <Button 
-              className="mt-4" 
-              variant="outline"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/users"] })}
-            >
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Handle view user details
   const handleViewUser = (userId: number) => {
-    setDetailUserId(userId);
-    setShowUserDetail(true);
+    setSelectedUserId(userId);
+    setShowUserDetails(true);
   };
 
-  // Handle back to user list
-  const handleBackToList = () => {
-    setShowUserDetail(false);
-    setDetailUserId(null);
-  };
-
-  // Show user details view if a user is selected
-  if (showUserDetail && detailUserId) {
-    return (
-      <div className="container mx-auto py-8">
-        <UserDetails userId={detailUserId} onBackClick={handleBackToList} />
-      </div>
-    );
-  }
-
-  // Otherwise show user list view
   return (
     <div className="container mx-auto py-8">
-      <Card>
+      <Card className="mb-8">
         <CardHeader>
           <CardTitle>User Management</CardTitle>
-          <CardDescription>Manage users and permissions</CardDescription>
+          <CardDescription>
+            Create, edit, and manage user accounts. Super Admin users have full access to all system features.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex justify-end">
+          <div className="space-y-6">
+            <div className="flex justify-end mb-4">
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-blue-800 hover:bg-blue-900">Add User</Button>
-                </DialogTrigger>
+                <Button 
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="bg-blue-800 hover:bg-blue-900"
+                >
+                  Create New User
+                </Button>
                 <DialogContent>
                   <form onSubmit={handleCreateSubmit}>
                     <DialogHeader>
                       <DialogTitle>Create New User</DialogTitle>
                       <DialogDescription>
-                        Fill in the details to create a new user.
+                        Add a new user account to the system
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -482,14 +398,14 @@ export default function UserManagement() {
                         Error loading users
                       </TableCell>
                     </TableRow>
-                  ) : users?.data?.length === 0 ? (
+                  ) : !users?.data || users.data.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center">
                         No users found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    users?.data?.map((user) => (
+                    users.data.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
@@ -502,45 +418,46 @@ export default function UserManagement() {
                           >
                             {user.role}
                           </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={user.active}
-                            onCheckedChange={() => handleToggleStatus(user.id, user.active)}
-                            disabled={user.id === currentUser?.id} // Prevent toggling own status
-                          />
-                          <span>{user.active ? "Active" : "Inactive"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditClick(user)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="bg-blue-800 hover:bg-blue-900 text-white"
-                            onClick={() => handleViewUser(user.id)}
-                          >
-                            Permissions
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteClick(user.id)}
-                            disabled={user.id === currentUser?.id} // Prevent deleting self
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={user.active}
+                              onCheckedChange={() => handleToggleStatus(user.id, user.active)}
+                              disabled={user.id === currentUser?.id} // Prevent toggling own status
+                            />
+                            <span>{user.active ? "Active" : "Inactive"}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditClick(user)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-blue-800 hover:bg-blue-900 text-white"
+                              onClick={() => handleViewUser(user.id)}
+                            >
+                              Permissions
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(user.id)}
+                              disabled={user.id === currentUser?.id} // Prevent deleting self
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -631,7 +548,6 @@ export default function UserManagement() {
                 <Select
                   value={formData.role}
                   onValueChange={(value) => handleSelectChange("role", value)}
-                  disabled={selectedUser?.id === currentUser?.id} // Prevent changing own role
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select role" />
@@ -651,10 +567,23 @@ export default function UserManagement() {
                 disabled={updateUser.isPending}
                 className="bg-blue-800 hover:bg-blue-900"
               >
-                {updateUser.isPending ? "Updating..." : "Update User"}
+                {updateUser.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Permissions Dialog */}
+      <Dialog open={showUserDetails} onOpenChange={setShowUserDetails}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>User Permissions</DialogTitle>
+            <DialogDescription>
+              Manage permissions for this user
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUserId && <UserDetails userId={selectedUserId} />}
         </DialogContent>
       </Dialog>
     </div>
