@@ -45,7 +45,7 @@ export function registerEmployeeRoutes(app: Express) {
       // Check if the Bubble API key is configured
       if (!process.env.BUBBLE_API_KEY) {
         logger.error("Bubble API key not configured");
-        return res.status(400).json(createErrorResponse("External API key not configured"));
+        return sendError(res, "External API key not configured", 400);
       }
       
       logger.info({ initiatedBy: req.user!.id }, "Manual employee sync initiated");
@@ -59,17 +59,17 @@ export function registerEmployeeRoutes(app: Express) {
         errors: result.errors
       }, "Employee sync completed");
       
-      return res.json(createSuccessResponse({
+      return sendSuccess(res, {
         totalEmployees: result.totalEmployees,
         created: result.created,
         updated: result.updated,
         unchanged: result.unchanged,
         errors: result.errors
-      }, "Employee sync completed successfully"));
+      }, "Employee sync completed successfully");
       
     } catch (error) {
       logger.error({ error }, "Employee sync error");
-      return res.status(500).json(createErrorResponse("Failed to sync employees from external system"));
+      return sendError(res, "Failed to sync employees from external system", 500);
     }
   });
 }
