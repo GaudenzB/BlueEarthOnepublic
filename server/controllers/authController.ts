@@ -12,6 +12,7 @@ import { wrapHandler } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { sendSuccess, sendUnauthorized } from '../utils/apiResponse';
+import crypto from 'crypto';
 import { 
   userLoginSchema, 
   userRegistrationSchema, 

@@ -120,47 +120,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login (public route) - using the controller with error handling wrapper
   app.post("/api/auth/login", authLimiter, authController.login);
   
-  // Logout (protected route)
-  app.post("/api/auth/logout", authenticate, async (req: Request, res: Response) => {
-    try {
-      // Get token from header
-      const token = req.header("Authorization")?.replace("Bearer ", "");
-      
-      if (!token) {
-        return sendError(res, "No token provided", 400);
-      }
-      
-      // Revoke token
-      const success = revokeToken(token);
-      
-      if (success) {
-        return sendSuccess(res, null, "Logged out successfully");
-      } else {
-        return sendError(res, "Failed to logout", 400);
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-      return sendError(res, "Internal server error");
-    }
-  });
+  // Logout (protected route) - using controller with error handling wrapper
+  app.post("/api/auth/logout", authenticate, authController.logout);
   
-  // Get current user (protected route)
-  app.get("/api/auth/me", authenticate, async (req: Request, res: Response) => {
-    try {
-      // Get user from database
-      const user = await storage.getUser(req.user!.id);
-      if (!user) {
-        return sendNotFound(res, "User not found");
-      }
-      
-      // Return user data without password
-      const { password, ...userWithoutPassword } = user;
-      return sendSuccess(res, userWithoutPassword);
-    } catch (error) {
-      console.error("Get current user error:", error);
-      return sendError(res, "Failed to get user data");
-    }
-  });
+  // Get current user (protected route) - using controller with error handling wrapper
+  app.get("/api/auth/me", authenticate, authController.getCurrentUser);
   
   // Forgot password (public route)
   app.post("/api/auth/forgot-password", passwordResetLimiter, validate(forgotPasswordSchema), async (req: Request, res: Response) => {
