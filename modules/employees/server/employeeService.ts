@@ -104,8 +104,7 @@ export async function syncEmployeesFromBubble(): Promise<{
           // Create new employee
           logger.info('Creating new employee', { 
             email: email,
-            firstName: bubbleEmployee.firstName,
-            lastName: bubbleEmployee.lastName,
+            name: bubbleEmployee.name,
             status: bubbleEmployee.status
           });
           

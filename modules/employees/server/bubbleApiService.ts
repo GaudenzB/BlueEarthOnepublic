@@ -157,8 +157,8 @@ function mapBubbleEmployeeToAppEmployee(bubbleEmployee: BubbleEmployee): InsertE
     status: mapBubbleStatusToAppStatus(bubbleEmployee.Status),
     avatarUrl: bubbleEmployee.Photo || '',
     bubbleId: bubbleEmployee._id,
-    location: `${bubbleEmployee.City || ''}${bubbleEmployee.City && bubbleEmployee.Country ? ', ' : ''}${bubbleEmployee.Country || ''}`.trim() || null,
-    bio: bubbleEmployee.About || null,
+    location: `${bubbleEmployee.City || ''}${bubbleEmployee.City && bubbleEmployee.Country ? ', ' : ''}${bubbleEmployee.Country || ''}`.trim() || '',
+    bio: bubbleEmployee.About || '',
   };
 }
 
@@ -193,27 +193,28 @@ function mapBubbleDepartmentToAppDepartment(bubbleDepartment?: string): string {
 
 /**
  * Map Bubble.io status values to our application's status values
- * Uses employeeStatusEnum values to ensure type safety
+ * Maps to the new standardized status values in the schema
  */
-function mapBubbleStatusToAppStatus(bubbleStatus?: string): EmployeeStatus {
-  if (!bubbleStatus) return 'ACTIVE';
+function mapBubbleStatusToAppStatus(bubbleStatus?: string): "active" | "inactive" | "on_leave" | "remote" {
+  if (!bubbleStatus) return 'active';
   
   const status = bubbleStatus.toUpperCase();
   
   if (status.includes('ACTIVE') || status.includes('CURRENT')) {
-    return 'ACTIVE';
+    return 'active';
   } else if (status.includes('LEAVE') || status.includes('ABSENT')) {
-    return 'ON_LEAVE';
-  } else if (status.includes('CONTRACT') || status.includes('EXTERNAL')) {
-    return 'CONTRACT';
+    return 'on_leave';
+  } else if (status.includes('CONTRACT') || status.includes('EXTERNAL') || status.includes('INTERN')) {
+    // Map contract and intern to active since we don't have an exact match
+    return 'active';
   } else if (status.includes('INACTIVE') || status.includes('FORMER') || status.includes('TERMINATED')) {
-    return 'INACTIVE';
-  } else if (status.includes('INTERN')) {
-    return 'INTERN';
+    return 'inactive';
+  } else if (status.includes('REMOTE')) {
+    return 'remote';
   }
   
-  // Default to active (must be a valid enum value)
-  return 'ACTIVE';
+  // Default to active as fallback
+  return 'active';
 }
 
 /**

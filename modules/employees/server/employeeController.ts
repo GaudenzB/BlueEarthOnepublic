@@ -143,7 +143,7 @@ export async function createEmployee(req: Request, res: Response) {
  */
 export async function updateEmployee(req: Request, res: Response) {
   try {
-    const id = parseInt(req.params['id']);
+    const id = req.params.id ? parseInt(req.params.id) : 0;
     
     // Create a partial schema based on the insertEmployeeSchema 
     // to validate update operations for complete type safety
