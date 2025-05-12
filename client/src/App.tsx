@@ -20,6 +20,7 @@ import Contracts from "@/pages/contracts";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
+import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES, isAuthRoute } from "@/lib/routes";
 
 // Auth protected route component
 function ProtectedRoute({ component: Component, requireSuperAdmin = false, ...rest }: any) {
@@ -30,11 +31,11 @@ function ProtectedRoute({ component: Component, requireSuperAdmin = false, ...re
   useEffect(() => {
     // If not authenticated, redirect to login
     if (!isAuthenticated) {
-      setLocation("/login");
+      setLocation(AUTH_ROUTES.LOGIN);
     }
     // If superadmin is required but user is not superadmin, redirect to home
     else if (requireSuperAdmin && !isSuperAdmin) {
-      setLocation("/");
+      setLocation(ROUTES.HOME);
     }
   }, [isAuthenticated, isSuperAdmin, requireSuperAdmin, setLocation]);
   

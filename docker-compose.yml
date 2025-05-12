@@ -7,11 +7,13 @@ services:
       target: builder # Use the builder stage for development
     ports:
       - "5000:5000"
+    # These environment variables override values from .env file
+    # They are kept here to ensure correct container connectivity
     environment:
-      - NODE_ENV=development
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/blueearth
       - REDIS_URL=redis://redis:6379
-      - SESSION_SECRET=local_development_secret_key
+    env_file:
+      - .env
     volumes:
       - .:/app
       - /app/node_modules
