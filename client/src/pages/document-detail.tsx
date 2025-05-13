@@ -118,25 +118,17 @@ export default function DocumentDetail() {
     retryDelay: 1000,
     enabled: !!id,
     // Add polling refresh interval if document is in a processing state
-    refetchInterval: (data: any) => {
-      // First extract the document from the response
-      let doc = null;
-      if (data) {
-        if ('success' in data && data.success && data.data) {
-          doc = data.data;
-        } else if ('id' in data) {
-          doc = data;
-        }
-      }
+    refetchInterval: (data) => {
+      // Extract document data regardless of response format
+      const doc = data?.data || data;
       
-      // If document is in a transitional state (PENDING, PROCESSING, QUEUED), poll every 3 seconds
-      if (doc && ['PENDING', 'PROCESSING', 'QUEUED'].includes(doc.processingStatus)) {
-        console.log("Document in processing state, polling enabled");
-        return 3000; // Poll every 3 seconds
+      // If document is in processing state, poll frequently
+      if (doc?.processingStatus === 'PROCESSING' || doc?.processingStatus === 'PENDING' || 
+          doc?.processingStatus === 'QUEUED') {
+        console.log("Document is processing, polling every 2 seconds");
+        return 2000; // Poll every 2 seconds while processing
       }
-      
-      // Otherwise, don't poll
-      return false;
+      return false; // Don't poll when completed
     },
     // Force a refresh after 3 seconds to ensure we get latest status
     staleTime: 3000
@@ -171,6 +163,14 @@ export default function DocumentDetail() {
       return;
     }
     
+    console.log("Status change check:", {
+      prevStatus,
+      currentStatus: doc.processingStatus,
+      isTransitioning: prevStatus && 
+        ['PENDING', 'PROCESSING', 'QUEUED'].includes(prevStatus) && 
+        doc.processingStatus === 'COMPLETED'
+    });
+    
     // Check if status changed from a processing state to COMPLETED
     if (prevStatus && 
         ['PENDING', 'PROCESSING', 'QUEUED'].includes(prevStatus) && 
@@ -180,11 +180,14 @@ export default function DocumentDetail() {
         description: "The document has been successfully processed with AI.",
         variant: "default" 
       });
+      
+      // Force an immediate refetch to ensure we have the latest data
+      refetch();
     }
     
     // Update previous status
     setPrevStatus(doc.processingStatus);
-  }, [documentResponse, prevStatus, toast]);
+  }, [documentResponse, prevStatus, toast, refetch]);
   
   // Process document mutation
   const processDocumentMutation = useMutation({
@@ -276,6 +279,9 @@ export default function DocumentDetail() {
 
   // Helper function to get status badge
   const getStatusBadge = (status: string) => {
+    // Debug logging for status changes
+    console.log("getStatusBadge called with status:", status);
+    
     switch (status) {
       case "COMPLETED":
         return <Badge variant="success" className="gap-1 px-2"><FileCheckIcon className="h-3 w-3" /> Processed</Badge>;
@@ -440,6 +446,14 @@ export default function DocumentDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Debug document processing status */}
+                {console.log("Document Processing Status Check:", {
+                  status: document.processingStatus,
+                  isCompleted: document.processingStatus === "COMPLETED",
+                  aiProcessed: document.aiProcessed,
+                  hasAiMetadata: !!document.aiMetadata
+                })}
+                
                 {document.processingStatus === "COMPLETED" ? (
                   <div className="border rounded-md aspect-[16/10] bg-muted flex items-center justify-center">
                     <PreviewIframe document={document} />
