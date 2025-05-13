@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 // Create a component to handle the preview iframe with document preview token
 // This is necessary because iframes don't send authentication headers by default
 const PreviewIframe: React.FC<{ document: any }> = ({ document }) => {
-  const [loading, setLoading] = React.useState<boolean>(false);
+  // State for error display if needed during preview
   const [error, setError] = React.useState<string | null>(null);
   
   // Check if we have a document with a preview token
@@ -86,7 +86,7 @@ const PreviewIframe: React.FC<{ document: any }> = ({ document }) => {
     <iframe 
       src={previewUrl}
       className="w-full h-full"
-      title={title}
+      title={document.title || "Document Preview"}
     />
   );
 };

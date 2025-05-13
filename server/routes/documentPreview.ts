@@ -2,8 +2,8 @@ import express, { Request, Response } from 'express';
 import { documentRepository } from '../repositories/documentRepository';
 import { downloadFile } from '../services/documentStorage';
 import { logger } from '../utils/logger';
-// Import JWT library using ES module syntax
-import jwt from 'jsonwebtoken';
+// Use our custom verifyToken function
+import { verifyToken } from '../utils/jwtHelper';
 
 // Get the JWT secret key - use same approach as in server/auth.ts
 const JWT_SECRET = process.env.JWT_SECRET || (
@@ -46,25 +46,36 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
       tokenPrefix: token.substring(0, 10) + '...'
     });
 
-    // Verify the token
-    let payload: any;
-    try {
-      // Use the imported jwt library directly
-      payload = jwt.verify(token, JWT_SECRET);
-      logger.debug('Token verified successfully');
-    } catch (err: any) {
-      logger.error('Token verification failed', { error: err.message });
+    // Verify the token using our custom verifyToken function
+    const payload = verifyToken(token, JWT_SECRET);
+    
+    if (!payload) {
+      logger.error('Token verification failed');
       return res.status(401).json({
         success: false,
-        message: `Invalid token: ${err.message}`
+        message: 'Invalid or expired token'
       });
     }
+    
+    logger.debug('Token verified successfully');
     
     // Set tenant ID (either from token or default)
     const tenantId = payload.tenantId || process.env.DEFAULT_TENANT_ID || '00000000-0000-0000-0000-000000000001';
     
-    // Get document ID from URL
-    const documentId = req.params.id;
+    // Get document ID from URL or JWT payload
+    const documentId = req.params.id || payload.documentId;
+    
+    // Verify the document ID is from the same document specified in the token
+    if (payload.documentId && payload.documentId !== documentId) {
+      logger.warn('Token document ID mismatch', { 
+        tokenDocId: payload.documentId, 
+        requestDocId: documentId 
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Token is not valid for this document'
+      });
+    }
     
     // Get document metadata
     const document = await documentRepository.getById(documentId, tenantId);
