@@ -92,6 +92,16 @@ export function calculateChecksum(buffer: Buffer): string {
 }
 
 /**
+ * Calculate base64-encoded MD5 checksum for S3 ContentMD5 header
+ * 
+ * @param buffer - File buffer
+ * @returns Base64 encoded MD5 checksum
+ */
+function calculateBase64MD5(buffer: Buffer): string {
+  return createHash('md5').update(buffer).digest('base64');
+}
+
+/**
  * Upload a file to storage with the provided storage key
  * 
  * @param buffer - File buffer
@@ -143,7 +153,7 @@ export async function uploadFile(buffer: Buffer, storageKey: string, contentType
             Key: storageKey,
             Body: buffer,
             ContentType: contentType,
-            ContentMD5: checksum,
+            ContentMD5: calculateBase64MD5(buffer), // AWS expects Base64 encoded MD5
             ServerSideEncryption: 'AES256', // Enable server-side encryption
             // Optionally use KMS for enhanced security
             ...(process.env.KMS_KEY_ID && { 
