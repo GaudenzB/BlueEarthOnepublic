@@ -1,42 +1,53 @@
 import React, { ReactNode } from "react";
-import { Box, Container, Heading, VStack } from "@chakra-ui/react";
+import { Layout, Typography } from "antd";
+
+const { Content } = Layout;
+const { Title } = Typography;
 
 interface PageLayoutProps {
   children: ReactNode;
   title?: string;
-  maxW?: string;
-  px?: number | string;
-  py?: number | string;
+  maxWidth?: string | number;
+  padding?: number | [number, number];
 }
 
 /**
  * PageLayout component for consistent page layouts across the application
  * @param children - The content to be displayed in the layout
  * @param title - Optional page title to display at the top
- * @param maxW - Optional max width for the container (default: "container.xl")
- * @param px - Optional horizontal padding (default: 4)
- * @param py - Optional vertical padding (default: 6)
+ * @param maxWidth - Optional max width for the container (default: 1200)
+ * @param padding - Optional padding (default: [16, 24])
  */
 export const PageLayout: React.FC<PageLayoutProps> = ({
   children,
   title,
-  maxW = "container.xl",
-  px = 4,
-  py = 6,
+  maxWidth = 1200,
+  padding = [16, 24],
 }) => {
   return (
-    <Box as="main" w="full" bg="gray.50">
-      <Container maxW={maxW} px={px} py={py}>
-        <VStack spacing="8" align="stretch">
+    <Layout.Content
+      style={{ 
+        background: "#f5f5f5",
+        width: "100%"
+      }}
+    >
+      <div
+        style={{ 
+          maxWidth: maxWidth,
+          margin: "0 auto",
+          padding: typeof padding === "number" ? padding : `${padding[1]}px ${padding[0]}px`,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {title && (
-            <Heading as="h1" size="xl" color="brand.500">
+            <Title level={2} style={{ color: "#1E2A40", marginBottom: 0 }}>
               {title}
-            </Heading>
+            </Title>
           )}
           {children}
-        </VStack>
-      </Container>
-    </Box>
+        </div>
+      </div>
+    </Layout.Content>
   );
 };
 
