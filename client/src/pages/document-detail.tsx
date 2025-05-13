@@ -245,20 +245,7 @@ export default function DocumentDetail() {
                 Share
               </Button>
             </PermissionGuard>
-            {(document.processingStatus === 'PENDING' || document.processingStatus === 'FAILED' || document.processingStatus === 'ERROR') && (
-              <PermissionGuard area="documents" permission="edit">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2" 
-                  onClick={() => processDocumentMutation.mutate()}
-                  disabled={processDocumentMutation.isPending}
-                >
-                  <BrainCircuitIcon className="h-4 w-4" />
-                  {processDocumentMutation.isPending ? 'Processing...' : 'Process Document'}
-                </Button>
-              </PermissionGuard>
-            )}
+
           </div>
         </div>
         
@@ -284,13 +271,68 @@ export default function DocumentDetail() {
                   <div className="border rounded-md aspect-[16/10] bg-muted flex flex-col items-center justify-center p-4">
                     <FileTextIcon className="h-16 w-16 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">Document processing</h3>
-                    <p className="text-center text-muted-foreground">
-                      {document.processingStatus === "PROCESSING" && "Your document is currently being processed. This might take a few minutes."}
-                      {document.processingStatus === "PENDING" && "Your document is waiting to be processed. This might take a few minutes."}
-                      {document.processingStatus === "QUEUED" && "Your document is queued for processing. This might take a few minutes."}
-                      {(document.processingStatus === "FAILED" || document.processingStatus === "ERROR") && 
-                        "There was an error processing this document. Our team has been notified."}
-                    </p>
+                    
+                    {document.processingStatus === "PROCESSING" && (
+                      <div className="text-center space-y-3 max-w-md">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+                          <div className="bg-blue-600 h-2.5 rounded-full animate-pulse" style={{ width: '75%' }}></div>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Your document is currently being processed with AI. This might take a few minutes.
+                        </p>
+                      </div>
+                    )}
+                    
+                    {document.processingStatus === "PENDING" && (
+                      <div className="text-center space-y-3 max-w-md">
+                        <div className="flex justify-center mb-2">
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="gap-2" 
+                            onClick={() => processDocumentMutation.mutate()}
+                            disabled={processDocumentMutation.isPending}
+                          >
+                            <BrainCircuitIcon className="h-4 w-4" />
+                            {processDocumentMutation.isPending ? 'Starting...' : 'Start Processing Now'}
+                          </Button>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Your document is waiting to be processed. Click the button above to start processing immediately.
+                        </p>
+                      </div>
+                    )}
+                    
+                    {document.processingStatus === "QUEUED" && (
+                      <div className="text-center space-y-3 max-w-md">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+                          <div className="bg-blue-600 h-2.5 rounded-full w-1/3 animate-pulse"></div>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Your document is queued for processing. It will be processed shortly.
+                        </p>
+                      </div>
+                    )}
+                    
+                    {(document.processingStatus === "FAILED" || document.processingStatus === "ERROR") && (
+                      <div className="text-center space-y-3 max-w-md">
+                        <p className="text-red-500 mb-2">
+                          There was an error processing this document.
+                        </p>
+                        <div className="flex justify-center">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="gap-2" 
+                            onClick={() => processDocumentMutation.mutate()}
+                            disabled={processDocumentMutation.isPending}
+                          >
+                            <BrainCircuitIcon className="h-4 w-4" />
+                            Try Again
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

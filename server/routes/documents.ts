@@ -292,12 +292,21 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
           logger.debug('Document record created in database', { documentId: document.id });
 
           // Step 3: Queue the document for AI processing if both operations succeeded
-          // TODO: Implement AI processing queue
+          logger.info('Starting document processing in the background', { documentId: document.id });
+          
+          // Start processing in the background
+          documentProcessor.processDocument(document.id, tenantId)
+            .then(success => {
+              logger.info('Document processing completed', { documentId: document.id, success });
+            })
+            .catch(error => {
+              logger.error('Document processing failed', { documentId: document.id, error });
+            });
           
           // Return success response
           res.status(201).json({
             success: true,
-            message: 'Document uploaded successfully',
+            message: 'Document uploaded successfully and processing has started',
             data: document
           });
         } catch (error) {
