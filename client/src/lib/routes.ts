@@ -33,6 +33,7 @@ export const ROUTES = {
   CHAKRA_TEST: '/chakra-test',
   DOCUMENTS_EXAMPLE: '/documents-example',
   PDF_TEST: '/pdf-test',
+  TEST_ROUTE: '/test-route',
 };
 
 // Admin Routes
@@ -89,6 +90,11 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       title: "PDF Test Tool",
       href: ROUTES.PDF_TEST,
       icon: "FileSearch",
+    },
+    {
+      title: "Test Route",
+      href: ROUTES.TEST_ROUTE,
+      icon: "LifeBuoy",
     },
   ];
   

@@ -20,6 +20,7 @@ import Contracts from "@/pages/contracts";
 import ChakraTest from "@/pages/chakra-test";
 import DocumentsExample from "@/pages/documents-example";
 import PdfTest from "@/pages/pdf-test";
+import TestRoute from "@/pages/test-route";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
@@ -89,6 +90,7 @@ function Router() {
       <Route path={ROUTES.CHAKRA_TEST} component={(props) => <ProtectedRoute component={ChakraTest} {...props} />} />
       <Route path={ROUTES.DOCUMENTS_EXAMPLE} component={(props) => <ProtectedRoute component={DocumentsExample} {...props} />} />
       <Route path={ROUTES.PDF_TEST} component={(props) => <ProtectedRoute component={PdfTest} {...props} />} />
+      <Route path={ROUTES.TEST_ROUTE} component={(props) => <ProtectedRoute component={TestRoute} {...props} />} />
       
       {/* Super admin routes */}
       <Route 
