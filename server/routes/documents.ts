@@ -727,6 +727,148 @@ router.delete('/:id', authenticate, tenantContext, async (req: Request, res: Res
 });
 
 /**
+ * @route GET /api/documents/:id/preview
+ * @desc Get a document preview (HTML format)
+ * @access Authenticated users
+ */
+router.get('/:id/preview', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const documentId = req.params.id;
+    const tenantId = (req as any).tenantId;
+    
+    // Get document metadata
+    const document = await documentRepository.getById(documentId, tenantId);
+    if (!document) {
+      return res.status(404).send(`
+        <html>
+          <body style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;">
+            <div style="text-align: center;">
+              <div style="color: #f87171; font-size: 48px; margin-bottom: 20px;">⚠️</div>
+              <h2 style="color: #1f2937; margin-bottom: 10px;">404 Page Not Found</h2>
+              <p style="color: #6b7280;">Did you forget to add the page to the router?</p>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+    
+    if (document.processingStatus !== 'COMPLETED') {
+      return res.status(202).send(`
+        <html>
+          <body style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;">
+            <div style="text-align: center;">
+              <div style="color: #3b82f6; font-size: 48px; margin-bottom: 20px;">⏳</div>
+              <h2 style="color: #1f2937; margin-bottom: 10px;">Processing</h2>
+              <p style="color: #6b7280;">Document is currently being processed. Please check back soon.</p>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+    
+    try {
+      // Download file from storage
+      const fileBuffer = await downloadFile(document.storageKey);
+      
+      // For PDF files, we'll use PDF.js or embed directly
+      if (document.mimeType === 'application/pdf') {
+        // Send a simple HTML page that embeds the PDF
+        res.setHeader('Content-Type', 'text/html');
+        res.send(`
+          <html>
+            <head>
+              <title>${document.title || document.originalFilename} - Preview</title>
+              <style>
+                body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+                #pdf-viewer { width: 100%; height: 100%; }
+              </style>
+            </head>
+            <body>
+              <object id="pdf-viewer" data="/api/documents/${documentId}/download" type="application/pdf" width="100%" height="100%">
+                <p>It appears you don't have a PDF plugin for this browser. 
+                   You can <a href="/api/documents/${documentId}/download">download the PDF file</a> instead.</p>
+              </object>
+            </body>
+          </html>
+        `);
+      } else if (document.mimeType.startsWith('image/')) {
+        // For images, display them directly
+        res.setHeader('Content-Type', 'text/html');
+        res.send(`
+          <html>
+            <head>
+              <title>${document.title || document.originalFilename} - Preview</title>
+              <style>
+                body, html { margin: 0; padding: 0; height: 100%; display: flex; justify-content: center; align-items: center; background-color: #f3f4f6; }
+                .image-container { max-width: 100%; max-height: 100%; display: flex; justify-content: center; align-items: center; }
+                img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <div class="image-container">
+                <img src="/api/documents/${documentId}/download" alt="${document.title || document.originalFilename}" />
+              </div>
+            </body>
+          </html>
+        `);
+      } else {
+        // For other file types, offer a download link
+        res.setHeader('Content-Type', 'text/html');
+        res.send(`
+          <html>
+            <head>
+              <title>${document.title || document.originalFilename} - Preview</title>
+              <style>
+                body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; background-color: #f3f4f6; }
+                .container { text-align: center; padding: 2rem; background-color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+                .icon { font-size: 3rem; margin-bottom: 1rem; color: #6b7280; }
+                h2 { color: #1f2937; margin-bottom: 1rem; }
+                p { color: #6b7280; margin-bottom: 1.5rem; }
+                .download-btn { display: inline-block; padding: 0.5rem 1rem; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 0.25rem; font-weight: 500; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="icon">📄</div>
+                <h2>Preview not available</h2>
+                <p>This file type (${document.mimeType}) cannot be previewed directly in the browser.</p>
+                <a href="/api/documents/${documentId}/download" class="download-btn">Download File</a>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      logger.error('Error generating preview for document', { error, documentId });
+      res.status(500).send(`
+        <html>
+          <body style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;">
+            <div style="text-align: center;">
+              <div style="color: #ef4444; font-size: 48px; margin-bottom: 20px;">❌</div>
+              <h2 style="color: #1f2937; margin-bottom: 10px;">Preview Error</h2>
+              <p style="color: #6b7280;">An error occurred while generating the preview. Please try downloading the file instead.</p>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+  } catch (error) {
+    logger.error('Error generating document preview', { error, id: req.params.id });
+    res.status(500).send(`
+      <html>
+        <body style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: Arial, sans-serif;">
+          <div style="text-align: center;">
+            <div style="color: #ef4444; font-size: 48px; margin-bottom: 20px;">❌</div>
+            <h2 style="color: #1f2937; margin-bottom: 10px;">Server Error</h2>
+            <p style="color: #6b7280;">An unexpected error occurred. Please try again later.</p>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+});
+
+/**
  * @route GET /api/documents/:id/analysis
  * @desc Get AI analysis for a document
  * @access Authenticated users
