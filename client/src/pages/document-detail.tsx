@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,7 @@ export default function DocumentDetail() {
   const [selectedTab, setSelectedTab] = React.useState("details");
   const toast = useToast();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   
   // States
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
@@ -182,9 +182,57 @@ export default function DocumentDetail() {
     }
   });
   
+  // Delete document mutation
+  const deleteDocumentMutation = useMutation({
+    mutationFn: () => {
+      return fetch(`/api/documents/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error('Failed to delete document');
+        }
+        return res.json();
+      });
+    },
+    onSuccess: () => {
+      createToast(toast, {
+        title: "Document deleted",
+        description: "Document has been permanently deleted.",
+        variant: "default"
+      });
+      
+      // Invalidate the documents list query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+      
+      // Navigate back to documents list
+      navigate('/documents');
+    },
+    onError: (error) => {
+      createToast(toast, {
+        title: "Deletion failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Handle document processing
   const handleProcessDocument = () => {
     processDocumentMutation.mutate();
+  };
+  
+  // Handle document deletion with confirmation
+  const handleDeleteDocument = () => {
+    setShowDeleteDialog(true);
+  };
+  
+  // Confirm and execute document deletion
+  const confirmDeleteDocument = () => {
+    deleteDocumentMutation.mutate();
+    setShowDeleteDialog(false);
   };
   
   if (isLoading) {
