@@ -25,6 +25,36 @@ import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 
 import { useToast } from "@/hooks/use-toast";
 
+// Create a component to handle the preview iframe with authentication
+// This is necessary because iframes don't send authentication headers by default
+const PreviewIframe: React.FC<{ documentId: string, title: string }> = ({ documentId, title }) => {
+  const [token, setToken] = React.useState<string | null>(null);
+  
+  React.useEffect(() => {
+    // Get the current authentication token from localStorage
+    const authToken = localStorage.getItem('token') || localStorage.getItem('authToken');
+    setToken(authToken);
+  }, []);
+  
+  if (!token) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <p className="text-muted-foreground">Loading preview...</p>
+      </div>
+    );
+  }
+  
+  // Include the token as a URL parameter for the iframe
+  // The server will need to be updated to accept this token
+  return (
+    <iframe 
+      src={`/api/documents/${documentId}/preview?token=${encodeURIComponent(token)}`}
+      className="w-full h-full"
+      title={title}
+    />
+  );
+};
+
 export default function DocumentDetail() {
   // Get document id from URL params
   const params = useParams<{ id: string }>();
@@ -362,9 +392,8 @@ export default function DocumentDetail() {
               <CardContent>
                 {document.processingStatus === "COMPLETED" ? (
                   <div className="border rounded-md aspect-[16/10] bg-muted flex items-center justify-center">
-                    <iframe 
-                      src={`/api/documents/${id}/preview`} 
-                      className="w-full h-full"
+                    <PreviewIframe 
+                      documentId={id}
                       title={document.title || document.originalFilename}
                     />
                   </div>

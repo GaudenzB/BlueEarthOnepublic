@@ -778,9 +778,57 @@ router.delete('/:id', authenticate, tenantContext, async (req: Request, res: Res
 /**
  * @route GET /api/documents/:id/preview
  * @desc Get a document preview (HTML format)
- * @access Authenticated users
+ * @access Authenticated users with either token in header or as URL query param
  */
-router.get('/:id/preview', authenticate, tenantContext, async (req: Request, res: Response) => {
+router.get('/:id/preview', async (req: Request, res: Response) => {
+  // Custom authentication for preview that accepts token as a URL parameter
+  // This is needed because iframes don't send authentication headers
+  const tokenFromQuery = req.query.token as string | undefined;
+  if (!tokenFromQuery && !req.headers.authorization) {
+    return res.status(401).json({
+      success: false,
+      message: "No token, authorization denied"
+    });
+  }
+  
+  // If token is in query params, verify it and set req.user
+  if (tokenFromQuery) {
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(tokenFromQuery, process.env.JWT_SECRET as string);
+      (req as any).user = decoded;
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token"
+      });
+    }
+  } else {
+    // Use standard authenticate middleware if token is in header
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+          success: false,
+          message: "No token, authorization denied"
+        });
+      }
+      
+      const token = authHeader.split(' ')[1];
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+      (req as any).user = decoded;
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token"
+      });
+    }
+  }
+  
+  // Apply tenant context middleware for multi-tenancy
+  (req as any).tenantId = process.env.DEFAULT_TENANT_ID || '00000000-0000-0000-0000-000000000001';
+  
   try {
     const documentId = req.params.id;
     const tenantId = (req as any).tenantId;
