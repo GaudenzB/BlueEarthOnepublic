@@ -41,6 +41,17 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
+// Helper function for typescript
+const createToast = (toast: any, props: any) => {
+  if (typeof toast === 'function') {
+    return toast(props);
+  } else if (toast && typeof toast.toast === 'function') {
+    return toast.toast(props);
+  }
+  console.error('Toast function not available');
+  return null;
+};
+
 export default function DocumentDetail() {
   const { id } = useParams<{ id: string }>();
   const [selectedTab, setSelectedTab] = React.useState("details");
@@ -114,7 +125,7 @@ export default function DocumentDetail() {
     if (prevStatus && 
         ['PENDING', 'PROCESSING', 'QUEUED'].includes(prevStatus) && 
         doc.processingStatus === 'COMPLETED') {
-      toast({
+      createToast(toast, {
         title: "Document processing complete",
         description: "The document has been successfully processed with AI.",
         variant: "default" 
@@ -144,7 +155,7 @@ export default function DocumentDetail() {
       });
     },
     onSuccess: () => {
-      toast({
+      createToast(toast, {
         title: "Processing started",
         description: "Document analysis has been queued and will begin processing shortly.",
         variant: "default"
@@ -159,7 +170,7 @@ export default function DocumentDetail() {
       }, 2000);
     },
     onError: (error) => {
-      toast({
+      createToast(toast, {
         title: "Processing failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
@@ -272,7 +283,7 @@ export default function DocumentDetail() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-9 w-9">
-                  <EllipsisHorizontalIcon className="h-4 w-4" />
+                  <MoreHorizontalIcon className="h-4 w-4" />
                   <span className="sr-only">More options</span>
                 </Button>
               </DropdownMenuTrigger>
