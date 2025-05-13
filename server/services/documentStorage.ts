@@ -211,6 +211,25 @@ export async function uploadFile(buffer: Buffer, storageKey: string, contentType
  * @param storageKey - Storage key
  * @returns Buffer containing the file data
  */
+/**
+ * Get information about the current storage mode
+ * 
+ * @returns Object containing storage mode information
+ */
+export function getStorageInfo(): {
+  mode: 'local' | 's3';
+  bucketName?: string;
+  region?: string;
+  isDevEnvironment: boolean;
+} {
+  return {
+    mode: useLocalStorage ? 'local' : 's3',
+    bucketName: useLocalStorage ? undefined : BUCKET_NAME,
+    region: useLocalStorage ? undefined : awsRegion,
+    isDevEnvironment: process.env.NODE_ENV !== 'production'
+  };
+}
+
 export async function downloadFile(storageKey: string): Promise<Buffer> {
   try {
     if (useLocalStorage) {
