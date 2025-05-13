@@ -35,16 +35,24 @@ export default function DocumentDetail() {
     enabled: !!id,
   });
 
-  // Use the document directly if it's already in the right format
-  // or extract it from the nested response structure if it's wrapped
-  const document = documentResponse?.success 
-    ? documentResponse.data 
-    : (documentResponse && !documentResponse.success) 
-      ? null 
-      : documentResponse;
-  
   // Debug logging
   console.log("Document detail response:", documentResponse);
+
+  // Special handling to check the response structure and extract the document correctly
+  let document = null;
+  if (documentResponse) {
+    // Case 1: Wrapped API response with success and data properties
+    if (typeof documentResponse === 'object' && 'success' in documentResponse) {
+      if (documentResponse.success && documentResponse.data) {
+        document = documentResponse.data;
+      }
+    }
+    // Case 2: Direct document object (the API returned the document directly)
+    else if (typeof documentResponse === 'object' && 'id' in documentResponse) {
+      document = documentResponse;
+    }
+  }
+  
   console.log("Extracted document:", document);
 
   // Helper function to get status badge
@@ -128,7 +136,7 @@ export default function DocumentDetail() {
     );
   }
 
-  if (error || !document || (documentResponse?.success === false)) {
+  if (error || !document) {
     return (
       <div className="space-y-6">
         <Link href="/documents">
