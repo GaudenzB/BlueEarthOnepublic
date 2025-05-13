@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeftIcon, FileCheckIcon, ClockIcon, MoreHorizontalIcon } from "lucide-react";
+import { ArrowLeftIcon, FileCheckIcon, ClockIcon, MoreHorizontalIcon, TrashIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileTextIcon } from "lucide-react";
@@ -57,9 +57,11 @@ export default function DocumentDetail() {
   const [selectedTab, setSelectedTab] = React.useState("details");
   const toast = useToast();
   const queryClient = useQueryClient();
-
-  // Track previous processing status to detect changes
-  const [prevStatus, setPrevStatus] = React.useState<string | null>(null);
+  const navigate = useNavigate();
+  
+  // States
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [prevStatus, setPrevStatus] = React.useState<string | null>(null); // Track previous processing status
   
   // Fetch document data with automatic polling for processing status
   const { data: documentResponse, isLoading, error, refetch } = useQuery({
@@ -217,6 +219,34 @@ export default function DocumentDetail() {
     );
   }
   
+  // Helper function to get processing status text
+  const getProcessingStatusText = (status: string): string => {
+    switch(status) {
+      case "PROCESSING":
+        return "Processing document...";
+      case "PENDING":
+        return "Pending processing...";
+      case "QUEUED":
+        return "Queued for processing...";
+      default:
+        return "Waiting to process...";
+    }
+  };
+  
+  // Helper function to get processing progress percentage
+  const getProcessingProgress = (status: string): number => {
+    switch(status) {
+      case "PROCESSING":
+        return 65;
+      case "PENDING":
+        return 25;
+      case "QUEUED":
+        return 15;
+      default:
+        return 5;
+    }
+  };
+  
   // Function to get the appropriate status badge based on processing status
   const getStatusBadge = (status: string) => {
     // Debug logging for status changes
@@ -369,10 +399,13 @@ export default function DocumentDetail() {
                     {!isProcessed && (
                       <div className="flex items-center justify-between mt-4">
                         <span className="text-sm text-muted-foreground">
-                          {document.processingStatus === "PROCESSING" ? (
-                            <div className="flex items-center gap-2">
-                              <span>Processing document...</span>
-                              <Progress value={45} className="w-24 h-2" />
+                          {document.processingStatus === "PROCESSING" || document.processingStatus === "PENDING" || document.processingStatus === "QUEUED" ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span>{getProcessingStatusText(document.processingStatus)}</span>
+                                <Progress value={getProcessingProgress(document.processingStatus)} className="w-24 h-2" />
+                              </div>
+                              <span className="text-xs italic">This may take up to a minute for large documents</span>
                             </div>
                           ) : (
                             "Document not yet processed with AI"
