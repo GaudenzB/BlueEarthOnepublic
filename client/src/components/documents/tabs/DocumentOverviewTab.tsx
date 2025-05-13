@@ -1,5 +1,5 @@
 import React from "react";
-import { Row, Col, Card, Typography, Descriptions, Space, Tag, Avatar } from "antd";
+import { Row, Col, Card, Typography, Descriptions, Space, Tag, Avatar, Badge } from "antd";
 import { FileOutlined, UserOutlined } from "@ant-design/icons";
 import { format } from "date-fns";
 import { Document, DOC_TYPES, VISIBILITY_OPTIONS } from "@/types/document";

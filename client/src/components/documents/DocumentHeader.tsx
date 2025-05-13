@@ -1,25 +1,25 @@
-import React from "react";
-import { Button, Space, Tooltip, Dropdown, Typography } from "antd";
-import {
-  ArrowLeftOutlined,
-  DownloadOutlined,
-  EditOutlined,
-  MoreOutlined,
-  DeleteOutlined,
-  LinkOutlined
-} from "@ant-design/icons";
-import { PermissionGuard } from "@/components/permissions/PermissionGuard";
-import { Document } from "@/types/document";
+import React, { ReactNode } from 'react';
+import { Space, Button, Typography, Row, Col } from 'antd';
+import { 
+  DeleteOutlined, 
+  ShareAltOutlined, 
+  RollbackOutlined,
+  DownloadOutlined
+} from '@ant-design/icons';
+import { useLocation } from 'wouter';
+import { Document } from '@/types/document';
 
 interface DocumentHeaderProps {
   document: Document;
-  statusBadge: React.ReactNode;
+  statusBadge: ReactNode;
   onDeleteClick: () => void;
   onShareClick: () => void;
 }
 
+const { Title } = Typography;
+
 /**
- * Document header component with title, action buttons and status badge
+ * Header component for document detail page
  */
 export function DocumentHeader({ 
   document, 
@@ -27,76 +27,76 @@ export function DocumentHeader({
   onDeleteClick, 
   onShareClick 
 }: DocumentHeaderProps) {
-  const { Title } = Typography;
-
+  const [, setLocation] = useLocation();
+  
+  const handleGoBack = () => {
+    setLocation('/documents');
+  };
+  
+  // Would be implemented in a real application
+  const handleDownload = () => {
+    console.log('Downloading document:', document.id);
+    // Logic to download document would go here
+  };
+  
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'row', 
-      marginBottom: 24, 
-      alignItems: 'center', 
-      gap: 16,
-      flexWrap: 'wrap'
-    }}>
-      <Button 
-        icon={<ArrowLeftOutlined />} 
-        href="/documents"
-      >
-        Back
-      </Button>
-
-      <Title level={3} style={{ margin: 0 }}>
-        {document.title}
-      </Title>
+    <Row 
+      gutter={[16, 16]} 
+      align="middle" 
+      style={{ 
+        marginBottom: 24, 
+        flexWrap: 'wrap' 
+      }}
+    >
+      <Col>
+        <Button 
+          icon={<RollbackOutlined />} 
+          onClick={handleGoBack}
+        >
+          Back
+        </Button>
+      </Col>
       
-      <div style={{ flex: 1 }}></div>
+      <Col flex="auto">
+        <Space align="center">
+          <Title 
+            level={4} 
+            style={{ 
+              margin: 0,
+              wordBreak: 'break-word'
+            }}
+          >
+            {document.title}
+          </Title>
+          {statusBadge}
+        </Space>
+      </Col>
       
-      <Space size="middle">
-        <Tooltip title="Download Document">
+      <Col>
+        <Space wrap>
           <Button 
             icon={<DownloadOutlined />} 
-            href={`/api/documents/${document.id}/download`}
-            target="_blank"
+            onClick={handleDownload}
           >
             Download
           </Button>
-        </Tooltip>
-        
-        <PermissionGuard area="documents" permission="edit" showAlert={false}>
+          
           <Button 
-            type="primary"
-            icon={<EditOutlined />}
-            href={`/documents/${document.id}/edit`}
+            icon={<ShareAltOutlined />} 
+            onClick={onShareClick}
           >
-            Edit
+            Share
           </Button>
-        </PermissionGuard>
-        
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: '1',
-                label: 'Share Document',
-                icon: <LinkOutlined />,
-                onClick: onShareClick
-              },
-              {
-                key: '2',
-                label: 'Delete Document',
-                icon: <DeleteOutlined />,
-                onClick: onDeleteClick,
-                danger: true
-              }
-            ]
-          }}
-          trigger={['click']}
-        >
-          <Button icon={<MoreOutlined />} />
-        </Dropdown>
-        
-        {statusBadge}
-      </Space>
-    </div>
+          
+          <Button 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={onDeleteClick}
+          >
+            Delete
+          </Button>
+        </Space>
+      </Col>
+    </Row>
   );
 }

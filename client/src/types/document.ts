@@ -1,62 +1,80 @@
 /**
- * Document interface defining the structure of a document object
+ * Document interface
  */
 export interface Document {
   id: string;
   title: string;
-  processingStatus: string;
+  description?: string;
   createdAt?: string;
   updatedAt?: string;
-  fileSize?: number;
-  type?: string;
-  visibility?: string;
-  description?: string;
-  tags?: string[];
-  sharedWith?: { name: string; email: string; accessLevel?: string }[];
-  versions?: any[];
-  comments?: any[];
-  timeline?: any[];
-  thumbnailUrl?: string;
-  documentType?: string;
-  isConfidential?: boolean;
-  aiProcessed?: boolean;
-  aiMetadata?: any;
   filename?: string;
   originalFilename?: string;
+  fileSize?: number;
   mimeType?: string;
+  checksum?: string;
+  storageKey?: string;
+  thumbnailUrl?: string;
+  documentType?: string;
+  type?: string;
+  tags?: string[];
+  processingStatus?: string;
+  processingError?: string;
+  aiProcessed?: boolean;
+  aiMetadata?: any;
+  isConfidential?: boolean;
+  visibility?: string;
+  sharedWith?: Array<{
+    id?: string;
+    name: string;
+    email: string;
+    accessLevel?: string;
+  }>;
+  versions?: Array<{
+    version: string;
+    date: string;
+    modifiedBy: string;
+  }>;
+  comments?: Array<{
+    id: string;
+    author: string;
+    date: string;
+    text: string;
+  }>;
+  timeline?: Array<{
+    type: string;
+    action: string;
+    timestamp: string;
+    details?: string;
+  }>;
 }
 
 /**
- * Status options for document processing
- */
-export const DOC_STATUS_OPTIONS = {
-  PENDING: "Pending",
-  PROCESSING: "Processing",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-  COMPLETED: "Completed",
-  ERROR: "Error",
-  QUEUED: "Queued",
-};
-
-/**
- * Document type options
+ * Document types
  */
 export const DOC_TYPES = {
-  INVOICE: "Invoice",
-  CONTRACT: "Contract",
-  REPORT: "Report",
-  PROPOSAL: "Proposal",
-  FORM: "Form",
-  OTHER: "Other",
+  INVOICE: 'Invoice',
+  CONTRACT: 'Contract',
+  REPORT: 'Report',
+  PRESENTATION: 'Presentation',
+  OTHER: 'Other Document'
 };
 
 /**
  * Document visibility options
  */
 export const VISIBILITY_OPTIONS = {
-  PUBLIC: "Public",
-  PRIVATE: "Private",
-  SHARED: "Shared",
-  RESTRICTED: "Restricted",
+  PUBLIC: 'Public',
+  PRIVATE: 'Private',
+  CONFIDENTIAL: 'Confidential',
+  RESTRICTED: 'Restricted Access'
+};
+
+/**
+ * Document processing status options
+ */
+export const PROCESSING_STATUS = {
+  PENDING: 'Pending',
+  PROCESSING: 'Processing',
+  COMPLETED: 'Completed',
+  FAILED: 'Failed'
 };
