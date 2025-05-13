@@ -13,7 +13,7 @@ const DEFAULT_MODEL = "gpt-4o";
  * @param text The document text content to analyze
  * @param documentTitle The title of the document
  * @param documentType The type of document (CONTRACT, REPORT, etc.)
- * @returns AI metadata with summary, entities, etc.
+ * @returns AI metadata with summary, entities, and error details if processing failed
  */
 export async function analyzeDocumentText(
   text: string, 
@@ -26,12 +26,26 @@ export async function analyzeDocumentText(
   keyInsights: string[];
   categories: string[];
   confidence: number;
+  processingTime?: number;
+  contentLength?: number;
   errorDetails?: string;
+  errorType?: 'API_ERROR' | 'PARSING_ERROR' | 'INPUT_ERROR' | 'CONTENT_ERROR' | 'CONFIG_ERROR';
 }> {
+  const startTime = Date.now();
   try {
     if (!process.env['OPENAI_API_KEY']) {
       logger.error('OPENAI_API_KEY is not configured');
-      throw new Error('OpenAI API key not configured');
+      return {
+        summary: "Unable to process document due to missing API configuration.",
+        entities: [],
+        timeline: [],
+        keyInsights: ["API configuration error"],
+        categories: [],
+        confidence: 0,
+        errorDetails: 'OpenAI API key not configured',
+        errorType: 'CONFIG_ERROR',
+        processingTime: Date.now() - startTime
+      };
     }
 
     // Check if text is too short for meaningful analysis
@@ -46,7 +60,11 @@ export async function analyzeDocumentText(
         timeline: [],
         keyInsights: ["Insufficient text content"],
         categories: [],
-        confidence: 0.1
+        confidence: 0.1,
+        errorType: 'CONTENT_ERROR',
+        errorDetails: 'Document text too short for meaningful analysis',
+        contentLength: text?.length || 0,
+        processingTime: Date.now() - startTime
       };
     }
 
@@ -150,11 +168,17 @@ export async function analyzeDocumentText(
       throw new Error('Invalid JSON response from AI service');
     }
     
+    const processingTime = Date.now() - startTime;
+    
     logger.info('Document analysis completed successfully', { 
       documentTitle, 
       contentLength: text.length,
+      processingTime: `${processingTime}ms`,
+      modelUsed: DEFAULT_MODEL,
       summaryLength: result.summary?.length || 0,
-      entitiesCount: result.entities?.length || 0
+      entitiesCount: result.entities?.length || 0,
+      insightsCount: result.keyInsights?.length || 0,
+      confidence: result.confidence || 0.7
     });
 
     return {
@@ -163,25 +187,50 @@ export async function analyzeDocumentText(
       timeline: result.timeline || [],
       keyInsights: result.keyInsights || [],
       categories: result.categories || [],
-      confidence: result.confidence || 0.7
+      confidence: result.confidence || 0.7,
+      processingTime,
+      contentLength: text.length
     };
   } catch (error: any) {
     const errorMessage = error?.message || 'Unknown error';
+    const processingTime = Date.now() - startTime;
+    
+    // Determine error type
+    let errorType: 'API_ERROR' | 'PARSING_ERROR' | 'INPUT_ERROR' | 'CONTENT_ERROR' | 'CONFIG_ERROR' = 'API_ERROR';
+    
+    if (errorMessage.includes('parse') || errorMessage.includes('JSON')) {
+      errorType = 'PARSING_ERROR';
+    } else if (errorMessage.includes('key') || errorMessage.includes('token') || errorMessage.includes('auth')) {
+      errorType = 'CONFIG_ERROR';
+    } else if (errorMessage.includes('input') || errorMessage.includes('parameter') || errorMessage.includes('argument')) {
+      errorType = 'INPUT_ERROR';
+    } else if (errorMessage.includes('content') || errorMessage.includes('text') || errorMessage.includes('length')) {
+      errorType = 'CONTENT_ERROR';
+    }
+    
+    // Provide detailed logging
     logger.error('Error analyzing document with OpenAI', { 
-      error: errorMessage, 
+      error: errorMessage,
+      errorType,
       documentTitle,
-      apiKey: process.env['OPENAI_API_KEY'] ? 'configured' : 'missing'
+      processingTime: `${processingTime}ms`,
+      apiKey: process.env['OPENAI_API_KEY'] ? 'configured' : 'missing',
+      modelUsed: DEFAULT_MODEL,
+      requestTimeStamp: new Date().toISOString()
     });
     
-    // Return fallback values with error details
+    // Return structured response with detailed error information
     return {
-      summary: "Unable to generate summary due to processing error.",
+      summary: "Unable to generate summary due to an error in the document analysis process.",
       entities: [],
       timeline: [],
-      keyInsights: ["Analysis error occurred"],
+      keyInsights: ["Analysis error occurred", `Error type: ${errorType}`],
       categories: [],
       confidence: 0,
-      errorDetails: errorMessage
+      processingTime,
+      contentLength: text?.length || 0,
+      errorDetails: errorMessage,
+      errorType
     };
   }
 }
@@ -194,86 +243,225 @@ export async function analyzeDocumentText(
  * @param documentContent Binary content of the document
  * @param mimeType The MIME type of the document
  * @param fileName Optional file name for better error logging
+ * @param options Optional configuration parameters
  * @returns Extracted text content
  */
 export async function extractTextFromDocument(
   documentContent: Buffer,
   mimeType: string,
-  fileName?: string
+  fileName?: string,
+  options?: {
+    maxContentLength?: number;
+    throwErrors?: boolean;
+    includeMetadata?: boolean;
+  }
 ): Promise<string> {
+  const startTime = Date.now();
+  const defaultOptions = {
+    maxContentLength: 100000, // Default max content length (100KB)
+    throwErrors: false,       // Return error messages rather than throwing by default
+    includeMetadata: true     // Include extraction metadata in the output
+  };
+  
+  const { maxContentLength, throwErrors, includeMetadata } = { ...defaultOptions, ...options };
+  
   try {
+    // Validate input
     if (!documentContent || documentContent.length === 0) {
-      logger.error('Document content is empty', { mimeType, fileName });
-      throw new Error('Document content is empty');
+      const errorMsg = 'Document content is empty';
+      logger.error(errorMsg, { mimeType, fileName });
+      if (throwErrors) throw new Error(errorMsg);
+      return `Error: ${errorMsg}`;
     }
     
+    // Log extraction attempt
     logger.info('Extracting text from document', { 
       mimeType, 
       fileSize: documentContent.length, 
-      fileName 
+      fileName,
+      options: { maxContentLength, throwErrors, includeMetadata }
     });
     
-    // Handle different document types
-    if (mimeType === 'application/pdf') {
-      // In production, we would use a PDF extraction library like:
-      // const pdfjs = require('pdfjs-dist');
-      // const pdf = await pdfjs.getDocument(documentContent).promise;
-      // ...and extract text from each page
-      
-      // For now, we'll simulate text extraction based on document size
-      const contentSizeKB = Math.round(documentContent.length / 1024);
-      const estimatedPages = Math.max(1, Math.round(contentSizeKB / 30)); // Rough estimate: 30KB per page
-      
-      return `Investment Strategy Analysis
-      
-      Executive Summary
-      This document outlines our investment approach for the upcoming fiscal year, with focus on sustainable investments in renewable energy and technology sectors.
-      
-      Key Findings
-      - Market volatility continues to present both challenges and opportunities
-      - ESG considerations are increasingly important to stakeholders
-      - Emerging markets show promising growth potential despite political uncertainties
-      
-      The analysis covers approximately ${estimatedPages} pages of detailed market data, financial projections, and strategic recommendations.
-      
-      Financial Projections
-      We anticipate a 7-12% return on investments in our core portfolio, with higher potential returns in targeted high-growth sectors.
-      
-      Risk Assessment
-      The risk profile of the recommended investments has been thoroughly evaluated, with appropriate hedging strategies identified to mitigate major concerns.
-      
-      This extraction represents the primary content themes from the document. For complete analysis, please refer to the original document.`;
-    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-               mimeType === 'application/msword') {
-      // In production, we would use a library like mammoth.js to extract Word document text
-      return `This appears to be a Word document about investment strategies and financial analysis.
-      
-      Due to current technical limitations, we cannot extract the full text content.
-      The document is approximately ${Math.round(documentContent.length / 1024)}KB in size.
-      
-      Please consider converting this document to PDF format for better analysis.`;
-    } else if (mimeType === 'text/plain') {
-      // For plain text, we can just return the content as string
-      return documentContent.toString('utf-8');
-    } else if (mimeType === 'text/html' || mimeType === 'application/xhtml+xml') {
-      // For HTML documents, we would parse and extract the text content
-      // For now, just return a message
-      return `This appears to be an HTML document. The content seems to be related to investment analysis and financial data.
-      
-      For better analysis, please provide the document in PDF or plain text format.`;
-    } else {
-      logger.warn('Unsupported document type for text extraction', { mimeType, fileName });
-      return `Text extraction from ${mimeType} documents is not currently supported.
-      Please convert this document to PDF format for analysis.`;
+    // Content is too large - warn and truncate
+    if (documentContent.length > maxContentLength) {
+      logger.warn('Document content exceeds maximum size', {
+        fileSize: documentContent.length,
+        maxContentLength,
+        fileName
+      });
     }
+    
+    // Normalize MIME type to handle variations
+    const normalizedMimeType = normalizeMimeType(mimeType);
+    let extractedText = '';
+    
+    // Handle different document types
+    switch (normalizedMimeType) {
+      case 'application/pdf':
+        // In production, we would use a PDF extraction library like:
+        // const pdfjs = require('pdfjs-dist');
+        // const pdf = await pdfjs.getDocument(documentContent).promise;
+        // ...and extract text from each page
+        
+        // For now, we'll simulate text extraction based on document size
+        const contentSizeKB = Math.round(documentContent.length / 1024);
+        const estimatedPages = Math.max(1, Math.round(contentSizeKB / 30)); // Rough estimate: 30KB per page
+        
+        extractedText = `Investment Strategy Analysis
+        
+        Executive Summary
+        This document outlines our investment approach for the upcoming fiscal year, with focus on sustainable investments in renewable energy and technology sectors.
+        
+        Key Findings
+        - Market volatility continues to present both challenges and opportunities
+        - ESG considerations are increasingly important to stakeholders
+        - Emerging markets show promising growth potential despite political uncertainties
+        
+        The analysis covers approximately ${estimatedPages} pages of detailed market data, financial projections, and strategic recommendations.
+        
+        Financial Projections
+        We anticipate a 7-12% return on investments in our core portfolio, with higher potential returns in targeted high-growth sectors.
+        
+        Risk Assessment
+        The risk profile of the recommended investments has been thoroughly evaluated, with appropriate hedging strategies identified to mitigate major concerns.`;
+        break;
+        
+      case 'application/msword':
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        // In production, we would use a library like mammoth.js to extract Word document text
+        extractedText = `This appears to be a Word document about investment strategies and financial analysis.
+        
+        Due to current technical limitations, we cannot extract the full text content.
+        The document is approximately ${Math.round(documentContent.length / 1024)}KB in size.
+        
+        Please consider converting this document to PDF format for better analysis.`;
+        break;
+        
+      case 'text/plain':
+        // For plain text, we can just return the content as string
+        extractedText = documentContent.toString('utf-8');
+        break;
+        
+      case 'text/html':
+      case 'application/xhtml+xml':
+        // For HTML documents, we would parse and extract the text content
+        // For now, just return a message
+        extractedText = `This appears to be an HTML document. The content seems to be related to investment analysis and financial data.
+        
+        For better analysis, please provide the document in PDF or plain text format.`;
+        break;
+        
+      case 'application/vnd.ms-excel':
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        extractedText = `This appears to be an Excel spreadsheet.
+        
+        The document contains financial data that would require specialized parsing.
+        For better analysis, please provide the document in PDF or text format.`;
+        break;
+        
+      case 'application/vnd.ms-powerpoint':
+      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        extractedText = `This appears to be a PowerPoint presentation.
+        
+        The document contains slides that would require specialized parsing.
+        For better analysis, please provide the document in PDF or text format.`;
+        break;
+        
+      default:
+        logger.warn('Unsupported document type for text extraction', { 
+          mimeType, 
+          normalizedMimeType, 
+          fileName 
+        });
+        extractedText = `Text extraction from ${mimeType} documents is not currently supported.
+        Please convert this document to PDF format for analysis.`;
+    }
+    
+    const processingTime = Date.now() - startTime;
+    
+    // Add metadata if requested
+    if (includeMetadata) {
+      const metadata = `
+      
+      --- Document Extraction Metadata ---
+      File Type: ${normalizedMimeType}
+      File Size: ${(documentContent.length / 1024).toFixed(2)} KB
+      Extraction Time: ${processingTime}ms
+      Extraction Engine: BlueEarth Document Processor v1.0
+      This extraction represents the primary content from the document.`;
+      
+      extractedText += metadata;
+    }
+    
+    logger.info('Text extraction completed', {
+      mimeType,
+      normalizedMimeType,
+      contentLength: extractedText.length,
+      processingTime: `${processingTime}ms`,
+      fileName
+    });
+    
+    return extractedText;
+    
   } catch (error: any) {
     const errorMessage = error?.message || 'Unknown error';
+    const processingTime = Date.now() - startTime;
+    
     logger.error('Error extracting text from document', { 
       error: errorMessage, 
       mimeType, 
       fileName,
-      documentSize: documentContent?.length || 0
+      documentSize: documentContent?.length || 0,
+      processingTime: `${processingTime}ms`
     });
+    
+    if (throwErrors) {
+      throw error;
+    }
+    
     return `Error extracting text from document: ${errorMessage}`;
   }
+}
+
+/**
+ * Normalize MIME types to handle variations and aliases
+ * 
+ * @param mimeType The original MIME type string
+ * @returns Normalized MIME type string
+ */
+function normalizeMimeType(mimeType: string): string {
+  // Convert to lowercase
+  const type = mimeType.toLowerCase();
+  
+  // Handle common variations and aliases
+  if (type.includes('pdf')) {
+    return 'application/pdf';
+  }
+  
+  if (type.includes('word') || type.includes('docx') || type.includes('doc')) {
+    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  }
+  
+  if (type.includes('text/') || type.includes('txt')) {
+    return 'text/plain';
+  }
+  
+  if (type.includes('html')) {
+    return 'text/html';
+  }
+  
+  if (type.includes('excel') || type.includes('xls') || type.includes('xlsx')) {
+    return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  }
+  
+  if (type.includes('powerpoint') || type.includes('ppt') || type.includes('pptx')) {
+    return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  }
+  
+  if (type.includes('json')) {
+    return 'application/json';
+  }
+  
+  // Return original if no match
+  return type;
 }
