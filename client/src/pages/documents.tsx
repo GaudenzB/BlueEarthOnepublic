@@ -1,41 +1,54 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Box, 
+  Container, 
+  Heading, 
+  Alert, 
+  AlertIcon, 
+  Text,
+  Flex,
+  useColorModeValue,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Icon,
+  Tooltip
+} from "@chakra-ui/react";
+import {
+  InfoIcon,
+  AttachmentIcon,
+  DownloadIcon,
+  DeleteIcon,
+  EditIcon,
+  ViewIcon
+} from "@chakra-ui/icons";
+import { Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
 import { Button } from "@/components/ui/button";
 import DocumentList from "@/components/documents/DocumentList";
 import DocumentUpload from "@/components/documents/DocumentUpload";
 import { documentTypeEnum } from "@shared/schema/documents/documents";
-import { PlusIcon, FolderIcon, ClockIcon, FileTextIcon } from "lucide-react";
+import { PlusIcon, FolderIcon, ClockIcon, FileTextIcon, MoreHorizontalIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 
 export default function Documents() {
   const [activeTab, setActiveTab] = useState("all");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const { toast } = useToast();
+  const bgColor = useColorModeValue("white", "gray.800");
   
   const { data: documentsResponse, isLoading, refetch, error } = useQuery({
     queryKey: ['/api/documents'],
     retry: false,
-    // Enable some console logging for debugging
-    onSuccess: (data) => {
-      console.log('Documents query succeeded:', {
-        dataExists: !!data,
-        response: data,
-        isWrappedFormat: !!(data && 'success' in data && 'data' in data),
-        documentCount: data && 'data' in data && Array.isArray(data.data) ? data.data.length : 0
-      });
-    },
     onError: (err) => {
       console.error('Documents query failed:', err);
     }
   });
   
   // Extract the documents array from the response
-  // The API returns { success: true, data: [...documents], pagination: {...} }
   const documents = React.useMemo(() => {
     if (!documentsResponse) return [];
     
@@ -64,8 +77,9 @@ export default function Documents() {
     setIsUploadModalOpen(false);
   };
 
-  const handleFilterChange = (value: string) => {
-    setActiveTab(value);
+  const handleFilterChange = (index: number) => {
+    const tabValues = ["all", "recent", "contracts"];
+    setActiveTab(tabValues[index]);
   };
 
   return (
@@ -75,81 +89,64 @@ export default function Documents() {
         <meta name="description" content="Document management for BlueEarth Capital. View, upload, and manage company documents securely." />
       </Helmet>
       
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Documents</h1>
-          <p className="text-muted-foreground">View and manage company documents</p>
-        </div>
-        <PermissionGuard area="documents" permission="edit">
-          <Button 
-            onClick={() => setIsUploadModalOpen(true)} 
-            className="flex items-center gap-2"
-          >
-            <PlusIcon size={16} />
-            Upload Document
-          </Button>
-        </PermissionGuard>
-      </div>
-
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle>Document Overview</CardTitle>
-          <CardDescription>
-            Access all company documents from a central location
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all" value={activeTab} onValueChange={handleFilterChange}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all" className="flex items-center gap-2">
-                <FolderIcon size={16} />
-                All Documents
-              </TabsTrigger>
-              <TabsTrigger value="recent" className="flex items-center gap-2">
-                <ClockIcon size={16} />
-                Recent
-              </TabsTrigger>
-              <TabsTrigger value="contracts" className="flex items-center gap-2">
-                <FileTextIcon size={16} />
-                Contracts
-              </TabsTrigger>
-            </TabsList>
+      <Container maxW="6xl" px={6} py={6}>
+        {/* Page Header */}
+        <Flex justify="space-between" align="center" mb={6}>
+          <Heading size="lg" color="brand.700">Documents</Heading>
+          <PermissionGuard area="documents" permission="edit">
+            <Button 
+              onClick={() => setIsUploadModalOpen(true)} 
+              className="flex items-center gap-2"
+            >
+              <PlusIcon size={16} />
+              Upload Document
+            </Button>
+          </PermissionGuard>
+        </Flex>
+        
+        {/* Permission Alert */}
+        <Alert status="warning" mb={6} borderRadius="md">
+          <AlertIcon />
+          <Text>You don't have permission to upload or edit documents.</Text>
+        </Alert>
+        
+        {/* Document Tabs */}
+        <Box bg={bgColor} borderRadius="md" boxShadow="sm" mb={6}>
+          <Tabs variant="soft-rounded" colorScheme="blue" onChange={handleFilterChange}>
+            <TabList px={4} pt={4}>
+              <Tab>All</Tab>
+              <Tab>Last 30 Days</Tab>
+              <Tab>Contracts</Tab>
+            </TabList>
             
-            <TabsContent value="all">
-              <DocumentList 
-                documents={documents} 
-                isLoading={isLoading} 
-                filter="all"
-              />
-              {documentsResponse && (
-                <div className="p-4 bg-muted/20 rounded-md mt-4 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Debug Info: Found {documents.length} documents.
-                    Response format: {Array.isArray(documentsResponse) ? 'Direct array' : 
-                      ('success' in documentsResponse) ? 'API standard format' : 'Unknown'}
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="recent">
-              <DocumentList 
-                documents={documents} 
-                isLoading={isLoading} 
-                filter="recent"
-              />
-            </TabsContent>
-            
-            <TabsContent value="contracts">
-              <DocumentList 
-                documents={documents} 
-                isLoading={isLoading} 
-                filter="CONTRACT"
-              />
-            </TabsContent>
+            <TabPanels>
+              <TabPanel>
+                <DocumentList 
+                  documents={documents} 
+                  isLoading={isLoading} 
+                  filter="all"
+                />
+              </TabPanel>
+              
+              <TabPanel>
+                <DocumentList 
+                  documents={documents} 
+                  isLoading={isLoading} 
+                  filter="recent"
+                />
+              </TabPanel>
+              
+              <TabPanel>
+                <DocumentList 
+                  documents={documents} 
+                  isLoading={isLoading} 
+                  filter="CONTRACT"
+                />
+              </TabPanel>
+            </TabPanels>
           </Tabs>
-        </CardContent>
-      </Card>
+        </Box>
+      </Container>
 
       <DocumentUpload 
         isOpen={isUploadModalOpen} 

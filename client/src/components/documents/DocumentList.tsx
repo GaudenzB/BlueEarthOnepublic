@@ -1,36 +1,45 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "wouter";
+import {
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Box,
+  Flex,
+  Text,
+  Badge,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Icon,
+  Avatar,
+  Tooltip,
+  Skeleton,
+  Stack,
+  Center,
+  useColorModeValue
+} from "@chakra-ui/react";
 import { 
-  Table, 
-  TableHeader, 
-  TableRow, 
-  TableHead, 
-  TableBody, 
-  TableCell 
-} from "@/components/ui/table";
+  InfoIcon, 
+  AttachmentIcon, 
+  DownloadIcon, 
+  DeleteIcon, 
+  EditIcon, 
+  ViewIcon, 
+  CheckIcon, 
+  WarningIcon, 
+  TimeIcon
+} from "@chakra-ui/icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  FileIcon, 
-  FileTextIcon, 
-  FileCheckIcon,
-  FileX2Icon, 
-  MoreHorizontalIcon, 
-  ClockIcon,
-  FilePenIcon,
-  ImageIcon,
-  FileEditIcon,
-  HelpCircleIcon,
-  Receipt,
-  Trash2Icon
-} from "lucide-react";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { PermissionGuard } from "@/components/permissions/PermissionGuard";
+import { queryClient } from "@/lib/queryClient";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,10 +50,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
-import { PermissionGuard } from "@/components/permissions/PermissionGuard";
-import { queryClient } from "@/lib/queryClient";
 
 interface DocumentListProps {
   documents: any[];
@@ -57,6 +62,8 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   const [documentToDelete, setDocumentToDelete] = useState<{id: string, title: string} | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
   
   // Debug logging to help diagnose document data issues
   console.log('DocumentList component:', {
@@ -118,41 +125,71 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     }
   };
 
-  const getDocumentTypeIcon = (type: string | null, className: string = "h-4 w-4") => {
+  const getDocumentTypeIcon = (type: string | null) => {
     switch (type) {
       case "CONTRACT":
-        return <FileTextIcon className={className} />;
+        return <Icon as={AttachmentIcon} />;
       case "AGREEMENT":
-        return <FileCheckIcon className={className} />;
+        return <Icon as={CheckIcon} />;
       case "REPORT":
-        return <FilePenIcon className={className} />;
+        return <Icon as={InfoIcon} />;
       case "POLICY":
-        return <FileEditIcon className={className} />;
+        return <Icon as={InfoIcon} />;
       case "INVOICE":
-        return <Receipt className={className} />;
+        return <Icon as={AttachmentIcon} />;
       case "PRESENTATION":
-        return <ImageIcon className={className} />;
+        return <Icon as={InfoIcon} />;
       case "CORRESPONDENCE":
-        return <FileTextIcon className={className} />;
+        return <Icon as={InfoIcon} />;
       default:
-        return <HelpCircleIcon className={className} />;
+        return <Icon as={AttachmentIcon} />;
     }
   };
 
   const getProcessingStatusBadge = (status: string) => {
     switch (status) {
       case "COMPLETED":
-        return <Badge variant="success" className="gap-1 px-2"><FileCheckIcon className="h-3 w-3" /> Processed</Badge>;
+        return (
+          <Tooltip label="Document processed successfully">
+            <Badge colorScheme="green" display="flex" alignItems="center">
+              <CheckIcon mr={1} /> Processed
+            </Badge>
+          </Tooltip>
+        );
       case "PROCESSING":
-        return <Badge variant="warning" className="gap-1 px-2"><ClockIcon className="h-3 w-3" /> Processing</Badge>;
+        return (
+          <Tooltip label="Document is being processed">
+            <Badge colorScheme="yellow" display="flex" alignItems="center">
+              <TimeIcon mr={1} /> Processing
+            </Badge>
+          </Tooltip>
+        );
       case "PENDING":
       case "QUEUED":
-        return <Badge variant="outline" className="gap-1 px-2"><ClockIcon className="h-3 w-3" /> Pending</Badge>;
+        return (
+          <Tooltip label="Document is waiting for processing">
+            <Badge colorScheme="blue" display="flex" alignItems="center">
+              <TimeIcon mr={1} /> Pending
+            </Badge>
+          </Tooltip>
+        );
       case "FAILED":
       case "ERROR":
-        return <Badge variant="destructive" className="gap-1 px-2"><FileX2Icon className="h-3 w-3" /> Failed</Badge>;
+        return (
+          <Tooltip label="Document processing failed">
+            <Badge colorScheme="red" display="flex" alignItems="center">
+              <WarningIcon mr={1} /> Failed
+            </Badge>
+          </Tooltip>
+        );
       default:
-        return <Badge variant="secondary" className="gap-1 px-2"><FileIcon className="h-3 w-3" /> Unknown</Badge>;
+        return (
+          <Tooltip label="Unknown document status">
+            <Badge colorScheme="gray" display="flex" alignItems="center">
+              <InfoIcon mr={1} /> Unknown
+            </Badge>
+          </Tooltip>
+        );
     }
   };
 
@@ -160,10 +197,13 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     if (filter === "all") {
       return documents;
     } else if (filter === "recent") {
-      // Sort by created date and get first 10
-      return [...documents]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 10);
+      // Get documents from the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      return documents.filter(doc => 
+        new Date(doc.createdAt) >= thirtyDaysAgo
+      );
     } else {
       // Filter by document type
       return documents.filter(doc => doc.documentType === filter);
@@ -172,136 +212,139 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
 
   if (isLoading) {
     return (
-      <div className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <Skeleton className="h-4 w-[150px]" />
-          <Skeleton className="h-8 w-[100px]" />
-        </div>
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array(5).fill(0).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-[40px]" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <Box w="100%" p={4}>
+        <Stack spacing={4}>
+          <Skeleton height="40px" />
+          <Skeleton height="40px" />
+          <Skeleton height="40px" />
+          <Skeleton height="40px" />
+          <Skeleton height="40px" />
+        </Stack>
+      </Box>
     );
   }
 
   if (filteredDocuments.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 border rounded-md bg-muted/10">
-        <FileIcon className="h-12 w-12 text-muted-foreground mb-3" />
-        <h3 className="text-lg font-medium">No documents found</h3>
-        <p className="text-muted-foreground mb-4">
+      <Center py={10} flexDirection="column" borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+        <Icon as={AttachmentIcon} boxSize={12} color="gray.400" mb={3} />
+        <Text fontSize="lg" fontWeight="medium" mb={1}>No documents found</Text>
+        <Text color="gray.500" mb={4}>
           {filter === "all" 
             ? "No documents have been uploaded yet."
             : filter === "recent"
-              ? "No recent documents found."
+              ? "No documents from the last 30 days."
               : `No ${filter.toLowerCase()} documents found.`}
-        </p>
+        </Text>
         <PermissionGuard area="documents" permission="edit">
           <Button variant="outline">Upload your first document</Button>
         </PermissionGuard>
-      </div>
+      </Center>
     );
   }
 
   return (
-    <div>
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40%]">Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDocuments.map((document) => (
-              <TableRow key={document.id} className="hover:bg-muted/20 transition-colors">
-                <TableCell className="font-medium">
-                  <Link href={`/documents/${document.id}`}>
-                    <div className="flex items-center gap-2 text-primary hover:underline cursor-pointer">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-1">
-                        {getDocumentTypeIcon(document.documentType, "h-4 w-4 text-primary")}
-                      </div>
-                      <span className="truncate max-w-[300px]">{document.title || document.originalFilename}</span>
-                    </div>
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-normal">
-                    {document.documentType || "Other"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {getProcessingStatusBadge(document.processingStatus)}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {format(new Date(document.createdAt), "MMM d, yyyy")}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontalIcon className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/documents/${document.id}`}>
-                          <FileTextIcon className="h-4 w-4 mr-2" />
-                          <span>View details</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <PermissionGuard area="documents" permission="view">
-                        <DropdownMenuItem asChild>
-                          <a href={`/api/documents/${document.id}/download`}>
-                            <FileIcon className="h-4 w-4 mr-2" />
-                            Download
-                          </a>
-                        </DropdownMenuItem>
-                      </PermissionGuard>
-                      <PermissionGuard area="documents" permission="delete">
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => handleDeleteClick(document.id, document.title || document.originalFilename)}
-                        >
-                          <Trash2Icon className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </PermissionGuard>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
+    <Box overflowX="auto">
+      <Table variant="simple" size="md">
+        <Thead>
+          <Tr>
+            <Th width="40%">Name</Th>
+            <Th>Type</Th>
+            <Th>Status</Th>
+            <Th>Date Uploaded</Th>
+            <Th>Uploaded By</Th>
+            <Th width="80px">Actions</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {filteredDocuments.map((document) => (
+            <Tr 
+              key={document.id} 
+              _hover={{ bg: hoverBg }}
+              transition="background-color 0.2s"
+            >
+              <Td>
+                <Link href={`/documents/${document.id}`}>
+                  <Flex align="center" cursor="pointer">
+                    <Avatar 
+                      icon={getDocumentTypeIcon(document.documentType)} 
+                      bg="blue.100" 
+                      color="blue.600" 
+                      size="sm" 
+                      mr={3}
+                    />
+                    <Text 
+                      fontWeight="medium" 
+                      color="blue.600" 
+                      isTruncated 
+                      maxW="300px" 
+                      _hover={{ textDecoration: "underline" }}
+                    >
+                      {document.title || document.originalFilename}
+                    </Text>
+                  </Flex>
+                </Link>
+              </Td>
+              <Td>
+                <Badge variant="subtle" colorScheme="gray">
+                  {document.documentType || "Other"}
+                </Badge>
+              </Td>
+              <Td>
+                {getProcessingStatusBadge(document.processingStatus)}
+              </Td>
+              <Td>
+                {format(new Date(document.createdAt), "MMM d, yyyy")}
+              </Td>
+              <Td>
+                <Text isTruncated maxW="120px">
+                  {document.uploadedBy || "System"}
+                </Text>
+              </Td>
+              <Td>
+                <Menu>
+                  <MenuButton
+                    as={IconButton}
+                    aria-label="Options"
+                    icon={<Icon as={InfoIcon} />}
+                    variant="ghost"
+                    size="sm"
+                  />
+                  <MenuList>
+                    <MenuItem as={Link} href={`/documents/${document.id}`} icon={<Icon as={ViewIcon} />}>
+                      View
+                    </MenuItem>
+                    <PermissionGuard area="documents" permission="view">
+                      <MenuItem 
+                        as="a" 
+                        href={`/api/documents/${document.id}/download`}
+                        icon={<Icon as={DownloadIcon} />}
+                      >
+                        Download
+                      </MenuItem>
+                    </PermissionGuard>
+                    <PermissionGuard area="documents" permission="edit">
+                      <MenuItem icon={<Icon as={EditIcon} />}>
+                        Replace
+                      </MenuItem>
+                    </PermissionGuard>
+                    <PermissionGuard area="documents" permission="delete">
+                      <MenuItem 
+                        icon={<Icon as={DeleteIcon} />}
+                        onClick={() => handleDeleteClick(document.id, document.title || document.originalFilename)}
+                        color="red.500"
+                      >
+                        Delete
+                      </MenuItem>
+                    </PermissionGuard>
+                  </MenuList>
+                </Menu>
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
+      
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -332,6 +375,6 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Box>
   );
 }
