@@ -36,12 +36,12 @@ export default function DocumentDetail() {
   const [prevStatus, setPrevStatus] = React.useState<string | null>(null);
   
   // Fetch document data with automatic polling for processing status
-  const { data: documentResponse, isLoading, error } = useQuery<any>({
+  const { data: documentResponse, isLoading, error } = useQuery({
     queryKey: [`/api/documents/${id}`],
     retry: false,
     enabled: !!id,
     // Add polling refresh interval if document is in a processing state
-    refetchInterval: (data) => {
+    refetchInterval: (data: any) => {
       // First extract the document from the response
       let doc = null;
       if (data) {
@@ -59,35 +59,36 @@ export default function DocumentDetail() {
       
       // Otherwise, don't poll
       return false;
-    },
-    onSuccess: (data) => {
-      // Extract document from response
-      let doc = null;
-      if (data) {
-        if ('success' in data && data.success && data.data) {
-          doc = data.data;
-        } else if ('id' in data) {
-          doc = data;
-        }
-      }
-      
-      // Check if status changed from a processing state to COMPLETED
-      if (doc && prevStatus && 
-          ['PENDING', 'PROCESSING', 'QUEUED'].includes(prevStatus) && 
-          doc.processingStatus === 'COMPLETED') {
-        toast({
-          title: "Document processing complete",
-          description: "The document has been successfully processed with AI.",
-          variant: "success",
-        });
-      }
-      
-      // Update previous status
-      if (doc) {
-        setPrevStatus(doc.processingStatus);
-      }
     }
   });
+  
+  // Watch for changes in document status
+  React.useEffect(() => {
+    if (!documentResponse) return;
+    
+    let doc = null;
+    if ('success' in documentResponse && documentResponse.success && documentResponse.data) {
+      doc = documentResponse.data;
+    } else if ('id' in documentResponse) {
+      doc = documentResponse;
+    }
+    
+    if (!doc) return;
+    
+    // Check if status changed from a processing state to COMPLETED
+    if (prevStatus && 
+        ['PENDING', 'PROCESSING', 'QUEUED'].includes(prevStatus) && 
+        doc.processingStatus === 'COMPLETED') {
+      toast({
+        title: "Document processing complete",
+        description: "The document has been successfully processed with AI.",
+        variant: "default" 
+      });
+    }
+    
+    // Update previous status
+    setPrevStatus(doc.processingStatus);
+  }, [documentResponse, prevStatus, toast]);
   
   // Process document mutation
   const processDocumentMutation = useMutation({
@@ -406,7 +407,9 @@ export default function DocumentDetail() {
                     
                     <TabsContent value="summary">
                       <div className="prose max-w-none">
-                        {document.aiMetadata?.summary || (
+                        {document.aiMetadata?.summary ? (
+                          <div className="whitespace-pre-wrap">{document.aiMetadata.summary}</div>
+                        ) : (
                           <p className="text-muted-foreground">No summary available.</p>
                         )}
                       </div>
@@ -416,8 +419,23 @@ export default function DocumentDetail() {
                       <div className="prose max-w-none">
                         {document.aiMetadata?.entities ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Could map through entities here */}
-                            <p className="text-muted-foreground">Entity extraction preview would appear here.</p>
+                            {Array.isArray(document.aiMetadata.entities) ? (
+                              document.aiMetadata.entities.map((entity: any, idx: number) => (
+                                <div key={idx} className="border rounded-md p-3 bg-muted/30">
+                                  <p className="font-medium">{entity.name || entity.type || 'Entity'}</p>
+                                  {entity.description && <p className="text-sm">{entity.description}</p>}
+                                </div>
+                              ))
+                            ) : typeof document.aiMetadata.entities === 'object' ? (
+                              Object.entries(document.aiMetadata.entities).map(([key, value]: [string, any], idx: number) => (
+                                <div key={idx} className="border rounded-md p-3 bg-muted/30">
+                                  <p className="font-medium">{key}</p>
+                                  <p className="text-sm">{JSON.stringify(value)}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted-foreground">Entity data format not recognized.</p>
+                            )}
                           </div>
                         ) : (
                           <p className="text-muted-foreground">No entities detected.</p>
@@ -428,9 +446,21 @@ export default function DocumentDetail() {
                     <TabsContent value="timeline">
                       <div className="prose max-w-none">
                         {document.aiMetadata?.timeline ? (
-                          <div>
-                            {/* Could render timeline here */}
-                            <p className="text-muted-foreground">Timeline visualization would appear here.</p>
+                          <div className="space-y-4">
+                            {Array.isArray(document.aiMetadata.timeline) ? (
+                              document.aiMetadata.timeline.map((item: any, idx: number) => (
+                                <div key={idx} className="border-l-2 border-primary pl-4 py-1">
+                                  <p className="font-medium">{item.date || item.title || `Event ${idx+1}`}</p>
+                                  {item.description && <p className="text-sm">{item.description}</p>}
+                                </div>
+                              ))
+                            ) : typeof document.aiMetadata.timeline === 'object' ? (
+                              <div className="whitespace-pre-wrap">
+                                {JSON.stringify(document.aiMetadata.timeline, null, 2)}
+                              </div>
+                            ) : (
+                              <p className="text-muted-foreground">Timeline format not recognized.</p>
+                            )}
                           </div>
                         ) : (
                           <p className="text-muted-foreground">No timeline data available.</p>
@@ -474,7 +504,9 @@ export default function DocumentDetail() {
                   <div>
                     <dt className="text-sm font-medium text-muted-foreground">Uploaded by</dt>
                     <dd className="mt-1">
-                      {document.uploadedByUser ? document.uploadedByUser.name : "Unknown user"}
+                      {document.uploadedByUser ? 
+                        (document.uploadedByUser.name || document.uploadedByUser.username) : 
+                        "Unknown user"}
                     </dd>
                   </div>
                   <div>

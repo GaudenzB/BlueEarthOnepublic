@@ -130,16 +130,29 @@ export const documentRepository = {
    * @param tenantId - Tenant ID for multi-tenancy
    * @returns The document or undefined if not found
    */
-  async getById(id: string, tenantId: string): Promise<Document | undefined> {
+  async getById(id: string, tenantId: string): Promise<Document & { uploadedByUser?: { id: number, username: string, name?: string } } | undefined> {
     try {
-      const [result] = await db.select()
-        .from(documents)
-        .where(
-          and(
-            eq(documents.id, id),
-            eq(documents.tenantId, tenantId)
-          )
-        );
+      // Import the users table from the schema
+      const { users } = await import('@shared/schema');
+      
+      // Join with the users table to get uploader information
+      const [result] = await db.select({
+        ...documents,
+        uploadedByUser: {
+          id: users.id,
+          username: users.username,
+          name: sql<string>`CONCAT(${users.firstName}, ' ', ${users.lastName})`.as('name')
+        }
+      })
+      .from(documents)
+      .leftJoin(users, eq(documents.uploadedBy, sql`${users.id}::text`))
+      .where(
+        and(
+          eq(documents.id, id),
+          eq(documents.tenantId, tenantId)
+        )
+      );
+      
       return result;
     } catch (error) {
       logger.error('Error getting document by ID', { error, id, tenantId });
