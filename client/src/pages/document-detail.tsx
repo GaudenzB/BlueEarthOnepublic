@@ -48,7 +48,7 @@ import {
   FileOutlined,
   UserOutlined
 } from "@ant-design/icons";
-import { PermissionGuard } from "@/components/auth/PermissionGuard";
+import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 
@@ -161,6 +161,25 @@ function DocumentDetailSkeleton() {
   );
 }
 
+// Define the Document interface
+interface Document {
+  id: string;
+  title: string;
+  processingStatus: string;
+  createdAt?: string;
+  updatedAt?: string;
+  fileSize?: number;
+  type?: string;
+  visibility?: string;
+  description?: string;
+  tags?: string[];
+  sharedWith?: { name: string; email: string; accessLevel?: string }[];
+  versions?: any[];
+  comments?: any[];
+  timeline?: any[];
+  thumbnailUrl?: string;
+}
+
 export default function DocumentDetail() {
   const { id } = useParams<{id: string}>();
   const [, setLocation] = useLocation();
@@ -171,11 +190,11 @@ export default function DocumentDetail() {
   
   // Fetch document details
   const { 
-    data: document = {}, 
+    data: document = {} as Document,
     isLoading, 
     isError, 
     error 
-  } = useQuery({
+  } = useQuery<Document>({
     queryKey: ['/api/documents', id],
     enabled: !!id,
   });
@@ -186,7 +205,7 @@ export default function DocumentDetail() {
       return apiRequest(`/api/documents/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => {
-      queryClient.invalidateQueryKey(['/api/documents']);
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       setLocation('/documents');
     },
   });
@@ -197,7 +216,7 @@ export default function DocumentDetail() {
       return apiRequest(`/api/documents/${id}/refresh-status`, { method: 'POST' });
     },
     onSuccess: () => {
-      queryClient.invalidateQueryKey(['/api/documents', id]);
+      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
     },
   });
   
@@ -297,7 +316,7 @@ export default function DocumentDetail() {
               </Button>
             </Tooltip>
             
-            <PermissionGuard requiredRole="admin">
+            <PermissionGuard area="documents" permission="edit" showAlert={false}>
               <Button 
                 type="primary"
                 icon={<EditOutlined />}
