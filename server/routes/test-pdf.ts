@@ -24,9 +24,10 @@ router.post('/', authenticate, upload.single('file'), async (req: Request, res: 
       mimeType: file.mimetype
     });
 
-    // Extract text from the PDF using pdf-parse directly here to isolate from other modules
-    const pdfParse = require('pdf-parse');
+    // Extract text from the PDF using pdf-parse with dynamic import for ES modules
     const pdfBuffer = fs.readFileSync(file.path);
+    // Use dynamic import for pdf-parse (ES modules compatible)
+    const pdfParse = await import('pdf-parse').then(module => module.default);
     const pdfData = await pdfParse(pdfBuffer);
     const extractedText = pdfData.text || '';
     
