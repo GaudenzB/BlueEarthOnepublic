@@ -1,13 +1,82 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Badge,
+  Icon,
+  Button,
+  ButtonGroup,
+  Card,
+  CardBody,
+  CardHeader,
+  Divider,
+  Grid,
+  GridItem,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  Tooltip,
+  useColorModeValue,
+  Skeleton,
+  SkeletonText,
+  Stack,
+  Progress,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  List,
+  ListItem,
+  Tag,
+  Avatar,
+  Wrap,
+  WrapItem,
+  Container,
+  HStack,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon
+} from "@chakra-ui/react";
+import {
+  ArrowBackIcon,
+  DownloadIcon,
+  DeleteIcon,
+  InfoOutlineIcon,
+  CheckIcon,
+  WarningIcon,
+  TimeIcon,
+  StarIcon,
+  RepeatIcon,
+  EditIcon,
+  ViewIcon,
+  LockIcon,
+  AttachmentIcon,
+  ExternalLinkIcon,
+  ChevronRightIcon
+} from "@chakra-ui/icons";
+import { useToast } from "@/hooks/use-toast";
+import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,30 +87,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeftIcon, FileCheckIcon, ClockIcon, MoreHorizontalIcon, TrashIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileTextIcon } from "lucide-react";
-import { Download } from "lucide-react";
-import { Share2Icon } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { InfoIcon } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { LockIcon } from "lucide-react";
-import { BrainCircuitIcon } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { PermissionGuard } from "@/components/permission-guard";
-import { 
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
 
-// Helper function for typescript
+// Helper function for toast
 const createToast = (toast: any, props: any) => {
   if (typeof toast === 'function') {
     return toast(props);
@@ -52,16 +99,55 @@ const createToast = (toast: any, props: any) => {
   return null;
 };
 
+// Skeleton component for loading state
+function DocumentDetailSkeleton() {
+  return (
+    <Box maxW="1200px" mx="auto" pt={8} px={4}>
+      <Flex mb={6} align="center" gap={4}>
+        <Skeleton height="40px" width="40px" borderRadius="md" />
+        <Box flex="1">
+          <Skeleton height="24px" width="60%" mb={2} />
+          <Skeleton height="18px" width="40%" />
+        </Box>
+        <Skeleton height="40px" width="120px" borderRadius="md" />
+      </Flex>
+      
+      <Box mb={6}>
+        <Skeleton height="48px" width="100%" borderRadius="md" mb={6} />
+        <Grid templateColumns={{base: "1fr", md: "2fr 1fr"}} gap={6}>
+          <Box>
+            <Skeleton height="200px" width="100%" borderRadius="md" mb={4} />
+            <Stack spacing={4}>
+              <SkeletonText mt="4" noOfLines={3} spacing="4" skeletonHeight="2" />
+              <SkeletonText mt="4" noOfLines={2} spacing="4" skeletonHeight="2" />
+            </Stack>
+          </Box>
+          <Stack spacing={4}>
+            <Skeleton height="120px" width="100%" borderRadius="md" />
+            <Skeleton height="180px" width="100%" borderRadius="md" />
+          </Stack>
+        </Grid>
+      </Box>
+    </Box>
+  );
+}
+
 export default function DocumentDetail() {
   const { id } = useParams<{ id: string }>();
-  const [selectedTab, setSelectedTab] = React.useState("details");
+  const [selectedTab, setSelectedTab] = useState(0);
   const toast = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   
-  // States
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [prevStatus, setPrevStatus] = React.useState<string | null>(null); // Track previous processing status
+  // States for UI
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [prevStatus, setPrevStatus] = useState<string | null>(null);
+  
+  // Colors
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const headerBg = useColorModeValue("gray.50", "gray.700");
+  const tagBg = useColorModeValue("gray.100", "gray.700");
   
   // Fetch document data with automatic polling for processing status
   const { data: documentResponse, isLoading, error, refetch } = useQuery({
@@ -89,7 +175,7 @@ export default function DocumentDetail() {
   });
   
   // Watch for changes in document status
-  React.useEffect(() => {
+  useEffect(() => {
     if (!documentResponse) return;
     
     // Extract the document from the response
@@ -103,7 +189,11 @@ export default function DocumentDetail() {
           'data' in documentResponse && 
           documentResponse.data) {
         doc = documentResponse.data;
-        console.log("Document extracted from success response:", doc);
+        console.log("Document found in response wrapper:", {
+          docId: doc.id,
+          docTitle: doc.title,
+          docStatus: doc.processingStatus
+        });
       } 
       // Check if it's a direct document object with ID
       else if ('id' in documentResponse) {
@@ -235,6 +325,16 @@ export default function DocumentDetail() {
     setShowDeleteDialog(false);
   };
   
+  // Handle manually refreshing document status
+  const handleRefreshStatus = () => {
+    refetch();
+    createToast(toast, {
+      title: "Refreshing document status",
+      description: "Checking for the latest document processing status...",
+      variant: "default"
+    });
+  };
+  
   if (isLoading) {
     return <DocumentDetailSkeleton />;
   }
@@ -242,13 +342,23 @@ export default function DocumentDetail() {
   if (error) {
     console.error("Error loading document:", error);
     return (
-      <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-4">Error Loading Document</h1>
-        <p>There was a problem loading the document. Please try again later.</p>
-        <pre className="mt-4 p-4 bg-gray-100 rounded-md overflow-auto">
-          {error instanceof Error ? error.message : "Unknown error"}
-        </pre>
-      </div>
+      <Container maxW="1200px" py={8}>
+        <Alert status="error" variant="left-accent" borderRadius="md">
+          <AlertIcon />
+          <Box>
+            <AlertTitle fontSize="lg">Error Loading Document</AlertTitle>
+            <AlertDescription>
+              There was a problem loading the document. Please try again later.
+              <Box mt={4} p={3} bg="gray.50" borderRadius="md" fontSize="sm" fontFamily="mono">
+                {error instanceof Error ? error.message : "Unknown error"}
+              </Box>
+            </AlertDescription>
+          </Box>
+        </Alert>
+        <Button mt={4} leftIcon={<ArrowBackIcon />} as={Link} href="/documents" colorScheme="blue" variant="outline">
+          Back to Documents
+        </Button>
+      </Container>
     );
   }
   
@@ -257,13 +367,20 @@ export default function DocumentDetail() {
   
   if (!document) {
     return (
-      <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-4">Document Not Found</h1>
-        <p>The requested document could not be found.</p>
-        <Button asChild className="mt-4">
-          <Link href="/documents">Back to Documents</Link>
-        </Button>
-      </div>
+      <Container maxW="1200px" py={8}>
+        <Box textAlign="center" py={10} px={6}>
+          <Icon as={InfoOutlineIcon} boxSize="50px" color="gray.500" />
+          <Heading as="h2" size="xl" mt={6} mb={2}>
+            Document Not Found
+          </Heading>
+          <Text color="gray.500">
+            The requested document could not be found.
+          </Text>
+          <Button mt={6} leftIcon={<ArrowBackIcon />} as={Link} href="/documents" colorScheme="blue">
+            Back to Documents
+          </Button>
+        </Box>
+      </Container>
     );
   }
   
@@ -302,22 +419,95 @@ export default function DocumentDetail() {
     
     switch (status) {
       case "COMPLETED":
-        return <Badge variant="success" className="gap-1 px-2"><FileCheckIcon className="h-3 w-3" /> Processed</Badge>;
+        return (
+          <Tooltip label="Document processed successfully">
+            <Badge variant="subtle" colorScheme="green" display="flex" alignItems="center">
+              <Icon as={CheckIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Processed</Text>
+            </Badge>
+          </Tooltip>
+        );
       case "PROCESSING":
-        return <Badge variant="warning" className="gap-1 px-2"><ClockIcon className="h-3 w-3" /> Processing</Badge>;
+        return (
+          <Tooltip label="Document is being processed">
+            <Badge variant="subtle" colorScheme="yellow" display="flex" alignItems="center">
+              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Processing</Text>
+            </Badge>
+          </Tooltip>
+        );
       case "PENDING":
       case "QUEUED":
-        return <Badge variant="outline" className="gap-1 px-2"><ClockIcon className="h-3 w-3" /> Pending</Badge>;
+        return (
+          <Tooltip label="Document is waiting for processing">
+            <Badge variant="subtle" colorScheme="blue" display="flex" alignItems="center">
+              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Pending</Text>
+            </Badge>
+          </Tooltip>
+        );
       case "FAILED":
-        return <Badge variant="destructive" className="gap-1 px-2">Failed</Badge>;
+      case "ERROR":
+        return (
+          <Tooltip label="Document processing failed">
+            <Badge variant="subtle" colorScheme="red" display="flex" alignItems="center">
+              <Icon as={WarningIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Failed</Text>
+            </Badge>
+          </Tooltip>
+        );
       default:
-        return <Badge variant="outline" className="gap-1 px-2">Unknown</Badge>;
+        return (
+          <Tooltip label="Unknown document status">
+            <Badge variant="subtle" colorScheme="gray" display="flex" alignItems="center">
+              <Icon as={InfoOutlineIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Unknown</Text>
+            </Badge>
+          </Tooltip>
+        );
+    }
+  };
+  
+  // Format file size in a readable format
+  const formatFileSize = (sizeInBytes: number | string) => {
+    const size = typeof sizeInBytes === 'string' ? parseInt(sizeInBytes, 10) : sizeInBytes;
+    
+    if (size < 1024) {
+      return `${size} B`;
+    } else if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    } else {
+      return `${(size / (1024 * 1024)).toFixed(1)} MB`;
     }
   };
   
   // Check if document has AI processing completed
   const isProcessed = document.processingStatus === "COMPLETED";
   const hasInsights = isProcessed && document.aiMetadata && Object.keys(document.aiMetadata).length > 0;
+  
+  // Function to handle tab change
+  const handleTabChange = (index: number) => {
+    setSelectedTab(index);
+  };
+  
+  // Function to format MIME Type to readable format
+  const formatMimeType = (mimeType: string) => {
+    const mimeMap: Record<string, string> = {
+      'application/pdf': 'PDF Document',
+      'application/msword': 'Word Document',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word Document (DOCX)',
+      'application/vnd.ms-excel': 'Excel Spreadsheet',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel Spreadsheet (XLSX)',
+      'application/vnd.ms-powerpoint': 'PowerPoint Presentation',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PowerPoint Presentation (PPTX)',
+      'text/plain': 'Text Document',
+      'text/html': 'HTML Document',
+      'image/jpeg': 'JPEG Image',
+      'image/png': 'PNG Image'
+    };
+    
+    return mimeMap[mimeType] || mimeType;
+  };
   
   return (
     <>
@@ -326,445 +516,691 @@ export default function DocumentDetail() {
         <meta name="description" content={`View details and insights for ${document.title || "document"}`} />
       </Helmet>
       
-      <div className="container mx-auto py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-            <Link href="/documents">
-              <ArrowLeftIcon className="h-4 w-4" />
-              <span className="sr-only">Back</span>
-            </Link>
-          </Button>
+      <Container maxW="1200px" py={6} px={{base: 4, md: 6}}>
+        {/* Document Header */}
+        <Flex direction={{base: "column", md: "row"}} mb={6} alignItems={{base: "flex-start", md: "center"}} gap={4}>
+          <IconButton
+            aria-label="Back to documents"
+            as={Link}
+            href="/documents"
+            icon={<ArrowBackIcon />}
+            variant="outline"
+            size="sm"
+            borderRadius="md"
+          />
           
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold tracking-tight">{document.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              {document.documentType} • Last updated {format(new Date(document.updatedAt), "MMMM d, yyyy")}
-            </p>
-          </div>
+          <Box flex="1">
+            <Heading size="lg" fontWeight="bold" mb={1}>
+              {document.title}
+            </Heading>
+            <Flex alignItems="center" gap={2}>
+              <Badge colorScheme="gray" fontSize="xs">{document.documentType || "Other"}</Badge>
+              <Text fontSize="sm" color="gray.600">
+                Last updated {format(new Date(document.updatedAt), "MMMM d, yyyy")}
+              </Text>
+              {getStatusBadge(document.processingStatus)}
+            </Flex>
+          </Box>
           
-          <div className="flex items-center gap-2">
-            {/* Document actions */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" asChild className="h-9 w-9">
-                    <a href={`/api/documents/${document.id}/download`} download>
-                      <Download className="h-4 w-4" />
-                      <span className="sr-only">Download</span>
-                    </a>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Download document</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          <HStack spacing={2}>
+            <Tooltip label="Download document">
+              <IconButton
+                as="a"
+                href={`/api/documents/${document.id}/download`}
+                download
+                icon={<DownloadIcon />}
+                aria-label="Download document"
+                colorScheme="blue"
+                variant="outline"
+                size="sm"
+              />
+            </Tooltip>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MoreHorizontalIcon className="h-4 w-4" />
-                  <span className="sr-only">More options</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleProcessDocument} disabled={processDocumentMutation.isPending}>
-                  <BrainCircuitIcon className="mr-2 h-4 w-4" />
-                  <span>Process with AI</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <ShareIcon className="mr-2 h-4 w-4" />
-                  <span>Share document</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <FileCheckIcon className="mr-2 h-4 w-4" />
-                  <span>View version history</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDeleteDocument} className="text-destructive">
-                  <TrashIcon className="mr-2 h-4 w-4" />
-                  <span>Delete document</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+            <Menu>
+              <MenuButton
+                as={IconButton}
+                aria-label="More options"
+                icon={<InfoOutlineIcon />}
+                variant="outline"
+                size="sm"
+              />
+              <MenuList>
+                <MenuItem icon={<RepeatIcon />} onClick={handleRefreshStatus}>
+                  Refresh Status
+                </MenuItem>
+                <MenuItem
+                  icon={<AttachmentIcon />} 
+                  onClick={handleProcessDocument} 
+                  isDisabled={processDocumentMutation.isPending}
+                >
+                  Process with AI
+                </MenuItem>
+                <MenuItem icon={<EditIcon />}>
+                  Edit Properties
+                </MenuItem>
+                <MenuItem icon={<ViewIcon />}>
+                  View Version History
+                </MenuItem>
+                <MenuItem icon={<DeleteIcon />} onClick={handleDeleteDocument} color="red.500">
+                  Delete Document
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </HStack>
+        </Flex>
         
-        <Tabs defaultValue="details" value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="insights" disabled={!hasInsights}>AI Insights</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          </TabsList>
+        {/* Processing Alert if needed */}
+        {['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus) && (
+          <Alert status="info" variant="left-accent" mb={6} borderRadius="md">
+            <AlertIcon />
+            <Box flex="1">
+              <AlertTitle fontSize="sm">Document Processing</AlertTitle>
+              <AlertDescription fontSize="xs">
+                {getProcessingStatusText(document.processingStatus)}
+                <Progress 
+                  size="xs" 
+                  isIndeterminate 
+                  colorScheme="blue" 
+                  mt={2} 
+                  borderRadius="full"
+                  value={getProcessingProgress(document.processingStatus)}
+                />
+              </AlertDescription>
+            </Box>
+            <Button
+              size="xs"
+              variant="outline"
+              leftIcon={<RepeatIcon />}
+              onClick={handleRefreshStatus}
+            >
+              Refresh
+            </Button>
+          </Alert>
+        )}
+        
+        {/* Main Content */}
+        <Tabs variant="enclosed" index={selectedTab} onChange={handleTabChange} colorScheme="blue">
+          <TabList>
+            <Tab fontWeight="medium">Details</Tab>
+            <Tab fontWeight="medium">Preview</Tab>
+            <Tab fontWeight="medium" isDisabled={!hasInsights}>AI Insights</Tab>
+            <Tab fontWeight="medium">Timeline</Tab>
+          </TabList>
           
-          <TabsContent value="details" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="md:col-span-2">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Document Overview
-                    {getStatusBadge(document.processingStatus)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* Debug document processing status */}
-                  {console.log("Document Processing Status Check:", {
-                    status: document.processingStatus,
-                    isCompleted: document.processingStatus === "COMPLETED",
-                    aiProcessed: document.aiProcessed,
-                    hasAiMetadata: !!document.aiMetadata
-                  })}
+          <TabPanels>
+            {/* Details Tab */}
+            <TabPanel px={0} py={4}>
+              <Grid templateColumns={{base: "1fr", md: "2fr 1fr"}} gap={6}>
+                {/* Left Column */}
+                <GridItem>
+                  <Card variant="outline" mb={6}>
+                    <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                      <Heading size="sm">Document Information</Heading>
+                    </CardHeader>
+                    <CardBody p={4}>
+                      <Stack spacing={5}>
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                            Description
+                          </Text>
+                          <Text>{document.description || "No description provided."}</Text>
+                        </Box>
 
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Description</h3>
-                      <p>{document.description || "No description provided."}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Document Type</h3>
-                      <p>{document.documentType}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">File Information</h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Filename</p>
-                          <p className="text-sm">{document.filename}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Size</p>
-                          <p className="text-sm">{formatFileSize(document.fileSize)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Uploaded By</p>
-                          <p className="text-sm">{document.uploadedByUser?.name || "Unknown"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Upload Date</p>
-                          <p className="text-sm">{format(new Date(document.createdAt), "MMM d, yyyy")}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {!isProcessed && (
-                      <div className="flex items-center justify-between mt-4">
-                        <span className="text-sm text-muted-foreground">
-                          {document.processingStatus === "PROCESSING" || document.processingStatus === "PENDING" || document.processingStatus === "QUEUED" ? (
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center gap-2">
-                                <span>{getProcessingStatusText(document.processingStatus)}</span>
-                                <Progress value={getProcessingProgress(document.processingStatus)} className="w-24 h-2" />
-                              </div>
-                              <span className="text-xs italic">This may take up to a minute for large documents</span>
-                            </div>
-                          ) : (
-                            "Document not yet processed with AI"
-                          )}
-                        </span>
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={() => refetch()}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <ArrowLeftIcon className="mr-2 h-4 w-4 rotate-90" />
-                            Refresh Status
-                          </Button>
-                          <Button 
-                            onClick={handleProcessDocument}
-                            disabled={document.processingStatus === "PROCESSING" || processDocumentMutation.isPending}
-                            size="sm"
-                          >
-                            <BrainCircuitIcon className="mr-2 h-4 w-4" />
-                            Process Document
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Metadata</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Document Properties</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Document ID</span>
-                          <span className="text-sm font-mono">{document.id.slice(0, 8)}</span>
-                        </div>
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                            Document Type
+                          </Text>
+                          <Text>{document.documentType || "Unspecified"}</Text>
+                        </Box>
                         
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Format</span>
-                          <span className="text-sm">{getFileExtension(document.filename)?.toUpperCase()}</span>
-                        </div>
-                        
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Storage Location</span>
-                          <span className="text-sm">{document.storageLocation || "S3"}</span>
-                        </div>
-                        
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Encryption</span>
-                          <span className="text-sm">AES-256</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {document.tags && document.tags.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Tags</h3>
-                        <div className="flex flex-wrap gap-1">
-                          {document.tags.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {isProcessed && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">AI Processing</h3>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Processed</span>
-                            <span className="text-sm">{format(new Date(document.processingCompletedAt || document.updatedAt), "MMM d, yyyy")}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Model</span>
-                            <span className="text-sm">{document.aiMetadata?.model || "GPT-4o"}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {isProcessed && hasInsights && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Key Insights</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {document.aiMetadata?.summary && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Summary</h3>
-                        <p className="text-sm">{document.aiMetadata.summary}</p>
-                      </div>
-                    )}
-                    
-                    {document.aiMetadata?.keywords && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Keywords</h3>
-                        <div className="flex flex-wrap gap-1">
-                          {document.aiMetadata.keywords.map((keyword, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {keyword}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="preview">
-            <Card>
-              <CardContent className="p-4 h-[700px]">
-                <div className="flex flex-col items-center justify-center h-full">
-                  <FileTextIcon className="h-20 w-20 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Document Preview</h3>
-                  <p className="text-muted-foreground text-center max-w-md mb-4">
-                    The document preview is currently unavailable.
-                  </p>
-                  <Button asChild variant="outline">
-                    <a href={`/api/documents/${document.id}/download`} download>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Document
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="insights">
-            {hasInsights ? (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Document Analysis</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-lg font-medium">Summary</h3>
-                        <p className="mt-2">{document.aiMetadata?.summary || "No summary available."}</p>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div>
-                        <h3 className="text-lg font-medium">Key Points</h3>
-                        <ul className="mt-2 space-y-2 list-disc list-inside">
-                          {document.aiMetadata?.keyPoints?.map((point, index) => (
-                            <li key={index}>{point}</li>
-                          )) || <li>No key points identified.</li>}
-                        </ul>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div>
-                        <h3 className="text-lg font-medium">Entities</h3>
-                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {document.aiMetadata?.entities?.map((entity, index) => (
-                            <div key={index} className="border rounded-md p-3">
-                              <div className="font-medium">{entity.name}</div>
-                              <div className="text-sm text-muted-foreground">{entity.type}</div>
-                              {entity.context && <div className="text-sm mt-1">{entity.context}</div>}
-                            </div>
-                          )) || <div>No entities detected.</div>}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {document.aiMetadata?.topics && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Topics & Themes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {document.aiMetadata.topics.map((topic, index) => (
-                          <div key={index} className="border rounded-md p-3">
-                            <div className="font-medium">{topic.name}</div>
-                            <div className="text-sm mt-1">{topic.description}</div>
-                            {topic.relevance && (
-                              <div className="mt-2">
-                                <div className="text-xs text-muted-foreground mb-1">Relevance</div>
-                                <Progress value={topic.relevance * 100} className="h-1.5" />
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                            File Information
+                          </Text>
+                          <Table size="sm" variant="simple">
+                            <Tbody>
+                              <Tr>
+                                <Td pl={0} borderColor={borderColor} width="180px">Original Filename</Td>
+                                <Td borderColor={borderColor}>{document.originalFilename}</Td>
+                              </Tr>
+                              <Tr>
+                                <Td pl={0} borderColor={borderColor}>File Type</Td>
+                                <Td borderColor={borderColor}>{formatMimeType(document.mimeType)}</Td>
+                              </Tr>
+                              <Tr>
+                                <Td pl={0} borderColor={borderColor}>File Size</Td>
+                                <Td borderColor={borderColor}>{formatFileSize(document.fileSize)}</Td>
+                              </Tr>
+                              <Tr>
+                                <Td pl={0} borderColor={borderColor}>Upload Date</Td>
+                                <Td borderColor={borderColor}>{format(new Date(document.createdAt), "MMMM d, yyyy")}</Td>
+                              </Tr>
+                            </Tbody>
+                          </Table>
+                        </Box>
+                      </Stack>
+                    </CardBody>
                   </Card>
-                )}
-                
-                {document.aiMetadata?.sentiment && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Sentiment Analysis</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="text-sm font-medium">Overall Sentiment</h3>
-                          <div className="mt-2 flex items-center">
-                            <div className="mr-2 font-medium">
-                              {document.aiMetadata.sentiment.overall === "positive" && "Positive 😊"}
-                              {document.aiMetadata.sentiment.overall === "negative" && "Negative 😔"}
-                              {document.aiMetadata.sentiment.overall === "neutral" && "Neutral 😐"}
-                              {document.aiMetadata.sentiment.overall === "mixed" && "Mixed 🤔"}
-                            </div>
-                            {document.aiMetadata.sentiment.score && (
-                              <Progress 
-                                value={mapSentimentToProgress(document.aiMetadata.sentiment.score)} 
-                                className="w-32 h-2"
-                              />
-                            )}
-                          </div>
-                          <p className="text-sm mt-1">{document.aiMetadata.sentiment.analysis || ""}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <BrainCircuitIcon className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No AI insights available</h3>
-                  <p className="text-muted-foreground text-center max-w-md mb-4">
-                    This document hasn't been processed with AI yet, or processing did not generate any insights.
-                  </p>
-                  <Button onClick={handleProcessDocument} disabled={processDocumentMutation.isPending}>
-                    <BrainCircuitIcon className="mr-2 h-4 w-4" />
-                    Process Document
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="timeline">
-            <Card>
-              <CardHeader>
-                <CardTitle>Document History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative pl-6 border-l">
-                  <TimelineItem
-                    title="Document created"
-                    description={`Uploaded by ${document.uploadedByUser?.name || 'Unknown'}`}
-                    date={format(new Date(document.createdAt), "MMMM d, yyyy 'at' h:mm a")}
-                    icon={<FileTextIcon className="h-4 w-4" />}
-                  />
-                  
-                  {document.processingStatus === "COMPLETED" && (
-                    <TimelineItem
-                      title="Document processed"
-                      description="Document analyzed with AI"
-                      date={format(new Date(document.processingCompletedAt || document.updatedAt), "MMMM d, yyyy 'at' h:mm a")}
-                      icon={<BrainCircuitIcon className="h-4 w-4" />}
-                    />
+
+                  {/* AI Summary (if available) */}
+                  {hasInsights && document.aiMetadata && document.aiMetadata.summary && (
+                    <Card variant="outline" mb={6}>
+                      <CardHeader bg={headerBg} py={3} px={4} display="flex" alignItems="center" justifyContent="space-between" borderBottomWidth="1px" borderColor={borderColor}>
+                        <Heading size="sm">Document Summary</Heading>
+                        <Badge colorScheme="purple" variant="subtle">AI Generated</Badge>
+                      </CardHeader>
+                      <CardBody p={4}>
+                        <Text fontSize="sm">{document.aiMetadata.summary}</Text>
+                      </CardBody>
+                    </Card>
                   )}
+                </GridItem>
+                
+                {/* Right Column */}
+                <GridItem>
+                  {/* Document Properties */}
+                  <Card variant="outline" mb={6}>
+                    <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                      <Heading size="sm">Properties</Heading>
+                    </CardHeader>
+                    <CardBody p={4}>
+                      <Stack spacing={4}>
+                        {/* Tags */}
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                            Tags
+                          </Text>
+                          {document.tags && Array.isArray(document.tags) && document.tags.length > 0 ? (
+                            <Wrap>
+                              {document.tags.map((tag: string, index: number) => (
+                                <WrapItem key={index}>
+                                  <Tag size="sm" bg={tagBg}>{tag}</Tag>
+                                </WrapItem>
+                              ))}
+                            </Wrap>
+                          ) : (
+                            <Text fontSize="sm" color="gray.500">No tags</Text>
+                          )}
+                        </Box>
+                        
+                        {/* Confidentiality */}
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                            Confidentiality
+                          </Text>
+                          <Badge colorScheme={document.isConfidential ? "red" : "green"}>
+                            {document.isConfidential ? "Confidential" : "Not Confidential"}
+                          </Badge>
+                        </Box>
+                        
+                        {/* AI Processing */}
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                            AI Processing
+                          </Text>
+                          {document.processingStatus === "COMPLETED" ? (
+                            <Badge colorScheme="green" display="flex" alignItems="center" width="fit-content">
+                              <Icon as={CheckIcon} mr={1} boxSize={3} />
+                              Processed
+                            </Badge>
+                          ) : document.processingStatus === "FAILED" || document.processingStatus === "ERROR" ? (
+                            <Box>
+                              <Badge colorScheme="red" display="flex" alignItems="center" width="fit-content" mb={1}>
+                                <Icon as={WarningIcon} mr={1} boxSize={3} />
+                                Failed
+                              </Badge>
+                              {document.processingError && (
+                                <Text fontSize="xs" color="red.500" mt={1}>
+                                  {document.processingError}
+                                </Text>
+                              )}
+                            </Box>
+                          ) : (
+                            <Box>
+                              <Badge colorScheme="blue" display="flex" alignItems="center" width="fit-content">
+                                <Icon as={TimeIcon} mr={1} boxSize={3} />
+                                {document.processingStatus}
+                              </Badge>
+                              <Button
+                                mt={2}
+                                size="xs"
+                                leftIcon={<RepeatIcon />}
+                                onClick={handleProcessDocument}
+                                isLoading={processDocumentMutation.isPending}
+                                isDisabled={processDocumentMutation.isPending || ['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus)}
+                              >
+                                Process Document
+                              </Button>
+                            </Box>
+                          )}
+                        </Box>
+                      </Stack>
+                    </CardBody>
+                  </Card>
                   
-                  {/* You would add more timeline items here based on document history */}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  {/* AI Insights Preview */}
+                  {hasInsights && document.aiMetadata && (
+                    <Card variant="outline">
+                      <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                        <Heading size="sm">AI Insights</Heading>
+                      </CardHeader>
+                      <CardBody p={4}>
+                        <Stack spacing={4}>
+                          {/* Keywords */}
+                          {document.aiMetadata.keywords && Array.isArray(document.aiMetadata.keywords) && (
+                            <Box>
+                              <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                                Keywords
+                              </Text>
+                              <Wrap>
+                                {document.aiMetadata.keywords.slice(0, 5).map((keyword: string, index: number) => (
+                                  <WrapItem key={index}>
+                                    <Tag size="sm" colorScheme="blue" variant="subtle">{keyword}</Tag>
+                                  </WrapItem>
+                                ))}
+                                {document.aiMetadata.keywords.length > 5 && (
+                                  <WrapItem>
+                                    <Tag size="sm" colorScheme="gray" variant="subtle">+{document.aiMetadata.keywords.length - 5} more</Tag>
+                                  </WrapItem>
+                                )}
+                              </Wrap>
+                            </Box>
+                          )}
+                          
+                          <Button 
+                            size="sm" 
+                            rightIcon={<ChevronRightIcon />} 
+                            onClick={() => setSelectedTab(2)}
+                            variant="outline"
+                          >
+                            View full insights
+                          </Button>
+                        </Stack>
+                      </CardBody>
+                    </Card>
+                  )}
+                </GridItem>
+              </Grid>
+            </TabPanel>
+            
+            {/* Preview Tab */}
+            <TabPanel px={0} py={4}>
+              <Card variant="outline" height="600px">
+                <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                  <Heading size="sm">Document Preview</Heading>
+                </CardHeader>
+                <CardBody p={0} position="relative">
+                  {document.mimeType?.includes('pdf') ? (
+                    <Box as="iframe" 
+                      src={`/api/documents/${document.id}/preview?token=${document.previewToken}`} 
+                      width="100%" 
+                      height="100%" 
+                      border="none"
+                      borderBottomRadius="md"
+                    />
+                  ) : (
+                    <Flex direction="column" alignItems="center" justifyContent="center" height="100%" p={8}>
+                      <Icon as={AttachmentIcon} boxSize={12} color="gray.400" mb={4} />
+                      <Heading size="md" mb={2}>Preview not available</Heading>
+                      <Text textAlign="center" color="gray.500" mb={4}>
+                        Preview is not available for this file type ({document.mimeType}).
+                      </Text>
+                      <Button 
+                        as="a"
+                        href={`/api/documents/${document.id}/download`}
+                        leftIcon={<DownloadIcon />}
+                        colorScheme="blue"
+                      >
+                        Download instead
+                      </Button>
+                    </Flex>
+                  )}
+                </CardBody>
+              </Card>
+            </TabPanel>
+            
+            {/* AI Insights Tab */}
+            <TabPanel px={0} py={4}>
+              {hasInsights && document.aiMetadata ? (
+                <Grid templateColumns={{base: "1fr", lg: "2fr 1fr"}} gap={6}>
+                  <GridItem>
+                    {/* Summary */}
+                    <Card variant="outline" mb={6}>
+                      <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                        <Heading size="sm">Document Summary</Heading>
+                      </CardHeader>
+                      <CardBody p={4}>
+                        {document.aiMetadata.summary ? (
+                          <Text>{document.aiMetadata.summary}</Text>
+                        ) : (
+                          <Text color="gray.500">No summary available</Text>
+                        )}
+                      </CardBody>
+                    </Card>
+
+                    {/* Key Points */}
+                    {document.aiMetadata.keyPoints && Array.isArray(document.aiMetadata.keyPoints) && (
+                      <Card variant="outline" mb={6}>
+                        <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                          <Heading size="sm">Key Points</Heading>
+                        </CardHeader>
+                        <CardBody p={4}>
+                          <List spacing={2}>
+                            {document.aiMetadata.keyPoints.map((point: string, index: number) => (
+                              <ListItem key={index} display="flex" alignItems="baseline">
+                                <Icon as={CheckIcon} color="green.500" mr={2} boxSize={3} />
+                                <Text>{point}</Text>
+                              </ListItem>
+                            ))}
+                          </List>
+                        </CardBody>
+                      </Card>
+                    )}
+
+                    {/* Entities */}
+                    {document.aiMetadata.entities && Array.isArray(document.aiMetadata.entities) && document.aiMetadata.entities.length > 0 && (
+                      <Card variant="outline" mb={6}>
+                        <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                          <Heading size="sm">Entities Mentioned</Heading>
+                        </CardHeader>
+                        <CardBody p={4}>
+                          <Table size="sm" variant="simple">
+                            <Thead>
+                              <Tr>
+                                <Th pl={0}>Entity</Th>
+                                <Th>Type</Th>
+                                <Th>Relevance</Th>
+                              </Tr>
+                            </Thead>
+                            <Tbody>
+                              {document.aiMetadata.entities.map((entity: any, index: number) => (
+                                <Tr key={index}>
+                                  <Td pl={0} borderColor={borderColor}>{entity.name}</Td>
+                                  <Td borderColor={borderColor}>
+                                    <Badge size="sm" colorScheme="blue" variant="subtle">
+                                      {entity.type}
+                                    </Badge>
+                                  </Td>
+                                  <Td borderColor={borderColor}>
+                                    {entity.relevance ? (
+                                      <Progress 
+                                        value={entity.relevance * 100} 
+                                        size="xs" 
+                                        colorScheme="blue" 
+                                        borderRadius="full"
+                                        width="80px"
+                                      />
+                                    ) : (
+                                      <Text>-</Text>
+                                    )}
+                                  </Td>
+                                </Tr>
+                              ))}
+                            </Tbody>
+                          </Table>
+                        </CardBody>
+                      </Card>
+                    )}
+                  </GridItem>
+
+                  <GridItem>
+                    {/* Keywords */}
+                    {document.aiMetadata.keywords && Array.isArray(document.aiMetadata.keywords) && (
+                      <Card variant="outline" mb={6}>
+                        <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                          <Heading size="sm">Keywords</Heading>
+                        </CardHeader>
+                        <CardBody p={4}>
+                          <Wrap>
+                            {document.aiMetadata.keywords.map((keyword: string, index: number) => (
+                              <WrapItem key={index}>
+                                <Tag size="md" colorScheme="blue" variant="subtle" borderRadius="full" mb={1}>
+                                  {keyword}
+                                </Tag>
+                              </WrapItem>
+                            ))}
+                          </Wrap>
+                        </CardBody>
+                      </Card>
+                    )}
+
+                    {/* Topics */}
+                    {document.aiMetadata.topics && Array.isArray(document.aiMetadata.topics) && document.aiMetadata.topics.length > 0 && (
+                      <Card variant="outline" mb={6}>
+                        <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                          <Heading size="sm">Topics</Heading>
+                        </CardHeader>
+                        <CardBody p={4}>
+                          <Accordion allowMultiple>
+                            {document.aiMetadata.topics.map((topic: any, index: number) => (
+                              <AccordionItem key={index} borderColor={borderColor}>
+                                <AccordionButton py={2}>
+                                  <Box flex="1" textAlign="left" fontWeight="medium">
+                                    {topic.name}
+                                  </Box>
+                                  <AccordionIcon />
+                                </AccordionButton>
+                                <AccordionPanel pb={4}>
+                                  <Text fontSize="sm">{topic.description || "No description available"}</Text>
+                                  {topic.relevance && (
+                                    <Box mt={2}>
+                                      <Text fontSize="xs" color="gray.500" mb={1}>Relevance</Text>
+                                      <Progress 
+                                        value={topic.relevance * 100} 
+                                        size="xs" 
+                                        colorScheme="blue" 
+                                        borderRadius="full" 
+                                      />
+                                    </Box>
+                                  )}
+                                </AccordionPanel>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardBody>
+                      </Card>
+                    )}
+
+                    {/* Processing Info */}
+                    <Card variant="outline">
+                      <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                        <Heading size="sm">Processing Information</Heading>
+                      </CardHeader>
+                      <CardBody p={4}>
+                        <Table size="sm" variant="simple">
+                          <Tbody>
+                            <Tr>
+                              <Td pl={0} borderColor={borderColor}>Status</Td>
+                              <Td borderColor={borderColor}>
+                                {getStatusBadge(document.processingStatus)}
+                              </Td>
+                            </Tr>
+                            <Tr>
+                              <Td pl={0} borderColor={borderColor}>Processed Date</Td>
+                              <Td borderColor={borderColor}>
+                                {document.processingCompletedAt ? 
+                                  format(new Date(document.processingCompletedAt), "MMMM d, yyyy") : 
+                                  "-"}
+                              </Td>
+                            </Tr>
+                            <Tr>
+                              <Td pl={0} borderColor={borderColor}>AI Model</Td>
+                              <Td borderColor={borderColor}>GPT-4o</Td>
+                            </Tr>
+                          </Tbody>
+                        </Table>
+                        
+                        <Button
+                          mt={4}
+                          size="sm"
+                          leftIcon={<RepeatIcon />}
+                          onClick={handleProcessDocument}
+                          isLoading={processDocumentMutation.isPending}
+                          isDisabled={processDocumentMutation.isPending || ['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus)}
+                        >
+                          Reprocess Document
+                        </Button>
+                      </CardBody>
+                    </Card>
+                  </GridItem>
+                </Grid>
+              ) : (
+                <Box textAlign="center" py={12}>
+                  <Icon as={InfoOutlineIcon} boxSize={12} color="gray.400" mb={3} />
+                  <Heading size="md" mb={2}>No AI insights available</Heading>
+                  <Text color="gray.500" maxW="md" mx="auto" mb={6}>
+                    This document hasn't been processed with AI yet or the processing has failed.
+                  </Text>
+                  <Button
+                    leftIcon={<RepeatIcon />}
+                    onClick={handleProcessDocument}
+                    isLoading={processDocumentMutation.isPending}
+                    isDisabled={processDocumentMutation.isPending || ['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus)}
+                    colorScheme="blue"
+                  >
+                    Process with AI
+                  </Button>
+                </Box>
+              )}
+            </TabPanel>
+            
+            {/* Timeline Tab */}
+            <TabPanel px={0} py={4}>
+              <Card variant="outline">
+                <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                  <Heading size="sm">Document Timeline</Heading>
+                </CardHeader>
+                <CardBody p={4}>
+                  <Box position="relative" pl={8}>
+                    <Box
+                      position="absolute"
+                      left={0}
+                      top={0}
+                      bottom={0}
+                      width="2px"
+                      bg="blue.100"
+                      ml={4}
+                    />
+                    
+                    {/* Upload event */}
+                    <Box position="relative" mb={8}>
+                      <Box 
+                        position="absolute" 
+                        left="-8px" 
+                        bg="blue.500" 
+                        borderRadius="full" 
+                        p={1}
+                        color="white"
+                      >
+                        <Icon as={AttachmentIcon} boxSize={3} />
+                      </Box>
+                      <Box ml={4}>
+                        <Text fontWeight="medium">Document Uploaded</Text>
+                        <Text fontSize="sm" color="gray.500">
+                          {format(new Date(document.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                        </Text>
+                        <Text fontSize="sm" mt={1}>
+                          Original filename: {document.originalFilename}
+                        </Text>
+                      </Box>
+                    </Box>
+                    
+                    {/* Processing event */}
+                    {document.processingStatus !== 'PENDING' && (
+                      <Box position="relative" mb={8}>
+                        <Box 
+                          position="absolute" 
+                          left="-8px" 
+                          bg={document.processingStatus === 'COMPLETED' ? 'green.500' : 
+                              document.processingStatus === 'FAILED' ? 'red.500' : 'yellow.500'} 
+                          borderRadius="full" 
+                          p={1}
+                          color="white"
+                        >
+                          <Icon 
+                            as={document.processingStatus === 'COMPLETED' ? CheckIcon : 
+                                document.processingStatus === 'FAILED' ? WarningIcon : TimeIcon} 
+                            boxSize={3} 
+                          />
+                        </Box>
+                        <Box ml={4}>
+                          <Text fontWeight="medium">
+                            {document.processingStatus === 'COMPLETED' ? 'AI Processing Completed' :
+                             document.processingStatus === 'FAILED' ? 'AI Processing Failed' :
+                             document.processingStatus === 'PROCESSING' ? 'AI Processing Started' :
+                             'Document Queued for Processing'}
+                          </Text>
+                          <Text fontSize="sm" color="gray.500">
+                            {document.processingCompletedAt ? 
+                              format(new Date(document.processingCompletedAt), "MMMM d, yyyy 'at' h:mm a") : 
+                              document.processingStartedAt ?
+                              format(new Date(document.processingStartedAt), "MMMM d, yyyy 'at' h:mm a") :
+                              '-'}
+                          </Text>
+                          {document.processingError && (
+                            <Alert status="error" mt={2} py={2} px={3} borderRadius="md" fontSize="sm">
+                              <AlertIcon />
+                              {document.processingError}
+                            </Alert>
+                          )}
+                        </Box>
+                      </Box>
+                    )}
+                    
+                    {/* Update event if different from created date */}
+                    {document.updatedAt !== document.createdAt && (
+                      <Box position="relative">
+                        <Box 
+                          position="absolute" 
+                          left="-8px" 
+                          bg="purple.500" 
+                          borderRadius="full" 
+                          p={1}
+                          color="white"
+                        >
+                          <Icon as={EditIcon} boxSize={3} />
+                        </Box>
+                        <Box ml={4}>
+                          <Text fontWeight="medium">Document Updated</Text>
+                          <Text fontSize="sm" color="gray.500">
+                            {format(new Date(document.updatedAt), "MMMM d, yyyy 'at' h:mm a")}
+                          </Text>
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+                </CardBody>
+              </Card>
+            </TabPanel>
+          </TabPanels>
         </Tabs>
-      </div>
+      </Container>
       
-      {/* Delete confirmation dialog */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this document?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the document
-              and all of its data from our servers.
+            <AlertDialogTitle>Confirm Document Deletion</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Are you sure you want to delete the following document?
+              </p>
+              <p className="font-medium text-foreground">
+                "{document.title}"
+              </p>
+              <p className="text-destructive">
+                This action cannot be undone and all associated data will be permanently removed.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteDocumentMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={confirmDeleteDocument}
+              onClick={confirmDeleteDocument} 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteDocumentMutation.isPending}
             >
-              Delete
+              {deleteDocumentMutation.isPending ? "Deleting..." : "Delete Document"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -773,104 +1209,24 @@ export default function DocumentDetail() {
   );
 }
 
-// Helper function to format file size in KB/MB/GB
-function formatFileSize(sizeInBytes: number | undefined): string {
-  if (!sizeInBytes) return "Unknown";
-  
-  const KB = 1024;
-  const MB = KB * 1024;
-  const GB = MB * 1024;
-  
-  if (sizeInBytes < KB) {
-    return `${sizeInBytes} B`;
-  } else if (sizeInBytes < MB) {
-    return `${(sizeInBytes / KB).toFixed(2)} KB`;
-  } else if (sizeInBytes < GB) {
-    return `${(sizeInBytes / MB).toFixed(2)} MB`;
-  } else {
-    return `${(sizeInBytes / GB).toFixed(2)} GB`;
-  }
-}
+// Missing Import Mock
+const ShareIcon = ({ className = "" }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+    <polyline points="16 6 12 2 8 6"></polyline>
+    <line x1="12" y1="2" x2="12" y2="15"></line>
+  </svg>
+);
 
-// Helper function to extract file extension
-function getFileExtension(filename: string | undefined): string | undefined {
-  if (!filename) return undefined;
-  return filename.split('.').pop()?.toLowerCase();
-}
-
-// Helper function to map sentiment score to progress component
-function mapSentimentToProgress(score: number): number {
-  // Scale from -1 to 1 into 0-100 range
-  return (score + 1) * 50;
-}
-
-// Timeline item component
-function TimelineItem({ title, description, date, icon }: { 
-  title: string; 
-  description: string; 
-  date: string; 
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="mb-8 relative">
-      <div className="absolute -left-10 p-2 bg-background border rounded-full flex items-center justify-center">
-        {icon}
-      </div>
-      <div>
-        <h3 className="font-medium">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
-        <p className="text-xs text-muted-foreground mt-1">{date}</p>
-      </div>
-    </div>
-  );
-}
-
-// Helper component for sharing icon
-function ShareIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-      <polyline points="16 6 12 2 8 6" />
-      <line x1="12" y1="2" x2="12" y2="15" />
-    </svg>
-  );
-}
-
-// Loading skeleton
-function DocumentDetailSkeleton() {
-  return (
-    <div className="container mx-auto py-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Skeleton className="h-8 w-8 rounded-md" />
-        <div className="flex-1">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-40 mt-2" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-9 rounded-md" />
-          <Skeleton className="h-9 w-9 rounded-md" />
-        </div>
-      </div>
-      
-      <div className="mb-4">
-        <Skeleton className="h-10 w-64" />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Skeleton className="h-64 md:col-span-2" />
-        <Skeleton className="h-64" />
-      </div>
-    </div>
-  );
-}
+// Already defined at the top of the file
