@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, Typography, Timeline, Empty } from 'antd';
+import { Card, Typography, Timeline } from 'antd';
+import { EmptyState } from '@/components/common/EmptyState';
 import { 
   FileOutlined, 
   EditOutlined, 
@@ -64,10 +65,14 @@ export function DocumentTimelineTab({ document }: DocumentTimelineTabProps) {
           ))}
         </Timeline>
       ) : (
-        <Empty 
-          description="No timeline events available" 
-          image={Empty.PRESENTED_IMAGE_SIMPLE} 
-        />
+        <div style={{ marginTop: 24 }}>
+          <EmptyState
+            title="No Timeline Activity"
+            description="This document doesn't have any recorded activity. When users interact with this document, their actions will be logged here."
+            type="compact"
+            size="default"
+          />
+        </div>
       )}
     </Card>
   );
