@@ -380,6 +380,10 @@ export default function DocumentDetail() {
                   <FileCheckIcon className="mr-2 h-4 w-4" />
                   <span>View version history</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDeleteDocument} className="text-destructive">
+                  <TrashIcon className="mr-2 h-4 w-4" />
+                  <span>Delete document</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -743,6 +747,28 @@ export default function DocumentDetail() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the document
+              and all of its data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteDocument}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
