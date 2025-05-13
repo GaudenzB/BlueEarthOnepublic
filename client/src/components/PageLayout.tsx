@@ -1,8 +1,18 @@
 import { Box, Container, Heading } from "@chakra-ui/react";
 import React from "react";
 
+/**
+ * Page layout component that follows the BlueEarthOne design system.
+ * 
+ * This component provides a consistent layout for all pages in the application,
+ * including a header with the page title and a container for content.
+ * 
+ * @see docs/design-system.md for design system guidelines.
+ */
 type PageLayoutProps = {
+  /** Page title to be displayed in the header */
   title: string;
+  /** Page content */
   children: React.ReactNode;
 };
 
