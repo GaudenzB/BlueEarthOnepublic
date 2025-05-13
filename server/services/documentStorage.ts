@@ -8,6 +8,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 
+// Get bucket name from environment
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'blueearthcapital';
+
 // Check if required environment variables are set
 if (!process.env.S3_BUCKET_NAME && process.env.NODE_ENV === 'production') {
   logger.error('S3_BUCKET_NAME environment variable must be set in production');
@@ -17,10 +20,22 @@ if (!process.env.S3_BUCKET_NAME && process.env.NODE_ENV === 'production') {
 // Determine if we're using AWS S3 or local storage
 const hasAwsCredentials = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
 const isDevelopment = process.env.NODE_ENV === 'development';
-const useLocalStorage = (!hasAwsCredentials || process.env.FORCE_LOCAL_STORAGE === 'true') && isDevelopment;
+const isTest = process.env.NODE_ENV === 'test';
 
-logger.info(`Document storage mode: ${useLocalStorage ? 'LOCAL STORAGE (Development)' : 'AWS S3'}`);
-logger.info(`AWS Region: ${process.env.AWS_REGION || 'eu-central-1'} (EU region used for compliance)`);
+// Environment setting to explicitly use AWS S3 in development/test
+const useAwsInDev = process.env.USE_AWS_IN_DEV === 'true';
+
+// By default, use S3 in all environments if credentials are available or if explicitly requested
+// Force local storage only if specifically requested in dev or test environments
+const useLocalStorage = (!hasAwsCredentials || (process.env.FORCE_LOCAL_STORAGE === 'true' && !useAwsInDev)) && (isDevelopment || isTest);
+
+if (useLocalStorage) {
+  logger.info(`Document storage mode: LOCAL STORAGE (${process.env.NODE_ENV || 'development'} environment)`);
+} else {
+  logger.info(`Document storage mode: AWS S3 (${process.env.NODE_ENV || 'development'} environment)`);
+  logger.info(`AWS S3 Bucket: ${BUCKET_NAME}`);
+  logger.info(`AWS Region: ${process.env.AWS_REGION || 'eu-central-1'} (EU region used for compliance)`);
+}
 
 // Validate AWS region for data residency compliance
 const awsRegion = process.env.AWS_REGION || 'eu-central-1'; // Default to EU region for compliance
@@ -50,9 +65,6 @@ const s3Client = !useLocalStorage ? new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   }
 }) : null;
-
-// Get bucket name from environment
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'blueearthcapital';
 
 /**
  * Generate a secure storage path for a document
