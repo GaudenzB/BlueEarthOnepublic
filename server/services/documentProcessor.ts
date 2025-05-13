@@ -1,10 +1,9 @@
-import fs from 'fs';
-import path from 'path';
 import { logger } from '../utils/logger';
 import { analyzeDocumentText, extractTextFromDocument } from '../utils/openai';
 import { generateEmbeddingsForText } from '../utils/embeddingGenerator';
 import { documentRepository } from '../repositories/documentRepository';
 import { documentEmbeddingsRepository } from '../repositories/documentEmbeddingsRepository';
+import { downloadFile } from '../services/documentStorage';
 
 /**
  * Document Processing Service
@@ -34,20 +33,22 @@ class DocumentProcessorService {
       }
       
       // Step 3: Load file content
-      const storageRoot = process.env['STORAGE_LOCAL_PATH'] || './uploads';
-      const filePath = path.join(storageRoot, document.storageKey);
-      
       let fileContent: Buffer;
       try {
-        fileContent = fs.readFileSync(filePath);
-        logger.info('Document file loaded successfully', { 
-          documentId, 
+        fileContent = await downloadFile(document.storageKey);    // ✅ handles local *or* S3
+        logger.info('Document file loaded successfully', {
+          documentId,
           fileSize: fileContent.length,
-          filePath
+          storageKey: document.storageKey
         });
-      } catch (error) {
-        logger.error('Error reading document file', { error, documentId, filePath });
-        await documentRepository.updateProcessingStatus(documentId, tenantId, 'ERROR');
+      } catch (error: any) {
+        logger.error('Error reading document file', { error, documentId });
+        await documentRepository.updateProcessingStatusWithError(
+          documentId,
+          tenantId,
+          'ERROR',
+          `File load failed: ${error.message}`
+        );
         return false;
       }
       

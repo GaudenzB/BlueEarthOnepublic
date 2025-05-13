@@ -1,0 +1,60 @@
+Root cause
+
+server/services/documentProcessor.ts loads the file this way:
+
+ts
+Copy
+Edit
+const storageRoot = process.env['STORAGE_LOCAL_PATH'] || './uploads';
+const filePath     = path.join(storageRoot, document.storageKey);
+const fileContent  = fs.readFileSync(filePath);   // ❌ throws if file isn’t on disk
+That works in development (where files are stored on the local filesystem) but fails in production, because uploads are saved to Amazon S3. When the file is missing locally readFileSync throws, the catch-block sets the status to ERROR, and the processor returns before any AI analysis runs—so the document is never “analysed”.
+
+The download helper that already abstracts over “local vs S3” isn’t used here:
+
+ts
+Copy
+Edit
+// server/services/documentStorage.ts
+export async function downloadFile(storageKey: string): Promise<Buffer> { … }
+Fix
+
+Import the helper in documentProcessor.ts:
+
+ts
+Copy
+Edit
+import { downloadFile } from '../services/documentStorage';
+Replace the whole “Step 3: Load file content” section with a single call that works in every environment:
+
+ts
+Copy
+Edit
+// Step 3: Load file content
+let fileContent: Buffer;
+try {
+  fileContent = await downloadFile(document.storageKey);    // ✅ handles local *or* S3
+  logger.info('Document file loaded successfully', {
+    documentId,
+    fileSize: fileContent.length,
+    storageKey: document.storageKey
+  });
+} catch (error) {
+  logger.error('Error reading document file', { error, documentId });
+  await documentRepository.updateProcessingStatusWithError(
+    documentId,
+    tenantId,
+    'ERROR',
+    `File load failed: ${error.message}`
+  );
+  return false;
+}
+(You can now delete the storageRoot / filePath code and the fs + path imports if they’re no longer used elsewhere in the file.)
+
+Re-deploy. With the document now loading correctly the OpenAI analysis pipeline runs, embeddings are generated, and aiProcessed is set to true; the UI’s “AI analysis” pane will start showing results.
+
+Why this is safe
+
+downloadFile() already detects whether local storage is in use (useLocalStorage) and falls back to GetObjectCommand for S3, so there’s no environment-specific branching left in documentProcessor.
+
+Error handling stays identical—any failure still updates the document row with a helpful processingError.
