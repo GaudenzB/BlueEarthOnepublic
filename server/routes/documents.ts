@@ -569,11 +569,12 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
     const documentId = req.params.id;
     const tenantId = (req as any).tenantId;
     
-    logger.debug('Getting document by ID', { 
+    logger.info('Getting document by ID', { 
       documentId, 
       tenantId, 
       path: req.path,
-      originalUrl: req.originalUrl
+      originalUrl: req.originalUrl,
+      baseUrl: req.baseUrl
     });
     
     // Validate UUID format to prevent database errors
@@ -586,6 +587,13 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
     }
     
     try {
+      // Log the default tenant ID for debugging
+      logger.debug('Default tenant used for document retrieval', {
+        documentId,
+        tenantId,
+        defaultTenantId: process.env.DEFAULT_TENANT_ID || '00000000-0000-0000-0000-000000000001'
+      });
+      
       const document = await documentRepository.getById(documentId, tenantId);
       
       if (!document) {
@@ -596,10 +604,11 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
         });
       }
       
-      logger.debug('Document found successfully', { 
+      logger.info('Document found successfully', { 
         documentId,
         title: document.title,
-        status: document.processingStatus
+        status: document.processingStatus,
+        responseStatus: 200
       });
       
       return res.json({
@@ -609,7 +618,8 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
       });
     } catch (repoError) {
       logger.error('Repository error getting document by ID', { 
-        error: repoError, 
+        error: repoError instanceof Error ? repoError.message : 'Unknown error', 
+        stack: repoError instanceof Error ? repoError.stack : undefined,
         documentId, 
         tenantId 
       });
@@ -618,7 +628,10 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
   } catch (error) {
     logger.error('Error getting document by ID', { 
       error: error instanceof Error ? error.message : 'Unknown error', 
-      id: req.params.id 
+      stack: error instanceof Error ? error.stack : undefined,
+      id: req.params.id,
+      path: req.path,
+      baseUrl: req.baseUrl
     });
     return res.status(500).json({
       success: false,

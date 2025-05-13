@@ -132,11 +132,24 @@ export const documentRepository = {
    */
   async getById(id: string, tenantId: string): Promise<Document & { uploadedByUser?: { id: number, username: string, name?: string } } | undefined> {
     try {
+      // Validate inputs
+      if (!id) {
+        logger.warn('getById called with undefined or null id');
+        return undefined;
+      }
+      
+      if (!tenantId) {
+        logger.warn('getById called with undefined or null tenantId');
+        return undefined;
+      }
+      
+      logger.debug('Getting document by ID', { id, tenantId });
+      
       // Import the users table from the schema
       const { users } = await import('@shared/schema');
       
       // Join with the users table to get uploader information
-      const [result] = await db.select({
+      const results = await db.select({
         ...documents,
         uploadedByUser: {
           id: users.id,
@@ -153,10 +166,26 @@ export const documentRepository = {
         )
       );
       
+      if (!results || results.length === 0) {
+        logger.debug('No document found with ID', { id, tenantId });
+        return undefined;
+      }
+      
+      const result = results[0];
+      logger.debug('Document found', { 
+        id: result.id,
+        title: result.title,
+        documentType: result.documentType
+      });
+      
       return result;
     } catch (error) {
-      logger.error('Error getting document by ID', { error, id, tenantId });
-      throw new Error(`Failed to get document: ${error.message}`);
+      logger.error('Error getting document by ID', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        id, 
+        tenantId 
+      });
+      throw new Error(`Failed to get document: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
