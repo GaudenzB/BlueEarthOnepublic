@@ -53,6 +53,7 @@ export const documentRepository = {
    */
   async updateAfterProcessing(id: string, tenantId: string, updates: {
     processingStatus: 'COMPLETED' | 'ERROR';
+    processingError?: string | null;
     aiProcessed: boolean;
     aiMetadata: any;
   }): Promise<Document | undefined> {
@@ -60,6 +61,7 @@ export const documentRepository = {
       const [result] = await db.update(documents)
         .set({ 
           processingStatus: updates.processingStatus,
+          processingError: updates.processingError || null,
           aiProcessed: updates.aiProcessed,
           aiMetadata: updates.aiMetadata,
           updatedAt: new Date()

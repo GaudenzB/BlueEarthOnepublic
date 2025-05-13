@@ -62,15 +62,55 @@ class DocumentProcessorService {
       }
       
       // Step 5: Analyze document text with OpenAI
-      const aiAnalysis = await analyzeDocumentText(
-        textContent,
-        document.title || document.originalFilename,
-        document.documentType || 'OTHER'
-      );
+      let aiAnalysis;
+      let processingStatus: 'COMPLETED' | 'ERROR' = 'COMPLETED';
+      let processingError: string | null = null;
+      
+      try {
+        aiAnalysis = await analyzeDocumentText(
+          textContent,
+          document.title || document.originalFilename,
+          document.documentType || 'OTHER'
+        );
+        
+        // Check if there was a processing error indicated in the result
+        if (aiAnalysis.errorDetails) {
+          logger.warn('Document analysis completed with errors', { 
+            documentId, 
+            error: aiAnalysis.errorDetails 
+          });
+          processingStatus = 'COMPLETED';  // Still mark as completed but with errors
+          processingError = aiAnalysis.errorDetails;
+        } else {
+          logger.info('Document analysis completed successfully', { 
+            documentId, 
+            summaryLength: aiAnalysis.summary.length
+          });
+        }
+      } catch (error) {
+        logger.error('Error in OpenAI document analysis', { 
+          error, 
+          documentId 
+        });
+        // Continue processing despite the error, just note it in the metadata
+        processingStatus = 'COMPLETED';  // Still mark as completed but with errors
+        processingError = `Analysis error: ${error.message || 'Unknown error'}`;
+        
+        // Make sure we have a valid aiAnalysis to continue
+        aiAnalysis = aiAnalysis || {
+          summary: "Unable to generate summary due to an error in the analysis process.",
+          entities: [],
+          timeline: [],
+          keyInsights: ["Analysis error occurred"],
+          categories: [],
+          confidence: 0
+        };
+      }
       
       // Step 6: Update document with AI metadata
       await documentRepository.updateAfterProcessing(documentId, tenantId, {
-        processingStatus: 'COMPLETED',
+        processingStatus,
+        processingError,
         aiProcessed: true,
         aiMetadata: aiAnalysis
       });
