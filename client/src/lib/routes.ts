@@ -85,6 +85,11 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       href: ROUTES.DOCUMENTS_EXAMPLE,
       icon: "FileText",
     },
+    {
+      title: "PDF Test Tool",
+      href: ROUTES.PDF_TEST,
+      icon: "FileSearch",
+    },
   ];
   
   // Admin navigation items - only visible to superadmins

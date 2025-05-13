@@ -11,7 +11,7 @@ const upload = multer({ dest: 'uploads/' });
  * Dedicated route to test PDF text extraction in isolation
  * This allows for diagnosing PDF processing issues separate from the document workflow
  */
-router.post('/test-pdf', authenticate, upload.single('file'), async (req: Request, res: Response) => {
+router.post('/', authenticate, upload.single('file'), async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ success: false, error: 'No file uploaded' });
   }
