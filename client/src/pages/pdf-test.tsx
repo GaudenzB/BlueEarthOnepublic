@@ -27,6 +27,8 @@ export default function PdfTest() {
       setFile(selectedFile);
       setError(null);
       setResult(null);
+    } else {
+      setFile(null);
     }
   };
 
