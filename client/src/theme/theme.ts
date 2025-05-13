@@ -1,21 +1,20 @@
 import { extendTheme } from "@chakra-ui/react";
 
 // BlueEarth Capital brand colors
-// Primary: #1A2B47 (dark navy)
-// Secondary shades: #0C1C36 (darker), #324D6F (lighter)
+// Updated to a more mature, professional aesthetic for financial SaaS platforms
 const theme = extendTheme({
   colors: {
     brand: {
-      50: "#E6EBF2", // Lightest shade
-      100: "#C5D0E1", // Very light
-      200: "#A3B6D0", // Light
-      300: "#809BBE", // Medium light
-      400: "#5E81AD", // Medium
-      500: "#1A2B47", // Primary base
-      600: "#16253E", // Primary dark
-      700: "#0C1C36", // Very dark (sidebar)
-      800: "#081426", // Extra dark
-      900: "#040C16", // Nearly black
+      50: "#E6EAF0", // Lightest shade
+      100: "#C2CCE0", // Very light
+      200: "#9AAACB", // Light
+      300: "#7287B7", // Medium light
+      400: "#5470A7", // Medium
+      500: "#1E2A40", // Primary base (navy)
+      600: "#19253B", // Primary dark
+      700: "#131D30", // Very dark (sidebar)
+      800: "#0D1526", // Extra dark
+      900: "#060C19", // Nearly black
     },
     accent: {
       50: "#E6F7FF", // Lightest shade
@@ -28,11 +27,46 @@ const theme = extendTheme({
       700: "#004C99", // Very dark accent
       800: "#003366", // Extra dark accent
       900: "#00264D", // Nearly black accent
+    },
+    // Status colors for badges - subdued and professional
+    status: {
+      success: {
+        bg: "green.50",
+        color: "green.800",
+      },
+      warning: {
+        bg: "yellow.50",
+        color: "yellow.800", 
+      },
+      error: {
+        bg: "red.50",
+        color: "red.800",
+      },
+      info: {
+        bg: "blue.50",
+        color: "blue.800",
+      },
+      default: {
+        bg: "gray.50",
+        color: "gray.700",
+      },
     }
   },
   fonts: {
-    heading: "Inter, system-ui, sans-serif",
-    body: "Inter, system-ui, sans-serif",
+    heading: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+    body: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  },
+  fontSizes: {
+    xs: "0.75rem",
+    sm: "0.813rem",
+    md: "0.875rem",
+    lg: "1rem",
+    xl: "1.125rem",
+    "2xl": "1.25rem",
+    "3xl": "1.5rem",
+    "4xl": "1.875rem",
+    "5xl": "2.25rem",
+    "6xl": "3rem",
   },
   styles: {
     global: {
@@ -57,17 +91,97 @@ const theme = extendTheme({
           },
         },
         outline: {
-          borderColor: "brand.500",
-          color: "brand.500",
+          borderColor: "gray.200",
+          color: "gray.800",
           _hover: {
-            bg: "brand.50",
+            bg: "gray.50",
+          },
+        },
+      },
+      sizes: {
+        sm: {
+          fontSize: "sm",
+          px: 3,
+          py: 1,
+        },
+      },
+    },
+    Table: {
+      baseStyle: {
+        th: {
+          fontWeight: "medium",
+          textTransform: "none",
+          letterSpacing: "normal",
+          color: "gray.600", 
+          fontSize: "sm",
+        },
+        td: {
+          fontSize: "sm",
+        },
+      },
+      variants: {
+        simple: {
+          th: {
+            borderBottom: "1px",
+            borderColor: "gray.200",
+          },
+          td: {
+            borderBottom: "1px",
+            borderColor: "gray.200",
           },
         },
       },
     },
     Heading: {
       baseStyle: {
+        fontWeight: "semibold",
         color: "brand.500",
+      },
+      sizes: {
+        "2xl": {
+          fontSize: "2xl",
+        },
+      },
+    },
+    Alert: {
+      variants: {
+        "left-accent": {
+          container: {
+            borderLeftWidth: "4px",
+          },
+        },
+      },
+    },
+    Badge: {
+      baseStyle: {
+        px: 2,
+        py: 1,
+        textTransform: "none",
+        fontWeight: "medium",
+        borderRadius: "md",
+        fontSize: "xs",
+      },
+      variants: {
+        subtle: {
+          bg: "gray.50",
+          color: "gray.800",
+        },
+        success: {
+          bg: "green.50",
+          color: "green.800",
+        },
+        warning: {
+          bg: "yellow.50",
+          color: "yellow.800",
+        },
+        error: {
+          bg: "red.50",
+          color: "red.800",
+        },
+        info: {
+          bg: "blue.50",
+          color: "blue.800",
+        },
       },
     },
   },

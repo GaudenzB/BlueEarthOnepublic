@@ -17,7 +17,6 @@ import {
   MenuList,
   MenuItem,
   Icon,
-  Avatar,
   Tooltip,
   Skeleton,
   Stack,
@@ -25,7 +24,7 @@ import {
   useColorModeValue
 } from "@chakra-ui/react";
 import { 
-  InfoIcon, 
+  InfoOutlineIcon, 
   AttachmentIcon, 
   DownloadIcon, 
   DeleteIcon, 
@@ -128,21 +127,21 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   const getDocumentTypeIcon = (type: string | null) => {
     switch (type) {
       case "CONTRACT":
-        return <Icon as={AttachmentIcon} />;
+        return AttachmentIcon;
       case "AGREEMENT":
-        return <Icon as={CheckIcon} />;
+        return CheckIcon;
       case "REPORT":
-        return <Icon as={InfoIcon} />;
+        return InfoOutlineIcon;
       case "POLICY":
-        return <Icon as={InfoIcon} />;
+        return InfoOutlineIcon;
       case "INVOICE":
-        return <Icon as={AttachmentIcon} />;
+        return AttachmentIcon;
       case "PRESENTATION":
-        return <Icon as={InfoIcon} />;
+        return InfoOutlineIcon;
       case "CORRESPONDENCE":
-        return <Icon as={InfoIcon} />;
+        return InfoOutlineIcon;
       default:
-        return <Icon as={AttachmentIcon} />;
+        return AttachmentIcon;
     }
   };
 
@@ -151,16 +150,18 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       case "COMPLETED":
         return (
           <Tooltip label="Document processed successfully">
-            <Badge colorScheme="green" display="flex" alignItems="center">
-              <CheckIcon mr={1} /> Processed
+            <Badge variant="subtle" colorScheme="green" display="flex" alignItems="center">
+              <Icon as={CheckIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Processed</Text>
             </Badge>
           </Tooltip>
         );
       case "PROCESSING":
         return (
           <Tooltip label="Document is being processed">
-            <Badge colorScheme="yellow" display="flex" alignItems="center">
-              <TimeIcon mr={1} /> Processing
+            <Badge variant="subtle" colorScheme="yellow" display="flex" alignItems="center">
+              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Processing</Text>
             </Badge>
           </Tooltip>
         );
@@ -168,8 +169,9 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       case "QUEUED":
         return (
           <Tooltip label="Document is waiting for processing">
-            <Badge colorScheme="blue" display="flex" alignItems="center">
-              <TimeIcon mr={1} /> Pending
+            <Badge variant="subtle" colorScheme="blue" display="flex" alignItems="center">
+              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Pending</Text>
             </Badge>
           </Tooltip>
         );
@@ -177,16 +179,18 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       case "ERROR":
         return (
           <Tooltip label="Document processing failed">
-            <Badge colorScheme="red" display="flex" alignItems="center">
-              <WarningIcon mr={1} /> Failed
+            <Badge variant="subtle" colorScheme="red" display="flex" alignItems="center">
+              <Icon as={WarningIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Failed</Text>
             </Badge>
           </Tooltip>
         );
       default:
         return (
           <Tooltip label="Unknown document status">
-            <Badge colorScheme="gray" display="flex" alignItems="center">
-              <InfoIcon mr={1} /> Unknown
+            <Badge variant="subtle" colorScheme="gray" display="flex" alignItems="center">
+              <Icon as={InfoOutlineIcon} mr={1} boxSize={3} /> 
+              <Text fontSize="xs">Unknown</Text>
             </Badge>
           </Tooltip>
         );
@@ -226,10 +230,10 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
 
   if (filteredDocuments.length === 0) {
     return (
-      <Center py={10} flexDirection="column" borderWidth="1px" borderRadius="md" borderColor={borderColor}>
-        <Icon as={AttachmentIcon} boxSize={12} color="gray.400" mb={3} />
-        <Text fontSize="lg" fontWeight="medium" mb={1}>No documents found</Text>
-        <Text color="gray.500" mb={4}>
+      <Center py={10} flexDirection="column">
+        <Icon as={AttachmentIcon} boxSize={8} color="gray.400" mb={3} />
+        <Text fontSize="md" fontWeight="medium" mb={1}>No documents found</Text>
+        <Text color="gray.500" fontSize="sm" mb={4}>
           {filter === "all" 
             ? "No documents have been uploaded yet."
             : filter === "recent"
@@ -237,7 +241,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
               : `No ${filter.toLowerCase()} documents found.`}
         </Text>
         <PermissionGuard area="documents" permission="edit">
-          <Button variant="outline">Upload your first document</Button>
+          <Button variant="outline" size="sm">Upload your first document</Button>
         </PermissionGuard>
       </Center>
     );
@@ -266,16 +270,14 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
               <Td>
                 <Link href={`/documents/${document.id}`}>
                   <Flex align="center" cursor="pointer">
-                    <Avatar 
-                      icon={getDocumentTypeIcon(document.documentType)} 
-                      bg="blue.100" 
-                      color="blue.600" 
-                      size="sm" 
-                      mr={3}
+                    <Icon 
+                      as={getDocumentTypeIcon(document.documentType)} 
+                      color="gray.500" 
+                      mr={2}
                     />
                     <Text 
                       fontWeight="medium" 
-                      color="blue.600" 
+                      color="brand.500" 
                       isTruncated 
                       maxW="300px" 
                       _hover={{ textDecoration: "underline" }}
@@ -286,7 +288,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
                 </Link>
               </Td>
               <Td>
-                <Badge variant="subtle" colorScheme="gray">
+                <Badge variant="subtle" colorScheme="gray" fontSize="xs">
                   {document.documentType || "Other"}
                 </Badge>
               </Td>
@@ -294,10 +296,12 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
                 {getProcessingStatusBadge(document.processingStatus)}
               </Td>
               <Td>
-                {format(new Date(document.createdAt), "MMM d, yyyy")}
+                <Text fontSize="sm" color="gray.600">
+                  {format(new Date(document.createdAt), "MMM d, yyyy")}
+                </Text>
               </Td>
               <Td>
-                <Text isTruncated maxW="120px">
+                <Text fontSize="sm" isTruncated maxW="120px" color="gray.600">
                   {document.uploadedBy || "System"}
                 </Text>
               </Td>
@@ -306,31 +310,31 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
                   <MenuButton
                     as={IconButton}
                     aria-label="Options"
-                    icon={<Icon as={InfoIcon} />}
+                    icon={<Icon as={InfoOutlineIcon} />}
                     variant="ghost"
                     size="sm"
                   />
-                  <MenuList>
-                    <MenuItem as={Link} href={`/documents/${document.id}`} icon={<Icon as={ViewIcon} />}>
+                  <MenuList fontSize="sm" boxShadow="md">
+                    <MenuItem as={Link} href={`/documents/${document.id}`} icon={<Icon as={ViewIcon} boxSize={4} />}>
                       View
                     </MenuItem>
                     <PermissionGuard area="documents" permission="view">
                       <MenuItem 
                         as="a" 
                         href={`/api/documents/${document.id}/download`}
-                        icon={<Icon as={DownloadIcon} />}
+                        icon={<Icon as={DownloadIcon} boxSize={4} />}
                       >
                         Download
                       </MenuItem>
                     </PermissionGuard>
                     <PermissionGuard area="documents" permission="edit">
-                      <MenuItem icon={<Icon as={EditIcon} />}>
+                      <MenuItem icon={<Icon as={EditIcon} boxSize={4} />}>
                         Replace
                       </MenuItem>
                     </PermissionGuard>
                     <PermissionGuard area="documents" permission="delete">
                       <MenuItem 
-                        icon={<Icon as={DeleteIcon} />}
+                        icon={<Icon as={DeleteIcon} boxSize={4} />}
                         onClick={() => handleDeleteClick(document.id, document.title || document.originalFilename)}
                         color="red.500"
                       >
