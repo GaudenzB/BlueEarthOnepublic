@@ -112,9 +112,10 @@ export default function DocumentDetail() {
   const [prevStatus, setPrevStatus] = React.useState<string | null>(null);
   
   // Fetch document data with automatic polling for processing status
-  const { data: documentResponse, isLoading, error } = useQuery({
+  const { data: documentResponse, isLoading, error, refetch } = useQuery({
     queryKey: [`/api/documents/${id}`],
-    retry: false,
+    retry: 3,
+    retryDelay: 1000,
     enabled: !!id,
     // Add polling refresh interval if document is in a processing state
     refetchInterval: (data: any) => {
@@ -130,12 +131,15 @@ export default function DocumentDetail() {
       
       // If document is in a transitional state (PENDING, PROCESSING, QUEUED), poll every 3 seconds
       if (doc && ['PENDING', 'PROCESSING', 'QUEUED'].includes(doc.processingStatus)) {
+        console.log("Document in processing state, polling enabled");
         return 3000; // Poll every 3 seconds
       }
       
       // Otherwise, don't poll
       return false;
-    }
+    },
+    // Force a refresh after 3 seconds to ensure we get latest status
+    staleTime: 3000
   });
   
   // Watch for changes in document status
