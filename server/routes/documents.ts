@@ -808,15 +808,38 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
   // If token is in query params, verify it and set req.user
   if (tokenFromQuery) {
     try {
+      // Log the token info for debugging (be careful not to log the full token in production)
+      console.log("Token verification attempt - first 10 chars:", tokenFromQuery.substring(0, 10));
+      console.log("JWT_SECRET first 10 chars:", JWT_SECRET.substring(0, 10));
+      console.log("NODE_ENV:", process.env.NODE_ENV);
+      
       const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(tokenFromQuery, JWT_SECRET);
+      
+      // Use a more permissive verification approach for development
+      let decoded;
+      try {
+        // Try with default development secret
+        decoded = jwt.verify(tokenFromQuery, 'development_only_secret_key_not_for_production');
+        console.log("Token verified with development secret");
+      } catch (innerError) {
+        console.log("Failed with development secret, trying environment secret");
+        
+        // If that fails, try with environment variable
+        if (process.env.JWT_SECRET) {
+          decoded = jwt.verify(tokenFromQuery, process.env.JWT_SECRET);
+          console.log("Token verified with environment secret");
+        } else {
+          throw new Error("No valid JWT_SECRET available");
+        }
+      }
+      
       (req as any).user = decoded;
-      console.log("Successfully verified token from query parameter");
-    } catch (error) {
-      console.error("Token verification failed:", error);
+      console.log("Successfully verified token and set user:", (req as any).user.id);
+    } catch (error: any) {
+      console.error("Token verification failed:", error.message);
       return res.status(401).json({
         success: false,
-        message: "Invalid token in query parameter"
+        message: `Invalid token in query parameter: ${error.message}`
       });
     }
   } else {

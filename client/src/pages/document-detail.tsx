@@ -29,14 +29,24 @@ import { useToast } from "@/hooks/use-toast";
 // This is necessary because iframes don't send authentication headers by default
 const PreviewIframe: React.FC<{ documentId: string, title: string }> = ({ documentId, title }) => {
   const [token, setToken] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | null>(null);
   
   React.useEffect(() => {
     // Get the current authentication token from localStorage
     const authToken = localStorage.getItem('token') || localStorage.getItem('authToken');
-    setToken(authToken);
+    console.log("Auth token available:", !!authToken);
+    
+    if (authToken) {
+      setToken(authToken);
+      setLoading(false);
+    } else {
+      setError("Authentication token not found");
+      setLoading(false);
+    }
   }, []);
   
-  if (!token) {
+  if (loading) {
     return (
       <div className="w-full h-full flex items-center justify-center">
         <p className="text-muted-foreground">Loading preview...</p>
@@ -44,11 +54,27 @@ const PreviewIframe: React.FC<{ documentId: string, title: string }> = ({ docume
     );
   }
   
+  if (error || !token) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center space-y-3 max-w-md">
+          <div className="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-red-100 mb-4">
+            <AlertTriangleIcon className="h-8 w-8 text-red-500" />
+          </div>
+          <h3 className="text-lg font-medium">Authentication Error</h3>
+          <p className="text-muted-foreground">{error || "Unable to load preview due to authentication issues"}</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Include the token as a URL parameter for the iframe
-  // The server will need to be updated to accept this token
+  const previewUrl = `/api/documents/${documentId}/preview?token=${encodeURIComponent(token)}`;
+  console.log("Preview URL (truncated):", previewUrl.substring(0, 50) + "...");
+  
   return (
     <iframe 
-      src={`/api/documents/${documentId}/preview?token=${encodeURIComponent(token)}`}
+      src={previewUrl}
       className="w-full h-full"
       title={title}
     />
