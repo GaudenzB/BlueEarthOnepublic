@@ -88,6 +88,8 @@ export async function uploadFile(buffer: Buffer, storageKey: string, contentType
   storageKey: string;
   checksum: string;
   size: number;
+  url?: string; // Optional URL for direct access
+  storageType: 'local' | 's3'; // Indicates where the file is stored
 }> {
   try {
     // Calculate checksum
@@ -110,40 +112,70 @@ export async function uploadFile(buffer: Buffer, storageKey: string, contentType
       return {
         storageKey,
         checksum,
-        size: buffer.length
+        size: buffer.length,
+        storageType: 'local'
       };
     } else {
       // Upload to S3
-      const upload = new Upload({
-        client: s3Client!,
-        params: {
-          Bucket: BUCKET_NAME,
-          Key: storageKey,
-          Body: buffer,
-          ContentType: contentType,
-          ContentMD5: checksum,
-          ServerSideEncryption: 'AES256', // Enable server-side encryption
-          // Optionally use KMS for enhanced security
-          ...(process.env.KMS_KEY_ID && { 
-            ServerSideEncryption: 'aws:kms',
-            SSEKMSKeyId: process.env.KMS_KEY_ID
-          }),
-          Metadata: {
-            'original-checksum': checksum
-          }
-        }
-      });
-
-      await upload.done();
+      logger.debug(`Uploading file to S3: ${storageKey}`);
+      logger.debug(`Bucket: ${BUCKET_NAME}, Region: ${awsRegion}`);
       
-      return {
-        storageKey,
-        checksum,
-        size: buffer.length
-      };
+      try {
+        const upload = new Upload({
+          client: s3Client!,
+          params: {
+            Bucket: BUCKET_NAME,
+            Key: storageKey,
+            Body: buffer,
+            ContentType: contentType,
+            ContentMD5: checksum,
+            ServerSideEncryption: 'AES256', // Enable server-side encryption
+            // Optionally use KMS for enhanced security
+            ...(process.env.KMS_KEY_ID && { 
+              ServerSideEncryption: 'aws:kms',
+              SSEKMSKeyId: process.env.KMS_KEY_ID
+            }),
+            Metadata: {
+              'original-checksum': checksum,
+              'upload-date': new Date().toISOString()
+            }
+          }
+        });
+
+        const result = await upload.done();
+        logger.info(`Successfully uploaded file to S3: ${storageKey}`);
+        
+        // Get an S3 URL
+        const url = result.Location || `https://${BUCKET_NAME}.s3.${awsRegion}.amazonaws.com/${encodeURIComponent(storageKey)}`;
+        
+        return {
+          storageKey,
+          checksum,
+          size: buffer.length,
+          url,
+          storageType: 's3'
+        };
+      } catch (s3Error: any) {
+        logger.error('S3 upload error', {
+          error: s3Error.message,
+          code: s3Error.code,
+          statusCode: s3Error.$metadata?.httpStatusCode,
+          bucket: BUCKET_NAME,
+          region: awsRegion,
+          key: storageKey
+        });
+        
+        throw new Error(`S3 upload failed: ${s3Error.message}`);
+      }
     }
   } catch (error: any) {
-    logger.error('Error uploading file', { error, storageKey, useLocalStorage });
+    logger.error('Error uploading file', { 
+      errorType: error.name,
+      errorMessage: error.message,
+      storageKey,
+      useLocalStorage,
+      bucket: useLocalStorage ? null : BUCKET_NAME
+    });
     throw new Error(`Failed to upload file: ${error.message}`);
   }
 }
@@ -161,34 +193,61 @@ export async function downloadFile(storageKey: string): Promise<Buffer> {
       const filePath = path.join(LOCAL_STORAGE_DIR, storageKey);
       
       if (!fs.existsSync(filePath)) {
+        logger.error(`File not found in local storage: ${filePath}`);
         throw new Error(`File not found: ${filePath}`);
       }
       
+      logger.debug(`Reading file from local storage: ${filePath}`);
       return fs.readFileSync(filePath);
     } else {
       // Download from S3
+      logger.debug(`Attempting to download file from S3: ${storageKey}`);
       const command = new GetObjectCommand({
         Bucket: BUCKET_NAME,
         Key: storageKey
       });
       
-      const response = await s3Client!.send(command);
-      if (!response.Body) {
-        throw new Error('Empty response body');
+      try {
+        const response = await s3Client!.send(command);
+        if (!response.Body) {
+          throw new Error('Empty response body from S3');
+        }
+        
+        // Convert readable stream to buffer
+        logger.debug(`Successfully retrieved file from S3: ${storageKey}`);
+        const stream = response.Body as Readable;
+        const chunks: Buffer[] = [];
+        
+        return new Promise<Buffer>((resolve, reject) => {
+          stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+          stream.on('error', (err) => reject(err));
+          stream.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+      } catch (s3Error: any) {
+        // Check specific S3 errors
+        if (s3Error.name === 'NoSuchKey') {
+          logger.error(`File not found in S3 bucket: ${BUCKET_NAME}/${storageKey}`);
+          throw new Error(`File not found in S3: ${storageKey}`);
+        } else {
+          logger.error('S3 download error', { 
+            error: s3Error.message, 
+            code: s3Error.code,
+            statusCode: s3Error.$metadata?.httpStatusCode,
+            bucket: BUCKET_NAME,
+            key: storageKey 
+          });
+          throw new Error(`S3 download error: ${s3Error.message}`);
+        }
       }
-      
-      // Convert readable stream to buffer
-      const stream = response.Body as Readable;
-      const chunks: Buffer[] = [];
-      
-      return new Promise<Buffer>((resolve, reject) => {
-        stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-        stream.on('error', (err) => reject(err));
-        stream.on('end', () => resolve(Buffer.concat(chunks)));
-      });
     }
   } catch (error: any) {
-    logger.error('Error downloading file', { error, storageKey, useLocalStorage });
+    logger.error('Error downloading file', { 
+      errorType: error.name,
+      errorMessage: error.message,
+      storageKey, 
+      useLocalStorage,
+      bucket: useLocalStorage ? null : BUCKET_NAME
+    });
     throw new Error(`Failed to download file: ${error.message}`);
   }
 }
@@ -208,6 +267,19 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         logger.info(`File deleted from local storage: ${filePath}`);
+        
+        // Attempt to clean up empty directories
+        try {
+          const dirPath = path.dirname(filePath);
+          const remainingFiles = fs.readdirSync(dirPath);
+          if (remainingFiles.length === 0) {
+            fs.rmdirSync(dirPath);
+            logger.debug(`Removed empty directory: ${dirPath}`);
+          }
+        } catch (cleanupError) {
+          // Non-critical error, just log it
+          logger.debug('Failed to clean up empty directory', { error: cleanupError });
+        }
       } else {
         logger.warn(`File not found for deletion: ${filePath}`);
       }
@@ -215,16 +287,43 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
       return true;
     } else {
       // Delete from S3
-      const command = new DeleteObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: storageKey
-      });
+      logger.debug(`Attempting to delete file from S3: ${storageKey}`);
       
-      await s3Client!.send(command);
-      return true;
+      try {
+        const command = new DeleteObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: storageKey
+        });
+        
+        await s3Client!.send(command);
+        logger.info(`Successfully deleted file from S3: ${storageKey}`);
+        return true;
+      } catch (s3Error: any) {
+        // Check for specific S3 errors
+        if (s3Error.name === 'NoSuchKey') {
+          logger.warn(`File not found in S3 for deletion: ${BUCKET_NAME}/${storageKey}`);
+          // We'll consider this a success since the file is already gone
+          return true;
+        } else {
+          logger.error('S3 deletion error', {
+            error: s3Error.message,
+            code: s3Error.code,
+            statusCode: s3Error.$metadata?.httpStatusCode,
+            bucket: BUCKET_NAME,
+            key: storageKey
+          });
+          throw s3Error;
+        }
+      }
     }
   } catch (error: any) {
-    logger.error('Error deleting file', { error, storageKey, useLocalStorage });
+    logger.error('Error deleting file', { 
+      errorType: error.name,
+      errorMessage: error.message,
+      storageKey, 
+      useLocalStorage,
+      bucket: useLocalStorage ? null : BUCKET_NAME
+    });
     throw new Error(`Failed to delete file: ${error.message}`);
   }
 }

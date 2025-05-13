@@ -53,9 +53,10 @@ logs
 /coverage
 
 # Uploads directory - don't track uploaded files
-/uploads/**/*.pdf
-/uploads/**/*.doc
-/uploads/**/*.docx
+/uploads/**/*
+# Keep the directory structure but not the files
+!/uploads/**/
+!/uploads/**/.gitkeep
 
 # Local state
 .local
