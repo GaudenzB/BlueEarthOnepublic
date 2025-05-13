@@ -8,9 +8,11 @@
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
-import { Pool } from 'pg';
+import pg from 'pg';
 import { logger } from '../server/utils/logger';
 import { fileURLToPath } from 'url';
+
+const { Pool } = pg;
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
