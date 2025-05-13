@@ -11,15 +11,26 @@ import { promisify } from 'util';
 // Check if required environment variables are set
 if (!process.env.S3_BUCKET_NAME && process.env.NODE_ENV === 'production') {
   logger.error('S3_BUCKET_NAME environment variable must be set in production');
+  process.exit(1); // Exit in production if S3 bucket is not configured
 }
 
 // Determine if we're using AWS S3 or local storage
 const hasAwsCredentials = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
-const useLocalStorage = !hasAwsCredentials || process.env.FORCE_LOCAL_STORAGE === 'true';
+const isDevelopment = process.env.NODE_ENV === 'development';
+const useLocalStorage = (!hasAwsCredentials || process.env.FORCE_LOCAL_STORAGE === 'true') && isDevelopment;
 
-logger.info(`Document storage mode: ${useLocalStorage ? 'LOCAL STORAGE' : 'AWS S3'}`);
+logger.info(`Document storage mode: ${useLocalStorage ? 'LOCAL STORAGE (Development)' : 'AWS S3'}`);
+logger.info(`AWS Region: ${process.env.AWS_REGION || 'us-east-1'}`);
 
-// Create local storage directory if needed
+// Validate AWS region for data residency compliance
+const awsRegion = process.env.AWS_REGION || 'us-east-1';
+const isEuropeanRegion = awsRegion.startsWith('eu-') || awsRegion === 'eu-central-1';
+
+if (!useLocalStorage && !isEuropeanRegion && process.env.NODE_ENV === 'production') {
+  logger.warn(`Using non-European AWS region (${awsRegion}). For compliance, consider using an EU region.`);
+}
+
+// Create local storage directory if needed for development
 const LOCAL_STORAGE_DIR = path.join(process.cwd(), 'uploads');
 if (useLocalStorage) {
   if (!fs.existsSync(LOCAL_STORAGE_DIR)) {
@@ -28,17 +39,17 @@ if (useLocalStorage) {
   }
 }
 
-// S3 Client configuration (only when using AWS)
+// S3 Client configuration
 const s3Client = !useLocalStorage ? new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: awsRegion,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   }
 }) : null;
 
-// Default bucket name for development
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'blueearth-documents-dev';
+// Get bucket name from environment
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'blueearthcapital';
 
 /**
  * Generate a secure storage path for a document
