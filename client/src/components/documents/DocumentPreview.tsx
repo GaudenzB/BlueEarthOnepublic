@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Typography, Card, Space, Spin, Result, Button, Progress, Skeleton, Image } from 'antd';
 import { 
   FilePdfOutlined, 
@@ -47,15 +47,20 @@ export function DocumentPreview({
   canPreview = false,
   estimatedProcessingTime
 }: DocumentPreviewProps) {
-  // State for tracking preview loading
-  const [previewLoading, setPreviewLoading] = useState<boolean>(false);
-  const [previewFailed, setPreviewFailed] = useState<boolean>(false);
+  // We're using props for loading and error states instead of internal state
+  // This is a comment to document the design decision
   
   // Get file extension
   const getFileExtension = (filename?: string): string => {
     if (!filename) return '';
-    const parts = filename.split('.');
-    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+    try {
+      const parts = filename.split('.');
+      if (!parts || !Array.isArray(parts)) return '';
+      return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+    } catch (error) {
+      console.error('Error getting file extension:', error);
+      return '';
+    }
   };
   
   // Get icon based on file type
@@ -254,7 +259,7 @@ export function DocumentPreview({
               <Button 
                 icon={<ReloadOutlined />} 
                 onClick={onRefresh}
-                loading={previewLoading}
+                loading={isLoading}
               >
                 Refresh Status
               </Button>
@@ -266,7 +271,7 @@ export function DocumentPreview({
   }
   
   // If document processing failed or explicit preview error
-  if (document.processingStatus === 'FAILED' || previewError || previewFailed) {
+  if (document.processingStatus === 'FAILED' || previewError) {
     const errorMessage = previewError || document.processingError || 'Could not generate a preview for this document.';
     
     return (
