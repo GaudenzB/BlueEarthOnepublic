@@ -546,7 +546,7 @@ export default function DocumentDetail() {
             <Tooltip label="Download document">
               <IconButton
                 as="a"
-                href={`/api/documents/${document.id}/download`}
+                href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
                 download
                 icon={<DownloadIcon />}
                 aria-label="Download document"
@@ -833,7 +833,7 @@ export default function DocumentDetail() {
                   {document.mimeType?.includes('pdf') ? (
                     <Box position="relative" height="100%" width="100%">
                       <iframe 
-                        src={`/api/documents/${document.id}/download`}
+                        src={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
                         width="100%" 
                         height="100%" 
                         style={{ border: 'none', borderBottomLeftRadius: '0.375rem', borderBottomRightRadius: '0.375rem' }}
@@ -882,7 +882,7 @@ export default function DocumentDetail() {
                         </Text>
                         <Button 
                           as="a"
-                          href={`/api/documents/${document.id}/download`}
+                          href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
                           leftIcon={<DownloadIcon />}
                           colorScheme="blue"
                           target="_blank"
@@ -900,7 +900,7 @@ export default function DocumentDetail() {
                       </Text>
                       <Button 
                         as="a"
-                        href={`/api/documents/${document.id}/download`}
+                        href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
                         leftIcon={<DownloadIcon />}
                         colorScheme="blue"
                         target="_blank"
