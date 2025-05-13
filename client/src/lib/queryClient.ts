@@ -161,6 +161,39 @@ export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: Unauthor
         return response as unknown as T;
       }
       
+      // Special handling for document detail endpoints
+      if (url.match(/\/api\/documents\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/) && 
+          !url.includes('/preview') && !url.includes('/download')) {
+        console.log("Document detail endpoint detected:", {
+          url,
+          response: response,
+          responseType: typeof response,
+          hasSuccessFlag: 'success' in response,
+          hasDataProperty: 'data' in response,
+          hasMessage: 'message' in response,
+          dataType: 'data' in response ? typeof response.data : 'none'
+        });
+        
+        // Check if the data contains the document
+        if ('success' in response && response.success && 'data' in response) {
+          console.log("Document found in response wrapper:", {
+            docId: response.data?.id,
+            docTitle: response.data?.title || response.data?.originalFilename,
+            docStatus: response.data?.processingStatus
+          });
+          return response.data as T;
+        }
+        
+        // If the response has 'id', it might be a direct document object
+        if ('id' in response) {
+          console.log("Document appears to be direct object in response");
+          return response as unknown as T;
+        }
+        
+        // Log warning about unexpected response format
+        console.warn("Unexpected document detail response format:", response);
+      }
+      
       // Special handling for auth endpoints
       if (url.includes('/api/auth/')) {
         // Return the full response for auth endpoints

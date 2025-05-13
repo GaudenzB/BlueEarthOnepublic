@@ -140,8 +140,19 @@ export default function DocumentDetail() {
     }
   });
 
-  // Debug logging
-  console.log("Document detail response:", documentResponse);
+  // Enhanced debug logging
+  console.log("Document detail request info:", {
+    id: id,
+    isLoading,
+    hasError: !!error,
+    errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    responseType: documentResponse ? typeof documentResponse : 'undefined',
+    hasResponse: !!documentResponse,
+    hasResponseSuccess: documentResponse && typeof documentResponse === 'object' && 'success' in documentResponse,
+    hasResponseData: documentResponse && typeof documentResponse === 'object' && 'success' in documentResponse && 'data' in documentResponse,
+    isDirectDocumentObject: documentResponse && typeof documentResponse === 'object' && 'id' in documentResponse,
+    fullResponse: documentResponse
+  });
 
   // Special handling to check the response structure and extract the document correctly
   let document = null;
@@ -150,15 +161,38 @@ export default function DocumentDetail() {
     if (typeof documentResponse === 'object' && 'success' in documentResponse) {
       if (documentResponse.success && documentResponse.data) {
         document = documentResponse.data;
+        console.log("Document extracted from success/data wrapper:", {
+          id: document.id,
+          title: document.title || document.originalFilename,
+          processingStatus: document.processingStatus,
+          documentType: document.documentType,
+          uploadedBy: document.uploadedBy,
+          uploadedByUser: document.uploadedByUser
+        });
+      } else {
+        console.warn("Response has success/data format but couldn't extract document:", {
+          success: documentResponse.success,
+          hasData: 'data' in documentResponse,
+          dataType: 'data' in documentResponse ? typeof documentResponse.data : 'missing',
+          message: documentResponse.message || 'No message provided'
+        });
       }
     }
     // Case 2: Direct document object (the API returned the document directly)
     else if (typeof documentResponse === 'object' && 'id' in documentResponse) {
       document = documentResponse;
+      console.log("Document from direct object:", {
+        id: document.id,
+        title: document.title || document.originalFilename,
+        processingStatus: document.processingStatus,
+        documentType: document.documentType
+      });
+    } else {
+      console.warn("Unknown response format:", documentResponse);
     }
+  } else if (error) {
+    console.error("Error fetching document:", error);
   }
-  
-  console.log("Extracted document:", document);
 
   // Helper function to get status badge
   const getStatusBadge = (status: string) => {
