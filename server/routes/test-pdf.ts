@@ -1,9 +1,7 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
-import { extractTextFromPDF } from '../utils/pdfUtils';
-import { logger } from '../utils/logger';
 import fs from 'fs';
-import path from 'path';
+import { logger } from '../utils/logger';
 import { authenticate } from '../auth';
 
 const router = Router();
@@ -26,8 +24,11 @@ router.post('/test-pdf', authenticate, upload.single('file'), async (req: Reques
       mimeType: file.mimetype
     });
 
-    // Extract text from the PDF
-    const extractedText = await extractTextFromPDF(file.path);
+    // Extract text from the PDF using pdf-parse directly here to isolate from other modules
+    const pdfParse = require('pdf-parse');
+    const pdfBuffer = fs.readFileSync(file.path);
+    const pdfData = await pdfParse(pdfBuffer);
+    const extractedText = pdfData.text || '';
     
     // Log successful extraction
     logger.info(`PDF text extraction successful`, {

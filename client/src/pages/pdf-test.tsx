@@ -2,7 +2,17 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
+// Import spinner inline to avoid module resolution issues
+const Spinner = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+  return (
+    <div
+      className={`animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full ${className || ''}`}
+      {...props}
+    >
+      <span className="sr-only">Loading</span>
+    </div>
+  );
+};
 
 export default function PdfTest() {
   const [file, setFile] = useState<File | null>(null);
@@ -47,7 +57,7 @@ export default function PdfTest() {
       }
 
       // Make the API request to test PDF processing
-      const response = await fetch('/api/test-pdf/test-pdf', {
+      const response = await fetch('/api/test-pdf', {
         method: 'POST',
         body: formData,
         headers: {
