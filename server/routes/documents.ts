@@ -332,11 +332,22 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
               logger.error('Document processing failed', { documentId: document.id, error });
             });
           
-          // Return success response
+          // Generate a preview token for the document
+          const previewToken = createPreviewToken(document.id, tenantId);
+          
+          logger.debug('Generated preview token for uploaded document', { 
+            documentId: document.id,
+            tokenPrefix: previewToken.substring(0, 10) + '...' 
+          });
+          
+          // Return success response with preview token
           res.status(201).json({
             success: true,
             message: 'Document uploaded successfully and processing has started',
-            data: document
+            data: {
+              ...document,
+              previewToken
+            }
           });
         } catch (error) {
           // Transaction error handling
@@ -560,11 +571,22 @@ router.get('/', authenticate, tenantContext, async (req: Request, res: Response)
       }
     }
     
+    // Add preview tokens to each document
+    const documentsWithPreviewTokens = result.documents.map(doc => {
+      const previewToken = createPreviewToken(doc.id, tenantId);
+      return {
+        ...doc,
+        previewToken // Add the preview token to the document
+      };
+    });
+    
+    logger.debug('Added preview tokens to documents', { count: documentsWithPreviewTokens.length });
+    
     // Ensure we're sending a proper response format
     const response = {
       success: true,
       message: 'Documents retrieved successfully',
-      data: result.documents,
+      data: documentsWithPreviewTokens,
       pagination: {
         total: result.total,
         limit: validationResult.data.limit,
