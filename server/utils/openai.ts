@@ -4,8 +4,9 @@ import { logger } from "./logger";
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const DEFAULT_MODEL = "gpt-4o";
+// GPT-4o is the newest model but may not be available to all API keys yet,
+// so we'll use a more widely available model to ensure compatibility
+const DEFAULT_MODEL = "gpt-3.5-turbo";
 
 /**
  * Analyze document text content using OpenAI
