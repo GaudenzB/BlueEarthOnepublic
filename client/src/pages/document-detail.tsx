@@ -4,77 +4,45 @@ import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { format } from "date-fns";
 import {
-  Box,
-  Flex,
-  Heading,
-  Text,
+  Typography,
   Badge,
-  Icon,
   Button,
-  ButtonGroup,
   Card,
-  CardBody,
-  CardHeader,
+  Row,
+  Col,
   Divider,
-  Grid,
-  GridItem,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
   Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
   Tooltip,
-  useColorModeValue,
   Skeleton,
-  SkeletonText,
-  Stack,
   Progress,
   Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  List,
-  ListItem,
+  Space,
   Tag,
-  Avatar,
-  Wrap,
-  WrapItem,
-  Container,
-  HStack,
+  List,
   Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon
-} from "@chakra-ui/react";
+  Collapse,
+  Dropdown,
+  Menu,
+  Modal
+} from "antd";
 import {
-  ArrowBackIcon,
-  DownloadIcon,
-  DeleteIcon,
-  InfoOutlineIcon,
-  CheckIcon,
-  WarningIcon,
-  TimeIcon,
-  StarIcon,
-  RepeatIcon,
-  EditIcon,
-  ViewIcon,
-  LockIcon,
-  AttachmentIcon,
-  ExternalLinkIcon,
-  ChevronRightIcon
-} from "@chakra-ui/icons";
+  ArrowLeftOutlined,
+  DownloadOutlined,
+  DeleteOutlined,
+  InfoCircleOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  ClockCircleOutlined,
+  StarOutlined,
+  SyncOutlined,
+  EditOutlined,
+  EyeOutlined,
+  LockOutlined,
+  PaperClipOutlined,
+  LinkOutlined,
+  RightOutlined,
+  MoreOutlined
+} from "@ant-design/icons";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import {
@@ -99,36 +67,38 @@ const createToast = (toast: any, props: any) => {
   return null;
 };
 
+const { Title, Text, Paragraph } = Typography;
+const { Panel } = Collapse;
+
 // Skeleton component for loading state
 function DocumentDetailSkeleton() {
   return (
-    <Box maxW="1200px" mx="auto" pt={8} px={4}>
-      <Flex mb={6} align="center" gap={4}>
-        <Skeleton height="40px" width="40px" borderRadius="md" />
-        <Box flex="1">
-          <Skeleton height="24px" width="60%" mb={2} />
-          <Skeleton height="18px" width="40%" />
-        </Box>
-        <Skeleton height="40px" width="120px" borderRadius="md" />
-      </Flex>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' }}>
+      <div style={{ display: 'flex', marginBottom: 24, alignItems: 'center', gap: 16 }}>
+        <Skeleton.Avatar active size={40} shape="square" />
+        <div style={{ flex: 1 }}>
+          <Skeleton.Input active style={{ width: '60%', marginBottom: 8 }} />
+          <Skeleton.Input active style={{ width: '40%' }} />
+        </div>
+        <Skeleton.Button active style={{ width: 120 }} />
+      </div>
       
-      <Box mb={6}>
-        <Skeleton height="48px" width="100%" borderRadius="md" mb={6} />
-        <Grid templateColumns={{base: "1fr", md: "2fr 1fr"}} gap={6}>
-          <Box>
-            <Skeleton height="200px" width="100%" borderRadius="md" mb={4} />
-            <Stack spacing={4}>
-              <SkeletonText mt="4" noOfLines={3} spacing="4" skeletonHeight="2" />
-              <SkeletonText mt="4" noOfLines={2} spacing="4" skeletonHeight="2" />
-            </Stack>
-          </Box>
-          <Stack spacing={4}>
-            <Skeleton height="120px" width="100%" borderRadius="md" />
-            <Skeleton height="180px" width="100%" borderRadius="md" />
-          </Stack>
-        </Grid>
-      </Box>
-    </Box>
+      <div style={{ marginBottom: 24 }}>
+        <Skeleton.Input active block style={{ height: 48, marginBottom: 24 }} />
+        <Row gutter={24}>
+          <Col span={16}>
+            <Skeleton.Image active style={{ width: '100%', height: 200, marginBottom: 16 }} />
+            <Skeleton active paragraph={{ rows: 5 }} />
+          </Col>
+          <Col span={8}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Skeleton.Input active block style={{ height: 120 }} />
+              <Skeleton.Input active block style={{ height: 180 }} />
+            </div>
+          </Col>
+        </Row>
+      </div>
+    </div>
   );
 }
 
@@ -342,23 +312,37 @@ export default function DocumentDetail() {
   if (error) {
     console.error("Error loading document:", error);
     return (
-      <Container maxW="1200px" py={8}>
-        <Alert status="error" variant="left-accent" borderRadius="md">
-          <AlertIcon />
-          <Box>
-            <AlertTitle fontSize="lg">Error Loading Document</AlertTitle>
-            <AlertDescription>
-              There was a problem loading the document. Please try again later.
-              <Box mt={4} p={3} bg="gray.50" borderRadius="md" fontSize="sm" fontFamily="mono">
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' }}>
+        <Alert
+          type="error"
+          showIcon
+          message={<Title level={4}>Error Loading Document</Title>}
+          description={
+            <div>
+              <Paragraph>There was a problem loading the document. Please try again later.</Paragraph>
+              <div style={{ 
+                background: '#f5f5f5', 
+                padding: '12px', 
+                borderRadius: '4px', 
+                fontFamily: 'monospace',
+                fontSize: '14px',
+                marginTop: '16px'
+              }}>
                 {error instanceof Error ? error.message : "Unknown error"}
-              </Box>
-            </AlertDescription>
-          </Box>
-        </Alert>
-        <Button mt={4} leftIcon={<ArrowBackIcon />} as={Link} href="/documents" colorScheme="blue" variant="outline">
+              </div>
+            </div>
+          }
+        />
+        <Button 
+          style={{ marginTop: '16px' }}
+          icon={<ArrowLeftOutlined />}
+          href="/documents"
+          type="primary"
+          ghost
+        >
           Back to Documents
         </Button>
-      </Container>
+      </div>
     );
   }
   
@@ -367,20 +351,25 @@ export default function DocumentDetail() {
   
   if (!document) {
     return (
-      <Container maxW="1200px" py={8}>
-        <Box textAlign="center" py={10} px={6}>
-          <Icon as={InfoOutlineIcon} boxSize="50px" color="gray.500" />
-          <Heading as="h2" size="xl" mt={6} mb={2}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' }}>
+        <div style={{ textAlign: 'center', padding: '40px 24px' }}>
+          <InfoCircleOutlined style={{ fontSize: '50px', color: '#bfbfbf' }} />
+          <Title level={2} style={{ marginTop: '24px', marginBottom: '8px' }}>
             Document Not Found
-          </Heading>
-          <Text color="gray.500">
+          </Title>
+          <Paragraph type="secondary">
             The requested document could not be found.
-          </Text>
-          <Button mt={6} leftIcon={<ArrowBackIcon />} as={Link} href="/documents" colorScheme="blue">
+          </Paragraph>
+          <Button 
+            style={{ marginTop: '24px' }}
+            icon={<ArrowLeftOutlined />}
+            href="/documents"
+            type="primary"
+          >
             Back to Documents
           </Button>
-        </Box>
-      </Container>
+        </div>
+      </div>
     );
   }
   
@@ -420,49 +409,74 @@ export default function DocumentDetail() {
     switch (status) {
       case "COMPLETED":
         return (
-          <Tooltip label="Document processed successfully">
-            <Badge variant="subtle" colorScheme="green" display="flex" alignItems="center">
-              <Icon as={CheckIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Processed</Text>
-            </Badge>
+          <Tooltip title="Document processed successfully">
+            <Badge 
+              status="success" 
+              text={
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <CheckCircleOutlined style={{ marginRight: 4, fontSize: 12 }} />
+                  <span>Processed</span>
+                </span>
+              }
+            />
           </Tooltip>
         );
       case "PROCESSING":
         return (
-          <Tooltip label="Document is being processed">
-            <Badge variant="subtle" colorScheme="yellow" display="flex" alignItems="center">
-              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Processing</Text>
-            </Badge>
+          <Tooltip title="Document is being processed">
+            <Badge 
+              status="processing" 
+              text={
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <ClockCircleOutlined style={{ marginRight: 4, fontSize: 12 }} />
+                  <span>Processing</span>
+                </span>
+              }
+            />
           </Tooltip>
         );
       case "PENDING":
       case "QUEUED":
         return (
-          <Tooltip label="Document is waiting for processing">
-            <Badge variant="subtle" colorScheme="blue" display="flex" alignItems="center">
-              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Pending</Text>
-            </Badge>
+          <Tooltip title="Document is waiting for processing">
+            <Badge 
+              status="warning" 
+              text={
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <ClockCircleOutlined style={{ marginRight: 4, fontSize: 12 }} />
+                  <span>Pending</span>
+                </span>
+              }
+            />
           </Tooltip>
         );
       case "FAILED":
       case "ERROR":
         return (
-          <Tooltip label="Document processing failed">
-            <Badge variant="subtle" colorScheme="red" display="flex" alignItems="center">
-              <Icon as={WarningIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Failed</Text>
-            </Badge>
+          <Tooltip title="Document processing failed">
+            <Badge 
+              status="error" 
+              text={
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <WarningOutlined style={{ marginRight: 4, fontSize: 12 }} />
+                  <span>Failed</span>
+                </span>
+              }
+            />
           </Tooltip>
         );
       default:
         return (
-          <Tooltip label="Unknown document status">
-            <Badge variant="subtle" colorScheme="gray" display="flex" alignItems="center">
-              <Icon as={InfoOutlineIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Unknown</Text>
-            </Badge>
+          <Tooltip title="Unknown document status">
+            <Badge 
+              status="default" 
+              text={
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <InfoCircleOutlined style={{ marginRight: 4, fontSize: 12 }} />
+                  <span>Unknown</span>
+                </span>
+              }
+            />
           </Tooltip>
         );
     }
