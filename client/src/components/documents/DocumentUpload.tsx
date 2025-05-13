@@ -208,7 +208,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       // Show success message
       toast({
         title: "Upload successful",
-        description: "Your document was uploaded successfully.",
+        description: "Your document was uploaded successfully and is now being processed with AI.",
         variant: "default",
       });
       

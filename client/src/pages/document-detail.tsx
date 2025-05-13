@@ -285,21 +285,24 @@ export default function DocumentDetail() {
                     
                     {document.processingStatus === "PENDING" && (
                       <div className="text-center space-y-3 max-w-md">
-                        <div className="flex justify-center mb-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+                          <div className="bg-blue-600 h-2.5 rounded-full w-1/4 animate-pulse"></div>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Your document is now in the queue for AI processing. This process will begin shortly and may take a few minutes to complete.
+                        </p>
+                        <div className="flex justify-center mt-2">
                           <Button 
-                            variant="secondary" 
+                            variant="outline" 
                             size="sm" 
                             className="gap-2" 
                             onClick={() => processDocumentMutation.mutate()}
                             disabled={processDocumentMutation.isPending}
                           >
                             <BrainCircuitIcon className="h-4 w-4" />
-                            {processDocumentMutation.isPending ? 'Starting...' : 'Start Processing Now'}
+                            {processDocumentMutation.isPending ? 'Starting...' : 'Retry Processing Now'}
                           </Button>
                         </div>
-                        <p className="text-muted-foreground">
-                          Your document is waiting to be processed. Click the button above to start processing immediately.
-                        </p>
                       </div>
                     )}
                     
