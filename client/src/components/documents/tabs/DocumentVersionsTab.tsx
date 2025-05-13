@@ -42,7 +42,7 @@ export function DocumentVersionsTab({ document }: DocumentVersionsTabProps) {
             {
               title: 'Actions',
               key: 'actions',
-              render: (_, record) => (
+              render: () => (
                 <Space>
                   <Button type="text" size="small" icon={<EyeOutlined />}>View</Button>
                   <Button type="text" size="small" icon={<DownloadOutlined />}>Download</Button>

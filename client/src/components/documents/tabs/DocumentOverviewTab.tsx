@@ -28,7 +28,7 @@ export function DocumentOverviewTab({ document }: DocumentOverviewTabProps) {
               {document.createdAt ? format(new Date(document.createdAt), 'PP') : 'Unknown'}
             </Descriptions.Item>
             <Descriptions.Item label="Type">
-              {DOC_TYPES[document.type as keyof typeof DOC_TYPES] || document.documentType || 'Unknown'}
+              {document.type ? (DOC_TYPES.find(t => t.value === document.type)?.label || document.type) : document.documentType || 'Unknown'}
             </Descriptions.Item>
             <Descriptions.Item label="Size">
               {document.fileSize ? `${(document.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown'}
@@ -112,8 +112,11 @@ export function DocumentOverviewTab({ document }: DocumentOverviewTabProps) {
               Access Control
             </Title>
             <Badge 
-              status={document.visibility === 'PUBLIC' ? 'success' : 'warning'} 
-              text={VISIBILITY_OPTIONS[document.visibility as keyof typeof VISIBILITY_OPTIONS] || 'Unknown'} 
+              status={document.visibility === 'public' ? 'success' : 'warning'} 
+              text={document.visibility 
+                ? (VISIBILITY_OPTIONS.find(v => v.value === document.visibility)?.label || document.visibility) 
+                : 'Unknown'
+              } 
             />
             
             {document.sharedWith && document.sharedWith.length > 0 && (
@@ -128,10 +131,10 @@ export function DocumentOverviewTab({ document }: DocumentOverviewTabProps) {
                         <Avatar icon={<UserOutlined />} style={{ marginRight: 12 }} />
                         <div>
                           <Text strong>{user.name}</Text><br />
-                          <Text type="secondary">{user.email}</Text>
+                          <Text type="secondary">{user.id}</Text>
                         </div>
                         <div style={{ marginLeft: 'auto' }}>
-                          <Tag>{user.accessLevel || 'View'}</Tag>
+                          <Tag>{user.role || 'View'}</Tag>
                         </div>
                       </div>
                     </Card>
