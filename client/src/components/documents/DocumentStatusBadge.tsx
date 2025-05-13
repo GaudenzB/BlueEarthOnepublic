@@ -1,54 +1,75 @@
 import React from 'react';
-import { Badge, Space } from 'antd';
-import { 
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  SyncOutlined,
-  WarningOutlined
-} from '@ant-design/icons';
+import { Badge, Tooltip } from 'antd';
+import { CheckCircleOutlined, WarningOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Document, DocumentProcessingStatus } from '@/types/document';
 
-export interface DocumentStatusBadgeProps {
-  status?: string | undefined;
+interface DocumentStatusBadgeProps {
+  status?: DocumentProcessingStatus | string | undefined;
+  showText?: boolean;
 }
+
+type StatusConfigType = {
+  [key in DocumentProcessingStatus]: {
+    color: 'success' | 'processing' | 'error' | 'warning' | 'default';
+    icon: React.ReactNode;
+    text: string;
+    tooltip: string;
+  };
+};
 
 /**
- * Badge component for document processing status
+ * Status badge component for documents with consistent styling
  */
-export function DocumentStatusBadge({ status }: DocumentStatusBadgeProps) {
-  if (!status) {
-    return null;
-  }
+export function DocumentStatusBadge({ 
+  status,
+  showText = true
+}: DocumentStatusBadgeProps) {
+  // Define status configurations
+  const statusConfig: StatusConfigType = {
+    COMPLETED: { 
+      color: 'success', 
+      icon: <CheckCircleOutlined />, 
+      text: 'Completed',
+      tooltip: 'Document has been processed successfully'
+    },
+    PROCESSING: { 
+      color: 'processing', 
+      icon: <ClockCircleOutlined />, 
+      text: 'Processing',
+      tooltip: 'Document is currently being processed'
+    },
+    FAILED: { 
+      color: 'error', 
+      icon: <CloseCircleOutlined />, 
+      text: 'Failed',
+      tooltip: 'Document processing has failed'
+    },
+    WARNING: { 
+      color: 'warning', 
+      icon: <WarningOutlined />, 
+      text: 'Warning',
+      tooltip: 'Document processed with warnings'
+    },
+    PENDING: { 
+      color: 'default', 
+      icon: <ClockCircleOutlined />, 
+      text: 'Pending',
+      tooltip: 'Document is waiting to be processed'
+    }
+  };
   
-  switch (status) {
-    case 'COMPLETED':
-      return (
-        <Space>
-          <CheckCircleOutlined style={{ color: '#52c41a' }} />
-          <Badge status="success" text="Completed" />
-        </Space>
-      );
-    case 'PROCESSING':
-      return (
-        <Space>
-          <SyncOutlined spin style={{ color: '#1890ff' }} />
-          <Badge status="processing" text="Processing" />
-        </Space>
-      );
-    case 'PENDING':
-      return (
-        <Space>
-          <ClockCircleOutlined style={{ color: '#faad14' }} />
-          <Badge status="warning" text="Pending" />
-        </Space>
-      );
-    case 'FAILED':
-      return (
-        <Space>
-          <WarningOutlined style={{ color: '#f5222d' }} />
-          <Badge status="error" text="Failed" />
-        </Space>
-      );
-    default:
-      return <Badge status="default" text={status} />;
-  }
+  // Default to PENDING if status is not recognized or not provided
+  const safeStatus = status as DocumentProcessingStatus;
+  const currentStatus = safeStatus && statusConfig[safeStatus] ? safeStatus : 'PENDING';
+  const config = statusConfig[currentStatus];
+  
+  return (
+    <Tooltip title={config.tooltip}>
+      <Badge
+        status={config.color}
+        text={showText ? config.text : ''}
+      />
+    </Tooltip>
+  );
 }
+

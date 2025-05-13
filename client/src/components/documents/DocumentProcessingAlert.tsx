@@ -1,104 +1,157 @@
 import React from 'react';
-import { Alert, Button, Space, Progress, Typography } from 'antd';
-import { SyncOutlined, FileTextOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Alert, Progress, Space, Typography, Tag } from 'antd';
+import { SyncOutlined, ClockCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { Document } from '@/types/document';
-
-interface DocumentProcessingAlertProps {
-  document: Document;
-  onRefresh: () => void;
-  isRefreshing: boolean;
-}
 
 const { Text } = Typography;
 
+interface DocumentProcessingAlertProps {
+  document: Document;
+  processingStartTime?: string;
+  estimatedTimeRemaining?: number;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+}
+
 /**
- * Alert component shown when a document is being processed
- * Displays different progress levels based on status
+ * Component to display document processing status with progress indicators
  */
 export function DocumentProcessingAlert({ 
-  document, 
-  onRefresh, 
-  isRefreshing 
+  document,
+  processingStartTime,
+  estimatedTimeRemaining,
+  onRefresh,
+  isRefreshing
 }: DocumentProcessingAlertProps) {
-  // Don't show for completed or errored documents
-  if (document.processingStatus !== 'PROCESSING' && document.processingStatus !== 'PENDING') {
+  // Don't show alert if document is completed or not being processed
+  if (!document.processingStatus || document.processingStatus === 'COMPLETED') {
     return null;
   }
   
-  // Calculate estimated progress
-  const isProcessing = document.processingStatus === 'PROCESSING';
-  const isPending = document.processingStatus === 'PENDING';
+  // Calculate estimated progress if available
+  const getEstimatedProgress = (): number => {
+    if (!processingStartTime || !estimatedTimeRemaining) {
+      return 50; // Default to 50% if we can't calculate
+    }
+    
+    const startTime = new Date(processingStartTime).getTime();
+    const currentTime = new Date().getTime();
+    const elapsedMs = currentTime - startTime;
+    const totalEstimatedMs = estimatedTimeRemaining * 1000;
+    
+    // Calculate progress as percentage
+    const progress = Math.min(Math.floor((elapsedMs / totalEstimatedMs) * 100), 99);
+    
+    // Return progress between 0-99 (never show 100% until COMPLETED)
+    return progress;
+  };
   
-  // Estimate progress based on status (in a real app this would come from the API)
-  const progressPercent = isProcessing ? 65 : (isPending ? 25 : 0);
+  // Get formatted time remaining
+  const getTimeRemainingText = (): string => {
+    if (!estimatedTimeRemaining) {
+      return 'Processing time varies based on document size';
+    }
+    
+    // More than a minute, show minutes
+    if (estimatedTimeRemaining >= 60) {
+      return `About ${Math.ceil(estimatedTimeRemaining / 60)} minutes remaining`;
+    }
+    
+    // Less than a minute, show seconds
+    return `About ${Math.ceil(estimatedTimeRemaining)} seconds remaining`;
+  };
   
-  // Get steps based on status
-  const steps = [
-    { title: 'Queued', complete: true, icon: <FileTextOutlined /> },
-    { title: 'Analyzing Document', complete: isProcessing || isPending, icon: <SyncOutlined spin={isProcessing} /> },
-    { title: 'Processing Complete', complete: false, icon: <CheckCircleOutlined /> }
-  ];
+  // Alert configuration based on processing status
+  let alertType: 'info' | 'warning' | 'error' | 'success' = 'info';
+  let alertIcon = <SyncOutlined spin />;
+  let alertTitle = 'Processing Document';
+  let alertDescription = 'Your document is being processed. This may take a few moments.';
+  
+  // Status-specific configurations
+  if (document.processingStatus === 'FAILED') {
+    alertType = 'error';
+    alertIcon = <WarningOutlined />;
+    alertTitle = 'Processing Failed';
+    alertDescription = document.processingError || 'An error occurred during document processing.';
+    
+  } else if (document.processingStatus === 'WARNING') {
+    alertType = 'warning';
+    alertIcon = <WarningOutlined />;
+    alertTitle = 'Processing Complete with Warnings';
+    alertDescription = document.processingError || 'The document was processed but with some warnings.';
+    
+  } else if (document.processingStatus === 'PENDING') {
+    alertType = 'info';
+    alertIcon = <ClockCircleOutlined />;
+    alertTitle = 'Document Queued for Processing';
+    alertDescription = 'Your document is in the queue and will be processed shortly.';
+  }
   
   return (
     <Alert
-      type="info"
-      message="Document Processing"
-      description={
-        <>
-          <p>
-            This document is currently being {isPending ? 'prepared' : 'processed'}. 
-            Document information and preview will be available once processing is complete.
-            {isProcessing && ' The system is analyzing the document content and generating metadata.'}
-          </p>
-          
-          <div style={{ marginTop: 16, marginBottom: 16 }}>
-            <Progress percent={progressPercent} status="active" />
-            
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              marginTop: 12,
-              marginBottom: 16
-            }}>
-              {steps.map((step, index) => (
-                <div 
-                  key={index} 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center',
-                    opacity: step.complete ? 1 : 0.5
-                  }}
-                >
-                  <div style={{ marginBottom: 4 }}>
-                    {step.icon}
-                  </div>
-                  <Text strong={step.complete}>
-                    {step.title}
-                  </Text>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <Space>
-            <Button 
-              type="primary" 
-              size="small" 
+      type={alertType}
+      icon={alertIcon}
+      message={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{alertTitle}</span>
+          {document.processingStatus === 'PROCESSING' && (
+            <Tag 
+              icon={<SyncOutlined spin />} 
+              color="processing"
               onClick={onRefresh}
-              loading={isRefreshing}
-              icon={<SyncOutlined />}
+              style={{ cursor: onRefresh ? 'pointer' : 'default' }}
             >
-              Refresh Status
-            </Button>
-            <Text type="secondary">
-              {isPending 
-                ? 'Your document is in the processing queue.' 
-                : 'Processing should complete within a few minutes.'
-              }
-            </Text>
-          </Space>
-        </>
+              {isRefreshing ? 'Refreshing...' : 'Processing'}
+            </Tag>
+          )}
+          {document.processingStatus === 'PENDING' && (
+            <Tag icon={<ClockCircleOutlined />} color="default">
+              Pending
+            </Tag>
+          )}
+          {document.processingStatus === 'FAILED' && (
+            <Tag color="error">Failed</Tag>
+          )}
+          {document.processingStatus === 'WARNING' && (
+            <Tag color="warning">Warning</Tag>
+          )}
+        </div>
+      }
+      description={
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Text>{alertDescription}</Text>
+          
+          {document.processingStatus === 'PROCESSING' && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Progress 
+                  percent={getEstimatedProgress()} 
+                  status="active" 
+                  strokeColor={{ 
+                    from: '#108ee9', 
+                    to: '#87d068' 
+                  }}
+                  style={{ width: 'calc(100% - 100px)' }}
+                />
+                {onRefresh && (
+                  <Tag 
+                    icon={isRefreshing ? <SyncOutlined spin /> : <SyncOutlined />} 
+                    color="blue"
+                    onClick={onRefresh}
+                    style={{ cursor: 'pointer', marginLeft: 8 }}
+                  >
+                    {isRefreshing ? 'Refreshing' : 'Refresh'}
+                  </Tag>
+                )}
+              </div>
+              <Text type="secondary">{getTimeRemainingText()}</Text>
+            </>
+          )}
+          
+          {document.processingStatus === 'FAILED' && document.processingError && (
+            <Text type="danger">{document.processingError}</Text>
+          )}
+        </Space>
       }
       style={{ marginBottom: 24 }}
     />

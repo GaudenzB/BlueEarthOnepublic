@@ -1,92 +1,196 @@
 /**
- * Document type definitions
+ * Document Type Definitions
+ * 
+ * This file contains the type definitions for document-related objects
+ * used throughout the application.
  */
 
-// Document type options
+/**
+ * Document Type Options
+ */
 export const DOC_TYPES = [
-  { value: 'pdf', label: 'PDF Document' },
-  { value: 'doc', label: 'Word Document' },
-  { value: 'xls', label: 'Excel Spreadsheet' },
-  { value: 'ppt', label: 'PowerPoint Presentation' },
-  { value: 'txt', label: 'Plain Text' },
-  { value: 'image', label: 'Image' },
-  { value: 'other', label: 'Other' }
+  { value: 'CONTRACT', label: 'Contract' },
+  { value: 'REPORT', label: 'Report' },
+  { value: 'PRESENTATION', label: 'Presentation' },
+  { value: 'FORM', label: 'Form' },
+  { value: 'POLICY', label: 'Policy' },
+  { value: 'OTHER', label: 'Other' }
 ];
 
-// Document visibility options
+/**
+ * Document Visibility Options
+ */
 export const VISIBILITY_OPTIONS = [
   { value: 'private', label: 'Private' },
   { value: 'team', label: 'Team' },
   { value: 'public', label: 'Public' }
 ];
 
-export interface Document {
+/**
+ * Document Processing Status
+ */
+export type DocumentProcessingStatus = 
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'WARNING';
+
+/**
+ * Document Visibility
+ */
+export type DocumentVisibility = 
+  | 'private'
+  | 'team'
+  | 'public';
+
+/**
+ * Document Type
+ */
+export type DocumentType = 
+  | 'CONTRACT'
+  | 'REPORT'
+  | 'PRESENTATION'
+  | 'FORM'
+  | 'POLICY'
+  | 'OTHER';
+
+/**
+ * Document user/team share permissions
+ */
+export interface DocumentShare {
   id: string;
-  title: string;
-  description?: string;
-  uploadDate: string;
-  lastAccessed?: string;
-  size?: number;
-  fileSize?: number; // alias for size used in some components
-  type?: string;
-  documentType?: string; // alias for type used in some components
-  status?: string;
-  processingStatus?: 'PROCESSING' | 'PENDING' | 'COMPLETED' | 'ERROR';
-  createdAt?: string;
-  updatedAt?: string;
-  visibility?: 'private' | 'team' | 'public';
-  tags?: string[];
-  thumbnailUrl?: string;
-  author?: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  sharedWith?: Array<{
-    id: string;
-    name: string;
-    avatar?: string;
-    role?: string;
-  }>;
-  metadata?: {
-    [key: string]: any;
-  };
-  versions?: DocumentVersion[];
-  comments?: DocumentComment[];
-  timeline?: TimelineEvent[];
+  name: string;
+  avatar?: string;
+  role?: string;
 }
 
+/**
+ * Document Version
+ */
 export interface DocumentVersion {
   id: string;
   versionNumber: number;
   createdAt: string;
-  createdBy: {
-    id: string;
-    name: string;
-  };
+  createdBy: string;
+  sizeBytes?: number;
   changes?: string;
-  size?: number;
 }
 
+/**
+ * Document Comment
+ */
 export interface DocumentComment {
   id: string;
-  content: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  text: string;
   createdAt: string;
-  author: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  replies?: DocumentComment[];
+  replyTo?: string;
 }
 
-export interface TimelineEvent {
+/**
+ * Document Timeline Event
+ */
+export interface DocumentEvent {
   id: string;
-  eventType: 'CREATED' | 'UPDATED' | 'SHARED' | 'VIEWED' | 'COMMENTED' | 'PROCESSED';
+  eventType: 'CREATE' | 'UPDATE' | 'VIEW' | 'COMMENT' | 'SHARE' | 'DOWNLOAD';
+  userId: string;
+  userName: string;
   timestamp: string;
-  user: {
-    id: string;
-    name: string;
-  };
   details?: string;
+}
+
+/**
+ * Document AI Metadata
+ */
+export interface DocumentAIMetadata {
+  summary?: string;
+  keywords?: string[];
+  categories?: string[];
+  sentiment?: 'positive' | 'negative' | 'neutral';
+  entities?: Array<{
+    name: string;
+    type: string;
+    confidence: number;
+  }>;
+  confidentiality?: number;
+}
+
+/**
+ * Main Document Interface
+ */
+export interface Document {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  
+  // File information
+  filename: string;
+  originalFilename?: string;
+  mimeType?: string;
+  fileSize?: number;
+  fileType?: string;
+  storageKey?: string;
+  checksum?: string;
+  
+  // Classification
+  documentType?: DocumentType;
+  type?: string;
+  category?: string;
+  tags?: string[];
+  
+  // Access control
+  isConfidential?: boolean;
+  visibility?: DocumentVisibility;
+  sharedWith?: DocumentShare[];
+  
+  // Processing information
+  processingStatus?: DocumentProcessingStatus;
+  processingError?: string;
+  aiProcessed?: boolean;
+  aiMetadata?: DocumentAIMetadata;
+  
+  // Display/preview
+  thumbnailUrl?: string;
+  previewUrl?: string;
+  downloadUrl?: string;
+  
+  // Related collections
+  versions?: DocumentVersion[];
+  comments?: DocumentComment[];
+  events?: DocumentEvent[];
+  
+  // Flags
+  isFavorite?: boolean;
+  isArchived?: boolean;
+}
+
+/**
+ * Document list response from API (paginated)
+ */
+export interface DocumentListResponse {
+  data: Document[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/**
+ * Document filter options
+ */
+export interface DocumentFilter {
+  search?: string;
+  type?: string;
+  dateRange?: [string, string];
+  status?: DocumentProcessingStatus;
+  tags?: string[];
+  onlyFavorites?: boolean;
+  onlyArchived?: boolean;
 }
