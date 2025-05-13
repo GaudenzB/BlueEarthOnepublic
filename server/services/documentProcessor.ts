@@ -52,14 +52,44 @@ class DocumentProcessorService {
       }
       
       // Step 4: Extract text from document
-      const textContent = await extractTextFromDocument(
-        fileContent, 
-        document.mimeType, 
-        document.originalFilename
-      );
-      if (!textContent) {
-        logger.error('Failed to extract text from document', { documentId });
-        await documentRepository.updateProcessingStatus(documentId, tenantId, 'ERROR');
+      logger.info('Starting text extraction from document', { 
+        documentId, 
+        mimeType: document.mimeType,
+        fileName: document.originalFilename,
+        fileSize: fileContent.length,
+        storageKey: document.storageKey
+      });
+      
+      let textContent;
+      try {
+        textContent = await extractTextFromDocument(
+          fileContent, 
+          document.mimeType, 
+          document.originalFilename,
+          { throwErrors: true } // Enable error throwing for debugging
+        );
+        
+        if (!textContent) {
+          logger.error('Failed to extract text from document - empty result', { documentId });
+          await documentRepository.updateProcessingStatusWithError(documentId, tenantId, 'ERROR', 'Text extraction returned empty result');
+          return false;
+        }
+        
+        logger.info('Text extraction successful', { 
+          documentId, 
+          textLength: textContent.length,
+          textPreview: textContent.substring(0, 100) + '...'
+        });
+      } catch (extractionError: any) {
+        logger.error('Exception during text extraction', { 
+          documentId,
+          error: extractionError?.message || 'Unknown error',
+          stack: extractionError?.stack,
+          mimeType: document.mimeType,
+          fileName: document.originalFilename
+        });
+        await documentRepository.updateProcessingStatusWithError(documentId, tenantId, 'ERROR', 
+          `Text extraction failed: ${extractionError?.message || 'Unknown error'}`);
         return false;
       }
       

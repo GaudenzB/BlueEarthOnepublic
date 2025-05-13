@@ -407,19 +407,22 @@ export const documentRepository = {
   },
 
   /**
-   * Update document AI processing status
+   * Update document with processing error
    * 
    * @param id - Document ID
    * @param tenantId - Tenant ID
-   * @param status - New processing status
+   * @param status - Usually ERROR status
+   * @param errorMessage - The error message to store
    * @returns The updated document
    */
-  async updateProcessingStatus(id: string, tenantId: string, status: string): Promise<Document | undefined> {
+  async updateProcessingStatusWithError(id: string, tenantId: string, status: string, errorMessage: string): Promise<Document | undefined> {
     try {
+      logger.info('Updating document with error message', { id, tenantId, status, errorMessage });
       const [result] = await db
         .update(documents)
         .set({
           processingStatus: status,
+          processingError: errorMessage,
           updatedAt: new Date()
         })
         .where(
@@ -431,8 +434,8 @@ export const documentRepository = {
         .returning();
       return result;
     } catch (error) {
-      logger.error('Error updating document processing status', { error, id, tenantId, status });
-      throw new Error(`Failed to update document processing status: ${error.message}`);
+      logger.error('Error updating document with error message', { error, id, tenantId, status, errorMessage });
+      throw new Error(`Failed to update document with error message: ${error.message}`);
     }
   },
 

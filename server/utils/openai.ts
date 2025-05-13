@@ -300,45 +300,59 @@ export async function extractTextFromDocument(
       case 'application/pdf':
         try {
           // Use pdf-parse to extract text from PDF
+          logger.info('Attempting to require pdf-parse module', { fileName });
           const pdfParse = require('pdf-parse');
           
-          logger.info('Extracting text from PDF document', { 
+          logger.info('Using pdf-parse to extract text from PDF document', { 
             fileSize: documentContent.length, 
-            fileName 
+            fileName,
+            bufferValid: Buffer.isBuffer(documentContent),
+            bufferLength: documentContent.length,
+            bufferStart: documentContent.slice(0, 20).toString('hex')
           });
           
-          const pdfData = await pdfParse(documentContent, {
-            // Setting max pages to 0 means parse all pages
-            max: 0,
+          // Add a try/catch just for the PDF parsing
+          try {
+            const pdfData = await pdfParse(documentContent, {
+              // Setting max pages to 0 means parse all pages
+              max: 0
+            });
             
-            // We're only interested in text content
-            pagerender: function(pageData) {
-              return pageData.getTextContent();
-            },
+            // pdfData.text contains all the text from the PDF
+            extractedText = pdfData.text;
             
-            // When rendering text, this function will be called for each text chunk
-            renderspeed: -1 // Use full rendering for best text extraction
-          });
-          
-          // pdfData.text contains all the text from the PDF
-          extractedText = pdfData.text;
-          
-          // Add some info about the PDF in case it helps with analysis
-          logger.info('PDF extraction completed successfully', {
-            pageCount: pdfData.numpages,
-            textLength: extractedText.length,
-            fileName
-          });
-        } catch (pdfError) {
-          logger.error('Error extracting text from PDF', {
-            error: pdfError,
+            // Add some info about the PDF in case it helps with analysis
+            logger.info('PDF extraction completed successfully', {
+              pageCount: pdfData.numpages,
+              textLength: extractedText.length,
+              fileName,
+              textPreview: extractedText.substring(0, 100) + '...'
+            });
+          } catch (pdfParseError: any) {
+            logger.error('Error in pdf-parse library', {
+              error: pdfParseError?.message || 'Unknown pdf-parse error',
+              stack: pdfParseError?.stack,
+              fileName,
+              bufferLength: documentContent.length
+            });
+            
+            // Return error info but don't throw if not requested
+            if (throwErrors) throw new Error(`PDF parsing failed: ${pdfParseError?.message || 'Unknown pdf-parse error'}`);
+            
+            extractedText = `Error extracting text from PDF: ${pdfParseError?.message || 'Unknown pdf-parse error'}`;
+          }
+        } catch (moduleError: any) {
+          // This catches module loading errors
+          logger.error('Error loading or using pdf-parse module', {
+            error: moduleError?.message || 'Unknown module error',
+            stack: moduleError?.stack,
             fileName
           });
           
           // Return error info but don't throw if not requested
-          if (throwErrors) throw pdfError;
+          if (throwErrors) throw new Error(`PDF module error: ${moduleError?.message || 'Unknown module error'}`);
           
-          extractedText = `Error extracting text from PDF: ${pdfError.message}`;
+          extractedText = `Error with PDF extraction module: ${moduleError?.message || 'Unknown module error'}`;
         }
         break;
         
