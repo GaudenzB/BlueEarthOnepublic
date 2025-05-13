@@ -69,6 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register health and monitoring routes
   app.use('/api/health', healthRoutes);
   app.use('/api/monitoring', monitoringRoutes);
+  
+  // Register PDF testing route for debugging
+  app.use('/api/test-pdf', testPdfRoutes);
 
   // Auth routes
   

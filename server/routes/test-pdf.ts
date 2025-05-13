@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { logger } from '../utils/logger';
-import path from 'path';
 import fs from 'fs';
 
 /**
@@ -75,30 +74,36 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
         }
       });
     } catch (pdfError) {
+      const errorMessage = pdfError instanceof Error ? pdfError.message : 'Unknown pdf-parse error';
+      const errorStack = pdfError instanceof Error ? pdfError.stack : undefined;
+      
       logger.error('Error in pdf-parse', {
-        error: pdfError?.message || 'Unknown pdf-parse error',
-        stack: pdfError?.stack
+        error: errorMessage,
+        stack: errorStack
       });
       
       return res.status(500).json({
         success: false,
-        message: `PDF parsing failed: ${pdfError?.message || 'Unknown error'}`,
-        error: {
-          message: pdfError?.message,
-          name: pdfError?.name,
-          stack: pdfError?.stack
-        }
+        message: `PDF parsing failed: ${errorMessage}`,
+        error: pdfError instanceof Error ? {
+          message: pdfError.message,
+          name: pdfError.name,
+          stack: pdfError.stack
+        } : { message: 'Unknown error' }
       });
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     logger.error('Error in test-pdf endpoint', {
-      error: error?.message || 'Unknown error',
-      stack: error?.stack
+      error: errorMessage,
+      stack: errorStack
     });
     
     return res.status(500).json({
       success: false,
-      message: `Error: ${error?.message || 'Unknown error'}`
+      message: `Error: ${errorMessage}`
     });
   } finally {
     // Clean up the temp file

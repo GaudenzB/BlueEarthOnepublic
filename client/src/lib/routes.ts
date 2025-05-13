@@ -32,6 +32,7 @@ export const ROUTES = {
   MESSAGES: '/messages',
   CHAKRA_TEST: '/chakra-test',
   DOCUMENTS_EXAMPLE: '/documents-example',
+  PDF_TEST: '/pdf-test',
 };
 
 // Admin Routes
