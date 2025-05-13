@@ -33,6 +33,7 @@ import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employ
 import { registerPermissionRoutes } from "./routes/permissions";
 import documentsRoutes from "./routes/documents";
 import documentPreviewRoutes from "./routes/documentPreview";
+import semanticSearchRoutes from "./routes/semanticSearch";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
 import contractsRoutes from "./routes/contracts";
 import healthRoutes from "./routes/health";
@@ -62,6 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/documents', documentsRoutes);
   app.use('/api/documents', documentPreviewRoutes);
   app.use('/api/contracts', contractsRoutes);
+  app.use('/api/semantic-search', semanticSearchRoutes);
   
   // Register health and monitoring routes
   app.use('/api/health', healthRoutes);

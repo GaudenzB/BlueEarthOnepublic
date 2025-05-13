@@ -118,10 +118,17 @@ class DocumentProcessorService {
         const embeddings = await generateEmbeddingsForText(textContent);
         
         if (embeddings.length > 0) {
-          // Store embeddings in database
+          // Store embeddings in database - explicitly set model for each embedding
+          const embeddingsWithModel = embeddings.map(e => ({
+            textChunk: e.textChunk,
+            embedding: e.embedding as number[], // Guaranteed to be non-null by generateEmbeddingsForText
+            chunkIndex: e.chunkIndex,
+            model: 'text-embedding-ada-002'
+          }));
+          
           const storedCount = await documentEmbeddingsRepository.storeEmbeddingsBatch(
             documentId,
-            embeddings
+            embeddingsWithModel
           );
           
           embeddingsGenerated = storedCount > 0;
