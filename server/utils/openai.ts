@@ -4,9 +4,8 @@ import { logger } from "./logger";
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
 
-// GPT-4o is the newest model but may not be available to all API keys yet,
-// so we'll use a more widely available model to ensure compatibility
-const DEFAULT_MODEL = "gpt-3.5-turbo";
+// Using GPT-4o (released May 13, 2024) as it's now widely available in 2025
+const DEFAULT_MODEL = "gpt-4o";
 
 /**
  * Analyze document text content using OpenAI
@@ -299,32 +298,48 @@ export async function extractTextFromDocument(
     // Handle different document types
     switch (normalizedMimeType) {
       case 'application/pdf':
-        // In production, we would use a PDF extraction library like:
-        // const pdfjs = require('pdfjs-dist');
-        // const pdf = await pdfjs.getDocument(documentContent).promise;
-        // ...and extract text from each page
-        
-        // For now, we'll simulate text extraction based on document size
-        const contentSizeKB = Math.round(documentContent.length / 1024);
-        const estimatedPages = Math.max(1, Math.round(contentSizeKB / 30)); // Rough estimate: 30KB per page
-        
-        extractedText = `Investment Strategy Analysis
-        
-        Executive Summary
-        This document outlines our investment approach for the upcoming fiscal year, with focus on sustainable investments in renewable energy and technology sectors.
-        
-        Key Findings
-        - Market volatility continues to present both challenges and opportunities
-        - ESG considerations are increasingly important to stakeholders
-        - Emerging markets show promising growth potential despite political uncertainties
-        
-        The analysis covers approximately ${estimatedPages} pages of detailed market data, financial projections, and strategic recommendations.
-        
-        Financial Projections
-        We anticipate a 7-12% return on investments in our core portfolio, with higher potential returns in targeted high-growth sectors.
-        
-        Risk Assessment
-        The risk profile of the recommended investments has been thoroughly evaluated, with appropriate hedging strategies identified to mitigate major concerns.`;
+        try {
+          // Use pdf-parse to extract text from PDF
+          const pdfParse = require('pdf-parse');
+          
+          logger.info('Extracting text from PDF document', { 
+            fileSize: documentContent.length, 
+            fileName 
+          });
+          
+          const pdfData = await pdfParse(documentContent, {
+            // Setting max pages to 0 means parse all pages
+            max: 0,
+            
+            // We're only interested in text content
+            pagerender: function(pageData) {
+              return pageData.getTextContent();
+            },
+            
+            // When rendering text, this function will be called for each text chunk
+            renderspeed: -1 // Use full rendering for best text extraction
+          });
+          
+          // pdfData.text contains all the text from the PDF
+          extractedText = pdfData.text;
+          
+          // Add some info about the PDF in case it helps with analysis
+          logger.info('PDF extraction completed successfully', {
+            pageCount: pdfData.numpages,
+            textLength: extractedText.length,
+            fileName
+          });
+        } catch (pdfError) {
+          logger.error('Error extracting text from PDF', {
+            error: pdfError,
+            fileName
+          });
+          
+          // Return error info but don't throw if not requested
+          if (throwErrors) throw pdfError;
+          
+          extractedText = `Error extracting text from PDF: ${pdfError.message}`;
+        }
         break;
         
       case 'application/msword':
