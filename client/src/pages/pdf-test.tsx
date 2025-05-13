@@ -1,9 +1,8 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Spinner } from '@/components/ui/spinner';
-import { PageLayout } from '@/components/layout/PageLayout';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function PdfTest() {
   const [file, setFile] = useState<File | null>(null);
@@ -12,8 +11,10 @@ export default function PdfTest() {
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const selectedFile = files[0];
+      setFile(selectedFile);
       setError(null);
       setResult(null);
     }
@@ -23,166 +24,150 @@ export default function PdfTest() {
     e.preventDefault();
     
     if (!file) {
-      setError('Please select a PDF file');
+      setError('Please select a file');
       return;
     }
-    
-    if (file.type !== 'application/pdf') {
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
       setError('Only PDF files are supported');
       return;
     }
-    
+
+    const formData = new FormData();
+    formData.append('file', file);
+
     setIsUploading(true);
     setError(null);
-    setResult(null);
-    
+
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('/api/test-pdf', {
+      // Get the stored token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required. Please log in.');
+      }
+
+      // Make the API request to test PDF processing
+      const response = await fetch('/api/test-pdf/test-pdf', {
         method: 'POST',
         body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to process PDF');
+        throw new Error(data.error || 'An error occurred during PDF testing');
       }
-      
-      setResult(data);
-    } catch (err) {
-      console.error('PDF Test Error:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+
+      console.log('PDF test response:', data);
+      setResult(data.data);
+    } catch (error) {
+      console.error('PDF test error:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <PageLayout>
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-6">PDF Processing Test Tool</h1>
-        <p className="mb-8 text-gray-600">
-          This tool helps diagnose PDF processing issues by testing the PDF extraction functionality directly.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload PDF</CardTitle>
-              <CardDescription>Select a PDF file to test text extraction</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit}>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2" htmlFor="pdf-file">
-                    PDF File
-                  </label>
-                  <input
-                    id="pdf-file"
-                    type="file"
-                    accept="application/pdf"
-                    onChange={handleFileChange}
-                    className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-primary file:text-white
-                      hover:file:bg-primary/90
-                      cursor-pointer"
-                  />
-                </div>
-                
-                {error && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">PDF Text Extraction Test</h1>
+      <p className="mb-4 text-gray-600">
+        This tool helps diagnose PDF processing issues by testing text extraction in isolation, 
+        separate from the document analysis workflow.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload PDF</CardTitle>
+            <CardDescription>Select a PDF file to test extraction functionality</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <Input 
+                  type="file" 
+                  accept=".pdf" 
+                  onChange={handleFileChange}
+                  className="mb-4"
+                />
+                {file && (
+                  <div className="text-sm text-gray-600 mt-2">
+                    Selected file: {file.name} ({Math.round(file.size / 1024)} KB)
+                  </div>
                 )}
-                
-                <Button type="submit" disabled={!file || isUploading} className="w-full">
-                  {isUploading ? (
-                    <>
-                      <Spinner className="mr-2 h-4 w-4" /> Processing...
-                    </>
-                  ) : 'Test PDF Processing'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Results</CardTitle>
-              <CardDescription>PDF processing results will appear here</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isUploading ? (
-                <div className="text-center py-12">
-                  <Spinner className="mx-auto h-8 w-8 mb-4" />
-                  <p>Processing PDF...</p>
-                </div>
-              ) : result ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-md">
-                    <h3 className="font-medium mb-2">Status: {result.success ? 'Success' : 'Failed'}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{result.message}</p>
-                    
-                    {result.success && result.data && (
-                      <div className="space-y-2 mt-4">
-                        <div>
-                          <span className="font-semibold">Pages:</span> {result.data.pageCount}
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-semibold mb-1">Text Preview:</h4>
-                          <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-60 whitespace-pre-wrap">
-                            {result.data.textPreview}
-                          </pre>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-semibold mb-1">Metadata:</h4>
-                          <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-40">
-                            {JSON.stringify(result.data.metadata || {}, null, 2)}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {!result.success && result.error && (
-                      <div className="bg-red-50 border border-red-100 p-3 rounded mt-4">
-                        <h4 className="font-semibold text-red-700 mb-1">Error Details:</h4>
-                        <pre className="text-xs overflow-auto max-h-40 text-red-700 whitespace-pre-wrap">
-                          {result.error.message}
-                          {result.error.stack && `\n\n${result.error.stack}`}
-                        </pre>
-                      </div>
-                    )}
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isUploading || !file}
+              >
+                {isUploading ? (
+                  <>
+                    <Spinner className="mr-2" />
+                    Processing...
+                  </>
+                ) : 'Extract Text'}
+              </Button>
+            </form>
+            {error && (
+              <div className="mt-4 p-2 bg-red-100 border border-red-300 text-red-700 rounded">
+                {error}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Results</CardTitle>
+            <CardDescription>Extracted text and metadata</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isUploading ? (
+              <div className="flex items-center justify-center p-10">
+                <Spinner className="mr-2" />
+                <span>Processing PDF...</span>
+              </div>
+            ) : result ? (
+              <div>
+                <div className="mb-4">
+                  <h3 className="font-semibold text-md">Metadata</h3>
+                  <div className="text-sm">
+                    <p><strong>Filename:</strong> {result.filename}</p>
+                    <p><strong>Size:</strong> {Math.round(result.size / 1024)} KB</p>
+                    <p><strong>MIME Type:</strong> {result.mimeType}</p>
+                    <p><strong>Extracted Text Length:</strong> {result.textLength} characters</p>
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  No results yet. Upload and process a PDF to see results.
+                <div>
+                  <h3 className="font-semibold text-md mb-2">Extracted Text (First 500 chars)</h3>
+                  <div className="bg-gray-100 p-3 rounded max-h-32 overflow-y-auto mb-2">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                      {result.extractedText?.substring(0, 500)}
+                      {result.extractedText?.length > 500 ? '...' : ''}
+                    </pre>
+                  </div>
+                  
+                  <h3 className="font-semibold text-md mb-2">Full Extracted Text</h3>
+                  <div className="bg-gray-100 p-3 rounded max-h-96 overflow-y-auto">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                      {result.extractedText}
+                    </pre>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-            {result && (
-              <CardFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setResult(null)}
-                  className="ml-auto"
-                >
-                  Clear Results
-                </Button>
-              </CardFooter>
+              </div>
+            ) : (
+              <div className="text-center p-10 text-gray-500">
+                Upload a PDF to see extraction results here
+              </div>
             )}
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-    </PageLayout>
+    </div>
   );
 }
