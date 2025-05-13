@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
@@ -119,16 +119,23 @@ export default function DocumentDetail() {
     data: document = {} as Document,
     isLoading, 
     isError, 
-    error,
-    refetch
+    error
   } = useQuery<Document>({
     queryKey: ['/api/documents', id],
     enabled: !!id,
-    refetchInterval: (data) => {
-      const docStatus = data?.processingStatus;
-      return docStatus === 'PROCESSING' || docStatus === 'PENDING' 
-        ? 5000  // Poll every 5 seconds for processing documents
-        : false;
+    // Auto-refresh every 5 seconds for documents in processing states
+    refetchInterval: 5000,
+    // Only refetch if document is in a processing state
+    refetchIntervalInBackground: true,
+    // Custom selector to determine if we need to continue polling
+    select: (data) => {
+      // If processing is done, signal to stop polling by invalidating query
+      if (data && data.processingStatus !== 'PROCESSING' && data.processingStatus !== 'PENDING') {
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
+        }, 1000);
+      }
+      return data;
     },
   });
   
@@ -162,7 +169,7 @@ export default function DocumentDetail() {
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       setLocation('/documents');
     },
-    onError: (err, _, context) => {
+    onError: (_, __, context) => {
       // If there was an error, restore previous documents 
       queryClient.setQueryData(['/api/documents'], context?.previousDocuments);
       message.error('Failed to delete document. Please try again.');

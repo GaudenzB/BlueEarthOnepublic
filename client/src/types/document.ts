@@ -1,80 +1,92 @@
 /**
- * Document interface
+ * Document type definitions
  */
+
+// Document type options
+export const DOC_TYPES = [
+  { value: 'pdf', label: 'PDF Document' },
+  { value: 'doc', label: 'Word Document' },
+  { value: 'xls', label: 'Excel Spreadsheet' },
+  { value: 'ppt', label: 'PowerPoint Presentation' },
+  { value: 'txt', label: 'Plain Text' },
+  { value: 'image', label: 'Image' },
+  { value: 'other', label: 'Other' }
+];
+
+// Document visibility options
+export const VISIBILITY_OPTIONS = [
+  { value: 'private', label: 'Private' },
+  { value: 'team', label: 'Team' },
+  { value: 'public', label: 'Public' }
+];
+
 export interface Document {
   id: string;
   title: string;
   description?: string;
+  uploadDate: string;
+  lastAccessed?: string;
+  size?: number;
+  fileSize?: number; // alias for size used in some components
+  type?: string;
+  documentType?: string; // alias for type used in some components
+  status?: string;
+  processingStatus?: 'PROCESSING' | 'PENDING' | 'COMPLETED' | 'ERROR';
   createdAt?: string;
   updatedAt?: string;
-  filename?: string;
-  originalFilename?: string;
-  fileSize?: number;
-  mimeType?: string;
-  checksum?: string;
-  storageKey?: string;
-  thumbnailUrl?: string;
-  documentType?: string;
-  type?: string;
+  visibility?: 'private' | 'team' | 'public';
   tags?: string[];
-  processingStatus?: string;
-  processingError?: string;
-  aiProcessed?: boolean;
-  aiMetadata?: any;
-  isConfidential?: boolean;
-  visibility?: string;
-  sharedWith?: Array<{
-    id?: string;
-    name: string;
-    email: string;
-    accessLevel?: string;
-  }>;
-  versions?: Array<{
-    version: string;
-    date: string;
-    modifiedBy: string;
-  }>;
-  comments?: Array<{
+  thumbnailUrl?: string;
+  author?: {
     id: string;
-    author: string;
-    date: string;
-    text: string;
+    name: string;
+    avatar?: string;
+  };
+  sharedWith?: Array<{
+    id: string;
+    name: string;
+    avatar?: string;
+    role?: string;
   }>;
-  timeline?: Array<{
-    type: string;
-    action: string;
-    timestamp: string;
-    details?: string;
-  }>;
+  metadata?: {
+    [key: string]: any;
+  };
+  versions?: DocumentVersion[];
+  comments?: DocumentComment[];
+  timeline?: TimelineEvent[];
 }
 
-/**
- * Document types
- */
-export const DOC_TYPES = {
-  INVOICE: 'Invoice',
-  CONTRACT: 'Contract',
-  REPORT: 'Report',
-  PRESENTATION: 'Presentation',
-  OTHER: 'Other Document'
-};
+export interface DocumentVersion {
+  id: string;
+  versionNumber: number;
+  createdAt: string;
+  createdBy: {
+    id: string;
+    name: string;
+  };
+  changes?: string;
+  size?: number;
+}
 
-/**
- * Document visibility options
- */
-export const VISIBILITY_OPTIONS = {
-  PUBLIC: 'Public',
-  PRIVATE: 'Private',
-  CONFIDENTIAL: 'Confidential',
-  RESTRICTED: 'Restricted Access'
-};
+export interface DocumentComment {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  replies?: DocumentComment[];
+}
 
-/**
- * Document processing status options
- */
-export const PROCESSING_STATUS = {
-  PENDING: 'Pending',
-  PROCESSING: 'Processing',
-  COMPLETED: 'Completed',
-  FAILED: 'Failed'
-};
+export interface TimelineEvent {
+  id: string;
+  eventType: 'CREATED' | 'UPDATED' | 'SHARED' | 'VIEWED' | 'COMMENTED' | 'PROCESSED';
+  timestamp: string;
+  user: {
+    id: string;
+    name: string;
+  };
+  details?: string;
+}
