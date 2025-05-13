@@ -31,6 +31,16 @@ import { useToast } from "@/hooks/use-toast";
 const PreviewIframe: React.FC<{ document: any }> = ({ document }) => {
   // State for error display if needed during preview
   const [error, setError] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  
+  // When component mounts, set loading to false after a short delay
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Check if we have a document with a preview token
   if (!document) {
@@ -56,7 +66,7 @@ const PreviewIframe: React.FC<{ document: any }> = ({ document }) => {
     );
   }
   
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center">
         <p className="text-muted-foreground">Loading preview...</p>
