@@ -4,6 +4,10 @@ import { documentRepository } from '../repositories/documentRepository';
 import { downloadFile } from '../services/documentStorage';
 import { logger } from '../utils/logger';
 
+// Import constants from auth.ts for consistency
+const TOKEN_AUDIENCE = 'blueearth-portal';
+const TOKEN_ISSUER = 'blueearth-api';
+
 const router = express.Router();
 
 /**
@@ -44,19 +48,27 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
     logger.debug('Token verification attempt', {
       tokenPrefix: tokenFromQuery.substring(0, 10) + '...',
       secretPrefix: JWT_SECRET.substring(0, 5) + '...',
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env['NODE_ENV']
     });
 
     // Try to verify the token
     let decoded;
     try {
-      decoded = jwt.verify(tokenFromQuery, JWT_SECRET);
+      // Use the verify function with options
+      decoded = jwt.verify(tokenFromQuery, JWT_SECRET, {
+        audience: TOKEN_AUDIENCE,
+        issuer: TOKEN_ISSUER
+      });
       logger.debug('Token verified successfully');
     } catch (verifyError: any) {
       // If in development, try with the development secret as fallback
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env['NODE_ENV'] === 'development') {
         try {
-          decoded = jwt.verify(tokenFromQuery, 'development_only_secret_key_not_for_production');
+          // Also use options with the fallback secret
+          decoded = jwt.verify(tokenFromQuery, 'development_only_secret_key_not_for_production', {
+            audience: TOKEN_AUDIENCE,
+            issuer: TOKEN_ISSUER
+          });
           logger.debug('Token verified with development fallback secret');
         } catch (devSecretError) {
           logger.error('Token verification failed with both secrets', { error: verifyError.message });
@@ -77,7 +89,7 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
 
     // Set the user on the request based on the token
     (req as any).user = decoded;
-    (req as any).tenantId = process.env.DEFAULT_TENANT_ID || '00000000-0000-0000-0000-000000000001';
+    (req as any).tenantId = process.env['DEFAULT_TENANT_ID'] || '00000000-0000-0000-0000-000000000001';
     
     const documentId = req.params.id;
     const tenantId = (req as any).tenantId;
