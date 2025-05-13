@@ -6,8 +6,8 @@
 
 import fetch from 'node-fetch';
 
-// Use local server for our API requests since we're running within the Replit environment
-const API_BASE_URL = 'http://localhost:3000';
+// Use the Replit webview URL for our API requests
+const API_BASE_URL = 'https://workspace.gaudenzbiveroni.repl.co';
 
 async function testDocumentPreview() {
   try {
