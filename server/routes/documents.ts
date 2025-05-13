@@ -15,6 +15,34 @@ import {
   type DocumentType
 } from '../../shared/schema/documents/documents';
 
+// Get the JWT secret key - use same approach as in server/auth.ts
+const JWT_SECRET = process.env.JWT_SECRET || (
+  process.env.NODE_ENV === 'development' 
+  ? 'development_only_secret_key_not_for_production' 
+  : ''
+);
+
+/**
+ * Generate a JWT token for document preview
+ * This creates a short-lived token specifically for document preview
+ * @param documentId - The ID of the document to preview
+ * @param tenantId - The tenant ID associated with the document
+ * @returns The generated JWT token
+ */
+function createPreviewToken(documentId: string, tenantId: string): string {
+  return jwt.sign(
+    { 
+      documentId,
+      tenantId,
+      purpose: 'preview'
+    },
+    JWT_SECRET,
+    { 
+      expiresIn: '15m' // Short-lived token for security
+    }
+  );
+}
+
 const router = express.Router();
 
 // Document upload validation schema
@@ -612,10 +640,21 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
         responseStatus: 200
       });
       
+      // Generate a preview token specifically for this document
+      const previewToken = createPreviewToken(documentId, tenantId);
+      
+      logger.debug('Generated preview token for document', { 
+        documentId,
+        tokenPrefix: previewToken.substring(0, 10) + '...' 
+      });
+      
       return res.json({
         success: true,
         message: 'Document retrieved successfully',
-        data: document
+        data: {
+          ...document,
+          previewToken // Add the preview token to the response
+        }
       });
     } catch (repoError) {
       logger.error('Repository error getting document by ID', { 

@@ -2,13 +2,15 @@ import express, { Request, Response } from 'express';
 import { documentRepository } from '../repositories/documentRepository';
 import { downloadFile } from '../services/documentStorage';
 import { logger } from '../utils/logger';
-import { verifyToken } from '../utils/jwtHelper';
-// Import JWT library using ES modules syntax instead of require
+// Import JWT library using ES module syntax
 import jwt from 'jsonwebtoken';
 
-// Import constants from auth.ts for consistency
-const TOKEN_AUDIENCE = 'blueearth-portal';
-const TOKEN_ISSUER = 'blueearth-api';
+// Get the JWT secret key - use same approach as in server/auth.ts
+const JWT_SECRET = process.env.JWT_SECRET || (
+  process.env.NODE_ENV === 'development' 
+  ? 'development_only_secret_key_not_for_production' 
+  : ''
+);
 
 const router = express.Router();
 
@@ -18,91 +20,51 @@ const router = express.Router();
  * @access Authenticated users with token in query parameter
  */
 router.get('/:id/preview', async (req: Request, res: Response) => {
-  // Custom authentication for preview that accepts token as a URL parameter
-  // This is needed because iframes don't send authentication headers
-  const tokenFromQuery = req.query.token as string | undefined;
-  
-  if (!tokenFromQuery) {
-    logger.debug('Preview access attempted without token');
-    return res.status(401).json({
-      success: false,
-      message: "No token provided for preview"
-    });
-  }
-  
-  // Get the JWT secret key - use same approach as in server/auth.ts
-  const JWT_SECRET = process.env['JWT_SECRET'] || (
-    process.env['NODE_ENV'] === 'development' 
-    ? 'development_only_secret_key_not_for_production' 
-    : undefined
-  );
-
-  if (!JWT_SECRET) {
-    logger.error('JWT_SECRET not configured');
-    return res.status(500).json({
-      success: false,
-      message: "Server configuration error - missing JWT_SECRET"
-    });
-  }
-  
   try {
+    // Custom authentication for preview that accepts token as a URL parameter
+    // This is needed because iframes don't send authentication headers
+    const token = req.query.token as string | undefined;
+    
+    if (!token) {
+      logger.debug('Preview access attempted without token');
+      return res.status(400).json({
+        success: false,
+        message: "Missing preview token"
+      });
+    }
+    
+    if (!JWT_SECRET) {
+      logger.error('JWT_SECRET not configured');
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error - missing JWT_SECRET"
+      });
+    }
+    
     // Log token verification attempt
     logger.debug('Token verification attempt', {
-      tokenPrefix: tokenFromQuery.substring(0, 10) + '...',
-      secretPrefix: JWT_SECRET.substring(0, 5) + '...',
-      nodeEnv: process.env['NODE_ENV']
+      tokenPrefix: token.substring(0, 10) + '...'
     });
 
-    let decoded;
-    
+    // Verify the token
+    let payload: any;
     try {
-      // Use the imported jwt library directly instead of verifyToken 
-      decoded = jwt.verify(tokenFromQuery, JWT_SECRET, {
-        audience: TOKEN_AUDIENCE,
-        issuer: TOKEN_ISSUER
+      // Use the imported jwt library directly
+      payload = jwt.verify(token, JWT_SECRET);
+      logger.debug('Token verified successfully');
+    } catch (err: any) {
+      logger.error('Token verification failed', { error: err.message });
+      return res.status(401).json({
+        success: false,
+        message: `Invalid token: ${err.message}`
       });
-      
-      logger.debug('Token verified successfully with primary secret');
-    } catch (primaryError) {
-      logger.error('Error verifying token with primary secret', { 
-        error: (primaryError as Error).message
-      });
-      
-      // If in development, try with the development secret as fallback
-      if (process.env['NODE_ENV'] === 'development') {
-        try {
-          decoded = jwt.verify(tokenFromQuery, 'development_only_secret_key_not_for_production', {
-            audience: TOKEN_AUDIENCE,
-            issuer: TOKEN_ISSUER
-          });
-          
-          logger.debug('Token verified with development fallback secret');
-        } catch (fallbackError) {
-          logger.error('Token verification failed with both secrets', {
-            primaryError: (primaryError as Error).message,
-            fallbackError: (fallbackError as Error).message
-          });
-          
-          return res.status(401).json({
-            success: false,
-            message: `Invalid token in query parameter`
-          });
-        }
-      } else {
-        // In production, don't try the fallback
-        return res.status(401).json({
-          success: false,
-          message: `Invalid token in query parameter`
-        });
-      }
     }
-
-    // Set the user on the request based on the token
-    (req as any).user = decoded;
-    (req as any).tenantId = process.env['DEFAULT_TENANT_ID'] || '00000000-0000-0000-0000-000000000001';
     
+    // Set tenant ID (either from token or default)
+    const tenantId = payload.tenantId || process.env.DEFAULT_TENANT_ID || '00000000-0000-0000-0000-000000000001';
+    
+    // Get document ID from URL
     const documentId = req.params.id;
-    const tenantId = (req as any).tenantId;
     
     // Get document metadata
     const document = await documentRepository.getById(documentId, tenantId);
@@ -167,9 +129,9 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
         `);
       }
       
-      // For other file types, prompt download
-      res.setHeader('Content-Disposition', `inline; filename="${document.originalFilename}"`);
+      // For other file types, prompt download with proper headers
       res.setHeader('Content-Type', document.mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(document.originalFilename)}"`);
       return res.send(fileBuffer);
     } catch (error: any) {
       logger.error('Error serving document preview', { 
