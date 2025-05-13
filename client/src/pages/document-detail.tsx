@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
-import { Tabs } from "antd";
+import { Tabs, message } from "antd";
 import { apiRequest } from "@/lib/queryClient";
 import { Document } from "@/types/document";
 import { DocumentHeader } from "@/components/documents/DocumentHeader";
@@ -119,20 +119,53 @@ export default function DocumentDetail() {
     data: document = {} as Document,
     isLoading, 
     isError, 
-    error 
+    error,
+    refetch
   } = useQuery<Document>({
     queryKey: ['/api/documents', id],
     enabled: !!id,
+    refetchInterval: (data) => {
+      const docStatus = data?.processingStatus;
+      return docStatus === 'PROCESSING' || docStatus === 'PENDING' 
+        ? 5000  // Poll every 5 seconds for processing documents
+        : false;
+    },
   });
   
-  // Mutation for deleting a document
+  // Mutation for deleting a document with optimistic UI updates
   const deleteDocumentMutation = useMutation({
     mutationFn: () => {
       return apiRequest(`/api/documents/${id}`, { method: 'DELETE' });
     },
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
+      
+      // Snapshot the previous value
+      const previousDocuments = queryClient.getQueryData<Document[]>(['/api/documents']);
+      
+      // Optimistically update the documents list (remove this document)
+      if (previousDocuments) {
+        queryClient.setQueryData(
+          ['/api/documents'], 
+          previousDocuments.filter(doc => doc.id !== id)
+        );
+      }
+      
+      // Show success message 
+      message.success('Document deleted successfully');
+      
+      // Return context with the previous documents
+      return { previousDocuments };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       setLocation('/documents');
+    },
+    onError: (err, _, context) => {
+      // If there was an error, restore previous documents 
+      queryClient.setQueryData(['/api/documents'], context?.previousDocuments);
+      message.error('Failed to delete document. Please try again.');
     },
   });
   
@@ -192,23 +225,32 @@ export default function DocumentDetail() {
         />
         
         {/* Tabs */}
-        <Tabs activeKey={activeTab} onChange={handleTabChange}>
-          <Tabs.TabPane tab="Overview" key="1">
-            <DocumentOverviewTab document={document} />
-          </Tabs.TabPane>
-          
-          <Tabs.TabPane tab="Version History" key="2">
-            <DocumentVersionsTab document={document} />
-          </Tabs.TabPane>
-          
-          <Tabs.TabPane tab="Comments" key="3">
-            <DocumentCommentsTab document={document} />
-          </Tabs.TabPane>
-          
-          <Tabs.TabPane tab="Timeline" key="4">
-            <DocumentTimelineTab document={document} />
-          </Tabs.TabPane>
-        </Tabs>
+        <Tabs 
+          activeKey={activeTab} 
+          onChange={handleTabChange}
+          items={[
+            {
+              key: "1",
+              label: "Overview",
+              children: <DocumentOverviewTab document={document} />
+            },
+            {
+              key: "2",
+              label: "Version History",
+              children: <DocumentVersionsTab document={document} />
+            },
+            {
+              key: "3",
+              label: "Comments",
+              children: <DocumentCommentsTab document={document} />
+            },
+            {
+              key: "4",
+              label: "Timeline",
+              children: <DocumentTimelineTab document={document} />
+            }
+          ]}
+        />
       </div>
       
       {/* Delete Confirmation Dialog */}

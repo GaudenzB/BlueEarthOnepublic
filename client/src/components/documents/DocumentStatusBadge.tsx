@@ -7,8 +7,8 @@ import {
   WarningOutlined
 } from '@ant-design/icons';
 
-interface DocumentStatusBadgeProps {
-  status?: string;
+export interface DocumentStatusBadgeProps {
+  status?: string | undefined;
 }
 
 /**
