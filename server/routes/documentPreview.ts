@@ -3,6 +3,8 @@ import { documentRepository } from '../repositories/documentRepository';
 import { downloadFile } from '../services/documentStorage';
 import { logger } from '../utils/logger';
 import { verifyToken } from '../utils/jwtHelper';
+// Import JWT library using ES modules syntax instead of require
+import jwt from 'jsonwebtoken';
 
 // Import constants from auth.ts for consistency
 const TOKEN_AUDIENCE = 'blueearth-portal';
@@ -51,26 +53,36 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
       nodeEnv: process.env['NODE_ENV']
     });
 
-    // Try to verify the token using our custom function
-    const decoded = verifyToken(tokenFromQuery, JWT_SECRET, {
-      audience: TOKEN_AUDIENCE,
-      issuer: TOKEN_ISSUER
-    });
-
-    if (!decoded) {
+    let decoded;
+    
+    try {
+      // Use the imported jwt library directly instead of verifyToken 
+      decoded = jwt.verify(tokenFromQuery, JWT_SECRET, {
+        audience: TOKEN_AUDIENCE,
+        issuer: TOKEN_ISSUER
+      });
+      
+      logger.debug('Token verified successfully with primary secret');
+    } catch (primaryError) {
+      logger.error('Error verifying token with primary secret', { 
+        error: (primaryError as Error).message
+      });
+      
       // If in development, try with the development secret as fallback
       if (process.env['NODE_ENV'] === 'development') {
-        const decodedWithFallback = verifyToken(tokenFromQuery, 'development_only_secret_key_not_for_production', {
-          audience: TOKEN_AUDIENCE,
-          issuer: TOKEN_ISSUER
-        });
-        
-        if (decodedWithFallback) {
+        try {
+          decoded = jwt.verify(tokenFromQuery, 'development_only_secret_key_not_for_production', {
+            audience: TOKEN_AUDIENCE,
+            issuer: TOKEN_ISSUER
+          });
+          
           logger.debug('Token verified with development fallback secret');
-          // Use the fallback decoded token
-          (req as any).user = decodedWithFallback;
-        } else {
-          logger.error('Token verification failed with both secrets');
+        } catch (fallbackError) {
+          logger.error('Token verification failed with both secrets', {
+            primaryError: (primaryError as Error).message,
+            fallbackError: (fallbackError as Error).message
+          });
+          
           return res.status(401).json({
             success: false,
             message: `Invalid token in query parameter`
@@ -78,14 +90,11 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
         }
       } else {
         // In production, don't try the fallback
-        logger.error('Token verification failed');
         return res.status(401).json({
           success: false,
           message: `Invalid token in query parameter`
         });
       }
-    } else {
-      logger.debug('Token verified successfully');
     }
 
     // Set the user on the request based on the token
