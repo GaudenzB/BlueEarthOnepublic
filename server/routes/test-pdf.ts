@@ -3,6 +3,7 @@ import multer from 'multer';
 import fs from 'fs';
 import { logger } from '../utils/logger';
 import { authenticate } from '../auth';
+import { parsePdfFile } from '../utils/pdf-parser';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
@@ -24,19 +25,8 @@ router.post('/', authenticate, upload.single('file'), async (req: Request, res: 
       mimeType: file.mimetype
     });
 
-    // Extract text from the PDF using a more direct approach
-    const pdfBuffer = fs.readFileSync(file.path);
-    
-    // Try using pdf-parse with options to avoid looking for test files
-    const pdfParse = (await import('pdf-parse')).default;
-    // Force it to use our buffer directly without relying on test files
-    const pdfData = await pdfParse(pdfBuffer, {
-      // Provide minimal options to avoid defaults that may look for test files
-      pagerender: undefined,
-      max: 0 // 0 = unlimited pages
-    });
-    const extractedText = pdfData.text || '';
-    logger.debug('PDF parse completed successfully', { textLength: extractedText.length });
+    // Use our custom PDF parser utility that handles all the complexity
+    const extractedText = await parsePdfFile(file.path);
     
     // Log successful extraction
     logger.info(`PDF text extraction successful`, {
