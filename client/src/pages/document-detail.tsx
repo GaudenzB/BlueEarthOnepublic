@@ -428,10 +428,7 @@ export default function DocumentDetail() {
               <CardContent>
                 {document.processingStatus === "COMPLETED" ? (
                   <div className="border rounded-md aspect-[16/10] bg-muted flex items-center justify-center">
-                    <PreviewIframe 
-                      documentId={id}
-                      title={document.title || document.originalFilename}
-                    />
+                    <PreviewIframe document={document} />
                   </div>
                 ) : (
                   <div className="border rounded-md aspect-[16/10] bg-muted flex flex-col items-center justify-center p-4">

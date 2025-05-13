@@ -655,6 +655,13 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
         });
       }
       
+      // Generate a preview token for the document
+      const previewToken = createPreviewToken(documentId, tenantId);
+      logger.debug('Generated preview token for document', {
+        documentId,
+        tokenPrefix: previewToken.substring(0, 10) + '...'
+      });
+      
       logger.info('Document found successfully', { 
         documentId,
         title: document.title,
@@ -662,13 +669,7 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
         responseStatus: 200
       });
       
-      // Generate a preview token specifically for this document
-      const previewToken = createPreviewToken(documentId, tenantId);
-      
-      logger.debug('Generated preview token for document', { 
-        documentId,
-        tokenPrefix: previewToken.substring(0, 10) + '...' 
-      });
+
       
       return res.json({
         success: true,
