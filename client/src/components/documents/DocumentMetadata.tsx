@@ -29,11 +29,11 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
   
   // Helper function to determine if document has custom metadata
   const hasCustomMetadata = (): boolean => {
-    return document.metadata && Object.keys(document.metadata).length > 0;
+    return document.aiMetadata !== undefined && Object.keys(document.aiMetadata || {}).length > 0;
   };
   
   // Helper function to render custom metadata fields
-  const renderCustomMetadataValue = (key: string, value: any): React.ReactNode => {
+  const renderCustomMetadataValue = (_key: string, value: any): React.ReactNode => {
     // Handle different types of metadata values
     if (value === null || value === undefined) {
       return <Text type="secondary">Not specified</Text>;
@@ -81,7 +81,7 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
   };
   
   // Get metadata keys for rendering
-  const metadataKeys = document.metadata ? Object.keys(document.metadata) : [];
+  const metadataKeys = document.aiMetadata ? Object.keys(document.aiMetadata) : [];
   
   return (
     <>
@@ -115,13 +115,13 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
         </Descriptions.Item>
         
         <Descriptions.Item label="Owner">
-          {document.sharedWith && document.sharedWith.length > 0 
+          {document.sharedWith?.length 
             ? document.sharedWith[0].name 
             : 'System'}
         </Descriptions.Item>
         
         <Descriptions.Item label="Version">
-          {document.versions && document.versions.length > 0 
+          {document.versions?.length 
             ? document.versions[0].versionNumber 
             : '1.0'}
         </Descriptions.Item>
@@ -180,7 +180,7 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
                   </Tooltip>
                 }
               >
-                {renderCustomMetadataValue(key, document.metadata?.[key])}
+                {renderCustomMetadataValue(key, document.aiMetadata?.[key as keyof typeof document.aiMetadata])}
               </Descriptions.Item>
             ))}
           </Descriptions>

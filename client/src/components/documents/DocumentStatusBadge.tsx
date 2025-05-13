@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, Tooltip } from 'antd';
 import { CheckCircleOutlined, WarningOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { Document, DocumentProcessingStatus } from '@/types/document';
+import { DocumentProcessingStatus } from '@/types/document';
 
 interface DocumentStatusBadgeProps {
   status?: DocumentProcessingStatus | string | undefined;
