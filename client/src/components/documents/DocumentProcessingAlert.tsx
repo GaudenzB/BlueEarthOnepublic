@@ -5,7 +5,6 @@ import {
   ClockCircleOutlined, 
   WarningOutlined,
   ReloadOutlined,
-  InfoCircleOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { Document } from '@/types/document';
@@ -257,7 +256,7 @@ export function DocumentProcessingAlert({
                 danger
                 icon={<ReloadOutlined />}
                 onClick={handleManualRefresh}
-                loading={isRefreshing}
+                loading={isRefreshing ? true : false}
               >
                 Retry Processing
               </Button>

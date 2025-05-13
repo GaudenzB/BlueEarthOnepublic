@@ -63,7 +63,8 @@ export function DocumentHeader({
   versionCount = 1,
   loading = {}
 }: DocumentHeaderProps) {
-  const [showAllActions, setShowAllActions] = useState(false);
+  // Control whether to show text labels alongside icons for action buttons
+  const [showAllActions, _setShowAllActions] = useState(false);
   
   // Generate dropdown menu items
   const moreMenuItems = [
@@ -226,7 +227,7 @@ export function DocumentHeader({
                 icon={<DeleteOutlined />} 
                 danger
                 onClick={onDeleteClick}
-                loading={loading.delete}
+                loading={loading?.delete ? true : false}
               >
                 Delete
               </Button>
