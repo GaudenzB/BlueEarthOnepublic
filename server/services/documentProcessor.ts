@@ -2,7 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
 import { analyzeDocumentText, extractTextFromDocument } from '../utils/openai';
+import { generateEmbeddingsForText } from '../utils/embeddingGenerator';
 import { documentRepository } from '../repositories/documentRepository';
+import { documentEmbeddingsRepository } from '../repositories/documentEmbeddingsRepository';
 
 /**
  * Document Processing Service
@@ -107,19 +109,57 @@ class DocumentProcessorService {
         };
       }
       
-      // Step 6: Update document with AI metadata
+      // Step 6: Generate embeddings for document text
+      let embeddingsGenerated = false;
+      try {
+        logger.info('Generating embeddings for document text', { documentId });
+        
+        // Generate embeddings for document text
+        const embeddings = await generateEmbeddingsForText(textContent);
+        
+        if (embeddings.length > 0) {
+          // Store embeddings in database
+          const storedCount = await documentEmbeddingsRepository.storeEmbeddingsBatch(
+            documentId,
+            embeddings
+          );
+          
+          embeddingsGenerated = storedCount > 0;
+          
+          logger.info('Document embeddings generated and stored', { 
+            documentId,
+            embeddingsCount: embeddings.length,
+            storedCount
+          });
+        } else {
+          logger.warn('No embeddings were generated for document', { documentId });
+        }
+      } catch (embeddingError: any) {
+        logger.error('Error generating embeddings for document', { 
+          error: embeddingError?.message || 'Unknown error', 
+          documentId 
+        });
+        // Continue processing despite embedding errors
+      }
+      
+      // Step 7: Update document with AI metadata and embedding status
       await documentRepository.updateAfterProcessing(documentId, tenantId, {
         processingStatus,
         processingError,
         aiProcessed: true,
-        aiMetadata: aiAnalysis
+        aiMetadata: {
+          ...aiAnalysis,
+          embeddingsGenerated,
+          embeddingsTimestamp: embeddingsGenerated ? new Date().toISOString() : null
+        }
       });
       
       logger.info('Document processing completed successfully', { 
         documentId,
         tenantId,
         summaryLength: aiAnalysis.summary.length,
-        entitiesCount: aiAnalysis.entities.length
+        entitiesCount: aiAnalysis.entities.length,
+        embeddingsGenerated
       });
       
       return true;
