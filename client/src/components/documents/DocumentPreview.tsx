@@ -1,5 +1,5 @@
 import React from 'react';
-import { Empty, Typography, Card, Space, Spin, Result } from 'antd';
+import { Typography, Card, Space, Spin, Result } from 'antd';
 import { 
   FilePdfOutlined, 
   FileWordOutlined, 
@@ -24,15 +24,15 @@ interface DocumentPreviewProps {
  */
 export function DocumentPreview({ document, isLoading = false }: DocumentPreviewProps) {
   // Get file extension
-  const getFileExtension = (fileName?: string): string => {
-    if (!fileName) return '';
-    const parts = fileName.split('.');
+  const getFileExtension = (filename?: string): string => {
+    if (!filename) return '';
+    const parts = filename.split('.');
     return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
   };
   
   // Get icon based on file type
-  const getFileIcon = (fileName?: string) => {
-    const ext = getFileExtension(fileName);
+  const getFileIcon = (filename?: string) => {
+    const ext = getFileExtension(filename);
     
     const iconProps = { style: { fontSize: 64, color: '#1890ff' } };
     
@@ -110,10 +110,10 @@ export function DocumentPreview({ document, isLoading = false }: DocumentPreview
   return (
     <Card>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 24px' }}>
-        {getFileIcon(document.fileName)}
+        {getFileIcon(document.filename)}
         
         <Space direction="vertical" align="center" style={{ marginTop: 24 }}>
-          <Text strong>{document.fileName || document.title}</Text>
+          <Text strong>{document.filename || document.originalFilename || document.title}</Text>
           
           {document.fileSize && (
             <Text type="secondary">
@@ -122,7 +122,7 @@ export function DocumentPreview({ document, isLoading = false }: DocumentPreview
           )}
           
           <Text type="secondary">
-            {document.fileType || getFileExtension(document.fileName)}
+            {document.fileType || document.mimeType || getFileExtension(document.filename)}
           </Text>
         </Space>
         

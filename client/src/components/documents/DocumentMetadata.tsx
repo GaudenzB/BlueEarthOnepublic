@@ -53,15 +53,19 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
       </Descriptions.Item>
       
       <Descriptions.Item label="File Name">
-        {document.fileName || 'Unknown'}
+        {document.filename || document.originalFilename || 'Unknown'}
       </Descriptions.Item>
       
       <Descriptions.Item label="Owner">
-        {document.owner || document.createdBy || 'System'}
+        {document.sharedWith && document.sharedWith.length > 0 
+          ? document.sharedWith[0].name 
+          : 'System'}
       </Descriptions.Item>
       
       <Descriptions.Item label="Version">
-        {document.version || '1.0'}
+        {document.versions && document.versions.length > 0 
+          ? document.versions[0].versionNumber 
+          : '1.0'}
       </Descriptions.Item>
       
       <Descriptions.Item label="Category">

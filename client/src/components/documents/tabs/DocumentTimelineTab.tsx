@@ -24,14 +24,16 @@ function getTimelineIcon(type: string) {
   switch (type) {
     case 'create':
       return <FileOutlined style={{ fontSize: 16 }} />;
-    case 'edit':
+    case 'update':
       return <EditOutlined style={{ fontSize: 16 }} />;
-    case 'status':
+    case 'view':
       return <InfoCircleOutlined style={{ fontSize: 16 }} />;
     case 'share':
       return <LinkOutlined style={{ fontSize: 16 }} />;
     case 'download':
       return <DownloadOutlined style={{ fontSize: 16 }} />;
+    case 'comment':
+      return <InfoCircleOutlined style={{ fontSize: 16 }} />;
     default:
       return <CalendarOutlined style={{ fontSize: 16 }} />;
   }
@@ -45,15 +47,15 @@ export function DocumentTimelineTab({ document }: DocumentTimelineTabProps) {
     <Card bordered={false}>
       <Title level={5}>Activity Timeline</Title>
       
-      {document.timeline && document.timeline.length > 0 ? (
+      {document.events && document.events.length > 0 ? (
         <Timeline>
-          {document.timeline.map((event: any, index: number) => (
-            <Timeline.Item key={index} dot={getTimelineIcon(event.type)}>
+          {document.events.map((event, index: number) => (
+            <Timeline.Item key={index} dot={getTimelineIcon(event.eventType.toLowerCase())}>
               <div>
-                <Text strong>{event.action}</Text>
+                <Text strong>{event.eventType}</Text>
                 <div>
                   <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {format(new Date(event.timestamp), 'PPpp')}
+                    {format(new Date(event.timestamp), 'PPpp')} by {event.userName}
                   </Text>
                 </div>
                 {event.details && <div>{event.details}</div>}
