@@ -791,16 +791,32 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
     });
   }
   
+  // Get the JWT secret key - use same approach as in server/auth.ts
+  const JWT_SECRET = process.env['JWT_SECRET'] || (
+    process.env['NODE_ENV'] === 'development' 
+    ? 'development_only_secret_key_not_for_production' 
+    : undefined
+  );
+
+  if (!JWT_SECRET) {
+    return res.status(500).json({
+      success: false,
+      message: "Server configuration error - missing JWT_SECRET"
+    });
+  }
+  
   // If token is in query params, verify it and set req.user
   if (tokenFromQuery) {
     try {
       const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(tokenFromQuery, process.env.JWT_SECRET as string);
+      const decoded = jwt.verify(tokenFromQuery, JWT_SECRET);
       (req as any).user = decoded;
+      console.log("Successfully verified token from query parameter");
     } catch (error) {
+      console.error("Token verification failed:", error);
       return res.status(401).json({
         success: false,
-        message: "Invalid token"
+        message: "Invalid token in query parameter"
       });
     }
   } else {
@@ -816,12 +832,14 @@ router.get('/:id/preview', async (req: Request, res: Response) => {
       
       const token = authHeader.split(' ')[1];
       const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+      const decoded = jwt.verify(token, JWT_SECRET);
       (req as any).user = decoded;
+      console.log("Successfully verified token from Authorization header");
     } catch (error) {
+      console.error("Header token verification failed:", error);
       return res.status(401).json({
         success: false,
-        message: "Invalid token"
+        message: "Invalid token in Authorization header"
       });
     }
   }
