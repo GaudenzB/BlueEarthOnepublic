@@ -238,6 +238,14 @@ export type InsertTenant = z.infer<typeof insertTenantSchema>;
 // Import document schema from subdirectories
 import { documents, processingStatusEnum as docProcessingStatusEnum, documentTypeEnum } from './schema/documents/documents';
 import { analysisVersions, analysisStatusEnum } from './schema/documents/analysisVersions';
+import { documentEmbeddings } from './schema/documents/embeddings';
 
 // Re-export for easy access
-export { documents, analysisVersions, docProcessingStatusEnum, documentTypeEnum, analysisStatusEnum };
+export { 
+  documents, 
+  analysisVersions, 
+  documentEmbeddings,
+  docProcessingStatusEnum, 
+  documentTypeEnum, 
+  analysisStatusEnum
+};

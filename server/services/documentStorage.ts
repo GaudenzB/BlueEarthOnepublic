@@ -20,14 +20,17 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const useLocalStorage = (!hasAwsCredentials || process.env.FORCE_LOCAL_STORAGE === 'true') && isDevelopment;
 
 logger.info(`Document storage mode: ${useLocalStorage ? 'LOCAL STORAGE (Development)' : 'AWS S3'}`);
-logger.info(`AWS Region: ${process.env.AWS_REGION || 'us-east-1'}`);
+logger.info(`AWS Region: ${process.env.AWS_REGION || 'eu-central-1'} (EU region used for compliance)`);
 
 // Validate AWS region for data residency compliance
-const awsRegion = process.env.AWS_REGION || 'us-east-1';
+const awsRegion = process.env.AWS_REGION || 'eu-central-1'; // Default to EU region for compliance
 const isEuropeanRegion = awsRegion.startsWith('eu-') || awsRegion === 'eu-central-1';
 
+// Strictly enforce EU regions in production
 if (!useLocalStorage && !isEuropeanRegion && process.env.NODE_ENV === 'production') {
-  logger.warn(`Using non-European AWS region (${awsRegion}). For compliance, consider using an EU region.`);
+  logger.error(`Data residency compliance violation: Using non-European AWS region (${awsRegion})`);
+  logger.error(`Only EU regions are allowed in production for data compliance requirements`);
+  throw new Error('Data residency compliance violation: Production environment requires an EU region');
 }
 
 // Create local storage directory if needed for development
