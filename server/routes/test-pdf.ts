@@ -24,12 +24,19 @@ router.post('/', authenticate, upload.single('file'), async (req: Request, res: 
       mimeType: file.mimetype
     });
 
-    // Extract text from the PDF using pdf-parse with dynamic import for ES modules
+    // Extract text from the PDF using a more direct approach
     const pdfBuffer = fs.readFileSync(file.path);
-    // Use dynamic import for pdf-parse (ES modules compatible)
-    const pdfParse = await import('pdf-parse').then(module => module.default);
-    const pdfData = await pdfParse(pdfBuffer);
+    
+    // Try using pdf-parse with options to avoid looking for test files
+    const pdfParse = (await import('pdf-parse')).default;
+    // Force it to use our buffer directly without relying on test files
+    const pdfData = await pdfParse(pdfBuffer, {
+      // Provide minimal options to avoid defaults that may look for test files
+      pagerender: undefined,
+      max: 0 // 0 = unlimited pages
+    });
     const extractedText = pdfData.text || '';
+    logger.debug('PDF parse completed successfully', { textLength: extractedText.length });
     
     // Log successful extraction
     logger.info(`PDF text extraction successful`, {
