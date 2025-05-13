@@ -409,3 +409,28 @@ export class HttpClient {
 
 // Export singleton instance with default configuration
 export const httpClient = new HttpClient();
+
+/**
+ * Helper function for API requests
+ * 
+ * @param url API endpoint URL
+ * @param options Request options
+ * @returns Promise resolving to API response
+ */
+export const apiRequest = async <T = any>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> => {
+  const method = options.method || 'GET';
+  
+  if (method === 'GET') {
+    return httpClient.get<T>(url, options);
+  } else if (method === 'POST') {
+    return httpClient.post<T>(url, options.body, options);
+  } else if (method === 'PUT') {
+    return httpClient.put<T>(url, options.body, options);
+  } else if (method === 'PATCH') {
+    return httpClient.patch<T>(url, options.body, options);
+  } else if (method === 'DELETE') {
+    return httpClient.delete<T>(url, options);
+  }
+  
+  throw new Error(`Unsupported method: ${method}`);
+};

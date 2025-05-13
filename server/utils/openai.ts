@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { logger } from "./logger";
 
 // Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const DEFAULT_MODEL = "gpt-4o";
@@ -68,7 +68,8 @@ export async function analyzeDocumentText(
     });
 
     // Extract and parse the response content
-    const result = JSON.parse(response.choices[0].message.content);
+    const content = response.choices[0]?.message?.content || '{}';
+    const result = JSON.parse(content);
     
     logger.info('Document analysis completed successfully', { 
       documentTitle, 

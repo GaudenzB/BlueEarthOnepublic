@@ -41,9 +41,17 @@ export default function DocumentDetail() {
   
   // Process document mutation
   const processDocumentMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest(`/api/documents/${id}/process`, {
+    mutationFn: () => {
+      return fetch(`/api/documents/${id}/process`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error('Failed to process document');
+        }
+        return res.json();
       });
     },
     onSuccess: () => {
@@ -237,6 +245,20 @@ export default function DocumentDetail() {
                 Share
               </Button>
             </PermissionGuard>
+            {(document.processingStatus === 'PENDING' || document.processingStatus === 'FAILED' || document.processingStatus === 'ERROR') && (
+              <PermissionGuard area="documents" permission="edit">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2" 
+                  onClick={() => processDocumentMutation.mutate()}
+                  disabled={processDocumentMutation.isPending}
+                >
+                  <BrainCircuitIcon className="h-4 w-4" />
+                  {processDocumentMutation.isPending ? 'Processing...' : 'Process Document'}
+                </Button>
+              </PermissionGuard>
+            )}
           </div>
         </div>
         
