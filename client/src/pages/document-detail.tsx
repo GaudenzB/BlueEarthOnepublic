@@ -35,8 +35,13 @@ export default function DocumentDetail() {
     enabled: !!id,
   });
 
-  // Handle nested response structure properly
-  const document = documentResponse?.success ? documentResponse.data : null;
+  // Use the document directly if it's already in the right format
+  // or extract it from the nested response structure if it's wrapped
+  const document = documentResponse?.success 
+    ? documentResponse.data 
+    : (documentResponse && !documentResponse.success) 
+      ? null 
+      : documentResponse;
   
   // Debug logging
   console.log("Document detail response:", documentResponse);
@@ -123,7 +128,7 @@ export default function DocumentDetail() {
     );
   }
 
-  if (error || !document || (documentResponse && !documentResponse.success)) {
+  if (error || !document || (documentResponse?.success === false)) {
     return (
       <div className="space-y-6">
         <Link href="/documents">
