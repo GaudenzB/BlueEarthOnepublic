@@ -4,6 +4,7 @@ import { tenantContext } from '../middleware/tenantContext';
 import { singleFileUpload, sanitizeFile } from '../middleware/upload';
 import { documentRepository } from '../repositories/documentRepository';
 import { uploadFile, generateStorageKey, downloadFile, deleteFile } from '../services/documentStorage';
+import { documentProcessor } from '../services/documentProcessor';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 import { 
@@ -799,6 +800,132 @@ router.get('/:id/versions', authenticate, tenantContext, async (req: Request, re
     res.status(500).json({
       success: false,
       message: 'Server error retrieving analysis versions'
+    });
+  }
+});
+
+/**
+ * @route POST /api/documents/:id/process
+ * @desc Process a single document with AI
+ * @access Authenticated users
+ */
+router.post('/:id/process', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const documentId = req.params.id;
+    const tenantId = (req as any).tenantId;
+    
+    // Check if document exists
+    const document = await documentRepository.getById(documentId, tenantId);
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+    
+    // Check if document is already being processed
+    if (document.processingStatus === 'PROCESSING') {
+      return res.status(400).json({
+        success: false,
+        message: 'Document is already being processed'
+      });
+    }
+    
+    // Check if document is already processed
+    if (document.processingStatus === 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        message: 'Document is already processed'
+      });
+    }
+    
+    // Process document asynchronously
+    logger.info('Starting document processing', { documentId, tenantId });
+    
+    // Start processing in the background
+    documentProcessor.processDocument(documentId, tenantId)
+      .then(success => {
+        logger.info('Document processing completed', { documentId, success });
+      })
+      .catch(error => {
+        logger.error('Document processing failed', { documentId, error });
+      });
+    
+    // Return immediately with a processing status
+    return res.json({
+      success: true,
+      message: 'Document processing started',
+      data: {
+        id: documentId,
+        processingStatus: 'PROCESSING'
+      }
+    });
+  } catch (error) {
+    logger.error('Error starting document processing', { error, id: req.params.id });
+    res.status(500).json({
+      success: false,
+      message: 'Server error starting document processing'
+    });
+  }
+});
+
+/**
+ * @route POST /api/documents/process-pending
+ * @desc Process all pending documents
+ * @access Authenticated users
+ */
+router.post('/process-pending', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+    
+    // Get pending documents
+    const pendingDocuments = await documentRepository.getPendingDocuments(tenantId, limit);
+    
+    if (pendingDocuments.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No pending documents to process',
+        data: { processed: 0 }
+      });
+    }
+    
+    // Process documents asynchronously
+    const documentIds = pendingDocuments.map(doc => doc.id);
+    logger.info('Starting batch document processing', { count: documentIds.length, tenantId });
+    
+    // Process each document in the background
+    Promise.all(
+      pendingDocuments.map(doc => 
+        documentProcessor.processDocument(doc.id, tenantId)
+          .catch(error => {
+            logger.error('Error processing document in batch', { error, documentId: doc.id });
+            return false;
+          })
+      )
+    ).then(results => {
+      const successCount = results.filter(Boolean).length;
+      logger.info('Batch document processing completed', { 
+        total: documentIds.length, 
+        successful: successCount,
+        failed: documentIds.length - successCount
+      });
+    });
+    
+    // Return immediately
+    return res.json({
+      success: true,
+      message: 'Document processing started',
+      data: {
+        processing: documentIds,
+        count: documentIds.length
+      }
+    });
+  } catch (error) {
+    logger.error('Error starting batch document processing', { error });
+    res.status(500).json({
+      success: false,
+      message: 'Server error starting batch document processing'
     });
   }
 });

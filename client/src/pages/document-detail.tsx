@@ -1,12 +1,11 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { 
@@ -19,9 +18,12 @@ import {
   InfoIcon,
   FileCheckIcon,
   FileX2Icon,
-  LockIcon
+  LockIcon,
+  BrainCircuitIcon
 } from "lucide-react";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
+import { apiRequest } from "../lib/httpClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DocumentDetail() {
   // Get document id from URL params

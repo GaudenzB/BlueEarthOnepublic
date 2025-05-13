@@ -15,6 +15,97 @@ import { logger } from '../utils/logger';
  */
 export const documentRepository = {
   /**
+   * Update a document's processing status
+   * 
+   * @param id - Document ID
+   * @param tenantId - Tenant ID
+   * @param status - New processing status
+   * @returns The updated document
+   */
+  async updateProcessingStatus(id: string, tenantId: string, status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'ERROR'): Promise<Document | undefined> {
+    try {
+      const [result] = await db.update(documents)
+        .set({ 
+          processingStatus: status,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(documents.id, id),
+            eq(documents.tenantId, tenantId)
+          )
+        )
+        .returning();
+      return result;
+    } catch (error) {
+      logger.error('Error updating document processing status', { error, id, tenantId, status });
+      throw new Error(`Failed to update document processing status: ${error.message}`);
+    }
+  },
+
+  /**
+   * Update a document after processing is complete
+   * 
+   * @param id - Document ID
+   * @param tenantId - Tenant ID
+   * @param updates - Fields to update
+   * @returns The updated document
+   */
+  async updateAfterProcessing(id: string, tenantId: string, updates: {
+    processingStatus: 'COMPLETED' | 'ERROR';
+    aiProcessed: boolean;
+    aiMetadata: any;
+  }): Promise<Document | undefined> {
+    try {
+      const [result] = await db.update(documents)
+        .set({ 
+          processingStatus: updates.processingStatus,
+          aiProcessed: updates.aiProcessed,
+          aiMetadata: updates.aiMetadata,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(documents.id, id),
+            eq(documents.tenantId, tenantId)
+          )
+        )
+        .returning();
+      return result;
+    } catch (error) {
+      logger.error('Error updating document after processing', { error, id, tenantId });
+      throw new Error(`Failed to update document after processing: ${error.message}`);
+    }
+  },
+
+  /**
+   * Get documents with PENDING processing status
+   * 
+   * @param tenantId - Tenant ID
+   * @param limit - Maximum number of documents to return
+   * @returns Array of pending documents
+   */
+  async getPendingDocuments(tenantId: string, limit: number = 5): Promise<Document[]> {
+    try {
+      const results = await db.select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.tenantId, tenantId),
+            eq(documents.processingStatus, 'PENDING'),
+            eq(documents.deleted, false)
+          )
+        )
+        .limit(limit)
+        .orderBy(documents.createdAt);
+      
+      return results;
+    } catch (error) {
+      logger.error('Error getting pending documents', { error, tenantId });
+      throw new Error(`Failed to get pending documents: ${error.message}`);
+    }
+  },
+  /**
    * Create a new document record
    * 
    * @param document - Document data to insert
