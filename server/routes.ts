@@ -38,6 +38,7 @@ import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rate
 import contractsRoutes from "./routes/contracts";
 import healthRoutes from "./routes/health";
 import monitoringRoutes from "./routes/monitoring";
+import testPdfRoutes from "./routes/test-pdf"; // Added for debugging PDF processing
 import { authController } from "./controllers/authController";
 
 export async function registerRoutes(app: Express): Promise<Server> {

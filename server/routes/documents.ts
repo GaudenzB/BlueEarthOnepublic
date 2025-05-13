@@ -321,15 +321,49 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
           logger.debug('Document record created in database', { documentId: document.id });
 
           // Step 3: Queue the document for AI processing if both operations succeeded
-          logger.info('Starting document processing in the background', { documentId: document.id });
+          logger.info('Starting document processing in the background', { 
+            documentId: document.id,
+            tenantId,
+            fileInfo: {
+              size: req.file.size,
+              mimetype: req.file.mimetype,
+              originalname: req.file.originalname
+            }
+          });
           
-          // Start processing in the background
+          // Start processing in the background with proper error handling
           documentProcessor.processDocument(document.id, tenantId)
             .then(success => {
               logger.info('Document processing completed', { documentId: document.id, success });
             })
             .catch(error => {
-              logger.error('Document processing failed', { documentId: document.id, error });
+              logger.error('Document processing failed with uncaught exception', { 
+                documentId: document.id, 
+                error: error?.message || 'Unknown error',
+                stack: error?.stack,
+                type: typeof error,
+                name: error?.name
+              });
+              
+              // Try to update the document status to ERROR in case of uncaught exception
+              try {
+                documentRepository.updateProcessingStatusWithError(
+                  document.id, 
+                  tenantId, 
+                  'ERROR', 
+                  `Processing failed with error: ${error?.message || 'Unknown error'}`
+                ).catch(updateError => {
+                  logger.error('Failed to update document status after processing error', {
+                    documentId: document.id,
+                    error: updateError?.message
+                  });
+                });
+              } catch (updateError) {
+                logger.error('Failed to execute error status update', {
+                  documentId: document.id,
+                  error: updateError?.message
+                });
+              }
             });
           
           // Generate a preview token for the document
