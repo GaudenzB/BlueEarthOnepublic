@@ -2,6 +2,33 @@
 
 A company portal optimized for employee management and interaction, featuring granular permission-based access control and adaptive user interfaces.
 
+## Repository Maintenance
+
+This repository includes several tools and best practices to keep its size manageable:
+
+### Maintenance Scripts
+
+The following scripts are available to maintain repository health:
+
+- **`scripts/clean-uploads.js`**: Removes duplicate files and empty directories in the uploads folder
+- **`scripts/clean-screenshots.js`**: Backs up and removes large screenshot files
+- **`scripts/optimize-images.js`**: Creates optimized copies of large images
+- **`scripts/cleanup.js`**: General repository cleanup
+
+Run them as needed using `node scripts/script-name.js`.
+
+### Best Practices
+
+To keep the repository size under control:
+
+1. **Don't commit large files**: Avoid committing PDFs, large images, or videos
+2. **Use proper upload handling**: Store uploaded files outside the git repository
+3. **Optimize images**: Compress images before committing them
+4. **Clean up temporary files**: Don't commit temporary or generated files
+5. **Use `.gitignore`**: Make sure all generated content is properly ignored
+
+For more details, see the [Repository Optimization Guide](REPO-OPTIMIZATION.md).
+
 ## Project Structure
 
 This project is organized as a monorepo with the following structure:

@@ -2,6 +2,29 @@
 
 This guide explains how to keep this repository optimized and maintain a reasonable size.
 
+## Production Best Practices
+
+When deploying this application to production, follow these guidelines for better repository management:
+
+### Upload Management
+
+For document and file uploads in production:
+
+1. **Use an Object Storage Service**:
+   - AWS S3 or similar service for storing uploaded files
+   - Update the file upload middlewares to use S3 client
+   - This completely removes large files from the repository
+
+2. **Configure Environment-Specific Storage**:
+   - Development: Local file storage for easier debugging
+   - Production: Object storage service (S3, etc.)
+   - Testing: In-memory or temporary file systems
+
+3. **Database Asset References**:
+   - Store only file metadata and URLs in the database
+   - Use presigned URLs for secure access to private files
+   - Implement proper cleanup for orphaned files
+
 ## Current Optimization Scripts
 
 The following scripts are available in the `scripts/` directory to help maintain the repository size:
