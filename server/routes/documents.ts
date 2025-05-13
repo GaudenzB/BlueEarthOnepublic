@@ -569,22 +569,58 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
     const documentId = req.params.id;
     const tenantId = (req as any).tenantId;
     
-    const document = await documentRepository.getById(documentId, tenantId);
-    if (!document) {
-      return res.status(404).json({
+    logger.debug('Getting document by ID', { 
+      documentId, 
+      tenantId, 
+      path: req.path,
+      originalUrl: req.originalUrl
+    });
+    
+    // Validate UUID format to prevent database errors
+    if (!documentId || !documentId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      logger.warn('Invalid document ID format', { documentId });
+      return res.status(400).json({
         success: false,
-        message: 'Document not found'
+        message: 'Invalid document ID format'
       });
     }
     
-    res.json({
-      success: true,
-      message: 'Document retrieved successfully',
-      data: document
-    });
+    try {
+      const document = await documentRepository.getById(documentId, tenantId);
+      
+      if (!document) {
+        logger.warn('Document not found', { documentId, tenantId });
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found'
+        });
+      }
+      
+      logger.debug('Document found successfully', { 
+        documentId,
+        title: document.title,
+        status: document.processingStatus
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Document retrieved successfully',
+        data: document
+      });
+    } catch (repoError) {
+      logger.error('Repository error getting document by ID', { 
+        error: repoError, 
+        documentId, 
+        tenantId 
+      });
+      throw repoError; // Re-throw to be caught by outer catch
+    }
   } catch (error) {
-    logger.error('Error getting document by ID', { error, id: req.params.id });
-    res.status(500).json({
+    logger.error('Error getting document by ID', { 
+      error: error instanceof Error ? error.message : 'Unknown error', 
+      id: req.params.id 
+    });
+    return res.status(500).json({
       success: false,
       message: 'Server error retrieving document'
     });

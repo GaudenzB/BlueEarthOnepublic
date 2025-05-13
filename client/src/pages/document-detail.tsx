@@ -66,14 +66,30 @@ export default function DocumentDetail() {
   React.useEffect(() => {
     if (!documentResponse) return;
     
+    // Extract the document from the response
     let doc = null;
-    if ('success' in documentResponse && documentResponse.success && documentResponse.data) {
-      doc = documentResponse.data;
-    } else if ('id' in documentResponse) {
-      doc = documentResponse;
+    
+    // Check if documentResponse is an object
+    if (documentResponse && typeof documentResponse === 'object') {
+      // Check if it's a response with success flag and data property
+      if ('success' in documentResponse && 
+          documentResponse.success === true && 
+          'data' in documentResponse && 
+          documentResponse.data) {
+        doc = documentResponse.data;
+        console.log("Document extracted from success response:", doc);
+      } 
+      // Check if it's a direct document object with ID
+      else if ('id' in documentResponse) {
+        doc = documentResponse;
+        console.log("Document is direct object:", doc);
+      }
     }
     
-    if (!doc) return;
+    if (!doc) {
+      console.log("No valid document found in response:", documentResponse);
+      return;
+    }
     
     // Check if status changed from a processing state to COMPLETED
     if (prevStatus && 
