@@ -16,12 +16,13 @@ const { Title } = Typography;
 
 interface DocumentHeaderProps {
   document: Document;
-  onEdit: () => void;
-  onDelete: () => void;
-  onShare: () => void;
-  onDownload: () => void;
-  onPrint: () => void;
-  onFavorite: () => void;
+  statusBadge?: React.ReactNode;
+  onDeleteClick: () => void;
+  onShareClick: () => void;
+  onEdit?: () => void;
+  onDownload?: () => void;
+  onPrint?: () => void;
+  onFavorite?: () => void;
   isConfidential?: boolean;
 }
 
@@ -30,9 +31,10 @@ interface DocumentHeaderProps {
  */
 export function DocumentHeader({
   document,
+  statusBadge,
+  onDeleteClick,
+  onShareClick,
   onEdit,
-  onDelete,
-  onShare,
   onDownload,
   onPrint,
   onFavorite,
@@ -61,6 +63,11 @@ export function DocumentHeader({
           <Title level={3} style={{ margin: 0 }}>
             {document.title}
           </Title>
+          {statusBadge && (
+            <div style={{ marginLeft: 12 }}>
+              {statusBadge}
+            </div>
+          )}
           {isConfidential && (
             <Tooltip title="Confidential Document">
               <LockOutlined style={{ color: '#ff4d4f', fontSize: '18px' }} />
@@ -100,7 +107,7 @@ export function DocumentHeader({
           <Tooltip title="Share document">
             <Button 
               icon={<ShareAltOutlined />} 
-              onClick={onShare}
+              onClick={onShareClick}
             >
               Share
             </Button>
@@ -119,7 +126,7 @@ export function DocumentHeader({
             <Button 
               icon={<DeleteOutlined />} 
               danger
-              onClick={onDelete}
+              onClick={onDeleteClick}
             >
               Delete
             </Button>
