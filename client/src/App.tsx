@@ -18,7 +18,7 @@ import Documents from "@/pages/documents";
 import DocumentDetail from "@/pages/document-detail";
 import Contracts from "@/pages/contracts";
 import ChakraTest from "@/pages/chakra-test";
-import DocumentsExample from "@/pages/documents-example";
+import DesignTesting from "@/pages/design-testing";
 import PdfTest from "@/pages/pdf-test";
 import TestRoute from "@/pages/test-route";
 import MainLayout from "@/components/layouts/MainLayout";
@@ -88,7 +88,7 @@ function Router() {
       <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
       <Route path={ROUTES.CONTRACTS.LIST} component={(props) => <ProtectedRoute component={Contracts} {...props} />} />
       <Route path={ROUTES.CHAKRA_TEST} component={(props) => <ProtectedRoute component={ChakraTest} {...props} />} />
-      <Route path={ROUTES.DOCUMENTS_EXAMPLE} component={(props) => <ProtectedRoute component={DocumentsExample} {...props} />} />
+      <Route path={ROUTES.DESIGN_TESTING} component={(props) => <ProtectedRoute component={DesignTesting} {...props} />} />
       <Route path={ROUTES.PDF_TEST} component={(props) => <ProtectedRoute component={PdfTest} {...props} />} />
       <Route path={ROUTES.TEST_ROUTE} component={(props) => <ProtectedRoute component={TestRoute} {...props} />} />
       

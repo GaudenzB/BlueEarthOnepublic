@@ -196,7 +196,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   }, [documents, filter]);
 
   // Table columns configuration for Ant Design Table
-  const columns = [
+  const columns: any = [
     {
       title: 'Name',
       dataIndex: 'title',

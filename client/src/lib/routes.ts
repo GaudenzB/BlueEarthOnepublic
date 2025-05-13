@@ -31,7 +31,7 @@ export const ROUTES = {
   CALENDAR: '/calendar',
   MESSAGES: '/messages',
   CHAKRA_TEST: '/chakra-test',
-  DOCUMENTS_EXAMPLE: '/documents-example',
+  DESIGN_TESTING: '/design-testing',
   PDF_TEST: '/pdf-test',
   TEST_ROUTE: '/test-route',
 };
@@ -82,9 +82,9 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       icon: "Palette",
     },
     {
-      title: "Documents Example",
-      href: ROUTES.DOCUMENTS_EXAMPLE,
-      icon: "FileText",
+      title: "Design Testing",
+      href: ROUTES.DESIGN_TESTING,
+      icon: "Palette",
     },
     {
       title: "PDF Test Tool",
