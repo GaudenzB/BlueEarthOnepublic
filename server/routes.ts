@@ -32,6 +32,7 @@ import { ApiError } from "./middleware/errorHandler";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
 import documentsRoutes from "./routes/documents";
+import documentPreviewRoutes from "./routes/documentPreview";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
 import contractsRoutes from "./routes/contracts";
 import healthRoutes from "./routes/health";
@@ -57,8 +58,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register permission routes
   registerPermissionRoutes(app);
 
-  // Register document and contract routes
+  // Register document, document preview, and contract routes
   app.use('/api/documents', documentsRoutes);
+  app.use('/api/documents', documentPreviewRoutes);
   app.use('/api/contracts', contractsRoutes);
   
   // Register health and monitoring routes
