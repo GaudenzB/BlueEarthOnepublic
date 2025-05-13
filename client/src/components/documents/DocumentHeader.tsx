@@ -1,5 +1,5 @@
-import React from 'react';
-import { Typography, Space, Button, Breadcrumb, Tooltip } from 'antd';
+import React, { useState } from 'react';
+import { Typography, Space, Button, Breadcrumb, Tooltip, Dropdown, Badge, Tag } from 'antd';
 import { 
   DownloadOutlined, 
   ShareAltOutlined, 
@@ -7,7 +7,12 @@ import {
   EditOutlined,
   PrinterOutlined,
   StarOutlined,
-  LockOutlined
+  StarFilled,
+  LockOutlined,
+  MoreOutlined,
+  EyeOutlined,
+  HistoryOutlined,
+  FileProtectOutlined
 } from '@ant-design/icons';
 import { Link } from 'wouter';
 import { Document } from '@/types/document';
@@ -23,7 +28,18 @@ interface DocumentHeaderProps {
   onDownload?: () => void;
   onPrint?: () => void;
   onFavorite?: () => void;
+  onViewHistory?: () => void;
+  onViewPermissions?: () => void;
+  onPreviewToggle?: () => void;
   isConfidential?: boolean;
+  isFavorited?: boolean;
+  isPreviewMode?: boolean;
+  versionCount?: number;
+  loading?: {
+    favorite?: boolean;
+    delete?: boolean;
+    download?: boolean;
+  };
 }
 
 /**
@@ -38,8 +54,45 @@ export function DocumentHeader({
   onDownload,
   onPrint,
   onFavorite,
-  isConfidential = false
+  onViewHistory,
+  onViewPermissions,
+  onPreviewToggle,
+  isConfidential = false,
+  isFavorited = false,
+  isPreviewMode = false,
+  versionCount = 1,
+  loading = {}
 }: DocumentHeaderProps) {
+  const [showAllActions, setShowAllActions] = useState(false);
+  
+  // Generate dropdown menu items
+  const moreMenuItems = [
+    ...(onPrint ? [{
+      key: 'print',
+      label: 'Print Document',
+      icon: <PrinterOutlined />,
+      onClick: onPrint
+    }] : []),
+    ...(onViewHistory ? [{
+      key: 'history',
+      label: `Version History${versionCount > 1 ? ` (${versionCount})` : ''}`,
+      icon: <HistoryOutlined />,
+      onClick: onViewHistory
+    }] : []),
+    ...(onViewPermissions ? [{
+      key: 'permissions',
+      label: 'View Permissions',
+      icon: <FileProtectOutlined />,
+      onClick: onViewPermissions
+    }] : []),
+    ...(onPreviewToggle ? [{
+      key: 'preview',
+      label: isPreviewMode ? 'Exit Preview Mode' : 'Enter Preview Mode',
+      icon: <EyeOutlined />,
+      onClick: onPreviewToggle
+    }] : [])
+  ];
+  
   return (
     <div style={{ marginBottom: 24 }}>
       {/* Breadcrumb navigation */}
@@ -50,6 +103,24 @@ export function DocumentHeader({
         ]}
         style={{ marginBottom: 16 }}
       />
+      
+      {/* Document metadata badges */}
+      <div style={{ marginBottom: 12 }}>
+        <Space size={[0, 8]} wrap>
+          {document.category && (
+            <Tag color="blue">{document.category}</Tag>
+          )}
+          {document.fileType && (
+            <Tag color="default">{document.fileType}</Tag>
+          )}
+          {document.visibility && (
+            <Tag color="cyan">{document.visibility}</Tag>
+          )}
+          {document.tags?.map((tag, index) => (
+            <Tag key={index} color="green">{tag}</Tag>
+          ))}
+        </Space>
+      </div>
       
       {/* Title and actions row */}
       <div style={{ 
@@ -70,67 +141,97 @@ export function DocumentHeader({
           )}
           {isConfidential && (
             <Tooltip title="Confidential Document">
-              <LockOutlined style={{ color: '#ff4d4f', fontSize: '18px' }} />
+              <Badge count={<LockOutlined style={{ color: '#ff4d4f' }} />} />
+            </Tooltip>
+          )}
+          {versionCount > 1 && (
+            <Tooltip title={`${versionCount} versions available`}>
+              <Tag color="purple" onClick={onViewHistory} style={{ cursor: onViewHistory ? 'pointer' : 'default' }}>
+                v{document.versions?.[0]?.versionNumber || versionCount}
+              </Tag>
             </Tooltip>
           )}
         </div>
         
         {/* Action buttons */}
         <Space wrap>
-          <Tooltip title="Edit document">
-            <Button 
-              icon={<EditOutlined />} 
-              onClick={onEdit}
-            >
-              Edit
-            </Button>
-          </Tooltip>
+          {/* Primary actions */}
+          {onFavorite && (
+            <Tooltip title={isFavorited ? "Remove from favorites" : "Add to favorites"}>
+              <Button 
+                icon={isFavorited ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+                onClick={onFavorite}
+                loading={loading.favorite}
+                type={isFavorited ? 'text' : 'default'}
+              >
+                {showAllActions && (isFavorited ? 'Favorited' : 'Favorite')}
+              </Button>
+            </Tooltip>
+          )}
           
-          <Tooltip title="Download document">
-            <Button 
-              icon={<DownloadOutlined />} 
-              onClick={onDownload}
-            >
-              Download
-            </Button>
-          </Tooltip>
+          {onEdit && (
+            <Tooltip title="Edit document">
+              <Button 
+                icon={<EditOutlined />} 
+                onClick={onEdit}
+                type="primary"
+                ghost
+              >
+                {showAllActions && 'Edit'}
+              </Button>
+            </Tooltip>
+          )}
           
-          <Tooltip title="Print document">
-            <Button 
-              icon={<PrinterOutlined />} 
-              onClick={onPrint}
-            >
-              Print
-            </Button>
-          </Tooltip>
+          {onDownload && (
+            <Tooltip title="Download document">
+              <Button 
+                icon={<DownloadOutlined />} 
+                onClick={onDownload}
+                loading={loading.download}
+              >
+                {showAllActions ? 'Download' : ''}
+              </Button>
+            </Tooltip>
+          )}
           
-          <Tooltip title="Share document">
-            <Button 
-              icon={<ShareAltOutlined />} 
-              onClick={onShareClick}
-            >
-              Share
-            </Button>
-          </Tooltip>
+          {onShareClick && (
+            <Tooltip title="Share document">
+              <Button 
+                icon={<ShareAltOutlined />} 
+                onClick={onShareClick}
+                type="primary"
+              >
+                Share
+              </Button>
+            </Tooltip>
+          )}
           
-          <Tooltip title="Add to favorites">
-            <Button 
-              icon={<StarOutlined />} 
-              onClick={onFavorite}
+          {/* More actions dropdown if there are additional actions */}
+          {moreMenuItems.length > 0 && (
+            <Dropdown 
+              menu={{ items: moreMenuItems }} 
+              trigger={['click']}
+              placement="bottomRight"
             >
-              Favorite
-            </Button>
-          </Tooltip>
+              <Button icon={<MoreOutlined />}>
+                More
+              </Button>
+            </Dropdown>
+          )}
           
-          <Tooltip title="Delete document">
-            <Button 
-              icon={<DeleteOutlined />} 
-              danger
-              onClick={onDeleteClick}
-            >
-              Delete
-            </Button>
-          </Tooltip>
+          {/* Delete action */}
+          {onDeleteClick && (
+            <Tooltip title="Delete document">
+              <Button 
+                icon={<DeleteOutlined />} 
+                danger
+                onClick={onDeleteClick}
+                loading={loading.delete}
+              >
+                Delete
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       </div>
     </div>
