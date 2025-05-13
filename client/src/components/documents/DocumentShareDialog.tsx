@@ -12,19 +12,34 @@ interface DocumentShareDialogProps {
 /**
  * Share dialog for documents
  */
-export function DocumentShareDialog({ document, open, onClose }: DocumentShareDialogProps) {
+export function DocumentShareDialog({ open, onClose, document: doc }: DocumentShareDialogProps) {
+  // Email sharing action handler
+  const handleEmailShare = () => {
+    // In a real implementation, this would open an email sharing dialog
+    const subject = `Shared document: ${doc.title}`;
+    const body = `I'd like to share this document with you: ${doc.title}`;
+    console.log('Email share initiated', { subject, body });
+  };
+  
+  // Copy link action handler
+  const handleCopyLink = () => {
+    // In a real implementation, this would copy a document link to clipboard
+    const shareLink = `https://app.example.com/documents/${doc.id}`;
+    console.log('Link copied', shareLink);
+  };
+  
   const shareOptions = [
     {
       title: 'Share via Email',
       description: 'Send a secure link to specific people',
       icon: <MailOutlined />,
-      action: <Button type="text" size="small">Share <RightOutlined /></Button>
+      action: <Button type="text" size="small" onClick={handleEmailShare}>Share <RightOutlined /></Button>
     },
     {
       title: 'Get Share Link',
       description: 'Copy a link you can share anywhere',
       icon: <LinkOutlined />,
-      action: <Button type="text" size="small">Copy <CopyOutlined /></Button>
+      action: <Button type="text" size="small" onClick={handleCopyLink}>Copy <CopyOutlined /></Button>
     }
   ];
 

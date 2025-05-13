@@ -161,7 +161,7 @@ export function DocumentHeader({
               <Button 
                 icon={isFavorited ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
                 onClick={onFavorite}
-                loading={loading.favorite}
+                loading={loading?.favorite ? true : false}
                 type={isFavorited ? 'text' : 'default'}
               >
                 {showAllActions && (isFavorited ? 'Favorited' : 'Favorite')}
@@ -187,7 +187,7 @@ export function DocumentHeader({
               <Button 
                 icon={<DownloadOutlined />} 
                 onClick={onDownload}
-                loading={loading.download}
+                loading={loading?.download ? true : false}
               >
                 {showAllActions ? 'Download' : ''}
               </Button>
