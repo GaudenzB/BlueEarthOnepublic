@@ -226,74 +226,77 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
 
   return (
     <div>
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40%]">Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDocuments.map((document) => (
-              <TableRow key={document.id}>
-                <TableCell className="font-medium">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredDocuments.map((document) => (
+          <Card key={document.id} className="overflow-hidden hover:shadow-md transition-shadow">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center gap-2">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                {getDocumentTypeIcon(document.documentType, "h-5 w-5 text-primary")}
+              </div>
+              <div className="space-y-1 overflow-hidden">
+                <CardTitle className="text-base font-medium truncate">
+                  {document.title || document.originalFilename}
+                </CardTitle>
+                <CardDescription className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {document.documentType || "Other"}
+                  </Badge>
+                  <span className="text-xs">•</span>
+                  <span className="text-xs">{format(new Date(document.createdAt), "MMM d, yyyy")}</span>
+                </CardDescription>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="ml-auto">
+                    <MoreHorizontalIcon className="h-4 w-4" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/documents/${document.id}`}>
+                      <FileTextIcon className="h-4 w-4 mr-2" />
+                      <span>View details</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <PermissionGuard area="documents" permission="view">
+                    <DropdownMenuItem asChild>
+                      <a href={`/api/documents/${document.id}/download`}>
+                        <FileIcon className="h-4 w-4 mr-2" />
+                        Download
+                      </a>
+                    </DropdownMenuItem>
+                  </PermissionGuard>
+                  <PermissionGuard area="documents" permission="delete">
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => handleDeleteClick(document.id, document.title || document.originalFilename)}
+                    >
+                      <Trash2Icon className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </PermissionGuard>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="h-[2px] w-full bg-muted mb-3 mt-1"></div>
+              <div className="flex items-center justify-between">
+                {getProcessingStatusBadge(document.processingStatus)}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  asChild 
+                  className="text-xs"
+                >
                   <Link href={`/documents/${document.id}`}>
-                    <div className="flex items-center gap-2 text-primary hover:underline cursor-pointer">
-                      {getDocumentTypeIcon(document.documentType)}
-                      <span>{document.title || document.originalFilename}</span>
-                    </div>
+                    View details →
                   </Link>
-                </TableCell>
-                <TableCell>
-                  {document.documentType || "Other"}
-                </TableCell>
-                <TableCell>
-                  {getProcessingStatusBadge(document.processingStatus)}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {format(new Date(document.createdAt), "MMM d, yyyy")}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontalIcon className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Link href={`/documents/${document.id}`}>
-                          <span>View details</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <PermissionGuard area="documents" permission="view">
-                        <DropdownMenuItem asChild>
-                          <a href={`/api/documents/${document.id}/download`}>
-                            Download
-                          </a>
-                        </DropdownMenuItem>
-                      </PermissionGuard>
-                      <PermissionGuard area="documents" permission="delete">
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => handleDeleteClick(document.id, document.title || document.originalFilename)}
-                        >
-                          <Trash2Icon className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </PermissionGuard>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
