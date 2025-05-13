@@ -6,8 +6,8 @@
 
 import fetch from 'node-fetch';
 
-// Use Replit's hostname and port for our API requests
-const API_BASE_URL = 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co';
+// Use local server for our API requests since we're running within the Replit environment
+const API_BASE_URL = 'http://localhost:3000';
 
 async function testDocumentPreview() {
   try {
@@ -74,7 +74,7 @@ async function testDocumentPreview() {
     
     // Step 4: Test document preview access with the token
     console.log('\n📝 Step 4: Testing document preview access with preview token');
-    const previewUrl = `http://localhost:3000/api/documents/${testDocument.id}/preview?token=${encodeURIComponent(previewToken)}`;
+    const previewUrl = `${API_BASE_URL}/api/documents/${testDocument.id}/preview?token=${encodeURIComponent(previewToken)}`;
     console.log(`   Preview URL: ${previewUrl.substring(0, 60)}...`);
     
     const previewResponse = await fetch(previewUrl);
@@ -98,7 +98,7 @@ async function testDocumentPreview() {
     
     // Step 5: Test preview without token (should fail)
     console.log('\n📝 Step 5: Testing preview access WITHOUT token (should fail)');
-    const noTokenPreviewUrl = `http://localhost:3000/api/documents/${testDocument.id}/preview`;
+    const noTokenPreviewUrl = `${API_BASE_URL}/api/documents/${testDocument.id}/preview`;
     const noTokenResponse = await fetch(noTokenPreviewUrl);
     const noTokenContent = await noTokenResponse.text();
     
