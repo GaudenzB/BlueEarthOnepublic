@@ -519,7 +519,14 @@ export default function DocumentDetail() {
                 <CardTitle>Analysis</CardTitle>
               </CardHeader>
               <CardContent>
-                {document.aiProcessed ? (
+                {/* Debug AI processing state */}
+                {console.log("AI Processing Status", {
+                  aiProcessed: document.aiProcessed,
+                  processingStatus: document.processingStatus,
+                  aiMetadata: document.aiMetadata
+                })}
+                
+                {document.processingStatus === 'COMPLETED' && document.aiProcessed ? (
                   <Tabs defaultValue="summary">
                     <TabsList className="mb-4">
                       <TabsTrigger value="summary">Summary</TabsTrigger>
