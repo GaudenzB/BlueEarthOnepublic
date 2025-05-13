@@ -32,7 +32,7 @@ class DocumentProcessorService {
       }
       
       // Step 3: Load file content
-      const storageRoot = process.env.STORAGE_LOCAL_PATH || './uploads';
+      const storageRoot = process.env['STORAGE_LOCAL_PATH'] || './uploads';
       const filePath = path.join(storageRoot, document.storageKey);
       
       let fileContent: Buffer;

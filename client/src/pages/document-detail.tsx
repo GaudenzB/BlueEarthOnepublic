@@ -22,7 +22,7 @@ import {
   BrainCircuitIcon
 } from "lucide-react";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
-import { apiRequest } from "../lib/httpClient";
+
 import { useToast } from "@/hooks/use-toast";
 
 export default function DocumentDetail() {
