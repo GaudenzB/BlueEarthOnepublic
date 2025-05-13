@@ -831,13 +831,66 @@ export default function DocumentDetail() {
                 </CardHeader>
                 <CardBody p={0} position="relative">
                   {document.mimeType?.includes('pdf') ? (
-                    <Box as="iframe" 
-                      src={`/api/documents/${document.id}/preview?token=${document.previewToken}`} 
-                      width="100%" 
-                      height="100%" 
-                      border="none"
-                      borderBottomRadius="md"
-                    />
+                    <Box position="relative" height="100%" width="100%">
+                      <iframe 
+                        src={`/api/documents/${document.id}/download`}
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: 'none', borderBottomLeftRadius: '0.375rem', borderBottomRightRadius: '0.375rem' }}
+                        onLoad={(e) => {
+                          // Try to detect failed load or error messages
+                          try {
+                            const iframe = e.target as HTMLIFrameElement;
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                            
+                            if (iframeDoc) {
+                              const content = iframeDoc.body.textContent || '';
+                              if (content.includes('Invalid token') || content.includes('Error') || content.includes('failed')) {
+                                // Show the fallback message
+                                const fallback = document.getElementById('preview-fallback');
+                                if (fallback) fallback.style.display = 'flex';
+                              }
+                            }
+                          } catch (err) {
+                            console.log("Error checking iframe content:", err);
+                          }
+                        }}
+                        onError={() => {
+                          // Show the fallback message
+                          const fallback = document.getElementById('preview-fallback');
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <Flex 
+                        position="absolute" 
+                        top={0} 
+                        left={0} 
+                        width="100%" 
+                        height="100%" 
+                        bg="blackAlpha.50"
+                        justifyContent="center"
+                        alignItems="center"
+                        display="none"
+                        id="preview-fallback"
+                        flexDirection="column"
+                        p={8}
+                      >
+                        <Icon as={WarningIcon} boxSize={12} color="orange.500" mb={4} />
+                        <Heading size="md" mb={2}>Preview temporarily unavailable</Heading>
+                        <Text textAlign="center" color="gray.600" mb={4}>
+                          The document preview is currently experiencing technical difficulties.
+                        </Text>
+                        <Button 
+                          as="a"
+                          href={`/api/documents/${document.id}/download`}
+                          leftIcon={<DownloadIcon />}
+                          colorScheme="blue"
+                          target="_blank"
+                        >
+                          Download document
+                        </Button>
+                      </Flex>
+                    </Box>
                   ) : (
                     <Flex direction="column" alignItems="center" justifyContent="center" height="100%" p={8}>
                       <Icon as={AttachmentIcon} boxSize={12} color="gray.400" mb={4} />
@@ -850,6 +903,7 @@ export default function DocumentDetail() {
                         href={`/api/documents/${document.id}/download`}
                         leftIcon={<DownloadIcon />}
                         colorScheme="blue"
+                        target="_blank"
                       >
                         Download instead
                       </Button>
