@@ -29,13 +29,18 @@ export default function DocumentDetail() {
   const id = params?.id;
 
   // Fetch document data
-  const { data: documentData, isLoading, error } = useQuery<any>({
+  const { data: documentResponse, isLoading, error } = useQuery<any>({
     queryKey: [`/api/documents/${id}`],
     retry: false,
     enabled: !!id,
   });
 
-  const document = documentData?.data;
+  // Handle nested response structure properly
+  const document = documentResponse?.success ? documentResponse.data : null;
+  
+  // Debug logging
+  console.log("Document detail response:", documentResponse);
+  console.log("Extracted document:", document);
 
   // Helper function to get status badge
   const getStatusBadge = (status: string) => {
@@ -118,7 +123,7 @@ export default function DocumentDetail() {
     );
   }
 
-  if (error || !document) {
+  if (error || !document || (documentResponse && !documentResponse.success)) {
     return (
       <div className="space-y-6">
         <Link href="/documents">
