@@ -72,16 +72,18 @@ export default function DocumentDetail() {
       // Extract document data regardless of response format
       const doc = data?.data || data;
       
-      // If document is in processing state, poll frequently
+      // More aggressive polling when document is processing
       if (doc?.processingStatus === 'PROCESSING' || doc?.processingStatus === 'PENDING' || 
           doc?.processingStatus === 'QUEUED') {
-        console.log("Document is processing, polling every 2 seconds");
-        return 2000; // Poll every 2 seconds while processing
+        console.log("Document is processing, polling every 1 second");
+        return 1000; // Poll every 1 second while processing
       }
-      return false; // Don't poll when completed
+      return 5000; // Continue polling every 5 seconds even when not processing to catch status changes
     },
-    // Force a refresh after 3 seconds to ensure we get latest status
-    staleTime: 3000
+    // Set shorter stale time to force refresh sooner
+    staleTime: 1000,
+    // Force refetch on window focus
+    refetchOnWindowFocus: true
   });
   
   // Watch for changes in document status
@@ -376,14 +378,24 @@ export default function DocumentDetail() {
                             "Document not yet processed with AI"
                           )}
                         </span>
-                        <Button 
-                          onClick={handleProcessDocument}
-                          disabled={document.processingStatus === "PROCESSING" || processDocumentMutation.isPending}
-                          size="sm"
-                        >
-                          <BrainCircuitIcon className="mr-2 h-4 w-4" />
-                          Process Document
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => refetch()}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <ArrowLeftIcon className="mr-2 h-4 w-4 rotate-90" />
+                            Refresh Status
+                          </Button>
+                          <Button 
+                            onClick={handleProcessDocument}
+                            disabled={document.processingStatus === "PROCESSING" || processDocumentMutation.isPending}
+                            size="sm"
+                          >
+                            <BrainCircuitIcon className="mr-2 h-4 w-4" />
+                            Process Document
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
