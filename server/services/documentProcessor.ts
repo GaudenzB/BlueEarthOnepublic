@@ -50,7 +50,11 @@ class DocumentProcessorService {
       }
       
       // Step 4: Extract text from document
-      const textContent = await extractTextFromDocument(fileContent, document.mimeType);
+      const textContent = await extractTextFromDocument(
+        fileContent, 
+        document.mimeType, 
+        document.originalFilename
+      );
       if (!textContent) {
         logger.error('Failed to extract text from document', { documentId });
         await documentRepository.updateProcessingStatus(documentId, tenantId, 'ERROR');
