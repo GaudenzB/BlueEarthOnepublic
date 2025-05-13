@@ -1,0 +1,128 @@
+ That “Invalid token in query parameter: require is not defined” is telling us two things:
+
+Your preview route is running in an ESM or browser‐side context where require(...) isn’t available, and
+
+You’re catching that runtime error and then sending it back as though it were a bad JWT.
+
+Below is a step-by-step diagnosis and a reference implementation you can adapt.
+
+1. Switch from require to import
+If your preview handler is using CommonJS-style const jwt = require('jsonwebtoken'), but your project is running as an ES module (e.g. you have "type": "module" in package.json or you’re on Vercel/Next.js API routes), then require will be undefined at runtime. To fix:
+
+ts
+Copy
+Edit
+// BEFORE (this will throw “require is not defined” under ESM):
+const jwt = require('jsonwebtoken');
+
+// AFTER — use ES import at the top of your file:
+import jwt from 'jsonwebtoken';
+Make sure this change lives in the same file that defines your /api/documents/preview route.
+
+2. Generate and verify the token correctly
+On upload (or list) you should be signing a short-lived JWT that carries only what you need:
+
+ts
+Copy
+Edit
+// server/routes/documents.ts (or wherever you generate the preview token)
+import jwt from 'jsonwebtoken';
+
+function createPreviewToken(documentId: string) {
+  return jwt.sign(
+    { documentId },
+    process.env.PREVIEW_TOKEN_SECRET!,
+    { expiresIn: '15m' }
+  );
+}
+Return that token in your upload or list response:
+
+json
+Copy
+Edit
+{ success: true, data: { documentId, previewToken: "<the-jwt-here>" } }
+3. Implement a robust /preview handler
+Here’s a minimal, bullet-proof example you can drop into server/routes/documents.ts (or your Express router). Note the inline import, the clear try/catch, and the use of proper headers for an inline PDF.
+
+ts
+Copy
+Edit
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import { getFileStream } from '../storage';         // your S3/local helper
+import { documentRepository } from '../db';         // your Drizzle repo
+
+const router = express.Router();
+
+router.get('/preview', async (req, res) => {
+  const token = req.query.token as string;
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Missing preview token' });
+  }
+
+  let payload: { documentId: string };
+  try {
+    payload = jwt.verify(token, process.env.PREVIEW_TOKEN_SECRET!) as any;
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid token: ${err.message}`
+    });
+  }
+
+  // Fetch metadata
+  const doc = await documentRepository.findById(payload.documentId);
+  if (!doc) {
+    return res.status(404).json({ success: false, message: 'Document not found' });
+  }
+
+  // Stream it back inline
+  res.setHeader('Content-Type', doc.mimeType);
+  res.setHeader(
+    'Content-Disposition',
+    `inline; filename="${encodeURIComponent(doc.originalFilename)}"`
+  );
+
+  const fileStream = await getFileStream(doc.storageKey);
+  fileStream.pipe(res).on('error', () => {
+    res.status(500).end();
+  });
+});
+
+export default router;
+Key points:
+
+We import jsonwebtoken instead of using require.
+
+We URL-encode the filename in the Content-Disposition header to handle spaces/special chars.
+
+We catch only JWT errors in the token block, so you won’t confuse a missing require with a bad token.
+
+We stream the file content so the browser can render it inline (PDF.js or a native viewer will take over).
+
+4. Front-end: call the preview endpoint with a real token
+In your React component (e.g. DocumentList.tsx or a dedicated Preview page), you should already have pulled down a previewToken from your /api/documents or /api/documents/:id call. Use it like this:
+
+tsx
+Copy
+Edit
+function PreviewModal({ previewToken }: { previewToken: string }) {
+  const src = `/api/documents/preview?token=${encodeURIComponent(previewToken)}`;
+
+  return (
+    <Dialog>
+      <iframe
+        src={src}
+        title="Document Preview"
+        style={{ width: '100%', height: '80vh', border: 0 }}
+      />
+    </Dialog>
+  );
+}
+Troubleshoot by opening your browser devtools → Network tab → click “Preview” and verify:
+
+The request URL is exactly /api/documents/preview?token=<your-jwt>
+
+The response headers include Content-Type: application/pdf (or whatever)
+
+The response body is binary PDF data, not a JSON error
