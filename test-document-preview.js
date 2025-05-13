@@ -4,7 +4,10 @@
  * This script verifies the document preview token generation and access
  */
 
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
+
+// Use Replit's hostname and port for our API requests
+const API_BASE_URL = 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co';
 
 async function testDocumentPreview() {
   try {
@@ -12,7 +15,7 @@ async function testDocumentPreview() {
     
     // Step 1: Login to get auth token
     console.log('\n📝 Step 1: Logging in to get auth token');
-    const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+    const loginResponse = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -31,7 +34,7 @@ async function testDocumentPreview() {
     
     // Step 2: Get a document to test with
     console.log('\n📝 Step 2: Fetching documents to find one for testing');
-    const documentsResponse = await fetch('http://localhost:3000/api/documents', {
+    const documentsResponse = await fetch(`${API_BASE_URL}/api/documents`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
@@ -53,7 +56,7 @@ async function testDocumentPreview() {
     
     // Step 3: Get document details with preview token
     console.log('\n📝 Step 3: Fetching document details to get preview token');
-    const documentDetailResponse = await fetch(`http://localhost:3000/api/documents/${testDocument.id}`, {
+    const documentDetailResponse = await fetch(`${API_BASE_URL}/api/documents/${testDocument.id}`, {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
@@ -115,3 +118,6 @@ async function testDocumentPreview() {
 
 // Run the test
 testDocumentPreview();
+
+// Make this file a proper module
+export { testDocumentPreview };
