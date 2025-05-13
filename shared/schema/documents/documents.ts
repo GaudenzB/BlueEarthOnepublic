@@ -57,6 +57,7 @@ export const documents = pgTable('documents', {
   
   // Processing status
   processingStatus: processingStatusEnum('processing_status').default('PENDING'),
+  processingError: text('processing_error'),
   aiProcessed: boolean('ai_processed').default(false),
   aiMetadata: jsonb('ai_metadata'),
   
