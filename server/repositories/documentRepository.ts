@@ -143,45 +143,73 @@ export const documentRepository = {
         return undefined;
       }
       
-      logger.debug('Getting document by ID', { id, tenantId });
+      logger.info('Getting document by ID', { id, tenantId });
       
-      // Import the users table from the schema
-      const { users } = await import('@shared/schema');
-      
-      // Join with the users table to get uploader information
-      const results = await db.select({
-        ...documents,
-        uploadedByUser: {
-          id: users.id,
-          username: users.username,
-          name: sql<string>`CONCAT(${users.firstName}, ' ', ${users.lastName})`.as('name')
+      // Execute a simpler query first to avoid join issues
+      try {
+        // First get just the document record
+        const docResults = await db.select()
+          .from(documents)
+          .where(
+            and(
+              eq(documents.id, id),
+              eq(documents.tenantId, tenantId)
+            )
+          );
+
+        if (!docResults || docResults.length === 0) {
+          logger.warn('No document found with ID', { id, tenantId });
+          return undefined;
         }
-      })
-      .from(documents)
-      .leftJoin(users, eq(documents.uploadedBy, sql`${users.id}::text`))
-      .where(
-        and(
-          eq(documents.id, id),
-          eq(documents.tenantId, tenantId)
-        )
-      );
-      
-      if (!results || results.length === 0) {
-        logger.debug('No document found with ID', { id, tenantId });
-        return undefined;
+
+        const docResult = docResults[0];
+        
+        // Now get the user info separately if uploadedBy exists
+        let userInfo = undefined;
+        if (docResult.uploadedBy) {
+          // Import the users table from the schema
+          const { users } = await import('@shared/schema');
+
+          const userResults = await db.select({
+            id: users.id,
+            username: users.username,
+            name: sql<string>`CONCAT(${users.firstName}, ' ', ${users.lastName})`.as('name')
+          })
+          .from(users)
+          .where(eq(users.id, parseInt(docResult.uploadedBy, 10)));
+
+          if (userResults && userResults.length > 0) {
+            userInfo = userResults[0];
+          }
+        }
+
+        // Combine the results
+        const result = {
+          ...docResult,
+          uploadedByUser: userInfo
+        };
+
+        logger.info('Document found successfully', { 
+          id: result.id,
+          title: result.title,
+          documentType: result.documentType,
+          hasUserInfo: !!userInfo
+        });
+        
+        return result;
+      } catch (innerError) {
+        logger.error('Error in document query', { 
+          error: innerError instanceof Error ? innerError.message : 'Unknown error',
+          stack: innerError instanceof Error ? innerError.stack : undefined,
+          id, 
+          tenantId 
+        });
+        throw innerError;
       }
-      
-      const result = results[0];
-      logger.debug('Document found', { 
-        id: result.id,
-        title: result.title,
-        documentType: result.documentType
-      });
-      
-      return result;
     } catch (error) {
       logger.error('Error getting document by ID', { 
         error: error instanceof Error ? error.message : 'Unknown error', 
+        stack: error instanceof Error ? error.stack : undefined,
         id, 
         tenantId 
       });
