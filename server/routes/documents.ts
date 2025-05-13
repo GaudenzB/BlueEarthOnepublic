@@ -7,6 +7,7 @@ import { uploadFile, generateStorageKey, downloadFile, deleteFile } from '../ser
 import { documentProcessor } from '../services/documentProcessor';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import { 
   documentTypeZod, 
   processingStatusZod,
