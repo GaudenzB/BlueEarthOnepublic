@@ -1,54 +1,38 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "wouter";
-import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Box,
-  Flex,
-  Text,
-  Badge,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Icon,
-  Tooltip,
-  Skeleton,
-  Stack,
-  Center,
-  useColorModeValue
-} from "@chakra-ui/react";
 import { 
-  InfoOutlineIcon, 
-  AttachmentIcon, 
-  DownloadIcon, 
-  DeleteIcon, 
-  EditIcon, 
-  ViewIcon, 
-  CheckIcon, 
-  WarningIcon, 
-  TimeIcon
-} from "@chakra-ui/icons";
-import { Button } from "@/components/ui/button";
+  Table, 
+  Typography, 
+  Tag, 
+  Button, 
+  Dropdown, 
+  Space, 
+  Tooltip, 
+  Skeleton, 
+  Empty, 
+  Modal, 
+  message 
+} from "antd";
+import { 
+  InfoCircleOutlined, 
+  FileOutlined, 
+  DownloadOutlined, 
+  DeleteOutlined, 
+  EditOutlined, 
+  EyeOutlined, 
+  CheckCircleOutlined, 
+  WarningOutlined, 
+  ClockCircleOutlined,
+  MoreOutlined,
+  UploadOutlined
+} from "@ant-design/icons";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { queryClient } from "@/lib/queryClient";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Button as ShadcnButton } from "@/components/ui/button";
+
+const { Text, Title } = Typography;
 
 interface DocumentListProps {
   documents: any[];
@@ -57,12 +41,10 @@ interface DocumentListProps {
 }
 
 export default function DocumentList({ documents, isLoading, filter = "all" }: DocumentListProps) {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<{id: string, title: string} | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const hoverBg = useColorModeValue("gray.50", "gray.700");
   
   // Debug logging to help diagnose document data issues
   console.log('DocumentList component:', {
@@ -77,7 +59,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       id: documentId,
       title: documentTitle || 'Untitled Document'
     });
-    setDeleteDialogOpen(true);
+    setDeleteModalVisible(true);
   };
 
   const handleConfirmDelete = async () => {
@@ -110,16 +92,20 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
         description: `"${documentToDelete.title}" has been successfully deleted`,
         variant: "default",
       });
+      
+      message.success(`"${documentToDelete.title}" has been successfully deleted`);
     } catch (error: any) {
       toast({
         title: "Error deleting document",
         description: error.message || "Failed to delete the document. Please try again.",
         variant: "destructive",
       });
+      
+      message.error(error.message || "Failed to delete the document. Please try again.");
       console.error('Error deleting document:', error);
     } finally {
       setIsDeleting(false);
-      setDeleteDialogOpen(false);
+      setDeleteModalVisible(false);
       setDocumentToDelete(null);
     }
   };
@@ -127,21 +113,21 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   const getDocumentTypeIcon = (type: string | null) => {
     switch (type) {
       case "CONTRACT":
-        return AttachmentIcon;
+        return <FileOutlined />;
       case "AGREEMENT":
-        return CheckIcon;
+        return <CheckCircleOutlined />;
       case "REPORT":
-        return InfoOutlineIcon;
+        return <InfoCircleOutlined />;
       case "POLICY":
-        return InfoOutlineIcon;
+        return <InfoCircleOutlined />;
       case "INVOICE":
-        return AttachmentIcon;
+        return <FileOutlined />;
       case "PRESENTATION":
-        return InfoOutlineIcon;
+        return <InfoCircleOutlined />;
       case "CORRESPONDENCE":
-        return InfoOutlineIcon;
+        return <InfoCircleOutlined />;
       default:
-        return AttachmentIcon;
+        return <FileOutlined />;
     }
   };
 
@@ -149,49 +135,44 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     switch (status) {
       case "COMPLETED":
         return (
-          <Tooltip label="Document processed successfully">
-            <Badge variant="subtle" colorScheme="green" display="flex" alignItems="center">
-              <Icon as={CheckIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Processed</Text>
-            </Badge>
+          <Tooltip title="Document processed successfully">
+            <Tag color="success" icon={<CheckCircleOutlined />}>
+              Processed
+            </Tag>
           </Tooltip>
         );
       case "PROCESSING":
         return (
-          <Tooltip label="Document is being processed">
-            <Badge variant="subtle" colorScheme="yellow" display="flex" alignItems="center">
-              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Processing</Text>
-            </Badge>
+          <Tooltip title="Document is being processed">
+            <Tag color="warning" icon={<ClockCircleOutlined />}>
+              Processing
+            </Tag>
           </Tooltip>
         );
       case "PENDING":
       case "QUEUED":
         return (
-          <Tooltip label="Document is waiting for processing">
-            <Badge variant="subtle" colorScheme="blue" display="flex" alignItems="center">
-              <Icon as={TimeIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Pending</Text>
-            </Badge>
+          <Tooltip title="Document is waiting for processing">
+            <Tag color="processing" icon={<ClockCircleOutlined />}>
+              Pending
+            </Tag>
           </Tooltip>
         );
       case "FAILED":
       case "ERROR":
         return (
-          <Tooltip label="Document processing failed">
-            <Badge variant="subtle" colorScheme="red" display="flex" alignItems="center">
-              <Icon as={WarningIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Failed</Text>
-            </Badge>
+          <Tooltip title="Document processing failed">
+            <Tag color="error" icon={<WarningOutlined />}>
+              Failed
+            </Tag>
           </Tooltip>
         );
       default:
         return (
-          <Tooltip label="Unknown document status">
-            <Badge variant="subtle" colorScheme="gray" display="flex" alignItems="center">
-              <Icon as={InfoOutlineIcon} mr={1} boxSize={3} /> 
-              <Text fontSize="xs">Unknown</Text>
-            </Badge>
+          <Tooltip title="Unknown document status">
+            <Tag icon={<InfoCircleOutlined />}>
+              Unknown
+            </Tag>
           </Tooltip>
         );
     }
@@ -214,171 +195,198 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     }
   }, [documents, filter]);
 
+  // Table columns configuration for Ant Design Table
+  const columns = [
+    {
+      title: 'Name',
+      dataIndex: 'title',
+      key: 'title',
+      width: '40%',
+      render: (_, record) => (
+        <Link href={`/documents/${record.id}`}>
+          <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <span style={{ marginRight: 8, color: '#666' }}>
+              {getDocumentTypeIcon(record.documentType)}
+            </span>
+            <Typography.Text 
+              style={{ 
+                fontWeight: 500, 
+                color: '#1E2A40',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: 300,
+              }}
+              ellipsis={{ tooltip: record.title || record.originalFilename }}
+            >
+              {record.title || record.originalFilename}
+            </Typography.Text>
+          </div>
+        </Link>
+      ),
+    },
+    {
+      title: 'Type',
+      dataIndex: 'documentType',
+      key: 'documentType',
+      render: (documentType) => (
+        <Tag color="default">
+          {documentType || "Other"}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'processingStatus',
+      key: 'processingStatus',
+      render: (status) => getProcessingStatusBadge(status),
+    },
+    {
+      title: 'Date Uploaded',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => (
+        <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+          {format(new Date(date), "MMM d, yyyy")}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: 'Uploaded By',
+      dataIndex: 'uploadedBy',
+      key: 'uploadedBy',
+      render: (uploadedBy) => (
+        <Typography.Text type="secondary" style={{ fontSize: 14 }}>
+          {uploadedBy || "System"}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 80,
+      render: (_, record) => (
+        <Dropdown
+          menu={{
+            items: [
+              {
+                key: 'view',
+                label: (
+                  <Link href={`/documents/${record.id}`}>
+                    View
+                  </Link>
+                ),
+                icon: <EyeOutlined />,
+              },
+              {
+                key: 'download',
+                label: (
+                  <a href={`/api/documents/${record.id}/download`}>
+                    Download
+                  </a>
+                ),
+                icon: <DownloadOutlined />,
+                disabled: !record.canDownload,
+              },
+              {
+                key: 'replace',
+                label: 'Replace',
+                icon: <EditOutlined />,
+                disabled: !record.canEdit,
+              },
+              {
+                key: 'delete',
+                label: 'Delete',
+                icon: <DeleteOutlined />,
+                danger: true,
+                onClick: () => handleDeleteClick(record.id, record.title || record.originalFilename),
+                disabled: !record.canDelete,
+              },
+            ],
+          }}
+          trigger={['click']}
+        >
+          <Button type="text" icon={<MoreOutlined />} size="small" />
+        </Dropdown>
+      ),
+    },
+  ];
+
   if (isLoading) {
     return (
-      <Box w="100%" p={4}>
-        <Stack spacing={4}>
-          <Skeleton height="40px" />
-          <Skeleton height="40px" />
-          <Skeleton height="40px" />
-          <Skeleton height="40px" />
-          <Skeleton height="40px" />
-        </Stack>
-      </Box>
+      <div style={{ padding: 16 }}>
+        <Skeleton active paragraph={{ rows: 5 }} />
+      </div>
     );
   }
 
   if (filteredDocuments.length === 0) {
     return (
-      <Center py={10} flexDirection="column">
-        <Icon as={AttachmentIcon} boxSize={8} color="gray.400" mb={3} />
-        <Text fontSize="md" fontWeight="medium" mb={1}>No documents found</Text>
-        <Text color="gray.500" fontSize="sm" mb={4}>
-          {filter === "all" 
-            ? "No documents have been uploaded yet."
-            : filter === "recent"
-              ? "No documents from the last 30 days."
-              : `No ${filter.toLowerCase()} documents found.`}
-        </Text>
+      <Empty
+        image={<FileOutlined style={{ fontSize: 48, color: '#ccc' }} />}
+        description={
+          <Space direction="vertical" size="small">
+            <Typography.Text strong>No documents found</Typography.Text>
+            <Typography.Text type="secondary">
+              {filter === "all" 
+                ? "No documents have been uploaded yet."
+                : filter === "recent"
+                  ? "No documents from the last 30 days."
+                  : `No ${filter.toLowerCase()} documents found.`}
+            </Typography.Text>
+          </Space>
+        }
+      >
         <PermissionGuard area="documents" permission="edit">
-          <Button variant="outline" size="sm">Upload your first document</Button>
+          <Button type="primary" icon={<UploadOutlined />}>
+            Upload your first document
+          </Button>
         </PermissionGuard>
-      </Center>
+      </Empty>
     );
   }
 
   return (
-    <Box overflowX="auto">
-      <Table variant="simple" size="md">
-        <Thead>
-          <Tr>
-            <Th width="40%">Name</Th>
-            <Th>Type</Th>
-            <Th>Status</Th>
-            <Th>Date Uploaded</Th>
-            <Th>Uploaded By</Th>
-            <Th width="80px">Actions</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {filteredDocuments.map((document) => (
-            <Tr 
-              key={document.id} 
-              _hover={{ bg: hoverBg }}
-              transition="background-color 0.2s"
-            >
-              <Td>
-                <Link href={`/documents/${document.id}`}>
-                  <Flex align="center" cursor="pointer">
-                    <Icon 
-                      as={getDocumentTypeIcon(document.documentType)} 
-                      color="gray.500" 
-                      mr={2}
-                    />
-                    <Text 
-                      fontWeight="medium" 
-                      color="brand.500" 
-                      isTruncated 
-                      maxW="300px" 
-                      _hover={{ textDecoration: "underline" }}
-                    >
-                      {document.title || document.originalFilename}
-                    </Text>
-                  </Flex>
-                </Link>
-              </Td>
-              <Td>
-                <Badge variant="subtle" colorScheme="gray" fontSize="xs">
-                  {document.documentType || "Other"}
-                </Badge>
-              </Td>
-              <Td>
-                {getProcessingStatusBadge(document.processingStatus)}
-              </Td>
-              <Td>
-                <Text fontSize="sm" color="gray.600">
-                  {format(new Date(document.createdAt), "MMM d, yyyy")}
-                </Text>
-              </Td>
-              <Td>
-                <Text fontSize="sm" isTruncated maxW="120px" color="gray.600">
-                  {document.uploadedBy || "System"}
-                </Text>
-              </Td>
-              <Td>
-                <Menu>
-                  <MenuButton
-                    as={IconButton}
-                    aria-label="Options"
-                    icon={<Icon as={InfoOutlineIcon} />}
-                    variant="ghost"
-                    size="sm"
-                  />
-                  <MenuList fontSize="sm" boxShadow="md">
-                    <MenuItem as={Link} href={`/documents/${document.id}`} icon={<Icon as={ViewIcon} boxSize={4} />}>
-                      View
-                    </MenuItem>
-                    <PermissionGuard area="documents" permission="view">
-                      <MenuItem 
-                        as="a" 
-                        href={`/api/documents/${document.id}/download`}
-                        icon={<Icon as={DownloadIcon} boxSize={4} />}
-                      >
-                        Download
-                      </MenuItem>
-                    </PermissionGuard>
-                    <PermissionGuard area="documents" permission="edit">
-                      <MenuItem icon={<Icon as={EditIcon} boxSize={4} />}>
-                        Replace
-                      </MenuItem>
-                    </PermissionGuard>
-                    <PermissionGuard area="documents" permission="delete">
-                      <MenuItem 
-                        icon={<Icon as={DeleteIcon} boxSize={4} />}
-                        onClick={() => handleDeleteClick(document.id, document.title || document.originalFilename)}
-                        color="red.500"
-                      >
-                        Delete
-                      </MenuItem>
-                    </PermissionGuard>
-                  </MenuList>
-                </Menu>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
+    <>
+      <Table 
+        columns={columns}
+        dataSource={filteredDocuments}
+        rowKey="id"
+        pagination={false}
+        size="middle"
+      />
       
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Document Deletion</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                Are you sure you want to delete the following document?
-              </p>
-              {documentToDelete && (
-                <p className="font-medium text-foreground">
-                  "{documentToDelete.title}"
-                </p>
-              )}
-              <p className="text-destructive">
-                This action cannot be undone and all associated data will be permanently removed.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmDelete} 
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete Document"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Box>
+      <Modal
+        title="Confirm Document Deletion"
+        open={deleteModalVisible}
+        onCancel={() => setDeleteModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setDeleteModalVisible(false)} disabled={isDeleting}>
+            Cancel
+          </Button>,
+          <Button 
+            key="delete" 
+            type="primary" 
+            danger
+            onClick={handleConfirmDelete} 
+            loading={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete Document"}
+          </Button>,
+        ]}
+      >
+        <Typography.Paragraph>
+          Are you sure you want to delete the following document?
+        </Typography.Paragraph>
+        {documentToDelete && (
+          <Typography.Paragraph strong>
+            "{documentToDelete.title}"
+          </Typography.Paragraph>
+        )}
+        <Typography.Paragraph type="danger">
+          This action cannot be undone and all associated data will be permanently removed.
+        </Typography.Paragraph>
+      </Modal>
+    </>
   );
 }

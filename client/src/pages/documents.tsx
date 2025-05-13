@@ -2,31 +2,29 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { 
-  Box, 
-  Container, 
-  Heading, 
+  Layout, 
+  Typography, 
   Alert, 
-  AlertIcon, 
-  Text,
-  Flex,
-  ButtonGroup,
-  Button as ChakraButton,
-  useColorModeValue
-} from "@chakra-ui/react";
-import { InfoOutlineIcon } from "@chakra-ui/icons";
+  Button as AntButton, 
+  Space, 
+  Card, 
+  Radio, 
+  Row, 
+  Col 
+} from "antd";
+import { InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button } from "@/components/ui/button";
 import DocumentList from "@/components/documents/DocumentList";
 import DocumentUpload from "@/components/documents/DocumentUpload";
-import { PlusIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
+
+const { Title, Text } = Typography;
 
 export default function Documents() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const { toast } = useToast();
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
   
   const { data: documentsResponse, isLoading, refetch } = useQuery({
     queryKey: ['/api/documents']
@@ -68,99 +66,65 @@ export default function Documents() {
         <meta name="description" content="Document management for BlueEarth Capital. View, upload, and manage company documents securely." />
       </Helmet>
       
-      <Container maxW="6xl" px={6} py={6}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
         {/* Page Header */}
-        <Flex justify="space-between" align="center" mb={6}>
-          <Heading fontSize="2xl" fontWeight="semibold" color="brand.500">Documents</Heading>
-          <PermissionGuard area="documents" permission="edit">
-            <Button 
-              onClick={() => setIsUploadModalOpen(true)} 
-              className="flex items-center gap-2"
-            >
-              <PlusIcon size={16} />
-              Upload Document
-            </Button>
-          </PermissionGuard>
-        </Flex>
+        <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+          <Col>
+            <Title level={2} style={{ margin: 0, color: '#1E2A40' }}>Documents</Title>
+          </Col>
+          <Col>
+            <PermissionGuard area="documents" permission="edit">
+              <Button 
+                onClick={() => setIsUploadModalOpen(true)} 
+                className="flex items-center gap-2"
+              >
+                <PlusOutlined style={{ fontSize: '14px' }} />
+                Upload Document
+              </Button>
+            </PermissionGuard>
+          </Col>
+        </Row>
         
         {/* Permission Alert */}
-        <Alert 
-          status="info" 
-          variant="left-accent" 
-          bg="gray.50" 
-          mb={6} 
-          borderRadius="md"
-        >
-          <AlertIcon as={InfoOutlineIcon} />
-          <Text fontSize="sm">You don't have permission to upload or edit documents.</Text>
-        </Alert>
+        <Alert
+          message="You don't have permission to upload or edit documents."
+          type="info"
+          showIcon
+          icon={<InfoCircleOutlined />}
+          style={{ marginBottom: 24 }}
+        />
         
         {/* Filter Controls */}
-        <Box 
-          mb={6} 
-          bg={bgColor} 
-          borderRadius="md" 
-          borderWidth="1px" 
-          borderColor={borderColor}
-          p={4}
+        <Card 
+          size="small" 
+          style={{ marginBottom: 24 }}
         >
-          <Flex direction="column" w="full">
-            <Flex mb={4} align="center" justify="space-between">
-              <Text fontSize="sm" fontWeight="medium" color="gray.700">
-                Filter documents
-              </Text>
-            </Flex>
-            
-            <ButtonGroup size="sm" variant="outline" spacing={2} isAttached={false}>
-              <ChakraButton 
-                colorScheme={activeFilter === "all" ? "brand" : "gray"}
-                variant={activeFilter === "all" ? "solid" : "outline"}
-                onClick={() => setActiveFilter("all")}
-                size="sm"
-                fontWeight="medium"
-                fontSize="xs"
-              >
-                All Documents
-              </ChakraButton>
-              <ChakraButton 
-                colorScheme={activeFilter === "recent" ? "brand" : "gray"}
-                variant={activeFilter === "recent" ? "solid" : "outline"}
-                onClick={() => setActiveFilter("recent")}
-                size="sm"
-                fontWeight="medium"
-                fontSize="xs"
-              >
-                Last 30 Days
-              </ChakraButton>
-              <ChakraButton 
-                colorScheme={activeFilter === "CONTRACT" ? "brand" : "gray"}
-                variant={activeFilter === "CONTRACT" ? "solid" : "outline"}
-                onClick={() => setActiveFilter("CONTRACT")}
-                size="sm"
-                fontWeight="medium" 
-                fontSize="xs"
-              >
-                Contracts
-              </ChakraButton>
-            </ButtonGroup>
-          </Flex>
-        </Box>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong>Filter documents</Text>
+          </div>
+          
+          <Radio.Group 
+            value={activeFilter} 
+            onChange={(e) => setActiveFilter(e.target.value)}
+            style={{ marginBottom: 8 }}
+          >
+            <Space>
+              <Radio.Button value="all">All Documents</Radio.Button>
+              <Radio.Button value="recent">Last 30 Days</Radio.Button>
+              <Radio.Button value="CONTRACT">Contracts</Radio.Button>
+            </Space>
+          </Radio.Group>
+        </Card>
         
         {/* Document List */}
-        <Box 
-          bg={bgColor} 
-          borderRadius="md" 
-          borderWidth="1px" 
-          borderColor={borderColor}
-          overflow="hidden"
-        >
+        <Card bordered>
           <DocumentList 
             documents={documents} 
             isLoading={isLoading} 
             filter={activeFilter}
           />
-        </Box>
-      </Container>
+        </Card>
+      </div>
 
       <DocumentUpload 
         isOpen={isUploadModalOpen} 
