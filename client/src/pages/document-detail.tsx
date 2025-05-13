@@ -32,11 +32,61 @@ export default function DocumentDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Fetch document data
+  // Track previous processing status to detect changes
+  const [prevStatus, setPrevStatus] = React.useState<string | null>(null);
+  
+  // Fetch document data with automatic polling for processing status
   const { data: documentResponse, isLoading, error } = useQuery<any>({
     queryKey: [`/api/documents/${id}`],
     retry: false,
     enabled: !!id,
+    // Add polling refresh interval if document is in a processing state
+    refetchInterval: (data) => {
+      // First extract the document from the response
+      let doc = null;
+      if (data) {
+        if ('success' in data && data.success && data.data) {
+          doc = data.data;
+        } else if ('id' in data) {
+          doc = data;
+        }
+      }
+      
+      // If document is in a transitional state (PENDING, PROCESSING, QUEUED), poll every 3 seconds
+      if (doc && ['PENDING', 'PROCESSING', 'QUEUED'].includes(doc.processingStatus)) {
+        return 3000; // Poll every 3 seconds
+      }
+      
+      // Otherwise, don't poll
+      return false;
+    },
+    onSuccess: (data) => {
+      // Extract document from response
+      let doc = null;
+      if (data) {
+        if ('success' in data && data.success && data.data) {
+          doc = data.data;
+        } else if ('id' in data) {
+          doc = data;
+        }
+      }
+      
+      // Check if status changed from a processing state to COMPLETED
+      if (doc && prevStatus && 
+          ['PENDING', 'PROCESSING', 'QUEUED'].includes(prevStatus) && 
+          doc.processingStatus === 'COMPLETED') {
+        toast({
+          title: "Document processing complete",
+          description: "The document has been successfully processed with AI.",
+          variant: "success",
+        });
+      }
+      
+      // Update previous status
+      if (doc) {
+        setPrevStatus(doc.processingStatus);
+      }
+    }
   });
   
   // Process document mutation
