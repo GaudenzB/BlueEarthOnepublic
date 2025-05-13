@@ -54,9 +54,15 @@ export function DocumentPreview({
   const getFileExtension = (filename?: string): string => {
     if (!filename) return '';
     try {
+      // Split filename by dot and get the last part as extension
       const parts = filename.split('.');
-      if (!parts || !Array.isArray(parts)) return '';
-      return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+      
+      // Safety check for empty parts array
+      if (!parts || parts.length <= 1) return '';
+      
+      // Get the last part and convert to lowercase
+      const extension = parts[parts.length - 1];
+      return extension ? extension.toLowerCase() : '';
     } catch (error) {
       console.error('Error getting file extension:', error);
       return '';

@@ -115,13 +115,13 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
         </Descriptions.Item>
         
         <Descriptions.Item label="Owner">
-          {document.sharedWith?.length 
+          {document.sharedWith && document.sharedWith.length > 0 && document.sharedWith[0]?.name 
             ? document.sharedWith[0].name 
             : 'System'}
         </Descriptions.Item>
         
         <Descriptions.Item label="Version">
-          {document.versions?.length 
+          {document.versions && document.versions.length > 0 && document.versions[0]?.versionNumber 
             ? document.versions[0].versionNumber 
             : '1.0'}
         </Descriptions.Item>
