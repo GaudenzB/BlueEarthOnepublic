@@ -6,10 +6,10 @@
  */
 
 // Load environment variables
-require('dotenv').config();
+import 'dotenv/config';
 
 // Import the OpenAI module 
-const { analyzeDocumentText } = require('./server/utils/openai');
+import { analyzeDocumentText } from './server/utils/openai.js';
 
 // Sample document text for testing
 const sampleText = `

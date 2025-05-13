@@ -87,9 +87,9 @@ export async function analyzeDocumentText(
         typeSpecificInstructions = 'Identify the main themes, key stakeholders, and important insights.';
     }
     
-    // Enhanced prompt
+    // Enhanced prompt - Note the inclusion of "JSON" in the prompt for OpenAI's response_format requirement
     const prompt = `
-      Please analyze the following document content comprehensively.
+      Please analyze the following document content comprehensively and return the analysis as JSON.
       
       DOCUMENT TITLE: ${documentTitle}
       DOCUMENT TYPE: ${documentType}
@@ -113,11 +113,11 @@ export async function analyzeDocumentText(
       }
     `;
 
-    // Call OpenAI API with enhanced system prompt
+    // Call OpenAI API with enhanced system prompt - including "JSON" keyword for response_format requirement
     const systemPrompt = `You are an expert document analyst specializing in business, financial, and legal documents for the investment industry.
     Your task is to extract key information, summarize content accurately, and identify important entities and dates.
     Focus on factual information only and maintain the confidentiality of all document content.
-    Output strictly as JSON in the format requested.`;
+    Output strictly as JSON in the format requested. Always format your entire response as valid JSON.`;
     
     logger.debug('Sending analysis request to OpenAI', {
       model: DEFAULT_MODEL,
