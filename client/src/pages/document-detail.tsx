@@ -29,12 +29,40 @@ export default function DocumentDetail() {
   // Get document id from URL params
   const params = useParams<{ id: string }>();
   const id = params?.id;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch document data
   const { data: documentResponse, isLoading, error } = useQuery<any>({
     queryKey: [`/api/documents/${id}`],
     retry: false,
     enabled: !!id,
+  });
+  
+  // Process document mutation
+  const processDocumentMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/documents/${id}/process`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Processing started",
+        description: "Document processing has started. This may take a few minutes.",
+      });
+      
+      // Invalidate document query to refresh status
+      queryClient.invalidateQueries({ queryKey: [`/api/documents/${id}`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Processing failed",
+        description: "Failed to start document processing. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error processing document:", error);
+    }
   });
 
   // Debug logging
