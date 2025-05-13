@@ -11,6 +11,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
   FileIcon, 
   FileTextIcon, 
   FileCheckIcon,
@@ -40,7 +48,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
@@ -118,24 +125,24 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     }
   };
 
-  const getDocumentTypeIcon = (type: string | null) => {
+  const getDocumentTypeIcon = (type: string | null, className: string = "h-4 w-4") => {
     switch (type) {
       case "CONTRACT":
-        return <FileTextIcon className="h-4 w-4" />;
+        return <FileTextIcon className={className} />;
       case "AGREEMENT":
-        return <FileCheckIcon className="h-4 w-4" />;
+        return <FileCheckIcon className={className} />;
       case "REPORT":
-        return <FilePenIcon className="h-4 w-4" />;
+        return <FilePenIcon className={className} />;
       case "POLICY":
-        return <FileEditIcon className="h-4 w-4" />;
+        return <FileEditIcon className={className} />;
       case "INVOICE":
-        return <Receipt className="h-4 w-4" />;
+        return <Receipt className={className} />;
       case "PRESENTATION":
-        return <ImageIcon className="h-4 w-4" />;
+        return <ImageIcon className={className} />;
       case "CORRESPONDENCE":
-        return <FileTextIcon className="h-4 w-4" />;
+        return <FileTextIcon className={className} />;
       default:
-        return <HelpCircleIcon className="h-4 w-4" />;
+        return <HelpCircleIcon className={className} />;
     }
   };
 
@@ -173,33 +180,27 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   if (isLoading) {
     return (
       <div className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <Skeleton className="h-4 w-[150px]" />
-          <Skeleton className="h-8 w-[100px]" />
-        </div>
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array(5).fill(0).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-[40px]" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array(6).fill(0).map((_, index) => (
+            <Card key={index} className="overflow-hidden">
+              <CardHeader className="p-4 pb-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="h-[2px] w-full bg-muted mb-3 mt-1"></div>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
