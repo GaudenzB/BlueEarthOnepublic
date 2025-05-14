@@ -25,8 +25,8 @@ export { default as PageHeader } from './PageHeader';
 export { default as KeyboardNavigableMenu } from './KeyboardNavigableMenu';
 
 // Layout components
-export { default as sidebar } from './sidebar';
-export { default as Spinner } from './spinner';
+export * from './sidebar';
+export * from './spinner';
 
 // Extended Ant Design components with custom styling
 export { Button } from './button';
@@ -34,7 +34,7 @@ export { Input } from './input';
 export { Textarea } from './textarea';
 export { Select } from './select';
 export { Checkbox } from './checkbox';
-export { Radio, RadioGroup } from './radio-group';
+export { RadioGroup } from './radio-group';
 export { Switch } from './switch';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from './table';

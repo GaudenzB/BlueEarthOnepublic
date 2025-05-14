@@ -215,6 +215,22 @@ export function generateAriaId(prefix: string = 'aria'): string {
 }
 
 /**
+ * Generate random ID for any element
+ * @alias of generateAriaId
+ */
+export function generateId(prefix: string = 'id'): string {
+  return generateAriaId(prefix);
+}
+
+/**
+ * Create accessible ID for components
+ * @alias of generateAriaId
+ */
+export function createAccessibleId(prefix: string = 'id'): string {
+  return generateAriaId(prefix);
+}
+
+/**
  * Check if screen reader is potentially being used
  * Note: This is not 100% reliable and should only be used for enhanced features
  */
