@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag } from 'antd';
+import { Typography } from 'antd';
 import { 
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -9,7 +9,42 @@ import {
   ExclamationCircleOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
-import { theme } from '@/lib/theme';
+
+const { Text } = Typography;
+
+// Custom color palette for financial industry styling
+const STATUS_COLORS = {
+  active: {
+    background: '#e6f7ef',
+    text: '#0e6245',
+    border: '#a8e6c9',
+    icon: '#10b981'
+  },
+  inactive: {
+    background: '#f3f4f6',
+    text: '#4b5563',
+    border: '#d1d5db',
+    icon: '#6b7280'
+  },
+  warning: {
+    background: '#fef6e6',
+    text: '#92400e',
+    border: '#fcd34d',
+    icon: '#f59e0b'
+  },
+  processing: {
+    background: '#eff6fe',
+    text: '#1e40af',
+    border: '#bfdbfe',
+    icon: '#3b82f6'
+  },
+  error: {
+    background: '#fee2e2',
+    text: '#b91c1c',
+    border: '#fecaca',
+    icon: '#ef4444'
+  }
+};
 
 export interface StatusTagProps {
   /**
@@ -43,6 +78,7 @@ export interface StatusTagProps {
  * 
  * A standardized component to display entity status across the application.
  * Provides consistent styling and representation of various status types.
+ * Optimized for financial services with a professional, trustworthy appearance.
  * 
  * @example
  * <StatusTag status="active" />
@@ -56,8 +92,8 @@ export const StatusTag: React.FC<StatusTagProps> = ({
   size = 'default'
 }) => {
   // Get status configuration based on status value
-  let color = "default";
-  let statusIcon = <StopOutlined />;
+  let colorScheme = STATUS_COLORS.inactive;
+  let statusIcon: React.ReactElement | null = <StopOutlined />;
   let statusText = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace('_', ' ');
   
   // Handle based on specific status values
@@ -65,76 +101,121 @@ export const StatusTag: React.FC<StatusTagProps> = ({
   
   // Employee statuses
   if (lowercaseStatus === 'active') {
-    color = "success";
+    colorScheme = STATUS_COLORS.active;
     statusIcon = <CheckCircleOutlined />;
     statusText = 'Active';
   } else if (lowercaseStatus === 'inactive') {
-    color = "default";
+    colorScheme = STATUS_COLORS.inactive;
     statusIcon = <StopOutlined />;
     statusText = 'Inactive';
   } else if (lowercaseStatus === 'on_leave') {
-    color = "warning";
+    colorScheme = STATUS_COLORS.warning;
     statusIcon = <ClockCircleOutlined />;
     statusText = 'On Leave';
   } else if (lowercaseStatus === 'remote') {
-    color = "processing";
+    colorScheme = STATUS_COLORS.processing;
     statusIcon = <GlobalOutlined />;
     statusText = 'Remote';
   }
   // Document statuses
   else if (lowercaseStatus === 'draft') {
-    color = "default";
+    colorScheme = STATUS_COLORS.inactive;
     statusIcon = <FileTextOutlined />;
     statusText = 'Draft';
   } else if (lowercaseStatus === 'in_review') {
-    color = "processing";
+    colorScheme = STATUS_COLORS.processing;
     statusIcon = <ClockCircleOutlined />;
     statusText = 'In Review';
   } else if (lowercaseStatus === 'pending') {
-    color = "processing";
+    colorScheme = STATUS_COLORS.processing;
     statusIcon = <ClockCircleOutlined />;
     statusText = 'Pending';
   } else if (lowercaseStatus === 'approved') {
-    color = "success";
+    colorScheme = STATUS_COLORS.active;
     statusIcon = <CheckCircleOutlined />;
     statusText = 'Approved';
   } else if (lowercaseStatus === 'completed') {
-    color = "success";
+    colorScheme = STATUS_COLORS.active;
     statusIcon = <CheckCircleOutlined />;
     statusText = 'Completed';
   } else if (lowercaseStatus === 'rejected') {
-    color = "error";
+    colorScheme = STATUS_COLORS.error;
     statusIcon = <ExclamationCircleOutlined />;
     statusText = 'Rejected';
   } else if (lowercaseStatus === 'expired') {
-    color = "warning";
+    colorScheme = STATUS_COLORS.warning;
     statusIcon = <WarningOutlined />;
     statusText = 'Expired';
   }
   
+  // Size-dependent styling
+  const sizeStyles = {
+    small: {
+      fontSize: '11px',
+      padding: '0 8px',
+      height: '20px',
+      borderRadius: '10px'
+    },
+    default: {
+      fontSize: '12px',
+      padding: '0 10px',
+      height: '24px',
+      borderRadius: '12px'
+    },
+    large: {
+      fontSize: '13px',
+      padding: '0 12px',
+      height: '28px',
+      borderRadius: '14px'
+    }
+  }[size];
+  
+  // Render icon with proper styling
+  const renderIcon = () => {
+    // Use custom icon if provided, otherwise use statusIcon
+    const iconToRender = customIcon || statusIcon;
+    
+    if (React.isValidElement(iconToRender)) {
+      return React.cloneElement(iconToRender, {
+        style: {
+          fontSize: sizeStyles.fontSize,
+          color: colorScheme.icon,
+          marginRight: '4px'
+        }
+      });
+    }
+    
+    return null;
+  };
+  
   return (
-    <Tag
-      color={color}
-      icon={customIcon || statusIcon}
-      className={className}
+    <div 
+      className={`inline-flex items-center ${className}`}
       style={{
-        borderRadius: '9999px', // Using direct value instead of theme to avoid any issues
-        textTransform: 'lowercase',
-        display: 'inline-flex',
-        alignItems: 'center',
-        fontSize: size === 'small' ? theme.typography.fontSize.xs : 
-                 size === 'large' ? theme.typography.fontSize.sm :
-                 theme.typography.fontSize.xs,
-        padding: size === 'small' ? '0 8px' : 
-                size === 'large' ? '4px 12px' : 
-                '2px 10px',
-        lineHeight: size === 'small' ? '18px' : 
-                   size === 'large' ? '24px' : 
-                   '20px',
+        backgroundColor: colorScheme.background,
+        border: `1px solid ${colorScheme.border}`,
+        color: colorScheme.text,
+        height: sizeStyles.height,
+        borderRadius: sizeStyles.borderRadius,
+        padding: sizeStyles.padding,
+        fontSize: sizeStyles.fontSize,
+        fontWeight: 500,
+        lineHeight: 1,
+        letterSpacing: '0.2px',
+        whiteSpace: 'nowrap'
       }}
     >
-      {customText || statusText}
-    </Tag>
+      {renderIcon()}
+      <Text style={{ 
+        fontSize: 'inherit', 
+        color: 'inherit',
+        fontWeight: 'inherit',
+        lineHeight: 'inherit',
+        margin: 0
+      }}>
+        {customText || statusText}
+      </Text>
+    </div>
   );
 };
 
