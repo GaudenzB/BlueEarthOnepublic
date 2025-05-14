@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useLocation, useSearch } from "wouter"
+import { useLocation } from "wouter"
 import { SearchFilters } from "@/components/employee/SearchFilters"
 import { EmployeeCard } from "@/components/employee/EmployeeCard"
-import { Pagination, Empty, Spin, Result, Button } from "antd"
 import { 
-  LeftOutlined, 
-  RightOutlined,
-  ReloadOutlined,
-  WarningOutlined 
-} from "@ant-design/icons"
+  Pagination, 
+  Empty, 
+  Spin, 
+  Result, 
+  Button, 
+  Skeleton, 
+  Card
+} from "antd"
+import { ReloadOutlined } from "@ant-design/icons"
 import { type Employee } from "@shared/schema"
-import { ROUTES } from "@/lib/routes"
 import { colors } from "@/lib/colors"
 
 export function EmployeeDirectory() {
@@ -184,21 +186,8 @@ export function EmployeeDirectory() {
     currentPage * itemsPerPage
   )
 
-  const handlePreviousPage = () => {
-    setCurrentPage(prev => {
-      const newPage = Math.max(prev - 1, 1);
-      setTimeout(() => updateQueryParams(), 0);
-      return newPage;
-    })
-  }
-
-  const handleNextPage = () => {
-    setCurrentPage(prev => {
-      const newPage = Math.min(prev + 1, totalPages);
-      setTimeout(() => updateQueryParams(), 0);
-      return newPage;
-    })
-  }
+  // Removed handlePreviousPage and handleNextPage
+  // since we're using Ant Design's Pagination component instead
 
   // Reset to page 1 when filters change significantly
   useEffect(() => {
@@ -229,31 +218,31 @@ export function EmployeeDirectory() {
         />
         
         <div className="directory-container overflow-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {Array(8).fill(0).map((_, index) => (
-              <div key={index} className="bg-background rounded-lg shadow-sm border border-border p-4">
-                <div className="flex items-center">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="ml-3 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-24" />
+          <Spin spinning={true} tip="Loading employees..." className="flex justify-center my-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array(8).fill(0).map((_, index) => (
+                <Card key={index} className="overflow-hidden border border-border">
+                  <div className="flex items-center">
+                    <Skeleton.Avatar active size={48} shape="circle" />
+                    <div className="ml-3 space-y-2">
+                      <Skeleton.Input active style={{ width: 120 }} />
+                      <Skeleton.Input active style={{ width: 90 }} />
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 space-y-2">
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-full" />
-                </div>
-                <div className="mt-4 pt-3 border-t border-border flex justify-between">
-                  <Skeleton className="h-5 w-20 rounded-full" />
-                  <div className="flex space-x-2">
-                    <Skeleton className="h-8 w-8 rounded" />
-                    <Skeleton className="h-8 w-8 rounded" />
+                  <div className="mt-4 space-y-2">
+                    <Skeleton active paragraph={{ rows: 3 }} />
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                  <div className="mt-4 pt-3 border-t border-border flex justify-between">
+                    <Skeleton.Button active />
+                    <div className="flex space-x-2">
+                      <Skeleton.Button active shape="circle" />
+                      <Skeleton.Button active shape="circle" />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Spin>
         </div>
       </div>
     )
@@ -262,12 +251,23 @@ export function EmployeeDirectory() {
   // Error state
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 bg-background rounded-lg shadow-sm p-6 text-center">
-        <h3 className="text-lg font-semibold text-destructive mb-2">Failed to load employees</h3>
-        <p className="text-muted-foreground mb-4">There was an error loading the employee directory.</p>
-        <Button onClick={() => window.location.reload()}>
-          Try Again
-        </Button>
+      <div className="py-6">
+        <Result
+          status="error"
+          title="Failed to load employees"
+          subTitle="There was an error loading the employee directory. Please try again."
+          extra={[
+            <Button 
+              key="refresh" 
+              type="primary" 
+              onClick={() => window.location.reload()}
+              style={{ backgroundColor: colors.primary.base }}
+              icon={<ReloadOutlined />}
+            >
+              Try Again
+            </Button>
+          ]}
+        />
       </div>
     )
   }
@@ -288,10 +288,15 @@ export function EmployeeDirectory() {
       />
       
       {filteredEmployees.length === 0 ? (
-        <div className="bg-background rounded-lg shadow-sm p-8 text-center">
-          <h3 className="text-lg font-medium text-foreground mb-2">No employees found</h3>
-          <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
-        </div>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <div>
+              <h3 className="text-lg font-medium text-foreground mb-2">No employees found</h3>
+              <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+            </div>
+          }
+        />
       ) : (
         <>
           <div className="directory-container overflow-auto">
@@ -304,57 +309,22 @@ export function EmployeeDirectory() {
           
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between">
-              <div className="hidden md:block">
-                <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-                  <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredEmployees.length)}</span> of{" "}
-                  <span className="font-medium">{filteredEmployees.length}</span> employees
-                </p>
-              </div>
-              <div className="flex justify-center md:justify-end space-x-1">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handlePreviousPage} 
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                
-                {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                  let pageNum: number;
-                  
-                  if (totalPages <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 2) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 1) {
-                    pageNum = totalPages - 2 + i;
-                  } else {
-                    pageNum = currentPage - 1 + i;
-                  }
-                  
-                  return (
-                    <Button 
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      onClick={() => setCurrentPage(pageNum)}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-                
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={handleNextPage} 
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="mt-6 py-4 flex items-center justify-center">
+              <Pagination
+                current={currentPage}
+                total={filteredEmployees.length}
+                pageSize={itemsPerPage}
+                onChange={(page) => {
+                  setCurrentPage(page);
+                  setTimeout(updateQueryParams, 0);
+                }}
+                showSizeChanger={false}
+                showTotal={(total, range) => (
+                  <span className="text-sm text-muted-foreground hidden md:inline-block mr-4">
+                    Showing {range[0]}-{range[1]} of {total} employees
+                  </span>
+                )}
+              />
             </div>
           )}
         </>
