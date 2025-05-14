@@ -7,7 +7,10 @@ import {
   StopOutlined,
   WarningOutlined,
   ExclamationCircleOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  HistoryOutlined,
+  TagOutlined,
+  LockOutlined
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -146,6 +149,39 @@ export const StatusTag: React.FC<StatusTagProps> = ({
     colorScheme = STATUS_COLORS.warning;
     statusIcon = <WarningOutlined />;
     statusText = 'Expired';
+  } 
+  // Version status
+  else if (lowercaseStatus === 'version') {
+    colorScheme = {
+      background: '#f3f0ff',
+      text: '#5b21b6',
+      border: '#c4b5fd',
+      icon: '#8b5cf6'
+    };
+    statusIcon = <HistoryOutlined />;
+    statusText = 'Version';
+  }
+  // Document visibility/access
+  else if (lowercaseStatus === 'restricted') {
+    colorScheme = {
+      background: '#fff1f2',
+      text: '#9f1239',
+      border: '#fda4af',
+      icon: '#f43f5e'
+    };
+    statusIcon = <LockOutlined />;
+    statusText = 'Restricted';
+  }
+  // Archived content
+  else if (lowercaseStatus === 'archived') {
+    colorScheme = {
+      background: '#f8fafc',
+      text: '#334155',
+      border: '#cbd5e1', 
+      icon: '#64748b'
+    };
+    statusIcon = <TagOutlined />;
+    statusText = 'Tag';
   }
   
   // Size-dependent styling

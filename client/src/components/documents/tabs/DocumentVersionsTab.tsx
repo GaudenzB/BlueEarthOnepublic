@@ -44,6 +44,10 @@ const VersionActions = memo(function VersionActions({
         size="small" 
         icon={<EyeOutlined />} 
         onClick={() => console.log('View version', version.id)}
+        style={{
+          color: '#0e4a86', // Corporate blue
+          fontWeight: 500
+        }}
       >
         View
       </Button>
@@ -52,6 +56,10 @@ const VersionActions = memo(function VersionActions({
         size="small" 
         icon={<DownloadOutlined />} 
         onClick={() => console.log('Download version', version.id)}
+        style={{
+          color: '#0e4a86', // Corporate blue
+          fontWeight: 500
+        }}
       >
         Download
       </Button>
@@ -59,22 +67,33 @@ const VersionActions = memo(function VersionActions({
         <Button
           type="primary"
           size="small"
-          ghost
           onClick={handleRestore}
           loading={isRestoring || false}
           disabled={isRestoring || false}
+          style={{
+            backgroundColor: '#0e4a86', // Corporate blue
+            borderColor: '#0e4a86',
+            fontWeight: 500,
+            boxShadow: 'none'
+          }}
         >
           Restore
         </Button>
       )}
       {isCurrentVersion && (
-        <Button
-          type="text"
-          size="small"
-          disabled
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 500,
+            color: '#12705c', // Financial green
+            backgroundColor: '#effcf6',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            border: '1px solid #d1fadf'
+          }}
         >
           Current Version
-        </Button>
+        </span>
       )}
     </Space>
   );
@@ -138,8 +157,26 @@ export const DocumentVersionsTab = memo(function DocumentVersionsTab({
   ];
   
   return (
-    <Card bordered={false}>
-      <Title level={5}>Document Versions</Title>
+    <Card 
+      bordered={false}
+      className="financial-card"
+      style={{
+        boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
+        borderRadius: '8px',
+        border: '1px solid #e5e7eb'
+      }}
+    >
+      <Title 
+        level={5} 
+        style={{
+          marginBottom: '16px',
+          fontSize: '16px',
+          fontWeight: 600,
+          color: '#1e293b' // Slate-800 - professional dark tone for financial services
+        }}
+      >
+        Document Versions
+      </Title>
       
       {hasVersions ? (
         <Table
@@ -147,6 +184,14 @@ export const DocumentVersionsTab = memo(function DocumentVersionsTab({
           rowKey="id"
           columns={columns}
           pagination={false}
+          className="financial-table"
+          size="middle"
+          rowClassName={() => 'financial-table-row'}
+          // Professional table styling that matches financial industry aesthetic
+          style={{
+            fontSize: '14px',
+            '--ant-primary-color': '#0e4a86' // More corporate blue
+          } as React.CSSProperties}
         />
       ) : (
         <div style={{ marginTop: 24 }}>

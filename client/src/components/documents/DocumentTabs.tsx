@@ -60,7 +60,15 @@ export const DocumentTabs = memo(function DocumentTabs({
       onChange={onTabChange}
       items={tabItems}
       size="large"
-      tabBarStyle={{ marginBottom: 24 }}
+      tabBarStyle={{ 
+        marginBottom: 24,
+        borderBottom: '1px solid #e5e7eb',
+        fontWeight: 500
+      }}
+      tabBarGutter={32} // Increased spacing between tabs for professional look
+      className="document-detail-tabs"
+      // Custom styling is applied using CSS class for consistent financial industry appearance
+      // The styling aligns with our design system guidelines for financial services applications
     />
   );
 });
