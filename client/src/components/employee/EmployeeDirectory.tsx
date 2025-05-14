@@ -392,6 +392,10 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   const departments = useMemo(() => {
     const departmentSet = new Set<string>();
     
+    if (!employees || !Array.isArray(employees)) {
+      return [];
+    }
+    
     employees.forEach(employee => {
       if (employee.department) {
         departmentSet.add(employee.department);
@@ -510,6 +514,12 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   
   // Render grid of employee cards (non-virtualized)
   const renderStaticGrid = useCallback(() => {
+    if (!filteredEmployees || !Array.isArray(filteredEmployees) || filteredEmployees.length === 0) {
+      return (
+        <Empty description="No employees found" />
+      );
+    }
+    
     return (
       <Row gutter={[16, 24]} justify="start">
         {filteredEmployees.map(employee => (
@@ -541,6 +551,12 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   
   // Render list of employee cards (non-virtualized)
   const renderStaticList = useCallback(() => {
+    if (!filteredEmployees || !Array.isArray(filteredEmployees) || filteredEmployees.length === 0) {
+      return (
+        <Empty description="No employees found" />
+      );
+    }
+    
     return (
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         {filteredEmployees.map(employee => (
@@ -735,7 +751,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           
           <Col>
             <Text type="secondary">
-              {filteredEmployees.length} {filteredEmployees.length === 1 ? 'employee' : 'employees'} found
+              {filteredEmployees ? filteredEmployees.length : 0} {filteredEmployees && filteredEmployees.length === 1 ? 'employee' : 'employees'} found
             </Text>
           </Col>
         </Row>
