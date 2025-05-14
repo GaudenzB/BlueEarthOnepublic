@@ -41,7 +41,7 @@ import {
   FileOutlined,
   UserOutlined
 } from "@ant-design/icons";
-import { PermissionGuard } from "@/components/auth/PermissionGuard";
+import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { apiRequest } from "@/lib/queryClient";
 import { Document, DocumentType, DocumentVisibility } from "@/types/document";
 
@@ -295,7 +295,7 @@ export default function DocumentDetail() {
               </Button>
             </Tooltip>
             
-            <PermissionGuard requiredRole="admin">
+            <PermissionGuard area="documents" permission="edit">
               <Button 
                 type="primary"
                 icon={<EditOutlined />}
@@ -573,7 +573,7 @@ export default function DocumentDetail() {
                         <Text strong>{event.action}</Text>
                         <div>
                           <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {format(new Date(event.timestamp), 'PPpp')}
+                            {event.timestamp ? format(new Date(event.timestamp), 'PPpp') : 'Unknown'}
                           </Text>
                         </div>
                         {event.details && <div>{event.details}</div>}
