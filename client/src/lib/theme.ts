@@ -179,7 +179,7 @@ export const TABLE_STYLES = {
   },
 };
 
-export default {
+export const theme = {
   colors,
   spacing,
   shadows,
@@ -193,3 +193,5 @@ export default {
     table: TABLE_STYLES,
   },
 };
+
+export default theme;

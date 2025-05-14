@@ -5,39 +5,59 @@
  * For new components, please import from theme.ts instead.
  * This file remains for backward compatibility.
  */
-import { colors as themeColors } from './theme';
 
 // Define backwards-compatible color values
 export const colors = {
   // Primary Colors
   primary: {
-    base: themeColors.primary.navy, // Deep navy blue for headers, sidebars, primary buttons
-    hover: "#3F4F6F", // Higher contrast navy for hover and active states
-    light: themeColors.primary.blue, // Softer navy for accents, borders, backgrounds
-    ultraLight: themeColors.backgroundLight, // Very light tone for secondary backgrounds
+    base: '#0e4a86', // Deep blue for headers, sidebars, primary buttons
+    hover: '#1e63a5', // Higher contrast blue for hover and active states
+    light: '#f0f7ff', // Softer blue for accents, borders, backgrounds
+    dark: '#0a3a68', // Darker blue for active states
   },
   
   // Typography
   text: {
-    primary: "#FFFFFF", // White text for dark backgrounds
-    body: themeColors.secondary.charcoal, // Default dark text for light backgrounds
-    muted: themeColors.secondary.slate, // Secondary or de-emphasized content
+    primary: '#1e293b', // Dark text for light backgrounds
+    secondary: '#64748b', // Secondary text color
+    muted: '#94a3b8', // De-emphasized content
+    inverse: '#ffffff', // White text for dark backgrounds
   },
   
   // Accent Colors
   accent: {
-    success: themeColors.status.active, // Green for confirming actions or positive status
-    warning: themeColors.status.warning, // Amber for alerts and cautions
-    error: themeColors.status.error, // Red for destructive actions or errors
-    info: themeColors.status.pending, // Blue for highlights or informational messages
+    success: '#10b981', // Green for confirming actions or positive status
+    warning: '#f59e0b', // Amber for alerts and cautions
+    error: '#ef4444', // Red for destructive actions or errors
+    info: '#3b82f6', // Blue for highlights or informational messages
+    draft: '#94a3b8', // Gray for draft status
+  },
+  
+  // Status Colors (for compatibility)
+  status: {
+    active: '#10b981', // Green for active status
+    inactive: '#ef4444', // Red for inactive status
+    pending: '#f59e0b', // Amber for pending status
+    completed: '#10b981', // Green for completed status
+    in_review: '#3b82f6', // Blue for in review status
+    approved: '#10b981', // Green for approved status
+    rejected: '#ef4444', // Red for rejected status
+    draft: '#94a3b8', // Gray for draft status
   },
   
   // Backgrounds and Neutrals
   background: {
-    base: themeColors.backgroundDark, // Default background for pages and content
-    sidebar: themeColors.primary.navy, // Very dark navy for navigation panels
-    divider: themeColors.border, // Soft grey for separating content
-    card: themeColors.backgroundLight, // White for content presentation in cards
-    hover: "#435D85" // High contrast hover for dark sidebar/navbar elements
+    page: '#f9fafc', // Default background for pages and content
+    card: '#ffffff', // White for content presentation in cards
+    subtle: '#f8fafc', // Soft gray for secondary backgrounds
+    selected: '#f0f7ff', // Light blue for selected items
+    hover: '#f0f7ff', // Light blue for hover states
+  },
+  
+  // Borders
+  border: {
+    light: '#eaecf0',
+    default: '#d1d5db',
+    focus: '#0e4a86',
   }
 };
