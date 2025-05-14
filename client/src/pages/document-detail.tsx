@@ -2,8 +2,15 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
+import { Tabs } from "antd";
 import { Document } from "@/types/document";
-import { DocumentDetailContent } from "@/components/documents/DocumentDetailContent";
+import { DocumentHeader } from "@/components/documents/DocumentHeader";
+import { DocumentProcessingAlert } from "@/components/documents/DocumentProcessingAlert";
+import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
+import { DocumentOverviewTab } from "@/components/documents/tabs/DocumentOverviewTab";
+import { DocumentVersionsTab } from "@/components/documents/tabs/DocumentVersionsTab";
+import { DocumentCommentsTab } from "@/components/documents/tabs/DocumentCommentsTab";
+import { DocumentTimelineTab } from "@/components/documents/tabs/DocumentTimelineTab";
 import { DocumentDeleteDialog } from "@/components/documents/DocumentDeleteDialog";
 import { DocumentShareDialog } from "@/components/documents/DocumentShareDialog";
 import { 
