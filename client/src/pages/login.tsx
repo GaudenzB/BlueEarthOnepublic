@@ -56,7 +56,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background.base }}>
       <Card className="w-full max-w-sm shadow-lg" style={{ backgroundColor: colors.background.card }}>
         <CardHeader className="flex flex-col items-center space-y-2">
-          <div className="bg-white p-4 rounded-md flex justify-center items-center shadow-sm">
+          <div className="bg-white p-4 rounded-md flex justify-center items-center">
             <Logo className="h-12" />
           </div>
           <CardTitle className="text-xl" style={{ color: colors.text.body }}>Login</CardTitle>
