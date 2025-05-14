@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Link } from 'wouter';
 import { Card, Avatar, Skeleton, Typography, Divider } from 'antd';
 import { 
@@ -11,6 +11,7 @@ import {
 import type { Employee } from '@shared/schema';
 import StatusTag from './StatusTag';
 import { ROUTES } from '@/lib/routes';
+import { tokens } from '@/theme/tokens';
 
 const { Title, Text } = Typography;
 
@@ -86,7 +87,7 @@ export interface EmployeeCardProps {
  * <EmployeeCard employee={employee} />
  * <EmployeeCard employee={employee} variant="detailed" />
  */
-export const EmployeeCard: React.FC<EmployeeCardProps> = ({ 
+export const EmployeeCard = memo<EmployeeCardProps>(({ 
   employee, 
   onClick, 
   className = '',
@@ -373,5 +374,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
     </Card>
   );
 };
+
+});
 
 export default EmployeeCard;

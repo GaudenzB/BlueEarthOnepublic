@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useLocation } from "wouter"
 import { SearchFilters } from "@/components/employee/SearchFilters"
@@ -7,14 +7,127 @@ import {
   Empty, 
   Spin, 
   Result, 
-  Button
+  Button,
+  Row,
+  Col
 } from "antd"
+import { FixedSizeGrid as Grid } from 'react-window'
 import { ReloadOutlined } from "@ant-design/icons"
 import { type Employee } from "@shared/schema"
 // Import from centralized theme system
 import { colors } from "@/lib/colors"
 // Import shared UI components
 import { EmployeeCard } from "@/components/ui"
+// Import theme tokens
+import { tokens } from "@/theme/tokens"
+
+// VirtualizedEmployeeGrid component
+interface VirtualizedEmployeeGridProps {
+  employees: Employee[];
+}
+
+// This component will render a virtualized grid of employee cards
+const VirtualizedEmployeeGrid: React.FC<VirtualizedEmployeeGridProps> = ({ employees }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  
+  // Calculate the number of columns based on container width
+  const columnCount = useMemo(() => {
+    if (dimensions.width < 640) return 1;      // xs: 1 column
+    if (dimensions.width < 1024) return 2;     // sm-md: 2 columns
+    if (dimensions.width < 1280) return 3;     // lg: 3 columns
+    return 4;                                  // xl: 4 columns
+  }, [dimensions.width]);
+
+  // Calculate item dimensions
+  const columnWidth = useMemo(() => {
+    const gap = 24; // gap-6 in Tailwind is 24px
+    return Math.floor((dimensions.width - (gap * (columnCount - 1))) / columnCount);
+  }, [dimensions.width, columnCount]);
+  
+  const rowHeight = 280; // Fixed height for employee cards
+  
+  // Update dimensions on resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.offsetWidth,
+          height: window.innerHeight - 300 // Approximate height minus headers and filters
+        });
+      }
+    };
+    
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+    };
+  }, []);
+  
+  // If there are no employees or dimensions aren't set, return traditional grid
+  if (employees.length === 0 || dimensions.width === 0) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {employees.map(employee => (
+          <EmployeeCard 
+            key={employee.id} 
+            employee={employee} 
+            variant="detailed" 
+          />
+        ))}
+      </div>
+    );
+  }
+  
+  // Cell renderer for the grid
+  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
+    const index = rowIndex * columnCount + columnIndex;
+    
+    if (index >= employees.length) {
+      return <div style={style} />; // Empty cell
+    }
+    
+    const employee = employees[index];
+    
+    // Apply gap using padding in the style
+    const cellStyle = {
+      ...style,
+      padding: '12px',
+    };
+    
+    return (
+      <div style={cellStyle}>
+        <EmployeeCard 
+          key={employee.id} 
+          employee={employee} 
+          variant="detailed" 
+        />
+      </div>
+    );
+  };
+  
+  // Calculate the number of rows
+  const rowCount = Math.ceil(employees.length / columnCount);
+  
+  return (
+    <div ref={containerRef} style={{ width: '100%', height: dimensions.height }}>
+      <Grid
+        columnCount={columnCount}
+        columnWidth={columnWidth}
+        height={dimensions.height}
+        rowCount={rowCount}
+        rowHeight={rowHeight}
+        width={dimensions.width}
+      >
+        {Cell}
+      </Grid>
+    </div>
+  );
+};
 
 export function EmployeeDirectory() {
   const [location] = useLocation();
@@ -375,16 +488,8 @@ export function EmployeeDirectory() {
         </div>
       ) : (
         <>
-          <div className="directory-container overflow-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {paginatedEmployees.map(employee => (
-                <EmployeeCard 
-                  key={employee.id} 
-                  employee={employee} 
-                  variant="detailed" 
-                />
-              ))}
-            </div>
+          <div className="directory-container overflow-hidden" style={{ padding: tokens.spacing[4] }}>
+            <VirtualizedEmployeeGrid employees={paginatedEmployees} />
           </div>
           
           {/* Pagination */}
