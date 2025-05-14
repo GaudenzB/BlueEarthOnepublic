@@ -5,38 +5,39 @@
  * For new components, please import from theme.ts instead.
  * This file remains for backward compatibility.
  */
-import { theme } from './theme';
+import { colors as themeColors } from './theme';
 
+// Define backwards-compatible color values
 export const colors = {
   // Primary Colors
   primary: {
-    base: theme.brand[700], // Deep navy blue for headers, sidebars, primary buttons
+    base: themeColors.primary.navy, // Deep navy blue for headers, sidebars, primary buttons
     hover: "#3F4F6F", // Higher contrast navy for hover and active states
-    light: theme.brand[600], // Softer navy for accents, borders, backgrounds
-    ultraLight: theme.brand[100], // Very light tone for secondary backgrounds
+    light: themeColors.primary.blue, // Softer navy for accents, borders, backgrounds
+    ultraLight: themeColors.backgroundLight, // Very light tone for secondary backgrounds
   },
   
   // Typography
   text: {
     primary: "#FFFFFF", // White text for dark backgrounds
-    body: theme.gray[900], // Default dark text for light backgrounds
-    muted: theme.gray[600], // Secondary or de-emphasized content
+    body: themeColors.secondary.charcoal, // Default dark text for light backgrounds
+    muted: themeColors.secondary.slate, // Secondary or de-emphasized content
   },
   
   // Accent Colors
   accent: {
-    success: theme.success[500], // Green for confirming actions or positive status
-    warning: theme.warning[500], // Amber for alerts and cautions
-    error: theme.error[500], // Red for destructive actions or errors
-    info: theme.info[500], // Blue for highlights or informational messages
+    success: themeColors.status.active, // Green for confirming actions or positive status
+    warning: themeColors.status.warning, // Amber for alerts and cautions
+    error: themeColors.status.error, // Red for destructive actions or errors
+    info: themeColors.status.pending, // Blue for highlights or informational messages
   },
   
   // Backgrounds and Neutrals
   background: {
-    base: theme.gray[50], // Default background for pages and content
-    sidebar: theme.brand[900], // Very dark navy for navigation panels
-    divider: theme.gray[200], // Soft grey for separating content
-    card: "#FFFFFF", // White for content presentation in cards
+    base: themeColors.backgroundDark, // Default background for pages and content
+    sidebar: themeColors.primary.navy, // Very dark navy for navigation panels
+    divider: themeColors.border, // Soft grey for separating content
+    card: themeColors.backgroundLight, // White for content presentation in cards
     hover: "#435D85" // High contrast hover for dark sidebar/navbar elements
   }
 };
