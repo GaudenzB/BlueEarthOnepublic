@@ -134,8 +134,8 @@ const GridItemRenderer = React.memo(({
   // Calculate the index in the flattened array
   const index = rowIndex * columnCount + columnIndex;
   
-  // If index is out of bounds, render empty cell
-  if (index >= employees.length) {
+  // If index is out of bounds or employees is not properly initialized, render empty cell
+  if (!employees || !Array.isArray(employees) || index >= employees.length) {
     return <div style={style} />;
   }
   
@@ -354,6 +354,10 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   
   // Filter employees based on search query and filters
   const filteredEmployees = useMemo(() => {
+    if (!employees || !Array.isArray(employees)) {
+      return [];
+    }
+    
     return employees.filter(employee => {
       // Apply search filter
       if (debouncedSearchQuery) {
