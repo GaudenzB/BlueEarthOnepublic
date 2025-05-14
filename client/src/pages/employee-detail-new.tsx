@@ -4,12 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import type { Employee } from "@shared/schema";
 import { 
   Card, 
-  Divider, 
   Button, 
   Tabs, 
   Result, 
-  Empty,
-  Space
+  Empty
 } from "antd";
 import { 
   ApartmentOutlined, 
@@ -260,9 +258,6 @@ export default function EmployeeDetail() {
       </div>
     );
   }
-
-  // Get status configuration
-  const statusConfig = getStatusConfig(employee.status || 'inactive');
 
   // Main content render
   return (
