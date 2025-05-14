@@ -120,7 +120,7 @@ export default function DocumentDetail() {
     isLoading, 
     isError, 
     error
-  } = useQuery<Document>({
+  } = useQuery<Document, Error, Document>({
     queryKey: ['/api/documents', id],
     enabled: !!id,
     // Auto-refresh every 5 seconds for documents in processing states
@@ -128,7 +128,7 @@ export default function DocumentDetail() {
     // Only refetch if document is in a processing state
     refetchIntervalInBackground: true,
     // Custom selector to determine if we need to continue polling
-    select: (data) => {
+    select: (data: Document) => {
       // If processing is done, signal to stop polling by invalidating query
       if (data && data.processingStatus !== 'PROCESSING' && data.processingStatus !== 'PENDING') {
         setTimeout(() => {
@@ -140,9 +140,13 @@ export default function DocumentDetail() {
   });
   
   // Mutation for deleting a document with optimistic UI updates
-  const deleteDocumentMutation = useMutation({
+  interface DeleteMutationContext {
+    previousDocuments: Document[] | undefined;
+  }
+  
+  const deleteDocumentMutation = useMutation<void, Error, void, DeleteMutationContext>({
     mutationFn: () => {
-      return apiRequest(`/api/documents/${id}`, { method: 'DELETE' });
+      return apiRequest<void>(`/api/documents/${id}`, { method: 'DELETE' });
     },
     onMutate: async () => {
       // Cancel any outgoing refetches
@@ -153,7 +157,7 @@ export default function DocumentDetail() {
       
       // Optimistically update the documents list (remove this document)
       if (previousDocuments) {
-        queryClient.setQueryData(
+        queryClient.setQueryData<Document[]>(
           ['/api/documents'], 
           previousDocuments.filter(doc => doc.id !== id)
         );
@@ -169,21 +173,27 @@ export default function DocumentDetail() {
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       setLocation('/documents');
     },
-    onError: (_, __, context) => {
+    onError: (error: Error, _, context: DeleteMutationContext | undefined) => {
       // If there was an error, restore previous documents 
-      queryClient.setQueryData(['/api/documents'], context?.previousDocuments);
-      message.error('Failed to delete document. Please try again.');
+      if (context?.previousDocuments) {
+        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocuments);
+      }
+      message.error(`Failed to delete document: ${error.message || 'Unknown error'}`);
     },
   });
   
   // Mutation for refreshing document status
-  const refreshStatusMutation = useMutation({
+  const refreshStatusMutation = useMutation<void, Error, void>({
     mutationFn: () => {
-      return apiRequest(`/api/documents/${id}/refresh-status`, { method: 'POST' });
+      return apiRequest<void>(`/api/documents/${id}/refresh-status`, { method: 'POST' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
+      message.success('Document status updated');
     },
+    onError: (error: Error) => {
+      message.error(`Failed to refresh document status: ${error.message || 'Unknown error'}`);
+    }
   });
   
   // Event handlers
