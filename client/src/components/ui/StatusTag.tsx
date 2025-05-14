@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Typography } from 'antd';
 import { 
   CheckCircleOutlined,
@@ -12,42 +12,160 @@ import {
   TagOutlined,
   LockOutlined
 } from '@ant-design/icons';
-import { colors } from '@/lib/theme';
+import { tokens } from '@/theme/tokens';
 
 const { Text } = Typography;
 
-// Custom color palette for financial industry styling using centralized theme
-const STATUS_COLORS = {
+/**
+ * StatusConfig interface defines the visual appearance of a status
+ */
+interface StatusConfig {
+  background: string;
+  text: string;
+  border: string;
+  icon: string;
+  IconComponent: React.ComponentType<any>;
+  displayName?: string;
+}
+
+// Default status config to use as fallback
+const DEFAULT_STATUS_CONFIG: StatusConfig = {
+  background: '#f3f4f6',
+  text: '#4b5563',
+  border: '#d1d5db',
+  icon: tokens.colors.neutral[600],
+  IconComponent: TagOutlined
+};
+
+/**
+ * Map all common status values to their visual representation
+ * This allows for consistent status representation across the application
+ */
+const STATUS_CONFIG: Record<string, StatusConfig> = {
+  // Employee statuses
   active: {
     background: '#e6f7ef',
     text: '#0e6245',
     border: '#a8e6c9',
-    icon: '#10b981' // Same as colors.status.success
+    icon: tokens.colors.semantic.success,
+    IconComponent: CheckCircleOutlined,
+    displayName: 'Active'
   },
   inactive: {
     background: '#f3f4f6',
     text: '#4b5563',
     border: '#d1d5db',
-    icon: '#94a3b8' // Same as colors.status.draft 
+    icon: tokens.colors.neutral[600],
+    IconComponent: StopOutlined,
+    displayName: 'Inactive'
   },
-  warning: {
+  on_leave: {
     background: '#fef6e6',
     text: '#92400e',
     border: '#fcd34d',
-    icon: colors.status.warning
+    icon: tokens.colors.semantic.warning,
+    IconComponent: ClockCircleOutlined,
+    displayName: 'On Leave'
   },
-  processing: {
+  remote: {
     background: '#eff6fe',
     text: '#1e40af',
     border: '#bfdbfe',
-    icon: colors.status.info
+    icon: tokens.colors.semantic.info,
+    IconComponent: GlobalOutlined,
+    displayName: 'Remote'
   },
-  error: {
+  
+  // Document statuses
+  draft: {
+    background: '#f3f4f6',
+    text: '#4b5563',
+    border: '#d1d5db',
+    icon: tokens.colors.neutral[600],
+    IconComponent: FileTextOutlined,
+    displayName: 'Draft'
+  },
+  in_review: {
+    background: '#eff6fe',
+    text: '#1e40af',
+    border: '#bfdbfe',
+    icon: tokens.colors.semantic.info,
+    IconComponent: ClockCircleOutlined,
+    displayName: 'In Review'
+  },
+  pending: {
+    background: '#eff6fe',
+    text: '#1e40af',
+    border: '#bfdbfe',
+    icon: tokens.colors.semantic.info,
+    IconComponent: ClockCircleOutlined,
+    displayName: 'Pending'
+  },
+  approved: {
+    background: '#e6f7ef',
+    text: '#0e6245',
+    border: '#a8e6c9',
+    icon: tokens.colors.semantic.success,
+    IconComponent: CheckCircleOutlined,
+    displayName: 'Approved'
+  },
+  completed: {
+    background: '#e6f7ef',
+    text: '#0e6245',
+    border: '#a8e6c9',
+    icon: tokens.colors.semantic.success,
+    IconComponent: CheckCircleOutlined,
+    displayName: 'Completed'
+  },
+  rejected: {
     background: '#fee2e2',
     text: '#b91c1c',
     border: '#fecaca',
-    icon: colors.status.error
-  }
+    icon: tokens.colors.semantic.error,
+    IconComponent: ExclamationCircleOutlined,
+    displayName: 'Rejected'
+  },
+  expired: {
+    background: '#fef6e6',
+    text: '#92400e',
+    border: '#fcd34d',
+    icon: tokens.colors.semantic.warning,
+    IconComponent: WarningOutlined,
+    displayName: 'Expired'
+  },
+  
+  // Version status
+  version: {
+    background: '#f3f0ff',
+    text: '#5b21b6',
+    border: '#c4b5fd',
+    icon: '#8b5cf6',
+    IconComponent: HistoryOutlined,
+    displayName: 'Version'
+  },
+  
+  // Document visibility/access
+  restricted: {
+    background: '#fff1f2',
+    text: '#9f1239',
+    border: '#fda4af',
+    icon: '#f43f5e',
+    IconComponent: LockOutlined,
+    displayName: 'Restricted'
+  },
+  
+  // Archive status
+  archived: {
+    background: '#f8fafc',
+    text: '#334155',
+    border: '#cbd5e1',
+    icon: tokens.colors.neutral[600],
+    IconComponent: TagOutlined,
+    displayName: 'Archived'
+  },
+  
+  // Add the default to the map itself
+  default: DEFAULT_STATUS_CONFIG
 };
 
 export interface StatusTagProps {
@@ -75,7 +193,41 @@ export interface StatusTagProps {
    * Optional size of the tag. Default is 'default'
    */
   size?: 'small' | 'default' | 'large';
+
+  /**
+   * Optional callback for click events
+   */
+  onClick?: (e: React.MouseEvent) => void;
+
+  /**
+   * Optional flag to make the status tag interactive (hover/focus states)
+   */
+  interactive?: boolean;
 }
+
+/**
+ * Size configurations for different tag sizes
+ */
+const SIZE_STYLES = {
+  small: {
+    fontSize: '11px',
+    padding: '0 8px',
+    height: '20px',
+    borderRadius: tokens.radii.pill
+  },
+  default: {
+    fontSize: '12px',
+    padding: '0 10px',
+    height: '24px',
+    borderRadius: tokens.radii.pill
+  },
+  large: {
+    fontSize: '13px',
+    padding: '0 12px',
+    height: '28px',
+    borderRadius: tokens.radii.pill
+  }
+} as const;
 
 /**
  * StatusTag Component
@@ -87,180 +239,78 @@ export interface StatusTagProps {
  * @example
  * <StatusTag status="active" />
  * <StatusTag status="in_review" text="Under Review" />
+ * <StatusTag status="approved" size="large" onClick={handleClick} />
  */
-export const StatusTag: React.FC<StatusTagProps> = ({ 
+export const StatusTag = memo(({ 
   status, 
   className = '', 
   icon: customIcon, 
   text: customText,
-  size = 'default'
-}) => {
-  // Get status configuration based on status value
-  let colorScheme = STATUS_COLORS.inactive;
-  let statusIcon: React.ReactElement | null = <StopOutlined />;
-  let statusText = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace('_', ' ');
+  size = 'default',
+  onClick,
+  interactive = false
+}: StatusTagProps) => {
+  // Get config based on normalized status value
+  const normalizedStatus = status?.toLowerCase().replace(/[^a-z0-9_]/g, '_') || 'default';
   
-  // Handle based on specific status values
-  const lowercaseStatus = status.toLowerCase();
+  // Get status config with type-safe fallback
+  const statusConfig = STATUS_CONFIG[normalizedStatus] || DEFAULT_STATUS_CONFIG;
   
-  // Employee statuses
-  if (lowercaseStatus === 'active') {
-    colorScheme = STATUS_COLORS.active;
-    statusIcon = <CheckCircleOutlined />;
-    statusText = 'Active';
-  } else if (lowercaseStatus === 'inactive') {
-    colorScheme = STATUS_COLORS.inactive;
-    statusIcon = <StopOutlined />;
-    statusText = 'Inactive';
-  } else if (lowercaseStatus === 'on_leave') {
-    colorScheme = STATUS_COLORS.warning;
-    statusIcon = <ClockCircleOutlined />;
-    statusText = 'On Leave';
-  } else if (lowercaseStatus === 'remote') {
-    colorScheme = STATUS_COLORS.processing;
-    statusIcon = <GlobalOutlined />;
-    statusText = 'Remote';
-  }
-  // Document statuses
-  else if (lowercaseStatus === 'draft') {
-    colorScheme = STATUS_COLORS.inactive;
-    statusIcon = <FileTextOutlined />;
-    statusText = 'Draft';
-  } else if (lowercaseStatus === 'in_review') {
-    colorScheme = STATUS_COLORS.processing;
-    statusIcon = <ClockCircleOutlined />;
-    statusText = 'In Review';
-  } else if (lowercaseStatus === 'pending') {
-    colorScheme = STATUS_COLORS.processing;
-    statusIcon = <ClockCircleOutlined />;
-    statusText = 'Pending';
-  } else if (lowercaseStatus === 'approved') {
-    colorScheme = STATUS_COLORS.active;
-    statusIcon = <CheckCircleOutlined />;
-    statusText = 'Approved';
-  } else if (lowercaseStatus === 'completed') {
-    colorScheme = STATUS_COLORS.active;
-    statusIcon = <CheckCircleOutlined />;
-    statusText = 'Completed';
-  } else if (lowercaseStatus === 'rejected') {
-    colorScheme = STATUS_COLORS.error;
-    statusIcon = <ExclamationCircleOutlined />;
-    statusText = 'Rejected';
-  } else if (lowercaseStatus === 'expired') {
-    colorScheme = STATUS_COLORS.warning;
-    statusIcon = <WarningOutlined />;
-    statusText = 'Expired';
-  } 
-  // Version status
-  else if (lowercaseStatus === 'version') {
-    colorScheme = {
-      background: '#f3f0ff',
-      text: '#5b21b6',
-      border: '#c4b5fd',
-      icon: '#8b5cf6'
-    };
-    statusIcon = <HistoryOutlined />;
-    statusText = 'Version';
-  }
-  // Document visibility/access
-  else if (lowercaseStatus === 'restricted') {
-    colorScheme = {
-      background: '#fff1f2',
-      text: '#9f1239',
-      border: '#fda4af',
-      icon: '#f43f5e'
-    };
-    statusIcon = <LockOutlined />;
-    statusText = 'Restricted';
-  }
-  // Archived content
-  else if (lowercaseStatus === 'archived') {
-    colorScheme = {
-      background: '#f8fafc',
-      text: '#334155',
-      border: '#cbd5e1', 
-      icon: '#64748b'
-    };
-    statusIcon = <TagOutlined />;
-    statusText = 'Tag';
-  }
+  // Determine text content (priority: custom text > config display name > formatted status)
+  const displayText = customText || 
+    statusConfig.displayName || 
+    (status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace(/_/g, ' ') : 'Unknown');
   
-  // Size-dependent styling
-  const sizeStyles = {
-    small: {
-      fontSize: '11px',
-      padding: '0 8px',
-      height: '20px',
-      borderRadius: '10px'
-    },
-    default: {
-      fontSize: '12px',
-      padding: '0 10px',
-      height: '24px',
-      borderRadius: '12px'
-    },
-    large: {
-      fontSize: '13px',
-      padding: '0 12px',
-      height: '28px',
-      borderRadius: '14px'
-    }
-  }[size];
+  // Get size styling with type safety
+  const sizeStyle = SIZE_STYLES[size] || SIZE_STYLES.default;
   
-  // Render icon with proper styling
-  const renderIcon = () => {
-    try {
-      // Use custom icon if provided, otherwise use statusIcon
-      const iconToRender = customIcon || statusIcon;
-      
-      if (React.isValidElement(iconToRender)) {
-        return (
-          <span style={{ 
-            fontSize: sizeStyles.fontSize, 
-            color: colorScheme.icon, 
-            marginRight: '4px', 
-            display: 'inline-flex' 
-          }}>
-            {iconToRender}
-          </span>
-        );
-      }
-    } catch (error) {
-      console.error('Error rendering icon:', error);
-    }
-    
-    return null;
-  };
+  // Handle interactive styles
+  const interactiveStyle: React.CSSProperties = interactive ? {
+    cursor: 'pointer',
+    transition: tokens.transitions.default,
+  } : {};
   
   return (
     <div 
       className={`inline-flex items-center ${className}`}
       style={{
-        backgroundColor: colorScheme.background,
-        border: `1px solid ${colorScheme.border}`,
-        color: colorScheme.text,
-        height: sizeStyles.height,
-        borderRadius: sizeStyles.borderRadius,
-        padding: sizeStyles.padding,
-        fontSize: sizeStyles.fontSize,
-        fontWeight: 500,
+        backgroundColor: statusConfig.background,
+        border: `1px solid ${statusConfig.border}`,
+        color: statusConfig.text,
+        height: sizeStyle.height,
+        borderRadius: sizeStyle.borderRadius,
+        padding: sizeStyle.padding,
+        fontSize: sizeStyle.fontSize,
+        fontWeight: tokens.typography.fontWeight.medium,
         lineHeight: 1,
         letterSpacing: '0.2px',
-        whiteSpace: 'nowrap'
+        whiteSpace: 'nowrap',
+        ...interactiveStyle
       }}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
-      {renderIcon()}
-      <Text style={{ 
-        fontSize: 'inherit', 
-        color: 'inherit',
-        fontWeight: 'inherit',
-        lineHeight: 'inherit',
-        margin: 0
-      }}>
-        {customText || statusText}
+      {customIcon || (
+        <span style={{ 
+          fontSize: sizeStyle.fontSize, 
+          color: statusConfig.icon, 
+          marginRight: '4px', 
+          display: 'inline-flex' 
+        }}>
+          <statusConfig.IconComponent />
+        </span>
+      )}
+      
+      <Text style={{ color: 'inherit', fontSize: 'inherit', margin: 0 }}>
+        {displayText}
       </Text>
     </div>
   );
-};
+});
 
+// Set displayName for better debugging experience
+StatusTag.displayName = 'StatusTag';
+
+// Default export
 export default StatusTag;

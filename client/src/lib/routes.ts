@@ -28,6 +28,7 @@ export const ROUTES = {
   CALENDAR: '/calendar',
   MESSAGES: '/messages',
   DESIGN_TESTING: '/design-testing',
+  DESIGN_SYSTEM: '/design-system',
 };
 
 // Admin Routes

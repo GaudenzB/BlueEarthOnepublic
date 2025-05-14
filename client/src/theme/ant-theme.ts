@@ -125,8 +125,8 @@ export const antThemeConfig: ThemeConfig = {
       margin: 0,
     },
     Tooltip: {
-      colorBgDefault: tokens.colors.neutral[900],
-      borderRadius: parseInt(tokens.radii.md),
+      colorFill: tokens.colors.neutral[900],
+      borderRadiusOuter: parseInt(tokens.radii.md),
     },
     Typography: {
       colorText: tokens.colors.neutral[900],
