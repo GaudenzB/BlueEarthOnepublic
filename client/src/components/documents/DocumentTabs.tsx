@@ -10,6 +10,8 @@ interface DocumentTabsProps {
   document: Document;
   activeTab: string;
   onTabChange: (key: string) => void;
+  onRestoreVersion?: (versionId: string) => void;
+  isRestoring?: boolean;
 }
 
 /**

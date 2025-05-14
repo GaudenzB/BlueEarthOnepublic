@@ -13,12 +13,14 @@ interface DocumentDetailContentProps {
   onShareClick: () => void;
   onRefreshStatus: () => void;
   onFavoriteToggle?: () => void;
+  onRestoreVersion?: (versionId: string) => void;
   isFavorited?: boolean;
   isRefreshing: boolean;
   loading?: {
     favorite?: boolean;
     delete?: boolean;
     download?: boolean;
+    restore?: boolean;
   };
 }
 
@@ -35,6 +37,7 @@ export const DocumentDetailContent = memo(({
   onShareClick,
   onRefreshStatus,
   onFavoriteToggle,
+  onRestoreVersion,
   isFavorited,
   isRefreshing,
   loading = {}
@@ -64,6 +67,8 @@ export const DocumentDetailContent = memo(({
         document={document}
         activeTab={activeTab}
         onTabChange={onTabChange}
+        onRestoreVersion={onRestoreVersion}
+        isRestoring={loading?.restore || false}
       />
     </div>
   );

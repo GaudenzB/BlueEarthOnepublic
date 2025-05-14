@@ -167,6 +167,9 @@ export interface Document {
   // Flags
   isFavorite?: boolean;
   isArchived?: boolean;
+  
+  // Transient state properties (not persisted)
+  activeRestoreVersionId?: string; // Tracks which version is being restored
 }
 
 /**
