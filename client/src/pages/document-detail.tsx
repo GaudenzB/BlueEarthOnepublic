@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
+import { message } from "antd";
 import { Document } from "@/types/document";
 import { DocumentDetailContent } from "@/components/documents/DocumentDetailContent";
 import { DocumentDeleteDialog } from "@/components/documents/DocumentDeleteDialog";
@@ -54,308 +55,68 @@ export default function DocumentDetail() {
     },
   });
   
-  // Mutation for deleting a document with optimistic UI updates
-  interface DeleteMutationContext {
-    previousDocuments: Document[] | undefined;
-  }
+  // Use custom mutation hooks for document operations
+  const deleteDocumentMutation = useDocumentDelete(id);
+  const refreshStatusMutation = useDocumentRefreshStatus(id);
+  const toggleFavoriteMutation = useDocumentFavoriteToggle(id);
+  const restoreVersionMutation = useDocumentVersionRestore(id);
   
-  const deleteDocumentMutation = useMutation<void, Error, void, DeleteMutationContext>({
-    mutationFn: () => {
-      return apiRequest<void>(`/api/documents/${id}`, { method: 'DELETE' });
-    },
-    onMutate: async () => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
-      
-      // Snapshot the previous value
-      const previousDocuments = queryClient.getQueryData<Document[]>(['/api/documents']);
-      
-      // Optimistically update the documents list (remove this document)
-      if (previousDocuments) {
-        queryClient.setQueryData<Document[]>(
-          ['/api/documents'], 
-          previousDocuments.filter(doc => doc.id !== id)
-        );
-      }
-      
-      // Show success message 
-      message.success('Document deleted successfully');
-      
-      // Return context with the previous documents
-      return { previousDocuments };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      setLocation('/documents');
-    },
-    onError: (error: Error, _, context: DeleteMutationContext | undefined) => {
-      // If there was an error, restore previous documents 
-      if (context?.previousDocuments) {
-        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocuments);
-      }
-      message.error(`Failed to delete document: ${error.message || 'Unknown error'}`);
-    },
-  });
+  // Handle tab change
+  const handleTabChange = (newActiveTab: string) => {
+    setActiveTab(newActiveTab);
+  };
   
-  // Mutation for refreshing document status with optimistic updates
-  interface RefreshMutationContext {
-    previousDocument: Document | undefined;
-    previousDocumentsList: Document[] | undefined;
-  }
+  // Handle document actions
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
   
-  const refreshStatusMutation = useMutation<void, Error, void, RefreshMutationContext>({
-    mutationFn: () => {
-      return apiRequest<void>(`/api/documents/${id}/refresh-status`, { method: 'POST' });
-    },
-    onMutate: async () => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/documents', id] });
-      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
-      
-      // Snapshot the previous document state
-      const previousDocument = queryClient.getQueryData<Document>(['/api/documents', id]);
-      const previousDocumentsList = queryClient.getQueryData<Document[]>(['/api/documents']);
-      
-      // Optimistically update the document status to PROCESSING if it's not already
-      if (previousDocument && previousDocument.processingStatus !== 'PROCESSING') {
-        const optimisticDocument: Document = {
-          ...previousDocument,
-          processingStatus: 'PROCESSING' as DocumentProcessingStatus
-        };
-        
-        // Update the individual document
-        queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);
-        
-        // Also update document in the list if it exists there
-        if (previousDocumentsList) {
-          const updatedList = previousDocumentsList.map(doc => 
-            doc.id === id ? optimisticDocument : doc
-          );
-          queryClient.setQueryData<Document[]>(['/api/documents'], updatedList);
-        }
-      }
-      
-      // Return context with the previous document states
-      return { 
-        previousDocument,
-        previousDocumentsList 
-      };
-    },
-    onSuccess: () => {
-      // Invalidate both the individual document and the documents list
-      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      message.success('Document status updated');
-    },
-    onError: (error: Error, _, context: RefreshMutationContext | undefined) => {
-      // If there was an error, restore previous document states
-      if (context?.previousDocument) {
-        queryClient.setQueryData<Document>(['/api/documents', id], context.previousDocument);
-      }
-      
-      if (context?.previousDocumentsList) {
-        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocumentsList);
-      }
-      
-      message.error(`Failed to refresh document status: ${error.message || 'Unknown error'}`);
-    }
-  });
+  const handleShareClick = () => {
+    setShowShareDialog(true);
+  };
   
-  // Mutation for toggling document favorite status with optimistic updates
-  interface FavoriteMutationContext {
-    previousDocument: Document | undefined;
-    previousDocumentsList: Document[] | undefined;
-  }
+  const handleRefreshStatus = () => {
+    refreshStatusMutation.mutate();
+  };
   
-  // Mutation for restoring a specific document version
-  interface RestoreVersionMutationContext {
-    previousDocument: Document | undefined;
-    previousDocumentsList: Document[] | undefined;
-  }
+  const handleFavoriteToggle = () => {
+    toggleFavoriteMutation.mutate();
+  };
   
-  const toggleFavoriteMutation = useMutation<void, Error, void, FavoriteMutationContext>({
-    mutationFn: () => {
-      // The API endpoint would typically accept a parameter to toggle favorite status
-      const isFavorite = !document?.isFavorite;
-      return apiRequest<void>(`/api/documents/${id}/favorite`, { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isFavorite })
-      });
-    },
-    onMutate: async () => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/documents', id] });
-      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
-      
-      // Snapshot the previous document states
-      const previousDocument = queryClient.getQueryData<Document>(['/api/documents', id]);
-      const previousDocumentsList = queryClient.getQueryData<Document[]>(['/api/documents']);
-      
-      if (previousDocument) {
-        // Create an optimistic update with toggled favorite status
-        const optimisticDocument: Document = {
-          ...previousDocument,
-          isFavorite: !previousDocument.isFavorite
-        };
-        
-        // Update the individual document
-        queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);
-        
-        // Also update the document in the list if it exists there
-        if (previousDocumentsList) {
-          const updatedList = previousDocumentsList.map(doc => 
-            doc.id === id ? optimisticDocument : doc
-          );
-          queryClient.setQueryData<Document[]>(['/api/documents'], updatedList);
-        }
-        
-        // Show optimistic success message
-        message.success(
-          optimisticDocument.isFavorite 
-            ? 'Added to favorites' 
-            : 'Removed from favorites'
-        );
-      }
-      
-      // Return context with the previous document states
-      return { 
-        previousDocument,
-        previousDocumentsList 
-      };
-    },
-    onSuccess: () => {
-      // Invalidate both the individual document and the documents list
-      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-    },
-    onError: (error: Error, _, context: FavoriteMutationContext | undefined) => {
-      // If there was an error, restore previous document states
-      if (context?.previousDocument) {
-        queryClient.setQueryData<Document>(['/api/documents', id], context.previousDocument);
-      }
-      
-      if (context?.previousDocumentsList) {
-        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocumentsList);
-      }
-      
-      message.error(`Failed to update favorite status: ${error.message || 'Unknown error'}`);
-    }
-  });
-  
-  // Event handlers
-  const handleDeleteClick = () => setShowDeleteDialog(true);
-  const handleShareClick = () => setShowShareDialog(true);
-  const handleConfirmDelete = () => deleteDocumentMutation.mutate();
-  const handleRefreshStatus = () => refreshStatusMutation.mutate();
-  const handleFavoriteToggle = () => toggleFavoriteMutation.mutate();
-  const handleTabChange = (key: string) => setActiveTab(key);
-  const handleReturn = () => setLocation('/documents');
-  
-  // Implementation of the restore version mutation
-  const restoreVersionMutation = useMutation<void, Error, string, RestoreVersionMutationContext>({
-    mutationFn: (versionId: string) => {
-      return apiRequest<void>(`/api/documents/${id}/versions/${versionId}/restore`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-    },
-    onMutate: async (versionId) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/documents', id] });
-      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
-      
-      // Snapshot the previous document states
-      const previousDocument = queryClient.getQueryData<Document>(['/api/documents', id]);
-      const previousDocumentsList = queryClient.getQueryData<Document[]>(['/api/documents']);
-      
-      if (previousDocument) {
-        // Find the selected version
-        const selectedVersion = previousDocument.versions?.find(v => v.id === versionId);
-        
-        if (selectedVersion) {
-          // Create an optimistic update with the restored version info
-          const optimisticDocument: Document = {
-            ...previousDocument,
-            updatedAt: new Date().toISOString(), // Update timestamp
-            processingStatus: 'PROCESSING' as DocumentProcessingStatus // Show as processing
-          };
-          
-          // Update the individual document
-          queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);
-          
-          // Also update document in the list if it exists there
-          if (previousDocumentsList) {
-            const updatedList = previousDocumentsList.map(doc => 
-              doc.id === id ? optimisticDocument : doc
-            );
-            queryClient.setQueryData<Document[]>(['/api/documents'], updatedList);
-          }
-          
-          // Show optimistic success message
-          message.success(`Restoring to version ${selectedVersion.versionNumber}...`);
-        }
-      }
-      
-      // Return context with the previous document states
-      return { 
-        previousDocument,
-        previousDocumentsList 
-      };
-    },
-    onSuccess: () => {
-      // Invalidate both the individual document and the documents list
-      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      message.success('Document version restored successfully');
-    },
-    onError: (error: Error, _, context: RestoreVersionMutationContext | undefined) => {
-      // If there was an error, restore previous document states
-      if (context?.previousDocument) {
-        queryClient.setQueryData<Document>(['/api/documents', id], context.previousDocument);
-      }
-      
-      if (context?.previousDocumentsList) {
-        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocumentsList);
-      }
-      
-      message.error(`Failed to restore version: ${error.message || 'Unknown error'}`);
-    }
-  });
-  
-  // Handler for version restore
   const handleRestoreVersion = (versionId: string) => {
     restoreVersionMutation.mutate(versionId);
   };
-
-  // Handle loading and error states
+  
+  const handleConfirmDelete = async () => {
+    await deleteDocumentMutation.mutateAsync();
+    setShowDeleteDialog(false);
+    setLocation('/documents');
+  };
+  
+  // Handle loading, error, and not found states
   if (isLoading) {
     return <DocumentDetailSkeleton />;
   }
   
-  if (isError && error) {
-    const errorObj = error instanceof Error ? error : new Error(String(error));
-    return <DocumentDetailError error={errorObj} onReturn={handleReturn} />;
+  if (isError) {
+    return (
+      <DocumentDetailError 
+        error={error} 
+        onReturn={() => setLocation('/documents')} 
+      />
+    );
   }
   
-  // Handle not found or empty document response
-  if (!document || !document.id) {
-    // If it's not loading and not an error, but we still don't have document data
-    if (!isLoading && !isError) {
-      return <DocumentDetailNotFound onReturn={handleReturn} />;
-    }
-    // Otherwise we'll fall through to either the loading or error states
+  if (!document) {
+    return (
+      <DocumentDetailNotFound 
+        onReturn={() => setLocation('/documents')} 
+      />
+    );
   }
   
-  // Create a safe document object to use in the JSX
-  // This is needed for TypeScript when document might be undefined
-  // The document should never be used in components if it's undefined
-  // but TypeScript needs the fallback for type safety
-  const safeDocument: Document = document as Document;
+  // Ensure we have a safe document object to work with
+  const safeDocument: Document = document;
   
   return (
     <>
