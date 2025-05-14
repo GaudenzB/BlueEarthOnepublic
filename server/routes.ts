@@ -34,6 +34,7 @@ import { registerPermissionRoutes } from "./routes/permissions";
 import documentsRoutes from "./routes/documents-refactored";
 import documentPreviewRoutes from "./routes/documentPreview";
 import semanticSearchRoutes from "./routes/semanticSearch";
+import chunkedUploadsRoutes from "./routes/chunkedUploads";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
 // Contracts module removed
 import healthRoutes from "./routes/health";
