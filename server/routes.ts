@@ -65,6 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/documents', documentsRoutes);
   app.use('/api/documents', documentPreviewRoutes);
   app.use('/api/semantic-search', semanticSearchRoutes);
+  app.use('/api/chunked-uploads', chunkedUploadsRoutes);
   
   // Register health and monitoring routes
   app.use('/api/health', healthRoutes);

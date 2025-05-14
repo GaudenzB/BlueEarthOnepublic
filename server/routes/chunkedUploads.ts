@@ -21,15 +21,15 @@ import { generateStorageKey } from '../services/documentStorage';
 const router = express.Router();
 
 // Get environment variables
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'blueearthcapital';
-const AWS_REGION = process.env.AWS_REGION || 'eu-central-1';
+const BUCKET_NAME = process.env['S3_BUCKET_NAME'] || 'blueearthcapital';
+const AWS_REGION = process.env['AWS_REGION'] || 'eu-central-1';
 
 // Initialize S3 client
 const s3Client = new S3Client({
   region: AWS_REGION,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env['AWS_ACCESS_KEY_ID']!,
+    secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY']!,
   }
 });
 
@@ -97,9 +97,9 @@ router.get('/initiate', authenticate, tenantContext, async (req: Request, res: R
       ContentType: contentType,
       ServerSideEncryption: 'AES256',
       // Optional KMS encryption
-      ...(process.env.KMS_KEY_ID && { 
+      ...(process.env['KMS_KEY_ID'] && { 
         ServerSideEncryption: 'aws:kms',
-        SSEKMSKeyId: process.env.KMS_KEY_ID
+        SSEKMSKeyId: process.env['KMS_KEY_ID']
       }),
       Metadata: {
         'tenant-id': tenantId,
@@ -156,8 +156,8 @@ router.get('/part-url', authenticate, tenantContext, async (req: Request, res: R
       Bucket: BUCKET_NAME,
       Key: documentKey as string,
       UploadId: uploadId as string,
-      PartNumber: parseInt(partNumber as string, 10),
-      ContentType: contentType as string
+      PartNumber: parseInt(partNumber as string, 10)
+      // ContentType is not supported in UploadPartCommandInput
     });
     
     // Generate pre-signed URL with 1-hour expiry

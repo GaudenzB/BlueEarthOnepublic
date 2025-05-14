@@ -80,14 +80,13 @@ export async function uploadFileInChunks(
   });
 
   try {
-    // Step 1: Get pre-signed URL for upload initialization
-    const initResponse = await apiRequest("/api/documents/upload-url", {
+    // Step 1: Initialize multipart upload
+    const initResponse = await apiRequest("/api/chunked-uploads/initiate", {
       method: "GET",
-      query: {
+      params: {
         filename: file.name,
         contentType: file.type,
-        documentType: metadata.documentType || "OTHER",
-        chunked: true
+        documentType: metadata.documentType || "OTHER"
       }
     });
 
@@ -119,9 +118,9 @@ export async function uploadFileInChunks(
 
       try {
         // Get pre-signed URL for this chunk
-        const chunkUrlResponse = await apiRequest("/api/documents/upload-chunk-url", {
+        const chunkUrlResponse = await apiRequest("/api/chunked-uploads/part-url", {
           method: "GET",
-          query: {
+          params: {
             uploadId,
             documentKey,
             partNumber,
@@ -173,7 +172,7 @@ export async function uploadFileInChunks(
     }
 
     // Step 3: Complete the chunked upload
-    const completeResponse = await apiRequest("/api/documents/complete-upload", {
+    const completeResponse = await apiRequest("/api/chunked-uploads/complete", {
       method: "POST",
       body: {
         uploadId,
