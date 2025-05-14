@@ -35,7 +35,7 @@ import documentsRoutes from "./routes/documents";
 import documentPreviewRoutes from "./routes/documentPreview";
 import semanticSearchRoutes from "./routes/semanticSearch";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
-import contractsRoutes from "./routes/contracts";
+// Contracts module removed
 import healthRoutes from "./routes/health";
 import monitoringRoutes from "./routes/monitoring";
 import testPdfRoutes from "./routes/test-pdf"; // Added for debugging PDF processing
@@ -60,10 +60,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register permission routes
   registerPermissionRoutes(app);
 
-  // Register document, document preview, and contract routes
+  // Register document and document preview routes
   app.use('/api/documents', documentsRoutes);
   app.use('/api/documents', documentPreviewRoutes);
-  app.use('/api/contracts', contractsRoutes);
   app.use('/api/semantic-search', semanticSearchRoutes);
   
   // Register health and monitoring routes

@@ -16,7 +16,7 @@ import ResetPassword from "@/pages/reset-password";
 import Integrations from "@/pages/integrations";
 import Documents from "@/pages/documents";
 import DocumentDetail from "@/pages/document-detail";
-import Contracts from "@/pages/contracts";
+// Contracts module removed
 import ChakraTest from "@/pages/chakra-test";
 import DesignTesting from "@/pages/design-testing";
 import PdfTest from "@/pages/pdf-test";
@@ -86,7 +86,7 @@ function Router() {
       <Route path={ROUTES.DASHBOARD} component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
       <Route path={ROUTES.DOCUMENTS.LIST} component={(props) => <ProtectedRoute component={Documents} {...props} />} />
       <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
-      <Route path={ROUTES.CONTRACTS.LIST} component={(props) => <ProtectedRoute component={Contracts} {...props} />} />
+      {/* Contracts route removed */}
       <Route path={ROUTES.CHAKRA_TEST} component={(props) => <ProtectedRoute component={ChakraTest} {...props} />} />
       <Route path={ROUTES.DESIGN_TESTING} component={(props) => <ProtectedRoute component={DesignTesting} {...props} />} />
       <Route path={ROUTES.PDF_TEST} component={(props) => <ProtectedRoute component={PdfTest} {...props} />} />

@@ -24,10 +24,7 @@ export const ROUTES = {
     LIST: '/documents',
     DETAIL: (id: string | number) => `/documents/${id}`,
   },
-  CONTRACTS: {
-    LIST: '/contracts',
-    DETAIL: (id: string | number) => `/contracts/${id}`,
-  },
+  // CONTRACTS module removed
   CALENDAR: '/calendar',
   MESSAGES: '/messages',
   CHAKRA_TEST: '/chakra-test',
@@ -66,11 +63,7 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       href: ROUTES.DOCUMENTS.LIST,
       icon: "FileText",
     },
-    {
-      title: "Contracts",
-      href: ROUTES.CONTRACTS.LIST,
-      icon: "GanttChart",
-    },
+    // Contracts module removed
     {
       title: "Messages",
       href: ROUTES.MESSAGES,
