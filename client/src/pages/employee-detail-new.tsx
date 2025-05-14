@@ -4,22 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import type { Employee } from "@shared/schema";
 import { 
   Card, 
-  Avatar, 
   Divider, 
   Button, 
-  Skeleton, 
   Tabs, 
-  Select, 
-  Tag, 
   Result, 
   Empty,
   Space
 } from "antd";
 import { 
-  MailOutlined, 
-  PhoneOutlined, 
-  EnvironmentOutlined, 
-  BankOutlined, 
   ApartmentOutlined, 
   UserOutlined, 
   FileTextOutlined, 
@@ -27,17 +19,16 @@ import {
   LockOutlined, 
   CalendarOutlined, 
   SyncOutlined,
-  ArrowLeftOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  GlobalOutlined,
-  StopOutlined
+  ArrowLeftOutlined
 } from "@ant-design/icons";
 import { colors } from "@/lib/colors";
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { ROUTES } from "@/lib/routes";
 import { httpClient, ApiResponse, ApiError } from "@/lib/httpClient";
+
+// Import UI components from our design system
+import { EmployeeCard } from "@/components/ui";
 
 const { TabPane } = Tabs;
 
@@ -82,40 +73,7 @@ export default function EmployeeDetail() {
     refreshData();
   }, [id, refetch]);
 
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'active':
-        return { 
-          color: "success", 
-          icon: <CheckCircleOutlined />, 
-          text: 'Active' 
-        };
-      case 'inactive':
-        return { 
-          color: "default", 
-          icon: <StopOutlined />, 
-          text: 'Inactive' 
-        };
-      case 'on_leave':
-        return { 
-          color: "warning", 
-          icon: <ClockCircleOutlined />, 
-          text: 'On Leave' 
-        };
-      case 'remote':
-        return { 
-          color: "processing", 
-          icon: <GlobalOutlined />, 
-          text: 'Remote' 
-        };
-      default:
-        return { 
-          color: "default", 
-          icon: <StopOutlined />, 
-          text: 'Unknown' 
-        };
-    }
-  };
+  // Removed getStatusConfig - using the status handling from the EmployeeCard component
 
   const goBack = () => {
     setLocation(ROUTES.HOME);
