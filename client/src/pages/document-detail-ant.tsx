@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
@@ -19,7 +19,6 @@ import {
   Tag,
   List,
   Table,
-  Collapse,
   Dropdown,
   Modal,
   Avatar,
@@ -30,15 +29,9 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
-  CheckCircleOutlined,
-  WarningOutlined,
-  ClockCircleOutlined,
-  StarOutlined,
   SyncOutlined,
   EditOutlined,
   EyeOutlined,
-  LockOutlined,
-  PaperClipOutlined,
   LinkOutlined,
   RightOutlined,
   MoreOutlined,
@@ -50,10 +43,9 @@ import {
 } from "@ant-design/icons";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { Document, DocumentType, DocumentVisibility } from "@/types/document";
 
 const { Title, Text, Paragraph } = Typography;
-const { Panel } = Collapse;
 const { TabPane } = Tabs;
 
 // Simulated document types and status options
