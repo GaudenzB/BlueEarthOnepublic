@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Building, MapPin, Mail, User, MessageSquare } from "lucide-react"
+import { BankOutlined, EnvironmentOutlined, MailOutlined, UserOutlined, MessageOutlined } from "@ant-design/icons"
 import { type Employee } from "@shared/schema"
 import { ROUTES } from "@/lib/routes"
 
@@ -55,19 +55,19 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
           
           <div className="mt-4 space-y-2">
             <div className="flex items-center text-sm">
-              <Building className="text-muted-foreground h-4 w-4 mr-2" />
+              <BankOutlined style={{ fontSize: '16px', marginRight: '8px', color: 'var(--muted-foreground)' }} />
               <span>{employee.department 
                 ? `${employee.department.charAt(0).toUpperCase()}${employee.department.slice(1)} Department` 
                 : 'Unknown Department'}</span>
             </div>
             {employee.location && (
               <div className="flex items-center text-sm">
-                <MapPin className="text-muted-foreground h-4 w-4 mr-2" />
+                <EnvironmentOutlined style={{ fontSize: '16px', marginRight: '8px', color: 'var(--muted-foreground)' }} />
                 <span>{employee.location}</span>
               </div>
             )}
             <div className="flex items-center text-sm">
-              <Mail className="text-muted-foreground h-4 w-4 mr-2" />
+              <MailOutlined style={{ fontSize: '16px', marginRight: '8px', color: 'var(--muted-foreground)' }} />
               <span>{employee.email || 'No email'}</span>
             </div>
           </div>
@@ -79,10 +79,10 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
             </Badge>
             <div>
               <Button variant="ghost" size="icon" className="h-8 w-8" title="View Profile">
-                <User className="h-4 w-4" />
+                <UserOutlined style={{ fontSize: '16px' }} />
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" title="Send Message">
-                <MessageSquare className="h-4 w-4" />
+                <MessageOutlined style={{ fontSize: '16px' }} />
               </Button>
             </div>
           </div>

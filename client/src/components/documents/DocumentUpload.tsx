@@ -387,13 +387,13 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                                   removeFile();
                                 }}
                               >
-                                <XIcon className="h-4 w-4 mr-1" /> Remove
+                                <CloseOutlined style={{ fontSize: '16px', marginRight: '4px' }} /> Remove
                               </Button>
                             </div>
                           ) : (
                             <>
                               <div className="bg-muted p-2 rounded-full mb-3">
-                                <UploadIcon className="h-6 w-6 text-foreground" />
+                                <UploadOutlined style={{ fontSize: '24px' }} />
                               </div>
                               <p className="text-sm font-medium mb-1">Drag & drop file here</p>
                               <p className="text-xs text-muted-foreground mb-3">

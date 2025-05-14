@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { Search, User, SortAsc, SortDesc, Building } from "lucide-react"
+import { SearchOutlined, UserOutlined, SortAscendingOutlined, SortDescendingOutlined, BankOutlined } from "@ant-design/icons"
 
 interface SearchFiltersProps {
   onSearch: (value: string) => void
