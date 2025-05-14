@@ -310,7 +310,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
                 label: 'Delete',
                 icon: <DeleteOutlined />,
                 danger: true,
-                onClick: () => handleDeleteClick(record.id, record.title || record.originalFilename),
+                onClick: () => handleDeleteClick(record.id, record.title || record.originalFilename || 'Document'),
                 disabled: !record.canDelete,
               },
             ],

@@ -7,7 +7,6 @@ import {
   CalendarOutlined, 
   FileTextOutlined, 
   MessageOutlined,
-  SettingOutlined,
   UserSwitchOutlined,
   LogoutOutlined,
   LinkOutlined,
@@ -19,7 +18,6 @@ import { Button } from "antd"
 import { Avatar } from "antd"
 import { useAuth } from "@/hooks/useAuth"
 import blueEarthLogo from "@/assets/BlueEarth-Capital_white.png"
-import { theme } from "@/lib/theme"
 import { getNavItems } from "@/lib/routes"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}

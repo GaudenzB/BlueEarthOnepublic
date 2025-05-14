@@ -16,6 +16,7 @@ import {
 } from '@ant-design/icons';
 import { Link } from 'wouter';
 import { Document } from '@/types/document';
+import StatusTag from '@/components/ui/StatusTag';
 
 const { Title } = Typography;
 
@@ -48,9 +49,6 @@ interface DocumentHeaderProps {
  * Uses our centralized StatusTag component for visual consistency
  */
 const DocumentTags = memo(({ document }: { document: Document }) => {
-  // Import StatusTag to avoid circular dependencies
-  const StatusTag = require('@/components/ui/StatusTag').default;
-  
   // Map document categories to relevant status values for consistent styling
   const mapCategoryToStatus = (category: string) => {
     const categoryMap: {[key: string]: string} = {
