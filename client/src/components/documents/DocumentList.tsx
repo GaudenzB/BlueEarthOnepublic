@@ -27,7 +27,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { queryClient } from "@/lib/queryClient";
-// Import StatusTag dynamically in render functions to avoid circular dependencies
+import StatusTag from "@/components/ui/StatusTag";
 
 interface DocumentListProps {
   documents: any[];
@@ -155,9 +155,6 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
         tooltipText = "Unknown document status";
     }
     
-    // Import here to avoid circular dependency issues
-    const StatusTag = require('@/components/ui/StatusTag').default;
-    
     return (
       <Tooltip title={tooltipText}>
         <StatusTag status={statusValue} />
@@ -231,8 +228,6 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       dataIndex: 'documentType',
       key: 'documentType',
       render: (documentType: string | undefined) => {
-        const StatusTag = require('@/components/ui/StatusTag').default;
-        
         // Map document types to relevant statuses for styling purposes
         let statusType = "draft"; // Default styling
         
