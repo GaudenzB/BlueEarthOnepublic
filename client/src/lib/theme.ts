@@ -1,207 +1,195 @@
 /**
- * Financial Portal Theme Configuration
+ * Theme Configuration
  * 
- * This file contains the centralized theme tokens used throughout the application.
- * Following the design guidelines in /docs/design-guidelines.md.
- * 
- * Use these tokens to maintain visual consistency across components.
+ * This file contains the centralized theme tokens for the application,
+ * following the financial services aesthetic guidelines.
  */
 
 export const colors = {
-  // Primary colors
   primary: {
-    blue: '#0e4a86', // Primary brand color
-    navy: '#172554', // Headings and important text
-    green: '#10b981', // Success states
+    base: '#0e4a86',
+    hover: '#1e63a5',
+    light: '#f0f7ff',
+    dark: '#0a3a68',
   },
-  
-  // Secondary colors
-  secondary: {
-    charcoal: '#1e293b', // Primary text
-    slate: '#64748b',    // Secondary text
-    lightGray: '#f8fafc', // Background for panels
+  text: {
+    primary: '#1e293b',
+    secondary: '#64748b',
+    muted: '#94a3b8',
+    inverse: '#ffffff',
   },
-  
-  // Accent colors
-  accent: {
-    gold: '#f59e0b',   // Warnings
-    ruby: '#e11d48',   // Errors
-    purple: '#8b5cf6', // Special features
-  },
-  
-  // Status colors
   status: {
-    active: '#10b981',    // Green
-    pending: '#3b82f6',   // Blue
-    warning: '#f59e0b',   // Amber
-    error: '#ef4444',     // Red
-    inactive: '#6b7280',  // Gray
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    info: '#3b82f6',
+    draft: '#94a3b8',
   },
-  
-  // Common interface colors
-  border: '#e5e7eb',
-  shadow: 'rgba(0, 0, 0, 0.08)',
-  backgroundLight: '#ffffff',
-  backgroundDark: '#f8fafc',
-  
-  // Table specific colors
-  table: {
-    headerBg: '#f8fafc',
-    headerText: '#334155',
-    border: '#e2e8f0',
-    rowHover: '#f1f5f9',
-    zebraStripe: '#fafafa',
+  background: {
+    page: '#f9fafc',
+    card: '#ffffff',
+    subtle: '#f8fafc',
+    selected: '#f0f7ff',
+  },
+  border: {
+    light: '#eaecf0',
+    default: '#d1d5db',
+    focus: '#0e4a86',
   }
 };
 
-// Typography settings
-export const typography = {
-  fontFamily: {
-    primary: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  },
-  
-  fontSize: {
-    // Headings
-    h1: '28px',
-    h2: '24px',
-    h3: '20px',
-    h4: '18px',
-    h5: '16px',
-    h6: '14px',
-    
-    // Body text
-    bodyLarge: '16px',
-    bodyRegular: '14px',
-    bodySmall: '12px',
-  },
-  
-  fontWeight: {
-    bold: 600,
-    medium: 500,
-    regular: 400,
-  },
-  
-  lineHeight: {
-    headings: 1.2,
-    body: 1.5,
-  }
-};
-
-// Spacing scale
 export const spacing = {
-  base: 4,
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  xxl: 32,
-  xxxl: 48,
-  
-  // Specific component spacing
-  cardPadding: '16px',
-  sectionPadding: '24px',
-  tableCellPadding: '12px 16px',
-  inputPadding: '8px 12px',
+  xs: '4px',
+  sm: '8px',
+  md: '16px',
+  lg: '24px',
+  xl: '32px',
+  '2xl': '48px',
+  '3xl': '64px',
 };
 
-// Border radius scale
-export const borderRadius = {
-  none: '0px',
-  sm: '4px',
-  default: '8px',
-  lg: '12px',
-  xl: '16px',
-  pill: '999px',
-};
-
-// Shadows for different elevations
 export const shadows = {
   sm: '0 1px 2px rgba(16, 24, 40, 0.05)',
-  default: '0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06)',
-  md: '0 4px 6px -1px rgba(16, 24, 40, 0.1), 0 2px 4px -1px rgba(16, 24, 40, 0.06)',
-  lg: '0 10px 15px -3px rgba(16, 24, 40, 0.1), 0 4px 6px -2px rgba(16, 24, 40, 0.05)',
-  xl: '0 20px 25px -5px rgba(16, 24, 40, 0.1), 0 10px 10px -5px rgba(16, 24, 40, 0.04)',
-  inner: 'inset 0 2px 4px 0 rgba(16, 24, 40, 0.05)',
-  none: 'none',
+  md: '0 4px 6px -1px rgba(16, 24, 40, 0.1)',
+  lg: '0 10px 15px -3px rgba(16, 24, 40, 0.1)',
+  xl: '0 20px 25px -5px rgba(16, 24, 40, 0.1)',
 };
 
-// Transitions
+export const typography = {
+  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontWeights: {
+    regular: 400,
+    medium: 500,
+    semibold: 600,
+    bold: 700,
+  },
+  fontSizes: {
+    xs: '12px',
+    sm: '14px',
+    base: '16px',
+    lg: '18px',
+    xl: '20px',
+    '2xl': '24px',
+    '3xl': '30px',
+    '4xl': '36px',
+  },
+  lineHeights: {
+    none: 1,
+    tight: 1.25,
+    normal: 1.5,
+    relaxed: 1.75,
+  },
+};
+
 export const transitions = {
-  default: '200ms ease',
-  fast: '100ms ease',
-  slow: '300ms ease',
+  default: 'all 0.2s ease-in-out',
+  fast: 'all 0.15s ease',
+  slow: 'all 0.3s ease-in-out',
 };
 
-// Breakpoints for responsive design
-export const breakpoints = {
-  mobile: '640px',
-  tablet: '1024px',
-  desktop: '1280px',
-  largeDesktop: '1440px',
+export const borderRadius = {
+  none: '0',
+  sm: '4px',
+  md: '6px',
+  lg: '8px',
+  xl: '12px',
+  full: '9999px',
 };
 
-// Container width constraints
-export const containers = {
-  maxWidth: '1200px',
-  formWidth: '800px',
+// Component-specific styling
+export const CARD_STYLES = {
+  card: {
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
+    border: '1px solid #eaecf0',
+    transition: 'all 0.2s ease-in-out',
+  },
+  cardHover: {
+    boxShadow: '0 3px 10px rgba(16, 24, 40, 0.1)',
+  },
+  cardSelected: {
+    borderColor: colors.primary.base,
+    boxShadow: `0 0 0 1px ${colors.primary.base}, ${shadows.md}`,
+  },
 };
 
-// Ant Design specific theme overrides
-export const antOverrides = {
-  token: {
-    colorPrimary: colors.primary.blue,
-    colorSuccess: colors.primary.green,
-    colorWarning: colors.accent.gold,
-    colorError: colors.accent.ruby,
-    colorInfo: colors.primary.blue,
-    
-    fontFamily: typography.fontFamily.primary,
-    
-    borderRadius: parseInt(borderRadius.default),
-    
-    boxShadow: shadows.default,
-    
-    // Component-specific overrides
-    Table: {
-      headerBg: colors.table.headerBg,
-      headerColor: colors.table.headerText,
-      borderColor: colors.table.border,
-    },
-    Button: {
-      defaultBg: 'white',
-      defaultBorderColor: colors.border,
-      primaryBg: colors.primary.blue,
-      primaryColor: 'white',
-    },
-    Card: {
-      padding: spacing.cardPadding,
-    },
-  }
+export const BUTTON_STYLES = {
+  primary: {
+    backgroundColor: colors.primary.base,
+    borderColor: colors.primary.base,
+    color: '#ffffff',
+    boxShadow: shadows.sm,
+    fontWeight: typography.fontWeights.medium,
+    height: '40px',
+    borderRadius: borderRadius.md,
+  },
+  secondary: {
+    backgroundColor: '#ffffff',
+    borderColor: colors.primary.base,
+    color: colors.primary.base,
+    boxShadow: 'none',
+    fontWeight: typography.fontWeights.medium,
+    height: '40px',
+    borderRadius: borderRadius.md,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    color: colors.primary.base,
+    boxShadow: 'none',
+    fontWeight: typography.fontWeights.medium,
+    height: '40px',
+    borderRadius: borderRadius.md,
+  },
 };
 
-// Named export for backwards compatibility with existing components
-export const theme = {
-  colors,
-  typography,
-  spacing,
-  borderRadius,
-  shadows,
-  transitions,
-  breakpoints,
-  containers,
-  antOverrides,
+export const INPUT_STYLES = {
+  default: {
+    height: '40px',
+    borderRadius: borderRadius.md,
+    borderColor: colors.border.default,
+    boxShadow: 'none',
+  },
+  focus: {
+    borderColor: colors.primary.base,
+    boxShadow: `0 0 0 2px ${colors.primary.light}`,
+  },
+  error: {
+    borderColor: colors.status.error,
+    boxShadow: `0 0 0 2px ${colors.status.error}20`,
+  },
 };
 
-// Default export of complete theme
+export const TABLE_STYLES = {
+  header: {
+    backgroundColor: colors.background.subtle,
+    fontWeight: typography.fontWeights.semibold,
+    color: colors.text.primary,
+  },
+  row: {
+    border: `1px solid ${colors.border.light}`,
+    borderLeft: 'none',
+    borderRight: 'none',
+  },
+  rowHover: {
+    backgroundColor: colors.background.selected,
+  },
+  cell: {
+    padding: spacing.md,
+  },
+};
+
 export default {
   colors,
-  typography,
   spacing,
-  borderRadius,
   shadows,
+  typography,
   transitions,
-  breakpoints,
-  containers,
-  antOverrides,
+  borderRadius,
+  components: {
+    card: CARD_STYLES,
+    button: BUTTON_STYLES,
+    input: INPUT_STYLES,
+    table: TABLE_STYLES,
+  },
 };

@@ -1,344 +1,544 @@
-# BlueEarth Financial Portal Component Examples
+# BlueEarth Capital UI Component Examples
 
-This document provides examples of common UI components styled according to our financial services design system. Use these examples as a reference when building new features or updating existing ones.
-
-## StatusTag Examples
-
-The StatusTag component is a cornerstone of our UI system, providing consistent status indicators throughout the application.
-
-```tsx
-// Employee status examples
-<StatusTag status="active" />
-<StatusTag status="inactive" />
-<StatusTag status="on_leave" />
-<StatusTag status="remote" />
-
-// Document status examples
-<StatusTag status="completed" />
-<StatusTag status="processing" />
-<StatusTag status="failed" />
-<StatusTag status="warning" />
-<StatusTag status="pending" />
-
-// Approval status examples
-<StatusTag status="draft" />
-<StatusTag status="in_review" />
-<StatusTag status="approved" />
-<StatusTag status="expired" />
-<StatusTag status="rejected" />
-
-// Special types
-<StatusTag status="version" text="v2.0" />
-<StatusTag status="restricted" text="Confidential" />
-<StatusTag status="archived" text="Quarterly Report" />
-
-// Size variants
-<StatusTag status="active" size="small" />
-<StatusTag status="active" size="default" />
-<StatusTag status="active" size="large" />
-
-// Custom text
-<StatusTag status="in_review" text="Under Review" />
-```
+This document provides examples of UI components styled according to our financial services design system.
 
 ## Button Examples
 
-Buttons follow our financial services styling with appropriate use cases:
-
-```tsx
-// Primary actions
-<Button type="primary">
-  Save Changes
+```jsx
+// Primary Button
+<Button 
+  type="primary"
+  style={{
+    backgroundColor: colors.primary.base,
+    borderColor: colors.primary.base,
+    height: '40px',
+    borderRadius: '6px',
+    fontWeight: 500,
+    boxShadow: '0 1px 2px rgba(16, 24, 40, 0.05)'
+  }}
+>
+  Submit Application
 </Button>
 
-// Secondary actions
-<Button>
-  Cancel
-</Button>
-
-// Destructive actions
-<Button type="primary" danger>
-  Delete Item
-</Button>
-
-// Text-only buttons
-<Button type="text">
+// Secondary Button
+<Button 
+  style={{
+    backgroundColor: '#ffffff',
+    borderColor: colors.primary.base,
+    color: colors.primary.base,
+    height: '40px',
+    borderRadius: '6px',
+    fontWeight: 500
+  }}
+>
   View Details
 </Button>
 
-// Icon buttons
-<Button icon={<DownloadOutlined />}>
-  Download
+// Tertiary/Ghost Button
+<Button 
+  type="text"
+  style={{
+    color: colors.primary.base,
+    fontWeight: 500,
+    height: '40px'
+  }}
+>
+  Learn More
 </Button>
 
-// Loading state
-<Button type="primary" loading>
-  Processing
+// Danger Button
+<Button 
+  type="primary" 
+  danger
+  style={{
+    height: '40px',
+    borderRadius: '6px',
+    fontWeight: 500,
+    boxShadow: '0 1px 2px rgba(16, 24, 40, 0.05)'
+  }}
+>
+  Delete Account
 </Button>
 ```
 
 ## Card Examples
 
-Cards use our standardized box styling with appropriate content layouts:
-
-```tsx
-// Standard information card
-<Card 
-  className="financial-card"
+```jsx
+// Standard Card
+<Card
   style={{
-    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
     borderRadius: '8px',
-    border: '1px solid #e5e7eb'
+    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
+    border: '1px solid #eaecf0'
   }}
 >
-  <Title level={5}>Account Summary</Title>
-  <div className="content">
-    {/* Card content goes here */}
+  <div style={{ padding: '24px' }}>
+    <Typography.Title level={5} style={{ marginBottom: '16px', color: '#1e293b' }}>
+      Investment Summary
+    </Typography.Title>
+    <div style={{ color: '#64748b', fontSize: '14px' }}>
+      Card content goes here...
+    </div>
   </div>
 </Card>
 
-// Action card with header
-<Card 
-  className="financial-card"
-  title="Recent Transactions"
-  extra={<Button type="link">View All</Button>}
+// Interactive Card
+<Card
+  hoverable
   style={{
-    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
     borderRadius: '8px',
-    border: '1px solid #e5e7eb'
+    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
+    border: '1px solid #eaecf0',
+    transition: 'all 0.2s ease-in-out'
   }}
 >
-  {/* Card content goes here */}
+  <div style={{ padding: '24px' }}>
+    <Typography.Title level={5} style={{ marginBottom: '16px', color: '#1e293b' }}>
+      Client Profile
+    </Typography.Title>
+    <div style={{ color: '#64748b', fontSize: '14px' }}>
+      Hover to see interactive state...
+    </div>
+  </div>
 </Card>
+
+// Card with Header
+<Card
+  title={
+    <div style={{ 
+      fontWeight: 600, 
+      fontSize: '18px', 
+      color: '#1e293b',
+      padding: '16px 24px',
+      borderBottom: '1px solid #eaecf0'
+    }}>
+      Performance Metrics
+    </div>
+  }
+  style={{
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
+    border: '1px solid #eaecf0'
+  }}
+>
+  <div style={{ padding: '24px' }}>
+    Card content goes here...
+  </div>
+</Card>
+```
+
+## Form Input Examples
+
+```jsx
+// Standard Input
+<Input
+  placeholder="Full Name"
+  style={{ 
+    height: '40px',
+    borderRadius: '6px',
+    borderColor: '#d1d5db'
+  }}
+/>
+
+// Input with Label
+<Form.Item
+  label={
+    <span style={{ 
+      fontSize: '14px', 
+      fontWeight: 500, 
+      color: '#1e293b', 
+      marginBottom: '8px' 
+    }}>
+      Email Address
+    </span>
+  }
+>
+  <Input
+    placeholder="Enter your email"
+    style={{ 
+      height: '40px',
+      borderRadius: '6px',
+      borderColor: '#d1d5db'
+    }}
+  />
+</Form.Item>
+
+// Select Input
+<Select
+  placeholder="Select Investment Type"
+  style={{ 
+    width: '100%', 
+    height: '40px'
+  }}
+>
+  <Option value="equity">Equity</Option>
+  <Option value="debt">Debt</Option>
+  <Option value="mutual_fund">Mutual Fund</Option>
+</Select>
+
+// Date Picker
+<DatePicker
+  style={{ 
+    width: '100%', 
+    height: '40px',
+    borderRadius: '6px',
+    borderColor: '#d1d5db'
+  }}
+/>
+```
+
+## Status Tag Examples
+
+```jsx
+// Status tags for financial services
+<StatusTag 
+  status="approved" 
+  text="Approved" 
+  style={{
+    backgroundColor: '#ecfdf5',
+    color: '#10b981',
+    border: '1px solid #d1fae5',
+    fontWeight: 500,
+    fontSize: '12px',
+    padding: '2px 8px',
+    borderRadius: '4px'
+  }}
+/>
+
+<StatusTag 
+  status="pending" 
+  text="Pending" 
+  style={{
+    backgroundColor: '#fffbeb',
+    color: '#f59e0b',
+    border: '1px solid #fef3c7',
+    fontWeight: 500,
+    fontSize: '12px',
+    padding: '2px 8px',
+    borderRadius: '4px'
+  }}
+/>
+
+<StatusTag 
+  status="rejected" 
+  text="Declined" 
+  style={{
+    backgroundColor: '#fee2e2',
+    color: '#ef4444',
+    border: '1px solid #fecaca',
+    fontWeight: 500,
+    fontSize: '12px',
+    padding: '2px 8px',
+    borderRadius: '4px'
+  }}
+/>
+
+<StatusTag 
+  status="in_review" 
+  text="In Review" 
+  style={{
+    backgroundColor: '#eff6ff',
+    color: '#3b82f6',
+    border: '1px solid #dbeafe',
+    fontWeight: 500,
+    fontSize: '12px',
+    padding: '2px 8px',
+    borderRadius: '4px'
+  }}
+/>
 ```
 
 ## Table Examples
 
-Tables follow our financial styling with appropriate header treatments:
-
-```tsx
+```jsx
+// Financial table styling
 <Table
-  dataSource={data}
   columns={columns}
-  className="financial-table"
-  size="middle"
-  rowClassName={() => 'financial-table-row'}
-  pagination={{
-    pageSize: 10,
-    showSizeChanger: true,
-    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-  }}
-/>
-```
-
-## Form Examples
-
-Forms follow our financial styling with appropriate spacing and validation:
-
-```tsx
-<Form
-  layout="vertical"
+  dataSource={data}
+  rowKey="id"
   style={{
-    maxWidth: '800px',
+    border: '1px solid #eaecf0',
+    borderRadius: '8px',
+    overflow: 'hidden'
   }}
->
-  <Form.Item
-    label="Account Name"
-    name="accountName"
-    rules={[{ required: true, message: 'Please enter account name' }]}
-  >
-    <Input />
-  </Form.Item>
-  
-  <Form.Item
-    label="Account Type"
-    name="accountType"
-    rules={[{ required: true, message: 'Please select account type' }]}
-  >
-    <Select>
-      <Select.Option value="checking">Checking</Select.Option>
-      <Select.Option value="savings">Savings</Select.Option>
-      <Select.Option value="investment">Investment</Select.Option>
-    </Select>
-  </Form.Item>
-  
-  <Form.Item>
-    <Space>
-      <Button type="primary" htmlType="submit">
-        Save
-      </Button>
-      <Button>
-        Cancel
-      </Button>
-    </Space>
-  </Form.Item>
-</Form>
-```
-
-## Document Detail UI
-
-The document detail page follows our structured layout system:
-
-```tsx
-<div 
-  className="document-detail-container"
-  style={{ 
-    maxWidth: '1200px', 
-    margin: '0 auto', 
-    padding: '24px 16px' 
-  }}
->
-  {/* Document Header with financial services styling */}
-  <div className="financial-section">
-    <DocumentHeader 
-      document={document}
-      statusBadge={<DocumentStatusBadge status={document.processingStatus} />}
-      onDeleteClick={handleDeleteClick}
-      onShareClick={handleShareClick}
-      onFavorite={handleFavoriteToggle}
-      isFavorited={isFavorited}
-      loading={loading}
-    />
-  </div>
-  
-  {/* Processing Alert if needed */}
-  <DocumentProcessingAlert 
-    document={document}
-    onRefresh={handleRefreshStatus}
-    isRefreshing={isRefreshing}
-  />
-  
-  {/* Document Tabs with financial industry styling */}
-  <div 
-    className="financial-section"
-    style={{
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)', 
-      padding: '24px',
-      border: '1px solid #e5e7eb',
-      marginTop: '16px'
-    }}
-  >
-    <DocumentTabs 
-      document={document}
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
-      onRestoreVersion={handleRestoreVersion}
-      isRestoring={loading?.restore || false}
-    />
-  </div>
-</div>
-```
-
-## Employee Card Examples
-
-The EmployeeCard component presents employee profiles in a financial services styling:
-
-```tsx
-// Compact variant (grid layout)
-<EmployeeCard 
-  employee={employee} 
-  variant="compact" 
-  onClick={handleEmployeeClick}
-/>
-
-// Detailed variant (detailed info)
-<EmployeeCard 
-  employee={employee} 
-  variant="detailed" 
-/>
-
-// Loading state
-<EmployeeCard 
-  employee={employee} 
-  loading={true} 
-/>
-```
-
-## Page Layout Examples
-
-Standard page layout follows our spacing and container system:
-
-```tsx
-<div className="page-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
-  <PageHeader 
-    title="Document Management"
-    subtitle="View and manage your financial documents"
-    actions={
-      <Button type="primary" icon={<UploadOutlined />}>
-        Upload Document
-      </Button>
+  rowClassName={() => 'financial-table-row'}
+  className="financial-table"
+  pagination={{
+    showSizeChanger: false,
+    pageSize: 10,
+    style: {
+      marginTop: '24px',
+      textAlign: 'right'
     }
-  />
-  
-  <div style={{ marginTop: '24px' }}>
-    {/* Page content */}
-  </div>
+  }}
+/>
+
+// CSS for the table
+.financial-table .ant-table-thead > tr > th {
+  background-color: #f8fafc;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 16px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.financial-table .ant-table-tbody > tr > td {
+  padding: 16px;
+  border-bottom: 1px solid #eaecf0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.financial-table-row:hover {
+  background-color: #f0f7ff !important;
+}
+```
+
+## Empty State Examples
+
+```jsx
+// Empty state for financial data
+<div
+  style={{
+    padding: '48px 24px',
+    textAlign: 'center',
+    background: '#f9fafc',
+    borderRadius: '8px',
+    border: '1px solid #eaecf0'
+  }}
+>
+  <Empty
+    image={<FileOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}
+    imageStyle={{ marginBottom: '24px' }}
+    description={
+      <div>
+        <h3 style={{
+          fontSize: '18px',
+          fontWeight: 600,
+          color: '#1e293b',
+          marginBottom: '8px'
+        }}>
+          No Documents Found
+        </h3>
+        <p style={{
+          color: '#64748b',
+          fontSize: '14px',
+          maxWidth: '320px',
+          margin: '0 auto'
+        }}>
+          There are no documents in this category. Upload your first document to get started.
+        </p>
+      </div>
+    }
+  >
+    <Button
+      type="primary"
+      icon={<UploadOutlined />}
+      style={{
+        backgroundColor: '#0e4a86',
+        borderColor: '#0e4a86',
+        height: '40px',
+        borderRadius: '6px',
+        fontWeight: 500,
+        marginTop: '24px'
+      }}
+    >
+      Upload Document
+    </Button>
+  </Empty>
 </div>
 ```
 
-## Alert and Notification Examples
+## Modal Examples
 
-Alerts follow our financial styling with appropriate status colors:
+```jsx
+// Financial styled modal
+<Modal
+  title={
+    <div style={{ 
+      fontWeight: 600, 
+      fontSize: '18px', 
+      color: '#1e293b',
+      padding: '4px 0'
+    }}>
+      Confirm Transaction
+    </div>
+  }
+  open={isModalVisible}
+  onCancel={() => setIsModalVisible(false)}
+  width={480}
+  centered
+  footer={[
+    <Button 
+      key="cancel" 
+      onClick={() => setIsModalVisible(false)}
+      style={{
+        height: '40px',
+        borderRadius: '6px',
+        borderColor: '#d1d5db',
+        fontWeight: 500
+      }}
+    >
+      Cancel
+    </Button>,
+    <Button 
+      key="submit" 
+      type="primary" 
+      onClick={handleConfirm}
+      style={{
+        backgroundColor: '#0e4a86',
+        borderColor: '#0e4a86',
+        height: '40px',
+        borderRadius: '6px',
+        fontWeight: 500
+      }}
+    >
+      Confirm
+    </Button>
+  ]}
+  bodyStyle={{ padding: '24px' }}
+  style={{ borderRadius: '12px', overflow: 'hidden' }}
+>
+  <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '16px' }}>
+    Are you sure you want to proceed with this transaction? This action cannot be undone.
+  </p>
+  <div style={{ 
+    background: '#f9fafc', 
+    padding: '16px', 
+    borderRadius: '6px',
+    border: '1px solid #eaecf0',
+    marginBottom: '16px'
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+      <span style={{ color: '#64748b', fontSize: '14px' }}>Amount:</span>
+      <span style={{ color: '#1e293b', fontWeight: 500, fontSize: '14px' }}>$10,000.00</span>
+    </div>
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span style={{ color: '#64748b', fontSize: '14px' }}>Fee:</span>
+      <span style={{ color: '#1e293b', fontWeight: 500, fontSize: '14px' }}>$25.00</span>
+    </div>
+  </div>
+</Modal>
+```
 
-```tsx
-// Success alert
+## Alert Examples
+
+```jsx
+// Success Alert
 <Alert
+  message="Transaction Successful"
+  description="Your funds have been successfully transferred to the specified account."
   type="success"
-  message="Transaction Completed"
-  description="Your transaction has been processed successfully."
   showIcon
+  style={{
+    borderRadius: '8px',
+    border: '1px solid #d1fae5',
+    marginBottom: '24px'
+  }}
 />
 
-// Warning alert
+// Warning Alert
 <Alert
+  message="Unusual Activity Detected"
+  description="We've noticed unusual activity on your account. Please verify your recent transactions."
   type="warning"
-  message="Account Warning"
-  description="Your account balance is below the minimum threshold."
   showIcon
+  style={{
+    borderRadius: '8px',
+    border: '1px solid #fef3c7',
+    marginBottom: '24px'
+  }}
 />
 
-// Error alert
+// Error Alert
 <Alert
-  type="error"
   message="Transaction Failed"
-  description="Your transaction could not be processed. Please try again."
+  description="Your transaction could not be completed. Please check your account balance and try again."
+  type="error"
   showIcon
+  style={{
+    borderRadius: '8px',
+    border: '1px solid #fecaca',
+    marginBottom: '24px'
+  }}
 />
 
-// Info alert
+// Info Alert
 <Alert
+  message="Account Update"
+  description="Your account details will be updated within 24 hours. You'll receive a confirmation email."
   type="info"
-  message="New Feature Available"
-  description="You can now download your statements directly from the dashboard."
   showIcon
+  style={{
+    borderRadius: '8px',
+    border: '1px solid #dbeafe',
+    marginBottom: '24px'
+  }}
 />
 ```
 
-## Using Theme Tokens
+## Progress Indicator Examples
 
-Import our theme tokens to maintain consistency:
+```jsx
+// Task Progress
+<div style={{ marginBottom: '24px' }}>
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    marginBottom: '8px',
+    alignItems: 'center'
+  }}>
+    <span style={{ 
+      color: '#1e293b', 
+      fontSize: '14px', 
+      fontWeight: 500 
+    }}>
+      Application Progress
+    </span>
+    <span style={{ 
+      color: '#64748b', 
+      fontSize: '14px' 
+    }}>
+      75%
+    </span>
+  </div>
+  <Progress 
+    percent={75} 
+    showInfo={false}
+    strokeColor="#0e4a86"
+    style={{ marginBottom: '4px' }}
+  />
+  <span style={{ color: '#64748b', fontSize: '12px' }}>
+    3 of 4 steps completed
+  </span>
+</div>
 
-```tsx
-import { colors, typography, spacing, shadows } from '@/lib/theme';
-
-// Using in component styles
-const styles = {
-  container: {
-    backgroundColor: colors.backgroundLight,
-    borderRadius: borderRadius.default,
-    boxShadow: shadows.sm,
-    padding: spacing.lg,
-  },
-  title: {
-    color: colors.secondary.charcoal,
-    fontSize: typography.fontSize.h5,
-    fontWeight: typography.fontWeight.bold,
-  },
-  statusSuccess: {
-    color: colors.status.active,
-  },
-  // ... other styles
-};
+// Step Progress
+<Steps
+  current={1}
+  labelPlacement="vertical"
+  style={{ marginBottom: '24px' }}
+>
+  <Steps.Step 
+    title="Application" 
+    description="Completed" 
+    style={{ color: '#64748b', fontSize: '14px' }}
+  />
+  <Steps.Step 
+    title="Verification" 
+    description="In progress" 
+    style={{ color: '#64748b', fontSize: '14px' }}
+  />
+  <Steps.Step 
+    title="Approval" 
+    description="Pending" 
+    style={{ color: '#64748b', fontSize: '14px' }}
+  />
+  <Steps.Step 
+    title="Funding" 
+    description="Pending" 
+    style={{ color: '#64748b', fontSize: '14px' }}
+  />
+</Steps>
 ```
