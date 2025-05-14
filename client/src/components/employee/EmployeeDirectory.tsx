@@ -6,6 +6,7 @@ import { Employee, EmployeeCard, SkipLink, LoadingState } from '@/components/ui'
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { useDebounce } from '@/hooks/useDebounce';
 import { tokens } from '@/theme/tokens';
+import { useQuery } from '@tanstack/react-query';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -494,7 +495,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         rowCount={rowCount}
         rowHeight={rowHeight}
         height={600}
-        width="100%"
+        width={1200}
         itemData={gridItemData}
       >
         {GridItemRenderer}
@@ -514,7 +515,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       <FixedSizeList
         ref={listRef}
         height={600}
-        width="100%"
+        width={1200}
         itemCount={filteredEmployees.length}
         itemSize={120}
         itemData={listItemData}
