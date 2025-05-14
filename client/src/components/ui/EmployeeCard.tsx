@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'wouter';
-import { Card, Avatar, Skeleton, Tag, Typography, Divider } from 'antd';
+import { Card, Avatar, Skeleton, Typography, Divider } from 'antd';
 import { 
   UserOutlined, 
   BankOutlined, 
@@ -15,24 +15,27 @@ import { ROUTES } from '@/lib/routes';
 const { Title, Text } = Typography;
 
 /**
- * Status configuration for different employee states
+ * Professional color palette for financial style
  */
-const statusConfig: Record<string, { color: string, icon: React.ReactNode }> = {
-  active: { 
-    color: "success", 
-    icon: <CheckCircleOutlined /> 
+const CARD_STYLES = {
+  avatar: {
+    border: '2px solid #f0f0f0',
+    background: '#f6f9fc',
+    color: '#334155'
   },
-  on_leave: { 
-    color: "warning", 
-    icon: <ClockCircleOutlined /> 
+  title: {
+    fontSize: '16px',
+    fontWeight: 600,
+    color: '#1f2937'
   },
-  remote: { 
-    color: "processing", 
-    icon: <GlobalOutlined /> 
+  subtitle: {
+    fontSize: '14px',
+    color: '#64748b'
   },
-  inactive: { 
-    color: "default", 
-    icon: <StopOutlined /> 
+  iconColor: '#4f46e5',
+  infoLabel: {
+    fontSize: '13px',
+    color: '#374151'
   }
 };
 
@@ -110,9 +113,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   // Add null safety for status property
-  const status = employee?.status || 'inactive';
-  const config = statusConfig[status.toLowerCase()] || statusConfig['inactive'];
-  const formattedStatus = status.replace('_', ' ');
+  const employeeStatus = employee?.status || 'inactive';
 
   // Loading state
   if (loading) {
@@ -188,9 +189,9 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
               src={employee.avatarUrl || undefined}
               icon={<UserOutlined />}
               style={{ 
-                border: '2px solid #f0f0f0',
-                backgroundColor: employee.avatarUrl ? 'transparent' : '#f6f9fc',
-                color: '#334155',
+                border: CARD_STYLES.avatar.border,
+                backgroundColor: employee.avatarUrl ? 'transparent' : CARD_STYLES.avatar.background,
+                color: CARD_STYLES.avatar.color,
                 fontSize: '18px',
                 marginBottom: '12px'
               }}
@@ -200,25 +201,26 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
 
             <Title level={5} style={{ 
               margin: '0 0 4px 0',
-              fontSize: '16px',
+              fontSize: CARD_STYLES.title.fontSize,
               textAlign: 'center',
-              fontWeight: 600,
-              color: '#1f2937'
+              fontWeight: CARD_STYLES.title.fontWeight,
+              color: CARD_STYLES.title.color
             }}>
               {employee.name || 'Unknown'}
             </Title>
             
             <Text type="secondary" style={{ 
-              fontSize: '14px',
+              fontSize: CARD_STYLES.subtitle.fontSize,
               lineHeight: 1.4,
               textAlign: 'center',
-              marginBottom: '12px'
+              marginBottom: '12px',
+              color: CARD_STYLES.subtitle.color
             }}>
               {employee.position || 'No position'}
             </Text>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-              <StatusTag status={employee.status || 'inactive'} size="small" />
+              <StatusTag status={employeeStatus} size="small" />
             </div>
 
             {employee.department && (
@@ -262,9 +264,9 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
               src={employee.avatarUrl || undefined}
               icon={<UserOutlined />}
               style={{ 
-                border: '2px solid #f0f0f0',
-                backgroundColor: employee.avatarUrl ? 'transparent' : '#f6f9fc',
-                color: '#334155'
+                border: CARD_STYLES.avatar.border,
+                backgroundColor: employee.avatarUrl ? 'transparent' : CARD_STYLES.avatar.background,
+                color: CARD_STYLES.avatar.color
               }}
             >
               {!employee.avatarUrl && employee.name ? getInitials(employee.name) : null}
@@ -272,28 +274,20 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             <div className="ml-4">
               <Title level={5} style={{ 
                 margin: '0 0 2px 0',
-                fontSize: '16px', 
-                fontWeight: 600,
-                color: '#1f2937'
+                fontSize: CARD_STYLES.title.fontSize,
+                fontWeight: CARD_STYLES.title.fontWeight,
+                color: CARD_STYLES.title.color
               }}>
                 {employee.name || 'Unknown'}
               </Title>
-              <Text type="secondary" style={{ fontSize: '14px' }}>
+              <Text type="secondary" style={{ 
+                fontSize: CARD_STYLES.subtitle.fontSize,
+                color: CARD_STYLES.subtitle.color 
+              }}>
                 {employee.position || 'No position'}
               </Text>
               <div className="mt-1">
-                <Tag 
-                  icon={config?.icon} 
-                  color={config?.color || "default"}
-                  style={{ 
-                    padding: '0 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: 500
-                  }}
-                >
-                  {formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1)}
-                </Tag>
+                <StatusTag status={employeeStatus} size="small" />
               </div>
             </div>
           </div>
@@ -303,30 +297,59 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
           <div className="grid grid-cols-1 gap-2">
             {employee.department && (
               <div className="flex items-center text-sm">
-                <BankOutlined className="mr-3 text-blue-600" style={{ fontSize: '14px' }} />
-                <Text style={{ fontSize: '14px', color: '#374151' }}>
+                <BankOutlined className="mr-3" style={{ 
+                  fontSize: '14px',
+                  color: CARD_STYLES.iconColor 
+                }} />
+                <Text style={{ 
+                  fontSize: CARD_STYLES.infoLabel.fontSize, 
+                  color: CARD_STYLES.infoLabel.color 
+                }}>
                   {employee.department.charAt(0).toUpperCase() + employee.department.slice(1)}
                 </Text>
               </div>
             )}
             {employee.location && (
               <div className="flex items-center text-sm">
-                <EnvironmentOutlined className="mr-3 text-blue-600" style={{ fontSize: '14px' }} />
-                <Text style={{ fontSize: '14px', color: '#374151' }}>{employee.location}</Text>
+                <EnvironmentOutlined className="mr-3" style={{ 
+                  fontSize: '14px',
+                  color: CARD_STYLES.iconColor 
+                }} />
+                <Text style={{ 
+                  fontSize: CARD_STYLES.infoLabel.fontSize, 
+                  color: CARD_STYLES.infoLabel.color 
+                }}>
+                  {employee.location}
+                </Text>
               </div>
             )}
             {employee.email && (
               <div className="flex items-center text-sm">
-                <MailOutlined className="mr-3 text-blue-600" style={{ fontSize: '14px' }} />
-                <Text style={{ fontSize: '14px', color: '#374151' }} ellipsis={{ tooltip: employee.email }}>
+                <MailOutlined className="mr-3" style={{ 
+                  fontSize: '14px',
+                  color: CARD_STYLES.iconColor 
+                }} />
+                <Text 
+                  style={{ 
+                    fontSize: CARD_STYLES.infoLabel.fontSize, 
+                    color: CARD_STYLES.infoLabel.color 
+                  }} 
+                  ellipsis={{ tooltip: employee.email }}
+                >
                   {employee.email}
                 </Text>
               </div>
             )}
             {employee.phone && (
               <div className="flex items-center text-sm">
-                <PhoneOutlined className="mr-3 text-blue-600" style={{ fontSize: '14px' }} />
-                <Text style={{ fontSize: '14px', color: '#374151' }}>
+                <PhoneOutlined className="mr-3" style={{ 
+                  fontSize: '14px',
+                  color: CARD_STYLES.iconColor 
+                }} />
+                <Text style={{ 
+                  fontSize: CARD_STYLES.infoLabel.fontSize, 
+                  color: CARD_STYLES.infoLabel.color 
+                }}>
                   {employee.phone}
                 </Text>
               </div>

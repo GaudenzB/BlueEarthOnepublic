@@ -172,17 +172,24 @@ export const StatusTag: React.FC<StatusTagProps> = ({
   
   // Render icon with proper styling
   const renderIcon = () => {
-    // Use custom icon if provided, otherwise use statusIcon
-    const iconToRender = customIcon || statusIcon;
-    
-    if (React.isValidElement(iconToRender)) {
-      return React.cloneElement(iconToRender, {
-        style: {
-          fontSize: sizeStyles.fontSize,
-          color: colorScheme.icon,
-          marginRight: '4px'
-        }
-      });
+    try {
+      // Use custom icon if provided, otherwise use statusIcon
+      const iconToRender = customIcon || statusIcon;
+      
+      if (React.isValidElement(iconToRender)) {
+        return (
+          <span style={{ 
+            fontSize: sizeStyles.fontSize, 
+            color: colorScheme.icon, 
+            marginRight: '4px', 
+            display: 'inline-flex' 
+          }}>
+            {iconToRender}
+          </span>
+        );
+      }
+    } catch (error) {
+      console.error('Error rendering icon:', error);
     }
     
     return null;
