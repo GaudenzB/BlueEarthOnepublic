@@ -4,14 +4,13 @@ import { documentRepository } from '../repositories/documentRepository';
 import { uploadFile, generateStorageKey, deleteFile } from '../services/documentStorage';
 import { documentProcessor } from '../services/documentProcessor';
 import { z } from 'zod';
-import jwt from 'jsonwebtoken';
 import { sanitizeFile } from '../middleware/upload';
 import {
   documentTypeZod,
   type InsertDocument,
   type DocumentType
 } from '../../shared/schema/documents/documents';
-import { jwtConfig, createToken, TokenType } from '../utils/jwtConfig';
+import { generateToken, TokenType } from '../utils/jwtConfig';
 
 // Document upload validation schema
 const uploadDocumentSchema = z.object({
@@ -32,7 +31,7 @@ const uploadDocumentSchema = z.object({
  * @returns The generated JWT token
  */
 function createPreviewToken(documentId: string, tenantId: string): string {
-  return createToken(
+  return generateToken(
     { 
       documentId,
       tenantId,

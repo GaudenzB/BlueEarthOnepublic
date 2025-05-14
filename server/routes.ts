@@ -31,7 +31,7 @@ import { validate, validateIdParameter } from "./middleware/validation";
 import { ApiError } from "./middleware/errorHandler";
 import { syncEmployeesFromBubble, scheduleEmployeeSync } from "./services/employeeSync";
 import { registerPermissionRoutes } from "./routes/permissions";
-import documentsRoutes from "./routes/documents";
+import documentsRoutes from "./routes/documents-refactored";
 import documentPreviewRoutes from "./routes/documentPreview";
 import semanticSearchRoutes from "./routes/semanticSearch";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
