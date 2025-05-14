@@ -1,8 +1,11 @@
 import React from "react"
 import { EmployeeDirectory } from "@/components/employee/EmployeeDirectory"
 import { useQuery } from "@tanstack/react-query"
-import { Button } from "antd"
-import { LoadingState } from "@/components/ui"
+import { Button, Card, Row, Col, Avatar, Typography, Empty, Space } from "antd"
+import { LoadingState, Employee } from "@/components/ui"
+import { UserOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons'
+
+const { Title, Text } = Typography
 
 export default function EmployeeDirectoryPage() {
   const { data: employees, isLoading, error, refetch } = useQuery({
@@ -31,13 +34,68 @@ export default function EmployeeDirectoryPage() {
     )
   }
 
+  // Simple direct rendering of employees for testing
+  if (!Array.isArray(employees) || employees.length === 0) {
+    return (
+      <>
+        <h1 className="text-2xl font-semibold mb-6">Employee Directory</h1>
+        <Empty description="No employees found" />
+        <div className="mt-4">
+          <Button type="primary" onClick={() => refetch()}>Refresh</Button>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
-      <h1 className="text-2xl font-semibold mb-6">Employee Directory</h1>
-      <EmployeeDirectory 
-        employees={Array.isArray(employees) ? employees : []} 
-        onRefresh={() => refetch()}
-      />
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">Employee Directory</h1>
+        <Button type="primary" onClick={() => refetch()}>Refresh</Button>
+      </div>
+      
+      {/* Simple grid display of employees */}
+      <Row gutter={[16, 16]}>
+        {employees.map(employee => (
+          <Col xs={24} sm={12} md={8} lg={6} key={employee.id}>
+            <Card hoverable className="h-full">
+              <div className="flex flex-col items-center text-center">
+                <Avatar 
+                  size={80} 
+                  src={employee.avatarUrl} 
+                  icon={<UserOutlined />} 
+                  className="mb-4"
+                />
+                <Title level={5} className="mb-1">{employee.name}</Title>
+                <Text type="secondary" className="mb-3">{employee.position || 'No position'}</Text>
+                
+                <div className="w-full text-left">
+                  <Space direction="vertical" className="w-full">
+                    <div className="flex items-center">
+                      <MailOutlined className="mr-2 text-gray-400" />
+                      <Text ellipsis>{employee.email || 'No email'}</Text>
+                    </div>
+                    <div className="flex items-center">
+                      <PhoneOutlined className="mr-2 text-gray-400" />
+                      <Text>{employee.phone || 'No phone'}</Text>
+                    </div>
+                    <Text type="secondary">{employee.department || 'No department'}</Text>
+                  </Space>
+                </div>
+              </div>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {/* Hidden but available for reference */}
+      <div className="hidden">
+        <EmployeeDirectory 
+          employees={employees} 
+          onRefresh={() => refetch()}
+          useVirtualization={false}
+        />
+      </div>
     </>
   )
 }
