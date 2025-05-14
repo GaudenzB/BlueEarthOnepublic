@@ -64,8 +64,21 @@ const VISIBILITY_OPTIONS = {
   public: "Public",
 };
 
+// Helper function to format date safely
+function formatDate(dateStr: string | undefined): string {
+  if (!dateStr) return 'Unknown';
+  try {
+    return format(new Date(dateStr), 'PP');
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+}
+
 // Helper function to generate status badge based on processing status
-function getStatusBadge(status: string) {
+function getStatusBadge(status: string | undefined) {
+  if (!status) return <Badge status="default" text="Unknown" />;
+  
   switch (status) {
     case "COMPLETED":
       return <Badge status="success" text="Completed" />;
@@ -87,7 +100,9 @@ function getStatusBadge(status: string) {
 }
 
 // Helper to get processing status text
-function getProcessingStatusText(status: string): string {
+function getProcessingStatusText(status: string | undefined): string {
+  if (!status) return "Document status is being updated...";
+  
   switch (status) {
     case "PROCESSING":
       return "Your document is currently being processed. This may take a few minutes.";
@@ -101,7 +116,9 @@ function getProcessingStatusText(status: string): string {
 }
 
 // Helper to get processing progress percentage
-function getProcessingProgress(status: string): number {
+function getProcessingProgress(status: string | undefined): number {
+  if (!status) return 0;
+  
   switch (status) {
     case "PROCESSING":
       return 75;
@@ -282,7 +299,7 @@ export default function DocumentDetail() {
               <Button 
                 type="primary"
                 icon={<EditOutlined />}
-                href={`/documents/${document.id}/edit`}
+                href={document.id ? `/documents/${document.id}/edit` : '#'}
               >
                 Edit
               </Button>
@@ -358,7 +375,7 @@ export default function DocumentDetail() {
                       <Text copyable>{document.id}</Text>
                     </Descriptions.Item>
                     <Descriptions.Item label="Created">
-                      {document.createdAt ? format(new Date(document.createdAt), 'PP') : 'Unknown'}
+                      {formatDate(document.createdAt)}
                     </Descriptions.Item>
                     <Descriptions.Item label="Type">
                       {DOC_TYPES[document.type as keyof typeof DOC_TYPES] || 'Unknown'}
@@ -370,7 +387,7 @@ export default function DocumentDetail() {
                       {getStatusBadge(document.processingStatus)}
                     </Descriptions.Item>
                     <Descriptions.Item label="Last Updated">
-                      {document.updatedAt ? format(new Date(document.updatedAt), 'PP') : 'Unknown'}
+                      {formatDate(document.updatedAt)}
                     </Descriptions.Item>
                   </Descriptions>
                 </Card>
@@ -548,9 +565,9 @@ export default function DocumentDetail() {
           <TabPane tab="Timeline" key="4">
             <Card bordered={false}>
               <Title level={5}>Activity Timeline</Title>
-              {document.timeline && document.timeline.length > 0 ? (
+              {document.events && document.events.length > 0 ? (
                 <Timeline>
-                  {document.timeline.map((event: any, index: number) => (
+                  {document.events.map((event: any, index: number) => (
                     <Timeline.Item key={index} dot={getTimelineIcon(event.type)}>
                       <div>
                         <Text strong>{event.action}</Text>
