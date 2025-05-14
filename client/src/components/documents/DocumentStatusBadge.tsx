@@ -1,7 +1,7 @@
 import React from 'react';
-import { Badge, Tooltip } from 'antd';
-import { CheckCircleOutlined, WarningOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 import { DocumentProcessingStatus } from '@/types/document';
+import StatusTag from '@/components/ui/StatusTag';
 
 interface DocumentStatusBadgeProps {
   status?: DocumentProcessingStatus | string | undefined;
@@ -10,8 +10,7 @@ interface DocumentStatusBadgeProps {
 
 type StatusConfigType = {
   [key in DocumentProcessingStatus]: {
-    color: 'success' | 'processing' | 'error' | 'warning' | 'default';
-    icon: React.ReactNode;
+    statusValue: string;  // Maps to our StatusTag component status values
     text: string;
     tooltip: string;
   };
@@ -19,40 +18,36 @@ type StatusConfigType = {
 
 /**
  * Status badge component for documents with consistent styling
+ * Uses our centralized StatusTag component for visual consistency across the application
  */
 export function DocumentStatusBadge({ 
   status,
   showText = true
 }: DocumentStatusBadgeProps) {
-  // Define status configurations
+  // Define status configurations with mapping to StatusTag statuses
   const statusConfig: StatusConfigType = {
     COMPLETED: { 
-      color: 'success', 
-      icon: <CheckCircleOutlined />, 
+      statusValue: 'completed', 
       text: 'Completed',
       tooltip: 'Document has been processed successfully'
     },
     PROCESSING: { 
-      color: 'processing', 
-      icon: <ClockCircleOutlined />, 
+      statusValue: 'in_review', 
       text: 'Processing',
       tooltip: 'Document is currently being processed'
     },
     FAILED: { 
-      color: 'error', 
-      icon: <CloseCircleOutlined />, 
+      statusValue: 'rejected', 
       text: 'Failed',
       tooltip: 'Document processing has failed'
     },
     WARNING: { 
-      color: 'warning', 
-      icon: <WarningOutlined />, 
+      statusValue: 'expired', 
       text: 'Warning',
       tooltip: 'Document processed with warnings'
     },
     PENDING: { 
-      color: 'default', 
-      icon: <ClockCircleOutlined />, 
+      statusValue: 'pending', 
       text: 'Pending',
       tooltip: 'Document is waiting to be processed'
     }
@@ -63,12 +58,16 @@ export function DocumentStatusBadge({
   const currentStatus = safeStatus && statusConfig[safeStatus] ? safeStatus : 'PENDING';
   const config = statusConfig[currentStatus];
   
+  // Use our StatusTag component with standard styling
   return (
     <Tooltip title={config.tooltip}>
-      <Badge
-        status={config.color}
-        text={showText ? config.text : ''}
-      />
+      <div style={{ display: 'inline-block' }}>
+        <StatusTag 
+          status={config.statusValue} 
+          text={showText ? config.text : undefined}
+          size="default"
+        />
+      </div>
     </Tooltip>
   );
 }

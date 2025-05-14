@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { 
   Table, 
   Typography, 
-  Tag, 
   Button, 
   Dropdown, 
   Space, 
@@ -20,9 +19,6 @@ import {
   DeleteOutlined, 
   EditOutlined, 
   EyeOutlined, 
-  CheckCircleOutlined, 
-  WarningOutlined, 
-  ClockCircleOutlined,
   MoreOutlined,
   UploadOutlined
 } from "@ant-design/icons";
@@ -30,9 +26,9 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { queryClient } from "@/lib/queryClient";
-import { Button as ShadcnButton } from "@/components/ui/button";
+// Import StatusTag dynamically in render functions to avoid circular dependencies
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface DocumentListProps {
   documents: any[];
@@ -132,50 +128,42 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   };
 
   const getProcessingStatusBadge = (status: string) => {
+    // Map the document processing status to our StatusTag component status values
+    let statusValue;
+    let tooltipText;
+    
     switch (status) {
       case "COMPLETED":
-        return (
-          <Tooltip title="Document processed successfully">
-            <Tag color="success" icon={<CheckCircleOutlined />}>
-              Processed
-            </Tag>
-          </Tooltip>
-        );
+        statusValue = "completed";
+        tooltipText = "Document processed successfully";
+        break;
       case "PROCESSING":
-        return (
-          <Tooltip title="Document is being processed">
-            <Tag color="warning" icon={<ClockCircleOutlined />}>
-              Processing
-            </Tag>
-          </Tooltip>
-        );
+        statusValue = "in_review";
+        tooltipText = "Document is being processed";
+        break;
       case "PENDING":
       case "QUEUED":
-        return (
-          <Tooltip title="Document is waiting for processing">
-            <Tag color="processing" icon={<ClockCircleOutlined />}>
-              Pending
-            </Tag>
-          </Tooltip>
-        );
+        statusValue = "pending";
+        tooltipText = "Document is waiting for processing";
+        break;
       case "FAILED":
       case "ERROR":
-        return (
-          <Tooltip title="Document processing failed">
-            <Tag color="error" icon={<WarningOutlined />}>
-              Failed
-            </Tag>
-          </Tooltip>
-        );
+        statusValue = "rejected";
+        tooltipText = "Document processing failed";
+        break;
       default:
-        return (
-          <Tooltip title="Unknown document status">
-            <Tag icon={<InfoCircleOutlined />}>
-              Unknown
-            </Tag>
-          </Tooltip>
-        );
+        statusValue = "draft";
+        tooltipText = "Unknown document status";
     }
+    
+    // Import here to avoid circular dependency issues
+    const StatusTag = require('@/components/ui/StatusTag').default;
+    
+    return (
+      <Tooltip title={tooltipText}>
+        <StatusTag status={statusValue} />
+      </Tooltip>
+    );
   };
 
   const filteredDocuments = useMemo(() => {
@@ -229,11 +217,26 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       title: 'Type',
       dataIndex: 'documentType',
       key: 'documentType',
-      render: (documentType) => (
-        <Tag color="default">
-          {documentType || "Other"}
-        </Tag>
-      ),
+      render: (documentType) => {
+        const StatusTag = require('@/components/ui/StatusTag').default;
+        
+        // Map document types to relevant statuses for styling purposes
+        let statusType = "draft"; // Default styling
+        
+        if (documentType === "CONTRACT") statusType = "approved";
+        else if (documentType === "POLICY") statusType = "pending";
+        else if (documentType === "REPORT") statusType = "completed";
+        
+        return (
+          <div style={{ maxWidth: 120 }}>
+            <StatusTag 
+              status={statusType} 
+              text={documentType || "Other"} 
+              size="small"
+            />
+          </div>
+        );
+      },
     },
     {
       title: 'Status',
