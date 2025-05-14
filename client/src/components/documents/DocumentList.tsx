@@ -20,15 +20,14 @@ import {
   EditOutlined, 
   EyeOutlined, 
   MoreOutlined,
-  UploadOutlined
+  UploadOutlined,
+  CheckCircleOutlined
 } from "@ant-design/icons";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { queryClient } from "@/lib/queryClient";
 // Import StatusTag dynamically in render functions to avoid circular dependencies
-
-const { Text } = Typography;
 
 interface DocumentListProps {
   documents: any[];
@@ -106,7 +105,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     }
   };
 
-  const getDocumentTypeIcon = (type: string | null) => {
+  const getDocumentTypeIcon = (type: string | null | undefined) => {
     switch (type) {
       case "CONTRACT":
         return <FileOutlined />;
@@ -183,14 +182,28 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     }
   }, [documents, filter]);
 
+  // Define the document type
+  interface Document {
+    id: string;
+    title?: string;
+    documentType?: string;
+    processingStatus?: string;
+    createdAt: string;
+    uploadedBy?: string;
+    originalFilename?: string;
+    canDownload?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
+  }
+
   // Table columns configuration for Ant Design Table
-  const columns: any = [
+  const columns = [
     {
       title: 'Name',
       dataIndex: 'title',
       key: 'title',
       width: '40%',
-      render: (_, record) => (
+      render: (_: unknown, record: Document) => (
         <Link href={`/documents/${record.id}`}>
           <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
             <span style={{ marginRight: 8, color: '#666' }}>
@@ -217,7 +230,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       title: 'Type',
       dataIndex: 'documentType',
       key: 'documentType',
-      render: (documentType) => {
+      render: (documentType: string | undefined) => {
         const StatusTag = require('@/components/ui/StatusTag').default;
         
         // Map document types to relevant statuses for styling purposes
@@ -242,13 +255,13 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       title: 'Status',
       dataIndex: 'processingStatus',
       key: 'processingStatus',
-      render: (status) => getProcessingStatusBadge(status),
+      render: (status: string | undefined) => getProcessingStatusBadge(status || ''),
     },
     {
       title: 'Date Uploaded',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date) => (
+      render: (date: string) => (
         <Typography.Text type="secondary" style={{ fontSize: 14 }}>
           {format(new Date(date), "MMM d, yyyy")}
         </Typography.Text>
@@ -258,7 +271,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       title: 'Uploaded By',
       dataIndex: 'uploadedBy',
       key: 'uploadedBy',
-      render: (uploadedBy) => (
+      render: (uploadedBy: string | undefined) => (
         <Typography.Text type="secondary" style={{ fontSize: 14 }}>
           {uploadedBy || "System"}
         </Typography.Text>
@@ -268,7 +281,7 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       title: 'Actions',
       key: 'actions',
       width: 80,
-      render: (_, record) => (
+      render: (_: unknown, record: Document) => (
         <Dropdown
           menu={{
             items: [

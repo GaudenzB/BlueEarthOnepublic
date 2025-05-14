@@ -217,8 +217,30 @@ export function EmployeeDirectory() {
           sortDirection={sortDirection}
         />
         
-        <div className="directory-container overflow-auto">
-          <Spin spinning={true} tip="Loading employees..." className="flex justify-center my-4">
+        <div 
+          className="directory-container overflow-auto"
+          style={{
+            position: 'relative',
+            minHeight: '400px'
+          }}
+        >
+          <Spin 
+            spinning={true} 
+            tip={
+              <div style={{ 
+                marginTop: '12px', 
+                color: '#64748b',
+                fontSize: '14px',
+                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+              }}>
+                Loading employee data...
+              </div>
+            } 
+            className="flex justify-center my-4"
+            style={{
+              maxWidth: '100%'
+            }}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array(8).fill(0).map((_, index) => (
                 <EmployeeCard 
@@ -238,17 +260,56 @@ export function EmployeeDirectory() {
   // Error state
   if (isError) {
     return (
-      <div className="py-6">
+      <div 
+        style={{ 
+          padding: '48px 24px', 
+          marginTop: '24px',
+          borderRadius: '8px',
+          border: '1px solid #fee2e2',
+          background: '#fef2f2'
+        }}
+      >
         <Result
           status="error"
-          title="Failed to load employees"
-          subTitle="There was an error loading the employee directory. Please try again."
+          title={
+            <div style={{ 
+              color: '#b91c1c', 
+              fontSize: '22px', 
+              fontWeight: 600,
+              marginBottom: '8px',
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            }}>
+              Failed to load employees
+            </div>
+          }
+          subTitle={
+            <div style={{ 
+              color: '#ef4444', 
+              fontSize: '14px',
+              marginBottom: '24px',
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            }}>
+              There was an error loading the employee directory. Please try again.
+            </div>
+          }
           extra={[
             <Button 
               key="refresh" 
               type="primary" 
               onClick={() => window.location.reload()}
-              style={{ backgroundColor: colors.primary.base }}
+              style={{ 
+                backgroundColor: colors.primary.base,
+                borderColor: colors.primary.base,
+                boxShadow: '0 1px 2px rgba(14, 74, 134, 0.05)',
+                height: '40px',
+                borderRadius: '6px',
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 20px',
+                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+              }}
               icon={<ReloadOutlined />}
             >
               Try Again
@@ -275,15 +336,43 @@ export function EmployeeDirectory() {
       />
       
       {filteredEmployees.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <div>
-              <h3 className="text-lg font-medium text-foreground mb-2">No employees found</h3>
-              <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
-            </div>
-          }
-        />
+        <div 
+          style={{ 
+            padding: '48px 24px', 
+            textAlign: 'center', 
+            background: '#f9fafc',
+            borderRadius: '8px',
+            border: '1px solid #eaecf0',
+            marginTop: '16px'
+          }}
+        >
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            imageStyle={{ marginBottom: '24px', opacity: 0.8 }}
+            description={
+              <div>
+                <h3 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: 600, 
+                  color: '#1e293b', 
+                  marginBottom: '8px',
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }}>
+                  No employees found
+                </h3>
+                <p style={{ 
+                  color: '#64748b', 
+                  fontSize: '14px',
+                  maxWidth: '320px',
+                  margin: '0 auto',
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }}>
+                  Try adjusting your search or filter criteria to find the employees you're looking for
+                </p>
+              </div>
+            }
+          />
+        </div>
       ) : (
         <>
           <div className="directory-container overflow-auto">
