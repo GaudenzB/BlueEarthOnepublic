@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileIcon, UploadIcon, XIcon } from "lucide-react";
+import { FileOutlined, UploadOutlined, CloseOutlined } from "@ant-design/icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -369,7 +369,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                           {selectedFile ? (
                             <div className="flex flex-col items-center gap-2">
                               <div className="bg-muted p-2 rounded-full">
-                                <FileIcon className="h-6 w-6 text-foreground" />
+                                <FileOutlined style={{ fontSize: '24px' }} />
                               </div>
                               <div className="text-center">
                                 <p className="font-medium truncate max-w-[180px]">{selectedFile.name}</p>
