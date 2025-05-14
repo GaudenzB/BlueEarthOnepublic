@@ -2,16 +2,13 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
-import { Tabs, message } from "antd";
+import { message } from "antd";
 import { apiRequest } from "@/lib/queryClient";
 import { Document } from "@/types/document";
 import { DocumentHeader } from "@/components/documents/DocumentHeader";
 import { DocumentProcessingAlert } from "@/components/documents/DocumentProcessingAlert";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
-import { DocumentOverviewTab } from "@/components/documents/tabs/DocumentOverviewTab";
-import { DocumentVersionsTab } from "@/components/documents/tabs/DocumentVersionsTab";
-import { DocumentCommentsTab } from "@/components/documents/tabs/DocumentCommentsTab";
-import { DocumentTimelineTab } from "@/components/documents/tabs/DocumentTimelineTab";
+import { DocumentTabs } from "@/components/documents/DocumentTabs";
 import { DocumentDeleteDialog } from "@/components/documents/DocumentDeleteDialog";
 import { DocumentShareDialog } from "@/components/documents/DocumentShareDialog";
 
@@ -242,32 +239,11 @@ export default function DocumentDetail() {
           isRefreshing={refreshStatusMutation.isPending}
         />
         
-        {/* Tabs */}
-        <Tabs 
-          activeKey={activeTab} 
-          onChange={handleTabChange}
-          items={[
-            {
-              key: "1",
-              label: "Overview",
-              children: <DocumentOverviewTab document={document} />
-            },
-            {
-              key: "2",
-              label: "Version History",
-              children: <DocumentVersionsTab document={document} />
-            },
-            {
-              key: "3",
-              label: "Comments",
-              children: <DocumentCommentsTab document={document} />
-            },
-            {
-              key: "4",
-              label: "Timeline",
-              children: <DocumentTimelineTab document={document} />
-            }
-          ]}
+        {/* Document Tabs */}
+        <DocumentTabs 
+          document={document}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
         />
       </div>
       
