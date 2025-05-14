@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Progress, Space, Typography, Tag, Button } from 'antd';
+import { Alert, Progress, Space, Typography, Button } from 'antd';
 import { 
   SyncOutlined, 
   ClockCircleOutlined, 
@@ -169,25 +169,40 @@ export function DocumentProcessingAlert({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{alertTitle}</span>
           {document.processingStatus === 'PROCESSING' && (
-            <Tag 
-              icon={<SyncOutlined spin />} 
-              color="processing"
+            <div 
               onClick={onRefresh}
               style={{ cursor: onRefresh ? 'pointer' : 'default' }}
             >
-              {isRefreshing ? 'Refreshing...' : 'Processing'}
-            </Tag>
+              {/* Import StatusTag here to avoid circular dependencies */}
+              {(() => {
+                const StatusTag = require('@/components/ui/StatusTag').default;
+                return (
+                  <StatusTag 
+                    status="in_review" 
+                    text={isRefreshing ? 'Refreshing...' : 'Processing'} 
+                    size="small"
+                  />
+                );
+              })()}
+            </div>
           )}
           {document.processingStatus === 'PENDING' && (
-            <Tag icon={<ClockCircleOutlined />} color="default">
-              Pending
-            </Tag>
+            (() => {
+              const StatusTag = require('@/components/ui/StatusTag').default;
+              return <StatusTag status="pending" size="small" />;
+            })()
           )}
           {document.processingStatus === 'FAILED' && (
-            <Tag color="error">Failed</Tag>
+            (() => {
+              const StatusTag = require('@/components/ui/StatusTag').default;
+              return <StatusTag status="rejected" size="small" />;
+            })()
           )}
           {document.processingStatus === 'WARNING' && (
-            <Tag color="warning">Warning</Tag>
+            (() => {
+              const StatusTag = require('@/components/ui/StatusTag').default;
+              return <StatusTag status="expired" text="Warning" size="small" />;
+            })()
           )}
         </div>
       }
@@ -209,14 +224,21 @@ export function DocumentProcessingAlert({
                   style={{ width: 'calc(100% - 100px)' }}
                 />
                 {onRefresh && (
-                  <Tag 
-                    icon={isRefreshing ? <SyncOutlined spin /> : <SyncOutlined />} 
-                    color="blue"
+                  <div 
                     onClick={handleManualRefresh}
                     style={{ cursor: 'pointer', marginLeft: 8 }}
                   >
-                    {isRefreshing ? 'Refreshing' : 'Refresh'}
-                  </Tag>
+                    {(() => {
+                      const StatusTag = require('@/components/ui/StatusTag').default;
+                      return (
+                        <StatusTag 
+                          status="pending" 
+                          text={isRefreshing ? 'Refreshing' : 'Refresh'} 
+                          size="small"
+                        />
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
               <Text type="secondary">{getTimeRemainingText()}</Text>

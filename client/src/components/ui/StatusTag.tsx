@@ -65,7 +65,7 @@ export interface StatusTagProps {
   /**
    * Optional custom text to override the default text for the status
    */
-  text?: string;
+  text?: string | undefined;
 
   /**
    * Optional size of the tag. Default is 'default'

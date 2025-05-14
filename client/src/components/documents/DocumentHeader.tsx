@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { Typography, Space, Button, Breadcrumb, Tooltip, Dropdown, Badge, Tag } from 'antd';
+import { Typography, Space, Button, Breadcrumb, Tooltip, Dropdown, Badge } from 'antd';
 import { 
   DownloadOutlined, 
   ShareAltOutlined, 
@@ -45,21 +45,56 @@ interface DocumentHeaderProps {
 /**
  * Document tags component
  * Displays categorization tags for the document
+ * Uses our centralized StatusTag component for visual consistency
  */
 const DocumentTags = memo(({ document }: { document: Document }) => {
+  // Import StatusTag to avoid circular dependencies
+  const StatusTag = require('@/components/ui/StatusTag').default;
+  
+  // Map document categories to relevant status values for consistent styling
+  const mapCategoryToStatus = (category: string) => {
+    const categoryMap: {[key: string]: string} = {
+      'Financial': 'approved',
+      'Legal': 'completed',
+      'HR': 'active',
+      'Contract': 'pending',
+      'Report': 'in_review',
+      'Other': 'draft'
+    };
+    
+    return categoryMap[category] || 'active';
+  };
+  
   return (
-    <Space size={[0, 8]} wrap>
+    <Space size={[8, 8]} wrap>
       {document.category && (
-        <Tag color="blue">{document.category}</Tag>
+        <StatusTag 
+          status={mapCategoryToStatus(document.category)} 
+          text={document.category}
+          size="small"
+        />
       )}
       {document.fileType && (
-        <Tag color="default">{document.fileType}</Tag>
+        <StatusTag 
+          status="pending" 
+          text={document.fileType}
+          size="small"
+        />
       )}
       {document.visibility && (
-        <Tag color="cyan">{document.visibility}</Tag>
+        <StatusTag 
+          status={document.visibility.toString().toLowerCase() === 'public' ? 'active' : 'restricted'}
+          text={document.visibility}
+          size="small"
+        />
       )}
       {document.tags?.map((tag, index) => (
-        <Tag key={index} color="green">{tag}</Tag>
+        <StatusTag 
+          key={index} 
+          status="archived" 
+          text={tag}
+          size="small"
+        />
       ))}
     </Space>
   );
@@ -99,9 +134,18 @@ const DocumentTitle = memo(({
       )}
       {versionCount && versionCount > 1 && (
         <Tooltip title={`${versionCount} versions available`}>
-          <Tag color="purple" onClick={onViewHistory} style={{ cursor: onViewHistory ? 'pointer' : 'default' }}>
-            v{document.versions?.[0]?.versionNumber || versionCount}
-          </Tag>
+          <div onClick={onViewHistory} style={{ cursor: onViewHistory ? 'pointer' : 'default' }}>
+            {(() => {
+              const StatusTag = require('@/components/ui/StatusTag').default;
+              return (
+                <StatusTag 
+                  status="version" 
+                  text={`v${document.versions?.[0]?.versionNumber || versionCount}`}
+                  size="small"
+                />
+              );
+            })()}
+          </div>
         </Tooltip>
       )}
     </div>
