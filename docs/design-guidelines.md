@@ -1,196 +1,292 @@
-# BlueEarth Capital Design System Guidelines
+# BlueEarth Capital UI Design System
 
-This document provides a comprehensive guide to our design system, ensuring consistency across all components and pages of the BlueEarth Capital application.
+This document outlines our comprehensive design system which ensures visual consistency, usability, and maintainability across the BlueEarth Capital application.
+
+## Table of Contents
+
+1. [Design Principles](#design-principles)
+2. [Color System](#color-system)
+3. [Typography](#typography)
+4. [Spacing System](#spacing-system)
+5. [Borders & Shadows](#borders--shadows)
+6. [Component Guidelines](#component-guidelines)
+7. [Pattern Library](#pattern-library)
+8. [Icon Usage](#icon-usage)
+9. [Accessibility Guidelines](#accessibility-guidelines)
+10. [Implementation Details](#implementation-details)
 
 ## Design Principles
 
-- **Professional**: Clean, mature enterprise design appropriate for financial services
-- **Consistent**: Unified experience across all modules and components
-- **Accessible**: Legible typography and sufficient color contrast
-- **Responsive**: Adapts gracefully to all screen sizes
+Our design system is guided by these core principles:
+
+- **Clarity**: Information hierarchy should be clear and logical
+- **Consistency**: UI elements should behave predictably and look cohesive
+- **Efficiency**: Users should accomplish tasks with minimal effort
+- **Enterprise-Grade**: Professional appearance appropriate for financial services
+- **Accessibility**: Interfaces should be usable by everyone
 
 ## Color System
 
-### Primary Colors
+We use a carefully selected palette consisting of:
 
-- **Primary**: `#0f52ba` - Used for primary buttons, key actions, and links
-- **Primary Hover**: `#0d47a1` - Used for hover states on primary elements
-- **Primary Dark**: `#1a3d7c` - Used for dark sections and dark mode components
+### Primary Palette
 
-### Neutral Colors
+- **Brand Colors**: Primary brand colors representing BlueEarth Capital's identity
+  - Primary Blue: `#0F5E9C`
+  - Secondary Blue: `#2B80C5`
+  - Accent Blue: `#63A6E2`
 
-- **Gray 50**: `#f8f9fa` - Page backgrounds, subtle backgrounds
-- **Gray 100**: `#f0f2f5` - Card backgrounds, dividers
-- **Gray 200**: `#e9ecef` - Input fields, borders
-- **Gray 300**: `#dee2e6` - Disabled states, secondary borders
-- **Gray 400**: `#ced4da` - Placeholder text
-- **Gray 500**: `#adb5bd` - Secondary text, disabled text
-- **Gray 600**: `#6c757d` - Muted text, secondary headings
-- **Gray 700**: `#495057` - Primary text
-- **Gray 800**: `#343a40` - Headings 
-- **Gray 900**: `#212529` - Main headings
+### UI Colors
 
-### Status Colors
+- **Gray Scale**: For text, backgrounds, and UI elements
+  - Gray 50: `#F9FAFB` - Page backgrounds
+  - Gray 100: `#F3F4F6` - Card backgrounds
+  - Gray 200: `#E5E7EB` - Borders, dividers
+  - Gray 300: `#D1D5DB` - Disabled states
+  - Gray 400: `#9CA3AF` - Placeholder text
+  - Gray 500: `#6B7280` - Secondary text
+  - Gray 600: `#4B5563` - Body text
+  - Gray 700: `#374151` - Primary text
+  - Gray 800: `#1F2937` - Headings
+  - Gray 900: `#111827` - High contrast text
 
-- **Success**: `#52c41a` - Positive indicators, completions
-- **Warning**: `#faad14` - Warnings, alerts, pending states
-- **Error**: `#ff4d4f` - Errors, destructive actions
-- **Info**: `#1890ff` - Informational states, active states
-- **Processing**: `#1890ff` - Processing states, in-progress
+### Semantic Colors
+
+- **Feedback Colors**: For status indicators and messaging
+  - Success: `#16A34A` - Positive confirmation
+  - Warning: `#F59E0B` - Attention required
+  - Error: `#DC2626` - Critical issues
+  - Info: `#3B82F6` - Informational content
+
+### Usage Guidelines
+
+- Use brand colors sparingly for primary actions and key UI elements
+- Maintain proper contrast ratios (at least 4.5:1 for normal text)
+- Reserve semantic colors for their intended purpose (status, feedback)
+- Use gray scale for most interface elements
 
 ## Typography
 
 ### Font Family
 
-- **Primary Font**: Inter, sans-serif
-- **Fallback**: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+- **Primary**: 'SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', sans-serif
+- **Monospace**: 'SF Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace
 
 ### Font Sizes
 
-- **text-xs**: 0.75rem (12px) - Fine print, captions
-- **text-sm**: 0.875rem (14px) - Secondary text, labels, interface text
-- **text-base**: 1rem (16px) - Primary body text
-- **text-lg**: 1.125rem (18px) - Large body text, section headers
-- **text-xl**: 1.25rem (20px) - Subtitle headings
-- **text-2xl**: 1.5rem (24px) - Main headings
-- **text-3xl**: 1.875rem (30px) - Major headings
-- **text-4xl**: 2.25rem (36px) - Page titles
+- xs: `0.75rem` (12px) - Fine print, captions
+- sm: `0.875rem` (14px) - Secondary text, labels
+- base: `1rem` (16px) - Body text
+- lg: `1.125rem` (18px) - Large body text
+- xl: `1.25rem` (20px) - Small headings
+- 2xl: `1.5rem` (24px) - Headings
+- 3xl: `1.875rem` (30px) - Large headings
+- 4xl: `2.25rem` (36px) - Extra large headings
 
 ### Font Weights
 
-- **font-light**: 300
-- **font-normal**: 400
-- **font-medium**: 500
-- **font-semibold**: 600
-- **font-bold**: 700
+- light: 300
+- normal: 400
+- medium: 500
+- semibold: 600
+- bold: 700
+
+### Line Heights
+
+- tight: 1.25 - Headings
+- base: 1.5 - Body text
+- relaxed: 1.75 - Multi-line body text
+
+### Usage Guidelines
+
+- Limit to 2-3 font sizes per page for content
+- Use appropriate weights to establish hierarchy
+- Maintain consistent alignment (usually left-aligned)
+- Ensure proper line height for readability (usually 1.5x for paragraphs)
 
 ## Spacing System
 
-### Layout Spacing
+We use a consistent 4px base unit spacing scale for layout, padding, margins and gaps.
 
-- **max-w-7xl**: 80rem (1280px) - Maximum content width
-- **max-w-5xl**: 64rem (1024px) - Medium content width
-- **max-w-3xl**: 48rem (768px) - Small content width
-- **px-4**: 1rem (16px) - Mobile padding
-- **px-6**: 1.5rem (24px) - Tablet padding
-- **px-8**: 2rem (32px) - Desktop padding
+### Spacing Scale
 
-### Component Spacing
+- 0: `0` - No spacing
+- 1: `0.25rem` (4px)
+- 2: `0.5rem` (8px) - Compact spacing
+- 3: `0.75rem` (12px)
+- 4: `1rem` (16px) - Standard spacing
+- 5: `1.25rem` (20px)
+- 6: `1.5rem` (24px) - Comfortable spacing
+- 8: `2rem` (32px) - Section spacing
+- 10: `2.5rem` (40px)
+- 12: `3rem` (48px) - Large section spacing
+- 16: `4rem` (64px) - Page section spacing
+- 20: `5rem` (80px) - Page spacing
+- 24: `6rem` (96px) - Extra large spacing
 
-- **gap-2**: 0.5rem (8px) - Tight component spacing
-- **gap-4**: 1rem (16px) - Standard component spacing
-- **gap-6**: 1.5rem (24px) - Medium component spacing
-- **gap-8**: 2rem (32px) - Large component spacing
-- **gap-10**: 2.5rem (40px) - Section spacing
-- **gap-12**: 3rem (48px) - Large section spacing
+### Layout Guidelines
 
-### Margins
+- Use consistent margins for page sections (usually 24-48px)
+- Maintain uniform padding within components (usually 16-24px) 
+- Apply consistent gap spacing between items in a group
+- Card padding should be consistent (usually 16-24px)
+- Form field spacing should be uniform (usually 16-24px between fields)
 
-- **mb-2**: 0.5rem (8px) - Small bottom margin
-- **mb-4**: 1rem (16px) - Standard bottom margin
-- **mb-6**: 1.5rem (24px) - Medium bottom margin
-- **mb-8**: 2rem (32px) - Large bottom margin
-- **mt-2**: 0.5rem (8px) - Small top margin
-- **mt-4**: 1rem (16px) - Standard top margin
-- **mt-6**: 1.5rem (24px) - Medium top margin
-- **mt-8**: 2rem (32px) - Large top margin
+## Borders & Shadows
 
-## Component Design Guidelines
+### Border Radius
 
-### Cards
+- none: `0` - No rounding
+- sm: `0.125rem` (2px) - Subtle rounding
+- md: `0.375rem` (6px) - Button rounding
+- lg: `0.5rem` (8px) - Card rounding
+- xl: `0.75rem` (12px) - Modal rounding
+- 2xl: `1rem` (16px) - Large component rounding
+- full: `9999px` - Circular elements
 
-Cards should maintain consistent styling:
+### Shadows
 
-- **Background**: `white` or `gray-50`
-- **Border**: `1px solid #f0f2f5` (Gray 100)
-- **Border Radius**: `rounded-xl` (0.75rem / 12px)
-- **Shadow**: `shadow-sm` (Subtle shadow)
-- **Padding**: `p-6` (1.5rem / 24px)
-- **Max Width**: Appropriate for content, typically `max-w-lg` (32rem / 512px) for detail cards
+- none: No shadow
+- sm: `0 1px 2px 0 rgba(0, 0, 0, 0.05)` - Subtle elevation
+- md: `0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)` - Cards, dropdowns
+- lg: `0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)` - Modals, popovers
+- xl: `0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)` - Large modals
+
+## Component Guidelines
 
 ### Buttons
 
-- **Primary**: `brand.700` background, white text, `rounded-md`
-- **Default**: White background, gray text/border, `rounded-md`
-- **Danger**: Red background, white text, `rounded-md`
-- **Link**: No background, primary color text, no border
-- **Size**: Standard `h-10` (2.5rem), small `h-8` (2rem), large `h-12` (3rem)
+- **Primary**: Brand color background, white text, used for main actions
+- **Secondary**: Gray background, dark text, used for secondary actions
+- **Tertiary/Link**: No background, brand color text, used for minor actions
+- **Danger**: Red background, white text, used for destructive actions
 
-### Avatar
+Sizes:
+- Small: 28px height
+- Default: 36px height
+- Large: 44px height
 
-- **Size**: Standard `w-10 h-10` (2.5rem), small `w-8 h-8` (2rem), large `w-12 h-12` (3rem), extra large `w-32 h-32` (8rem)
-- **Border Radius**: `rounded-full` for circular avatars
-- **Fallback**: If no image, use initials on `gray-100` background
-- **Fallback Font**: `font-medium`, size depends on avatar size
+### Form Inputs
 
-### Status Indicators (Tags)
+- Standard height: 36px
+- Border radius: 6px
+- Label position: Above input
+- Error state: Red border with error message below
+- Disabled state: Gray background, reduced opacity
 
-- **Shape**: `rounded-full` for status pills
-- **Size**: Compact, with appropriate padding
-- **Text**: Lowercase, with icon when appropriate
-- **Colors**:
-  - Active: Success color
-  - Inactive: Gray/neutral
-  - Warning states: Warning color
-  - Error states: Error color
-  - Info states: Info color
+### Cards
+
+- Standard padding: 24px
+- Border radius: 8px (lg) or 12px (xl)
+- Shadow: sm for flat design, md for elevated design
+- Title-content spacing: 16px
+
+### Modals and Dialogs
+
+- Border radius: 12px
+- Backdrop: Semi-transparent black
+- Standard padding: 24px
+- Header-content-footer spacing: 24px
+- Max width: 500-600px for standard modals
 
 ### Tables
 
-- **Header**: Bold text, light gray background
-- **Borders**: Subtle borders between rows
-- **Hover**: Light highlight on row hover
-- **Padding**: Consistent padding in cells
+- Header: Bold text, light gray background
+- Row hover: Subtle highlight
+- Row separation: Light border or alternating background
+- Cell padding: 12px 16px
 
-## Page Structure
+### Status Indicators
 
-### Page Layout
+- Use consistent colors for status states
+- Include icons with status labels when possible
+- Use badges/tags for compact status display
 
-- **Container**: Centered, `max-w-7xl` with appropriate padding
-- **Margin**: Consistent margin around all sides of the page
-- **Section spacing**: Consistent vertical spacing between main sections
+## Pattern Library
 
-### Section Headers
+Common UI patterns standardized across the application:
 
-- **Style**: Clear hierarchy with appropriate font size/weight
-- **Spacing**: Consistent spacing between header and content
-- **Text transform**: Consider `uppercase` for small section labels
+### Navigation Patterns
+- **Sidebar Navigation**: Primary app navigation
+- **Breadcrumbs**: Secondary page navigation
+- **Tabs**: Content organization within a page
+- **Pagination**: For long content lists
 
-### Forms
+### Content Patterns
+- **Page Headers**: Consistent title, actions, and breadcrumbs
+- **Data Tables**: Consistent sorting, filtering, and actions
+- **Empty States**: When no content is available
+- **Loading States**: Consistent skeleton loaders
 
-- **Label position**: Above inputs
-- **Input sizing**: Consistent height and padding
-- **Field spacing**: Consistent vertical spacing between form fields
-- **Error states**: Clear error messaging with appropriate color
-- **Help text**: Subtle helper text below inputs when needed
+### Interaction Patterns
+- **Dialogs**: Confirmation and modal patterns
+- **Notifications**: Toast and alert patterns
+- **Form Submission**: Standard save/cancel patterns
+- **Data Loading**: Skeleton loaders and progress indicators
 
-## Responsive Design
+## Icon Usage
 
-- **Mobile breakpoint**: 640px and below
-- **Tablet breakpoint**: 641px to 1024px
-- **Desktop breakpoint**: 1025px and above
-- **Layout changes**: 
-  - Single column on mobile
-  - Potential two columns on tablet
-  - Full layout on desktop
+We use Ant Design icons throughout the application:
 
-## Best Practices
+- Use outlined icons for navigation and general UI elements
+- Use filled icons for selected or active states
+- Maintain consistent size in context (16px for inline, 20px for buttons)
+- Ensure appropriate color contrast
+- Pair with text for improved accessibility
 
-1. Always use design tokens instead of hard-coded values
-2. Maintain consistent spacing throughout the application
-3. Use appropriate text sizes for hierarchy and readability
-4. Ensure color contrast meets accessibility standards
-5. Follow consistent patterns for similar components
-6. Centralize shared component definitions
-7. Document any exceptions or special cases
+## Accessibility Guidelines
 
-## Implementation
+- Maintain color contrast ratio of at least 4.5:1 for normal text
+- Ensure keyboard navigability for all interactions
+- Provide text alternatives for non-text content
+- Design focus states for keyboard users
+- Support screen readers with appropriate ARIA attributes
+- Allow zooming without breaking layouts
 
-The design system is implemented through:
+## Implementation Details
 
-1. A centralized theme file with tokens
-2. Shared components that apply these tokens
-3. Consistent usage patterns across all modules
-4. Regular audits to ensure compliance
+### Component Architecture
 
-By following these guidelines, we ensure a cohesive, professional experience across the entire application.
+Our components are organized in the following structure:
+
+1. **Base Components**: Fundamental building blocks
+2. **Composite Components**: Combinations of base components
+3. **Page Templates**: Full page layouts
+
+### Using the Theme System
+
+All UI components should reference values from the theme system:
+
+```typescript
+import { theme } from '@/lib/theme';
+
+// Use theme values for styling:
+const styles = {
+  padding: theme.spacing[4],
+  fontSize: theme.typography.fontSize.base,
+  color: theme.gray[700],
+  borderRadius: theme.borderRadius.md,
+};
+```
+
+### Using Centralized Components
+
+Always prefer shared components from the UI library over custom implementations:
+
+```tsx
+// Import from centralized UI components
+import { StatusTag, PageHeader, CardContainer } from '@/components/ui';
+
+// Use shared components in your implementation
+<PageHeader 
+  title="Employee Details" 
+  description="View and manage employee information"
+/>
+
+<CardContainer
+  title="Contact Information"
+  description="Personal contact details for this employee"
+>
+  {/* Card content */}
+</CardContainer>
+```
