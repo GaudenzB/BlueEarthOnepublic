@@ -146,6 +146,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
   const onSubmit = async (data: DocumentUploadFormValues) => {
     try {
       setIsUploading(true);
+      setUploadStage('uploading');
+      setUploadProgress(0);
+      setErrorDetails(null);
       
       // Create FormData object to send file and metadata
       const formData = new FormData();
@@ -168,63 +171,110 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       formData.append("isConfidential", String(data.isConfidential));
       
-      // Debug log to verify FormData contents
-      // In Vite, we use import.meta.env instead of process.env
-      if (import.meta.env.DEV) {
-        console.log('FormData contents:');
-        for (let [key, value] of formData.entries()) {
-          console.log(`${key}: ${value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value}`);
-        }
-      }
-      
       // Get the auth token from localStorage (check both possible storage keys)
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      console.log("Upload using token from localStorage:", !!token);
       
-      // Make API request with authentication
-      const response = await fetch("/api/documents", {
-        method: "POST",
-        body: formData,
-        // No Content-Type header - browser will set it with boundary for FormData
-        headers: {
-          // Include the Authorization header with the token
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-        credentials: 'include', // Include cookies for session-based auth as fallback
+      // Create new XMLHttpRequest for progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      // Create AbortController for cancellation support
+      abortControllerRef.current = new AbortController();
+      
+      // Set up upload progress tracking
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
+          
+          // When upload reaches 100%, move to processing stage
+          if (percentComplete >= 100) {
+            setUploadStage('processing');
+          }
+        }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
+      // Wrap XHR in a promise for async/await support
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.open('POST', '/api/documents', true);
         
-        // Check for field-level validation errors
-        if (errorData.fieldErrors) {
-          // Set field errors in the form
-          const fieldErrors: Record<string, string> = {};
-          
-          // Extract the first error message for each field
-          Object.entries(errorData.fieldErrors).forEach(([field, error]: [string, any]) => {
-            if (error && error._errors && error._errors.length > 0) {
-              fieldErrors[field] = error._errors[0];
-            }
-          });
-          
-          // Set errors in the form
-          Object.entries(fieldErrors).forEach(([field, message]) => {
-            form.setError(field as any, { 
-              type: 'server', 
-              message 
-            });
-          });
-          
-          throw new Error(errorData.message || "Please fix the validation errors");
+        // Set auth headers
+        if (token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         }
         
-        // If no specific field errors, throw general error
-        throw new Error(errorData.message || "Failed to upload document");
-      }
+        xhr.withCredentials = true; // Include cookies for session-based auth
+        
+        // Handle response 
+        xhr.onload = function() {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              resolve(data);
+            } catch (e) {
+              reject(new Error('Invalid response from server'));
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              
+              // Handle field validation errors
+              if (errorData.fieldErrors) {
+                // Set field errors in the form
+                const fieldErrors: Record<string, string> = {};
+                
+                // Extract the first error message for each field
+                Object.entries(errorData.fieldErrors).forEach(([field, error]: [string, any]) => {
+                  if (error && error._errors && error._errors.length > 0) {
+                    fieldErrors[field] = error._errors[0];
+                  }
+                });
+                
+                // Set errors in the form
+                Object.entries(fieldErrors).forEach(([field, message]) => {
+                  form.setError(field as any, { 
+                    type: 'server', 
+                    message 
+                  });
+                });
+                
+                reject(new Error(errorData.message || "Please fix the validation errors"));
+              } else {
+                // General error
+                reject(new Error(errorData.message || `Upload failed with status ${xhr.status}`));
+              }
+            } catch (e) {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          }
+        };
+        
+        // Handle network errors
+        xhr.onerror = function() {
+          reject(new Error('Network error occurred during upload'));
+        };
+        
+        // Handle abort
+        xhr.upload.onabort = function() {
+          reject(new Error('Upload was cancelled'));
+        };
+        
+        // Connect abort controller to XHR
+        if (abortControllerRef.current) {
+          abortControllerRef.current.signal.addEventListener('abort', () => {
+            xhr.abort();
+          });
+        }
+        
+        // Send the request with FormData
+        xhr.send(formData);
+      });
       
-      // Success handling
-      const responseData = await response.json();
+      // Await the upload to complete
+      const responseData = await uploadPromise;
+      
+      // Set success state
+      setUploadStage('complete');
+      setUploadProgress(100);
       
       // Show success message
       toast({
@@ -236,21 +286,36 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       // Invalidate documents query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       
-      // Call success callback
-      onSuccess();
-      
-      // Reset form
-      form.reset();
-      setSelectedFile(null);
+      // Call success callback after a short delay to show the success state
+      setTimeout(() => {
+        onSuccess();
+        
+        // Reset form
+        form.reset();
+        setSelectedFile(null);
+        if (fileRef.current) {
+          fileRef.current.value = "";
+        }
+      }, 1000);
       
     } catch (error: any) {
+      // Set error state
+      setUploadStage('error');
+      setErrorDetails(error.message || "An unknown error occurred");
+      
       toast({
         title: "Upload failed",
         description: error.message || "There was an error uploading your document",
         variant: "destructive",
       });
     } finally {
-      setIsUploading(false);
+      // Only clear uploading state, keep the progress/state visible for feedback
+      setTimeout(() => {
+        setIsUploading(false);
+      }, 500);
+      
+      // Clear the AbortController reference
+      abortControllerRef.current = null;
     }
   };
 
@@ -453,6 +518,55 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               </div>
             </div>
 
+            {/* Progress Indicator */}
+            {(isUploading || uploadStage === 'processing' || uploadStage === 'complete' || uploadStage === 'error') && (
+              <div className="my-4 px-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">
+                    {uploadStage === 'uploading' && 'Uploading document...'}
+                    {uploadStage === 'processing' && 'Processing document...'}
+                    {uploadStage === 'complete' && 'Upload complete!'}
+                    {uploadStage === 'error' && 'Upload failed'}
+                  </span>
+                  <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
+                </div>
+                
+                <Progress 
+                  percent={uploadProgress} 
+                  status={
+                    uploadStage === 'error' ? 'exception' :
+                    uploadStage === 'complete' ? 'success' : 'active'
+                  } 
+                  strokeColor={
+                    uploadStage === 'uploading' ? '#1677ff' :
+                    uploadStage === 'processing' ? '#faad14' :
+                    uploadStage === 'complete' ? '#52c41a' : '#ff4d4f'
+                  }
+                />
+                
+                {uploadStage === 'processing' && (
+                  <div className="flex items-center mt-2 text-sm text-amber-600">
+                    <InfoCircleOutlined style={{ marginRight: '8px' }} />
+                    <span>AI processing may take a few moments...</span>
+                  </div>
+                )}
+                
+                {uploadStage === 'complete' && (
+                  <div className="flex items-center mt-2 text-sm text-green-600">
+                    <CheckCircleOutlined style={{ marginRight: '8px' }} />
+                    <span>Document uploaded and processed successfully!</span>
+                  </div>
+                )}
+                
+                {uploadStage === 'error' && errorDetails && (
+                  <div className="flex items-center mt-2 text-sm text-red-600">
+                    <InfoCircleOutlined style={{ marginRight: '8px' }} />
+                    <span>{errorDetails}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <DialogFooter>
               <Button 
                 type="button" 
@@ -460,13 +574,20 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                 onClick={onClose}
                 disabled={isUploading}
               >
-                Cancel
+                {uploadStage === 'complete' ? 'Close' : 'Cancel'}
               </Button>
               <Button 
                 type="submit" 
-                disabled={isUploading || !selectedFile}
+                disabled={isUploading || !selectedFile || uploadStage === 'complete'}
               >
-                {isUploading ? "Uploading..." : "Upload Document"}
+                {isUploading ? (
+                  <>
+                    <LoadingOutlined style={{ marginRight: '8px' }} />
+                    {uploadStage === 'uploading' ? 'Uploading...' : 'Processing...'}
+                  </>
+                ) : (
+                  "Upload Document"
+                )}
               </Button>
             </DialogFooter>
           </form>
