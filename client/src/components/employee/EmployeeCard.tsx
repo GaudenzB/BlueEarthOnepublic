@@ -1,18 +1,41 @@
 import React from "react"
 import { Link } from "wouter"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { BankOutlined, EnvironmentOutlined, MailOutlined, UserOutlined, MessageOutlined } from "@ant-design/icons"
+import { 
+  BankOutlined, 
+  EnvironmentOutlined, 
+  MailOutlined, 
+  UserOutlined, 
+  MessageOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  GlobalOutlined,
+  StopOutlined
+} from "@ant-design/icons"
+import { Tag } from "antd"
 import { type Employee } from "@shared/schema"
 import { ROUTES } from "@/lib/routes"
+import { colors } from "@/lib/colors"
 
-const statusColors: Record<string, { variant: "success" | "warning" | "danger" | "default", dot: string }> = {
-  active: { variant: "success", dot: "bg-green-500" },
-  on_leave: { variant: "warning", dot: "bg-amber-500" },
-  remote: { variant: "danger", dot: "bg-red-500" },
-  inactive: { variant: "default", dot: "bg-gray-500" }
+const statusConfig: Record<string, { color: string, icon: React.ReactNode }> = {
+  active: { 
+    color: "success", 
+    icon: <CheckCircleOutlined /> 
+  },
+  on_leave: { 
+    color: "warning", 
+    icon: <ClockCircleOutlined /> 
+  },
+  remote: { 
+    color: "processing", 
+    icon: <GlobalOutlined /> 
+  },
+  inactive: { 
+    color: "default", 
+    icon: <StopOutlined /> 
+  }
 }
 
 interface EmployeeCardProps {
@@ -27,8 +50,9 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
     : nameParts[0]?.substring(0, 2) || '??'
   
   // Add null safety for status property
-  const statusConfig = statusColors[employee.status || 'inactive'] || statusColors['inactive']
-  const formattedStatus = (employee.status || 'inactive').replace('_', ' ')
+  const status = employee.status || 'inactive'
+  const config = statusConfig[status] || statusConfig['inactive']
+  const formattedStatus = status.replace('_', ' ')
   
   // Safely create the detail URL with id validation
   const getEmployeeDetailUrl = (id: number | undefined) => {
@@ -39,7 +63,7 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
   };
   
   return (
-    <Card className="overflow-hidden border border-border hover:shadow-md transition-shadow duration-300">
+    <Card className="overflow-hidden border border-border hover:shadow-md transition-all duration-300">
       <Link href={getEmployeeDetailUrl(employee.id)} className="block cursor-pointer">
         <CardContent className="p-4">
           <div className="flex items-center">
@@ -55,33 +79,58 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
           
           <div className="mt-4 space-y-2">
             <div className="flex items-center text-sm">
-              <BankOutlined style={{ fontSize: '16px', marginRight: '8px', color: 'var(--muted-foreground)' }} />
+              <BankOutlined className="mr-2 text-muted-foreground" style={{ fontSize: '16px' }} />
               <span>{employee.department 
                 ? `${employee.department.charAt(0).toUpperCase()}${employee.department.slice(1)} Department` 
                 : 'Unknown Department'}</span>
             </div>
             {employee.location && (
               <div className="flex items-center text-sm">
-                <EnvironmentOutlined style={{ fontSize: '16px', marginRight: '8px', color: 'var(--muted-foreground)' }} />
+                <EnvironmentOutlined className="mr-2 text-muted-foreground" style={{ fontSize: '16px' }} />
                 <span>{employee.location}</span>
               </div>
             )}
             <div className="flex items-center text-sm">
-              <MailOutlined style={{ fontSize: '16px', marginRight: '8px', color: 'var(--muted-foreground)' }} />
-              <span>{employee.email || 'No email'}</span>
+              <MailOutlined className="mr-2 text-muted-foreground" style={{ fontSize: '16px' }} />
+              <span className="truncate">{employee.email || 'No email'}</span>
             </div>
           </div>
           
-          <div className="mt-4 pt-3 border-t border-border flex justify-between">
-            <Badge variant={statusConfig?.variant || 'default'} className="flex items-center">
-              <span className={`w-1.5 h-1.5 mr-1.5 rounded-full ${statusConfig?.dot || 'bg-gray-500'}`}></span>
+          <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
+            <Tag 
+              icon={config.icon} 
+              color={config.color}
+              className="flex items-center h-6 leading-6"
+            >
               {formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1)}
-            </Badge>
+            </Tag>
             <div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="View Profile">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors" 
+                title="View Profile"
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.background.hover;
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
                 <UserOutlined style={{ fontSize: '16px' }} />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" title="Send Message">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 ml-1 text-muted-foreground hover:text-foreground transition-colors" 
+                title="Send Message"
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.background.hover;
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
                 <MessageOutlined style={{ fontSize: '16px' }} />
               </Button>
             </div>

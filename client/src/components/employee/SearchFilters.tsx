@@ -1,9 +1,17 @@
 import React from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
-import { SearchOutlined, UserOutlined, SortAscendingOutlined, SortDescendingOutlined, BankOutlined } from "@ant-design/icons"
+import { Input, Select, Button, Card, Radio } from "antd"
+import { 
+  SearchOutlined, 
+  UserOutlined, 
+  SortAscendingOutlined, 
+  SortDescendingOutlined, 
+  BankOutlined,
+  FilterOutlined,
+  CheckCircleOutlined
+} from "@ant-design/icons"
+import { colors } from "@/lib/colors"
+
+const { Option } = Select
 
 interface SearchFiltersProps {
   onSearch: (value: string) => void
@@ -31,35 +39,42 @@ export function SearchFilters({
   sortDirection = "asc"
 }: SearchFiltersProps) {
   return (
-    <Card className="shadow-sm">
-      <CardContent className="pt-4">
+    <Card 
+      className="shadow-sm mb-6" 
+      style={{ borderRadius: '8px', borderColor: 'var(--border)' }}
+    >
+      <div className="p-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Search Input */}
-          <div className="relative md:col-span-2">
-            <SearchOutlined style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: 'var(--muted-foreground)' }} />
+          <div className="md:col-span-2">
             <Input
-              className="pl-10"
               placeholder="Search by name, department, or position..."
               value={searchTerm}
               onChange={(e) => onSearch(e.target.value)}
+              prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
+              style={{ borderRadius: '6px' }}
+              allowClear
             />
           </div>
           
           {/* Department Filter */}
           <div>
-            <Select value={department} onValueChange={onDepartmentFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Departments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                <SelectItem value="engineering">Engineering</SelectItem>
-                <SelectItem value="marketing">Marketing</SelectItem>
-                <SelectItem value="design">Design</SelectItem>
-                <SelectItem value="product">Product</SelectItem>
-                <SelectItem value="hr">HR</SelectItem>
-                <SelectItem value="sales">Sales</SelectItem>
-              </SelectContent>
+            <Select
+              value={department || "all"}
+              onChange={onDepartmentFilter}
+              placeholder="All Departments"
+              style={{ width: '100%', borderRadius: '6px' }}
+              suffixIcon={<FilterOutlined />}
+            >
+              <Option value="all">All Departments</Option>
+              <Option value="engineering">Engineering</Option>
+              <Option value="marketing">Marketing</Option>
+              <Option value="design">Design</Option>
+              <Option value="product">Product</Option>
+              <Option value="hr">HR</Option>
+              <Option value="sales">Sales</Option>
+              <Option value="operations">Operations</Option>
+              <Option value="finance">Finance</Option>
             </Select>
           </div>
         </div>
@@ -67,44 +82,59 @@ export function SearchFilters({
         {/* Additional Filters */}
         <div className="mt-4 flex flex-wrap gap-2">
           <Button 
-            variant={activeOnly ? "default" : "outline"} 
-            size="sm"
+            type={activeOnly ? "primary" : "default"}
             onClick={onStatusFilter}
-            className="h-9"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              height: '36px',
+              backgroundColor: activeOnly ? colors.primary.base : undefined,
+              borderRadius: '6px'
+            }}
+            icon={<CheckCircleOutlined style={{ color: activeOnly ? 'white' : '#22c55e' }} />}
           >
-            <UserOutlined style={{ fontSize: '16px', marginRight: '8px', color: '#22c55e' }} />
             Active Only
           </Button>
           
-          <Button 
-            variant={sortBy === "name" ? "default" : "outline"} 
-            size="sm"
-            onClick={onSortByName}
-            className="h-9"
+          <Radio.Group 
+            value={sortBy ? `${sortBy}-${sortDirection}` : undefined} 
+            buttonStyle="solid"
+            className="ml-2"
           >
-            {sortBy === "name" && sortDirection === "desc" ? (
-              <SortDescendingOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
-            ) : (
-              <SortAscendingOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
-            )}
-            Sort by Name
-          </Button>
-          
-          <Button 
-            variant={sortBy === "department" ? "default" : "outline"} 
-            size="sm"
-            onClick={onSortByDepartment}
-            className="h-9"
-          >
-            {sortBy === "department" && sortDirection === "desc" ? (
-              <SortDescendingOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
-            ) : (
-              <BankOutlined style={{ fontSize: '16px', marginRight: '8px' }} />
-            )}
-            Sort by Department
-          </Button>
+            <Radio.Button 
+              value={`name-${sortDirection}`}
+              onClick={onSortByName}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                height: '36px',
+                borderRadius: sortBy === "name" ? '6px' : undefined
+              }}
+            >
+              {sortBy === "name" && sortDirection === "desc" ? (
+                <SortDescendingOutlined style={{ marginRight: '4px' }} />
+              ) : (
+                <SortAscendingOutlined style={{ marginRight: '4px' }} />
+              )}
+              Name
+            </Radio.Button>
+            
+            <Radio.Button 
+              value={`department-${sortDirection}`}
+              onClick={onSortByDepartment}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                height: '36px',
+                borderRadius: sortBy === "department" ? '6px' : undefined
+              }}
+            >
+              <BankOutlined style={{ marginRight: '4px' }} />
+              Department
+            </Radio.Button>
+          </Radio.Group>
         </div>
-      </CardContent>
+      </div>
     </Card>
   )
 }
