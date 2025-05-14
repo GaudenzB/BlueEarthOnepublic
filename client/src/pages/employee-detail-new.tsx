@@ -7,7 +7,8 @@ import {
   Button, 
   Tabs, 
   Result, 
-  Empty
+  Empty,
+  Skeleton
 } from "antd";
 import { 
   ApartmentOutlined, 
