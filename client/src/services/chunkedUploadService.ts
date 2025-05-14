@@ -81,13 +81,9 @@ export async function uploadFileInChunks(
 
   try {
     // Step 1: Initialize multipart upload
-    const initResponse = await apiRequest("/api/chunked-uploads/initiate", {
-      method: "GET",
-      params: {
-        filename: file.name,
-        contentType: file.type,
-        documentType: metadata.documentType || "OTHER"
-      }
+    const initUrl = `/api/chunked-uploads/initiate?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}&documentType=${encodeURIComponent(metadata.documentType || "OTHER")}`;
+    const initResponse = await apiRequest(initUrl, {
+      method: "GET"
     });
 
     if (!initResponse.success || !initResponse.data) {
@@ -95,7 +91,7 @@ export async function uploadFileInChunks(
     }
 
     // Save the upload ID and document key
-    const { url, documentKey, uploadId } = initResponse.data;
+    const { documentKey, uploadId } = initResponse.data;
     uploadState.uploadId = uploadId;
     uploadState.documentKey = documentKey;
 
@@ -118,14 +114,9 @@ export async function uploadFileInChunks(
 
       try {
         // Get pre-signed URL for this chunk
-        const chunkUrlResponse = await apiRequest("/api/chunked-uploads/part-url", {
-          method: "GET",
-          params: {
-            uploadId,
-            documentKey,
-            partNumber,
-            contentType: file.type
-          }
+        const partUrl = `/api/chunked-uploads/part-url?uploadId=${encodeURIComponent(uploadId)}&documentKey=${encodeURIComponent(documentKey)}&partNumber=${partNumber}&contentType=${encodeURIComponent(file.type)}`;
+        const chunkUrlResponse = await apiRequest(partUrl, {
+          method: "GET"
         });
 
         if (!chunkUrlResponse.success || !chunkUrlResponse.data || !chunkUrlResponse.data.url) {
@@ -139,7 +130,7 @@ export async function uploadFileInChunks(
           headers: {
             "Content-Type": file.type,
           },
-          signal: abortSignal
+          signal: abortSignal || null
         });
 
         if (!uploadChunkResponse.ok) {
@@ -172,18 +163,23 @@ export async function uploadFileInChunks(
     }
 
     // Step 3: Complete the chunked upload
+    const completeBody = {
+      uploadId,
+      documentKey,
+      parts: uploadState.parts,
+      metadata: {
+        ...metadata,
+        originalFilename: file.name,
+        fileSize: file.size,
+        mimeType: file.type
+      }
+    };
+    
     const completeResponse = await apiRequest("/api/chunked-uploads/complete", {
       method: "POST",
-      body: {
-        uploadId,
-        documentKey,
-        parts: uploadState.parts,
-        metadata: {
-          ...metadata,
-          originalFilename: file.name,
-          fileSize: file.size,
-          mimeType: file.type
-        }
+      body: JSON.stringify(completeBody),
+      headers: {
+        'Content-Type': 'application/json'
       }
     });
 
@@ -223,9 +219,13 @@ export async function uploadFileInChunks(
  */
 export async function abortChunkedUpload(uploadId: string, documentKey: string): Promise<boolean> {
   try {
+    const abortBody = { uploadId, documentKey };
     const response = await apiRequest("/api/chunked-uploads/abort", {
       method: "POST",
-      body: { uploadId, documentKey }
+      body: JSON.stringify(abortBody),
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
     
     return response.success || false;
