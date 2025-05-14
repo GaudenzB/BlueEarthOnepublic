@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, or, like } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, or, like } from 'drizzle-orm';
 import { db } from '../db';
 import { 
   documents, 
@@ -14,6 +14,73 @@ import { logger } from '../utils/logger';
  * Repository for Document-related database operations
  */
 export const documentRepository = {
+  /**
+   * Get all documents for a tenant
+   * 
+   * @param tenantId - Tenant ID
+   * @param options - Query options (limit, offset, sort, etc.)
+   * @returns Array of documents
+   */
+  async getAllForTenant(tenantId: string, options: { 
+    limit?: number; 
+    offset?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    documentType?: string;
+    search?: string;
+  } = {}): Promise<Document[]> {
+    try {
+      const { 
+        limit = 100, 
+        offset = 0,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        documentType,
+        search
+      } = options;
+
+      let query = db.select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.tenantId, tenantId),
+            eq(documents.deleted, false)
+          )
+        )
+        .limit(limit)
+        .offset(offset);
+
+      // Add documentType filter if provided
+      if (documentType) {
+        query = query.where(eq(documents.documentType, documentType));
+      }
+
+      // Add text search if provided
+      if (search) {
+        const searchPattern = `%${search}%`;
+        query = query.where(
+          or(
+            like(documents.title, searchPattern),
+            like(documents.description, searchPattern),
+            like(documents.originalFilename, searchPattern)
+          )
+        );
+      }
+
+      // Add sorting
+      if (sortOrder === 'asc') {
+        query = query.orderBy(asc(documents[sortBy]));
+      } else {
+        query = query.orderBy(desc(documents[sortBy]));
+      }
+
+      const results = await query;
+      return results;
+    } catch (error) {
+      logger.error('Error fetching documents for tenant', { error, tenantId });
+      throw new Error(`Failed to fetch documents: ${error.message}`);
+    }
+  },
   /**
    * Update a document's processing status
    * 
