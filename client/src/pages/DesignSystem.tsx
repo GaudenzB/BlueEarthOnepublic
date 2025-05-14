@@ -26,62 +26,19 @@ import {
 } from '@ant-design/icons';
 import { tokens } from '@/theme/tokens';
 import { StatusTag } from '@/components/ui/StatusTag';
+import {
+  ColorSwatch,
+  SpacingShowcase,
+  TypographyShowcase,
+  FontWeightShowcase,
+  LineHeightShowcase,
+  BorderRadiusShowcase,
+  ShadowShowcase,
+  TokenSection,
+  ComponentShowcase
+} from '@/components/design/DesignTokens';
 
 const { Title, Text, Paragraph } = Typography;
-
-// Helper function to create color swatches
-const ColorSwatch = ({ color, name, value }: { color: string; name: string; value: string }) => (
-  <Col span={6} xs={24} sm={12} md={8} lg={6} style={{ marginBottom: '24px' }}>
-    <Card bodyStyle={{ padding: '16px' }}>
-      <div style={{ 
-        backgroundColor: color, 
-        height: '60px', 
-        borderRadius: '8px',
-        marginBottom: '12px',
-        border: `1px solid ${tokens.colors.neutral[400]}`
-      }} />
-      <Typography.Text strong style={{ display: 'block' }}>{name}</Typography.Text>
-      <Typography.Text type="secondary" style={{ display: 'block', wordBreak: 'break-all' }}>{value}</Typography.Text>
-    </Card>
-  </Col>
-);
-
-// Helper function to create spacing showcase
-const SpacingShowcase = ({ size, value, label }: { size: string; value: string; label: string }) => (
-  <Col span={6} xs={12} sm={8} md={6} lg={4} style={{ marginBottom: '16px' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ 
-        width: value, 
-        height: '24px', 
-        backgroundColor: tokens.colors.brand.primary, 
-        marginBottom: '8px',
-        borderRadius: '4px'
-      }} />
-      <Text strong>{label}</Text>
-      <Text type="secondary">{value}</Text>
-    </div>
-  </Col>
-);
-
-// Helper function for typography showcase
-const TypographyShowcase = ({ 
-  size, 
-  value, 
-  example 
-}: { 
-  size: string; 
-  value: string; 
-  example: string 
-}) => (
-  <div style={{ marginBottom: '16px' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-      <Text strong>{size}</Text>
-      <Text type="secondary">{value}</Text>
-    </div>
-    <Typography.Paragraph style={{ fontSize: value, margin: 0 }}>{example}</Typography.Paragraph>
-    <Divider style={{ margin: '12px 0' }} />
-  </div>
-);
 
 /**
  * Design System Page
@@ -232,14 +189,17 @@ function SpacingSection() {
       
       <Card style={{ marginBottom: '32px' }}>
         <Row gutter={[16, 24]}>
-          {[0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32].map((size) => (
-            <SpacingShowcase 
-              key={size} 
-              size={size.toString()} 
-              value={tokens.spacing[size]} 
-              label={`spacing.${size}`} 
-            />
-          ))}
+          {[0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32].map((size) => {
+            // Use type-safe approach for accessing spacing values
+            const spacingKey = size.toString() as keyof typeof tokens.spacing;
+            return (
+              <SpacingShowcase 
+                key={spacingKey} 
+                value={tokens.spacing[spacingKey] || '0'} 
+                label={`spacing.${spacingKey}`} 
+              />
+            );
+          })}
         </Row>
       </Card>
       
@@ -256,7 +216,7 @@ function SpacingSection() {
                 marginBottom: '8px',
                 margin: '0 auto 8px'
               }} />
-              <Text strong display="block">{key}</Text>
+              <Text strong style={{ display: 'block' }}>{key}</Text>
               <Text type="secondary">{value}</Text>
             </div>
           </Col>

@@ -18,6 +18,7 @@ import Documents from "@/pages/documents";
 import DocumentDetail from "@/pages/document-detail";
 // Contracts module removed
 import DesignTesting from "@/pages/design-testing";
+import DesignSystem from "@/pages/DesignSystem";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
@@ -85,6 +86,7 @@ function Router() {
       <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
       {/* Test routes removed */}
       <Route path={ROUTES.DESIGN_TESTING} component={(props) => <ProtectedRoute component={DesignTesting} {...props} />} />
+      <Route path={ROUTES.DESIGN_SYSTEM} component={(props) => <ProtectedRoute component={DesignSystem} {...props} />} />
       
       {/* Super admin routes */}
       <Route 

@@ -72,6 +72,11 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       href: ROUTES.DESIGN_TESTING,
       icon: "Palette",
     },
+    {
+      title: "Design System",
+      href: ROUTES.DESIGN_SYSTEM,
+      icon: "PenTool",
+    },
   ];
   
   // Admin navigation items - only visible to superadmins
