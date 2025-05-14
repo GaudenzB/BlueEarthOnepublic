@@ -8,7 +8,7 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import { tokens } from '@/theme/tokens';
-import { useMountTransition } from '@/hooks/useMountTransition';
+import useMountTransition from '@/hooks/useMountTransition';
 import { generateId } from '@/utils/a11y';
 
 /**
@@ -211,7 +211,7 @@ const Toast: React.FC<ToastProps> = ({
         backgroundColor: variantStyles.background,
         borderLeftColor: variantStyles.borderColor,
         borderRadius: tokens.radii.md,
-        boxShadow: tokens.shadows.md,
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
         opacity: mountClass === 'toast-enter' ? 0 : 1,
         transform: mountClass === 'toast-enter' ? 'translateX(100%)' : 'translateX(0)',
         transition: 'all 0.2s ease'

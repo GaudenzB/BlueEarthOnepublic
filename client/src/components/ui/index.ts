@@ -20,6 +20,8 @@ export type { SkipLinkProps } from './SkipLink';
 
 export { default as EmptyState } from './EmptyState';
 export { default as Toast } from './Toast';
+// Also export from lowercase file for compatibility
+export * from './toast';
 export { default as CardContainer } from './CardContainer';
 export { default as PageHeader } from './PageHeader';
 export { default as KeyboardNavigableMenu } from './KeyboardNavigableMenu';
@@ -34,7 +36,7 @@ export { Input } from './input';
 export { Textarea } from './textarea';
 export { Select } from './select';
 export { Checkbox } from './checkbox';
-export { RadioGroup } from './radio-group';
+export { RadioGroup, RadioGroupItem } from './radio-group';
 export { Switch } from './switch';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from './table';
