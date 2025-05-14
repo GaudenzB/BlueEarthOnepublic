@@ -53,13 +53,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background.base }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background.page }}>
       <Card className="w-full max-w-sm shadow-lg" style={{ backgroundColor: colors.background.card }}>
         <CardHeader className="flex flex-col items-center space-y-2">
           <div className="bg-white p-4 rounded-md flex justify-center items-center">
             <Logo className="h-12" />
           </div>
-          <CardTitle className="text-xl" style={{ color: colors.text.body }}>Login</CardTitle>
+          <CardTitle className="text-xl" style={{ color: colors.text.primary }}>Login</CardTitle>
           <CardDescription className="text-center" style={{ color: colors.text.muted }}>
             Enter your credentials to access your account
           </CardDescription>
@@ -91,7 +91,7 @@ export default function Login() {
               className="w-full"
               style={{ 
                 backgroundColor: colors.primary.base,
-                color: colors.text.primary,
+                color: colors.text.inverse, // Use white text for better contrast
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = colors.primary.hover;
