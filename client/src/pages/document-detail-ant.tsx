@@ -48,31 +48,20 @@ import { Document, DocumentType, DocumentVisibility } from "@/types/document";
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
-// Simulated document types and status options
+// Document types and status options
 const DOC_TYPES = {
-  INVOICE: "Invoice",
   CONTRACT: "Contract",
   REPORT: "Report",
-  PROPOSAL: "Proposal",
+  PRESENTATION: "Presentation",
   FORM: "Form",
+  POLICY: "Policy",
   OTHER: "Other",
 };
 
-const STATUS_OPTIONS = {
-  PENDING: "Pending",
-  PROCESSING: "Processing",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-  COMPLETED: "Completed",
-  ERROR: "Error",
-  QUEUED: "Queued",
-};
-
 const VISIBILITY_OPTIONS = {
-  PUBLIC: "Public",
-  PRIVATE: "Private",
-  SHARED: "Shared",
-  RESTRICTED: "Restricted",
+  private: "Private",
+  team: "Team",
+  public: "Public",
 };
 
 // Helper function to generate status badge based on processing status
@@ -163,11 +152,11 @@ export default function DocumentDetail() {
   
   // Fetch document details
   const { 
-    data: document = {}, 
+    data: document = {} as Document, 
     isLoading, 
     isError, 
     error 
-  } = useQuery({
+  } = useQuery<Document>({
     queryKey: ['/api/documents', id],
     enabled: !!id,
   });
@@ -178,7 +167,7 @@ export default function DocumentDetail() {
       return apiRequest(`/api/documents/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => {
-      queryClient.invalidateQueryKey(['/api/documents']);
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       setLocation('/documents');
     },
   });
@@ -189,7 +178,7 @@ export default function DocumentDetail() {
       return apiRequest(`/api/documents/${id}/refresh-status`, { method: 'POST' });
     },
     onSuccess: () => {
-      queryClient.invalidateQueryKey(['/api/documents', id]);
+      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
     },
   });
   
@@ -282,7 +271,7 @@ export default function DocumentDetail() {
             <Tooltip title="Download Document">
               <Button 
                 icon={<DownloadOutlined />} 
-                href={`/api/documents/${document.id}/download`}
+                href={document.id ? `/api/documents/${document.id}/download` : '#'}
                 target="_blank"
               >
                 Download
@@ -455,7 +444,8 @@ export default function DocumentDetail() {
                     <Title level={5} style={{ marginBottom: 8 }}>
                       Access Control
                     </Title>
-                    <Badge status={document.visibility === 'PUBLIC' ? 'success' : 'warning'} 
+                    <Badge 
+                      status={document.visibility === 'public' ? 'success' : 'warning'} 
                       text={VISIBILITY_OPTIONS[document.visibility as keyof typeof VISIBILITY_OPTIONS] || 'Unknown'} 
                     />
                     
