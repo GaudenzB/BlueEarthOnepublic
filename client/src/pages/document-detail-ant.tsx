@@ -43,7 +43,7 @@ import {
 } from "@ant-design/icons";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { apiRequest } from "@/lib/queryClient";
-import { Document, DocumentType, DocumentVisibility } from "@/types/document";
+import { Document } from "@/types/document";
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -333,7 +333,7 @@ export default function DocumentDetail() {
         </div>
         
         {/* Processing Alert if needed */}
-        {['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus) && (
+        {document.processingStatus && ['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus as string) && (
           <Alert
             type="info"
             showIcon
@@ -518,7 +518,7 @@ export default function DocumentDetail() {
                   {
                     title: 'Actions',
                     key: 'actions',
-                    render: (_, record) => (
+                    render: () => (
                       <Space>
                         <Button type="text" size="small" icon={<EyeOutlined />}>View</Button>
                         <Button type="text" size="small" icon={<DownloadOutlined />}>Download</Button>
