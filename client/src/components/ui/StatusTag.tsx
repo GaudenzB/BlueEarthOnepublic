@@ -270,6 +270,14 @@ export const StatusTag = memo(({
     transition: tokens.transitions.default,
   } : {};
   
+  // Enhance keyboard interaction for interactive tags
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick(e as unknown as React.MouseEvent);
+    }
+  };
+
   return (
     <div 
       className={`inline-flex items-center ${className}`}
@@ -288,16 +296,21 @@ export const StatusTag = memo(({
         ...interactiveStyle
       }}
       onClick={onClick}
-      role={onClick ? 'button' : undefined}
+      onKeyDown={onClick ? handleKeyDown : undefined}
+      role={onClick ? 'button' : 'status'}
       tabIndex={onClick ? 0 : undefined}
+      aria-label={`Status: ${displayText}`}
     >
       {customIcon || (
-        <span style={{ 
-          fontSize: sizeStyle.fontSize, 
-          color: statusConfig.icon, 
-          marginRight: '4px', 
-          display: 'inline-flex' 
-        }}>
+        <span 
+          style={{ 
+            fontSize: sizeStyle.fontSize, 
+            color: statusConfig.icon, 
+            marginRight: '4px', 
+            display: 'inline-flex' 
+          }}
+          aria-hidden="true"
+        >
           <statusConfig.IconComponent />
         </span>
       )}
