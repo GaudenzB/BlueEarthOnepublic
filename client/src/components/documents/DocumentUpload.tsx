@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -7,13 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileOutlined, UploadOutlined, CloseOutlined } from "@ant-design/icons";
+import { FileOutlined, UploadOutlined, CloseOutlined, LoadingOutlined, CheckCircleOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { queryClient } from "@/lib/queryClient";
+import { Progress } from "antd";
 
 interface DocumentUploadProps {
   isOpen: boolean;
@@ -36,6 +37,10 @@ type DocumentUploadFormValues = z.infer<typeof documentUploadSchema>;
 export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'uploading' | 'processing' | 'complete' | 'error'>('idle');
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
 
   // Initialize form with react-hook-form and zod validation
@@ -50,7 +55,23 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
     },
   });
 
-  const fileRef = React.useRef<HTMLInputElement>(null);
+  // Reset states when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset progress state when dialog is closed
+      setUploadProgress(0);
+      setUploadStage('idle');
+      setErrorDetails(null);
+      
+      // Abort any in-progress uploads
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    }
+  }, [isOpen]);
+
+  const fileRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
