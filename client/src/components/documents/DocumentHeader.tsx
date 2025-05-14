@@ -72,14 +72,14 @@ const DocumentTags = memo(({ document }: { document: Document }) => {
 const DocumentTitle = memo(({ 
   document, 
   statusBadge, 
-  isConfidential, 
-  versionCount, 
+  isConfidential = false, 
+  versionCount = 1, 
   onViewHistory 
 }: { 
   document: Document; 
   statusBadge?: React.ReactNode | null;
-  isConfidential: boolean;
-  versionCount: number;
+  isConfidential?: boolean;
+  versionCount?: number;
   onViewHistory?: (() => void) | undefined;
 }) => {
   return (
@@ -97,7 +97,7 @@ const DocumentTitle = memo(({
           <Badge count={<LockOutlined style={{ color: '#ff4d4f' }} />} />
         </Tooltip>
       )}
-      {versionCount > 1 && (
+      {versionCount && versionCount > 1 && (
         <Tooltip title={`${versionCount} versions available`}>
           <Tag color="purple" onClick={onViewHistory} style={{ cursor: onViewHistory ? 'pointer' : 'default' }}>
             v{document.versions?.[0]?.versionNumber || versionCount}

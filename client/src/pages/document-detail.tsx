@@ -247,13 +247,9 @@ export default function DocumentDetail() {
   
   // Create a safe document object to use in the JSX
   // This is needed for TypeScript when document might be undefined
-  const safeDocument: Document = document || {
-    id: '',
-    title: 'Loading...',
-    filename: '',
-    createdAt: '',
-    updatedAt: ''
-  };
+  // The document should never be used in components if it's undefined
+  // but TypeScript needs the fallback for type safety
+  const safeDocument: Document = document as Document;
   
   return (
     <>
