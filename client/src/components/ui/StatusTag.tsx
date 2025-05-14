@@ -22,13 +22,13 @@ const STATUS_COLORS = {
     background: '#e6f7ef',
     text: '#0e6245',
     border: '#a8e6c9',
-    icon: colors.status.active
+    icon: '#10b981' // Same as colors.status.success
   },
   inactive: {
     background: '#f3f4f6',
     text: '#4b5563',
     border: '#d1d5db',
-    icon: colors.status.inactive
+    icon: '#94a3b8' // Same as colors.status.draft 
   },
   warning: {
     background: '#fef6e6',
@@ -40,7 +40,7 @@ const STATUS_COLORS = {
     background: '#eff6fe',
     text: '#1e40af',
     border: '#bfdbfe',
-    icon: colors.status.pending
+    icon: colors.status.info
   },
   error: {
     background: '#fee2e2',
