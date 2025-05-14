@@ -2,11 +2,9 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { FixedSizeGrid, FixedSizeList, areEqual } from 'react-window';
 import { Col, Row, Input, Select, Empty, Typography, Space, Button, Spin } from 'antd';
 import { SearchOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Employee, EmployeeCard } from '@/components/ui/EmployeeCard';
+import { Employee, EmployeeCard, SkipLink, LoadingState } from '@/components/ui';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { useDebounce } from '@/hooks/useDebounce';
-import { SkipLink } from '@/components/ui/SkipLink';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { tokens } from '@/theme/tokens';
 
 const { Title, Text } = Typography;

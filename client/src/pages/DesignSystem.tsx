@@ -25,7 +25,7 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons';
 import { tokens } from '@/theme/tokens';
-import { StatusTag } from '@/components/ui/StatusTag';
+import { StatusTag } from '@/components/ui';
 import {
   ColorSwatch,
   SpacingShowcase,
