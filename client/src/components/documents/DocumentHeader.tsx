@@ -77,10 +77,10 @@ const DocumentTitle = memo(({
   onViewHistory 
 }: { 
   document: Document; 
-  statusBadge?: React.ReactNode;
+  statusBadge?: React.ReactNode | null;
   isConfidential: boolean;
   versionCount: number;
-  onViewHistory?: () => void;
+  onViewHistory?: (() => void) | undefined;
 }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -123,11 +123,11 @@ const DocumentActions = memo(({
   showAllActions,
   loading
 }: {
-  onShareClick?: () => void;
-  onDeleteClick?: () => void;
-  onEdit?: () => void;
-  onDownload?: () => void;
-  onFavorite?: () => void;
+  onShareClick?: (() => void) | undefined;
+  onDeleteClick?: (() => void) | undefined;
+  onEdit?: (() => void) | undefined;
+  onDownload?: (() => void) | undefined;
+  onFavorite?: (() => void) | undefined;
   isFavorited: boolean;
   moreMenuItems: any[];
   showAllActions: boolean;

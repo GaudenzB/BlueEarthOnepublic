@@ -110,7 +110,7 @@ export default function DocumentDetail() {
   
   // Fetch document details
   const { 
-    data: document = {} as Document,
+    data: document,
     isLoading, 
     isError, 
     error
@@ -238,19 +238,33 @@ export default function DocumentDetail() {
   
   // Handle not found or empty document response
   if (!document || !document.id) {
-    return <DocumentDetailNotFound onReturn={handleReturn} />;
+    // If it's not loading and not an error, but we still don't have document data
+    if (!isLoading && !isError) {
+      return <DocumentDetailNotFound onReturn={handleReturn} />;
+    }
+    // Otherwise we'll fall through to either the loading or error states
   }
+  
+  // Create a safe document object to use in the JSX
+  // This is needed for TypeScript when document might be undefined
+  const safeDocument: Document = document || {
+    id: '',
+    title: 'Loading...',
+    filename: '',
+    createdAt: '',
+    updatedAt: ''
+  };
   
   return (
     <>
       <Helmet>
-        <title>{document.title || "Document"} | BlueEarth Portal</title>
-        <meta name="description" content={`View details and insights for ${document.title || "document"}`} />
+        <title>{safeDocument.title || "Document"} | BlueEarth Portal</title>
+        <meta name="description" content={`View details and insights for ${safeDocument.title || "document"}`} />
       </Helmet>
       
       {/* Main content area */}
       <DocumentDetailContent
-        document={document}
+        document={safeDocument}
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onDeleteClick={handleDeleteClick}
@@ -261,7 +275,7 @@ export default function DocumentDetail() {
       
       {/* Modals and dialogs */}
       <DocumentDeleteDialog 
-        document={document}
+        document={safeDocument}
         open={showDeleteDialog}
         onCancel={() => setShowDeleteDialog(false)}
         onConfirm={handleConfirmDelete}
@@ -269,7 +283,7 @@ export default function DocumentDetail() {
       />
       
       <DocumentShareDialog 
-        document={document}
+        document={safeDocument}
         open={showShareDialog}
         onClose={() => setShowShareDialog(false)}
       />
