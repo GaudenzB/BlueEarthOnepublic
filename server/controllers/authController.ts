@@ -7,7 +7,8 @@
 
 import { Request, Response } from 'express';
 import { storage } from '../storage';
-import { comparePassword, generateToken, revokeToken, hashPassword } from '../auth';
+import { comparePassword, generateUserToken, hashPassword } from '../auth';
+import { revokeToken } from '../utils/jwtConfig';
 import { errorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -66,8 +67,8 @@ const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
     throw new ApiError("Invalid credentials", 401, "AUTH_INVALID_CREDENTIALS");
   }
   
-  // Generate token
-  const token = generateToken(user);
+  // Generate tokens
+  const { accessToken: token } = generateUserToken(user);
   
   // Log successful login
   logger.info({ 
@@ -131,8 +132,8 @@ const register = errorHandling.wrapHandler(async (req: Request, res: Response) =
     userId: newUser.id 
   });
   
-  // Generate token for auto-login
-  const token = generateToken(newUser);
+  // Generate tokens for auto-login
+  const { accessToken: token } = generateUserToken(newUser);
   
   // Return success with user info and token
   return apiResponse.created(res, {

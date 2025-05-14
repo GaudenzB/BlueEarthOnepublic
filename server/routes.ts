@@ -6,13 +6,13 @@ import {
   authenticate, 
   authorize, 
   comparePassword, 
-  generateToken,
-  revokeToken, 
+  generateUserToken,
   hashPassword, 
   isSuperAdmin,
   generateResetToken,
   calculateExpiryTime
 } from "./auth";
+import { revokeToken } from "./utils/jwtConfig";
 import { 
   insertUserSchema, 
   userLoginSchema, 
@@ -103,8 +103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
       });
       
-      // Generate token
-      const token = generateToken(user);
+      // Generate tokens
+      const { accessToken: token } = generateUserToken(user);
       
       // Return user data without password and token
       const { password, ...userWithoutPassword } = user;
