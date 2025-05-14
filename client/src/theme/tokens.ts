@@ -1,229 +1,607 @@
 /**
- * Design Tokens System for BlueEarth Capital
+ * Design System Tokens
  * 
- * This file defines the core design tokens used throughout the application,
- * following a financial services aesthetic with a focus on trust, professionalism,
- * and clarity.
+ * This file contains all design tokens used throughout the application.
+ * Tokens are organized by category (colors, typography, spacing, etc.)
+ * and are used to maintain a consistent visual language.
  */
 
 /**
- * Color System
- * Organized by semantic purpose rather than just color names
+ * Color tokens
  */
-export const colors = {
+const colors = {
+  /**
+   * Brand colors
+   */
   brand: {
-    primary: '#0e4a86', // Deep blue - main brand color
-    primaryLight: '#1e63a5', // Lighter blue for hover states
-    primaryLighter: '#f0f7ff', // Very light blue for backgrounds
-    primaryDark: '#0a3a68', // Darker blue for active states
-    secondary: '#1e63a5', // Secondary brand color
-    accent: '#3b82f6', // Accent color for highlights
+    /**
+     * Primary brand color - used for primary actions, key UI elements
+     */
+    primary: '#0A66C2',
+    
+    /**
+     * Lighter version of primary for backgrounds, hover states
+     */
+    primaryLight: '#E8F1FA',
+    
+    /**
+     * Darker version of primary for active states, borders
+     */
+    primaryDark: '#004182',
+    
+    /**
+     * Secondary brand color - used for secondary actions
+     */
+    secondary: '#2E3B55'
   },
-  neutral: {
-    100: '#ffffff', // White
-    200: '#f9fafc', // Nearly white
-    300: '#f1f5f9', // Very light gray
-    400: '#e2e8f0', // Light gray
-    500: '#cbd5e1', // Medium gray
-    600: '#94a3b8', // Medium-dark gray
-    700: '#64748b', // Dark gray
-    800: '#475569', // Very dark gray
-    900: '#1e293b', // Nearly black
-  },
+  
+  /**
+   * Semantic colors - convey meaning
+   */
   semantic: {
-    success: '#10b981', // Green for success, approval, completion
-    warning: '#f59e0b', // Amber for warnings, pending states
-    error: '#ef4444', // Red for errors, rejections, critical states
-    info: '#3b82f6', // Blue for information, neutral notifications
-    draft: '#94a3b8', // Muted color for draft/inactive states
+    /**
+     * Success color - positive actions, confirmations
+     */
+    success: '#10B981',
+    
+    /**
+     * Warning color - alerts, requires attention
+     */
+    warning: '#F59E0B',
+    
+    /**
+     * Error color - failures, destructive actions
+     */
+    error: '#EF4444',
+    
+    /**
+     * Info color - neutral information, guidance
+     */
+    info: '#3B82F6'
   },
-  charts: {
-    blue: ['#0e4a86', '#1e63a5', '#3b82f6', '#93c5fd', '#dbeafe'],
-    green: ['#065f46', '#10b981', '#34d399', '#6ee7b7', '#d1fae5'],
-    amber: ['#92400e', '#f59e0b', '#fbbf24', '#fcd34d', '#fef3c7'],
-    red: ['#991b1b', '#ef4444', '#f87171', '#fca5a5', '#fee2e2'],
-    purple: ['#5b21b6', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ede9fe'],
+  
+  /**
+   * Neutral colors for text, backgrounds, borders
+   */
+  neutral: {
+    '50': '#F9FAFB',
+    '100': '#F3F4F6',
+    '200': '#E5E7EB',
+    '300': '#D1D5DB',
+    '400': '#9CA3AF',
+    '500': '#6B7280',
+    '600': '#4B5563',
+    '700': '#374151',
+    '800': '#1F2937',
+    '900': '#111827'
+  },
+  
+  /**
+   * Extended palette for advanced UI needs
+   */
+  blue: {
+    '50': '#EFF6FF',
+    '100': '#DBEAFE',
+    '200': '#BFDBFE',
+    '300': '#93C5FD',
+    '400': '#60A5FA',
+    '500': '#3B82F6',
+    '600': '#2563EB',
+    '700': '#1D4ED8',
+    '800': '#1E40AF',
+    '900': '#1E3A8A'
+  },
+  
+  green: {
+    '50': '#ECFDF5',
+    '100': '#D1FAE5',
+    '200': '#A7F3D0',
+    '300': '#6EE7B7',
+    '400': '#34D399',
+    '500': '#10B981',
+    '600': '#059669',
+    '700': '#047857',
+    '800': '#065F46',
+    '900': '#064E3B'
+  },
+  
+  red: {
+    '50': '#FEF2F2',
+    '100': '#FEE2E2',
+    '200': '#FECACA',
+    '300': '#FCA5A5',
+    '400': '#F87171',
+    '500': '#EF4444',
+    '600': '#DC2626',
+    '700': '#B91C1C',
+    '800': '#991B1B',
+    '900': '#7F1D1D'
+  },
+  
+  amber: {
+    '50': '#FFFBEB',
+    '100': '#FEF3C7',
+    '200': '#FDE68A',
+    '300': '#FCD34D',
+    '400': '#FBBF24',
+    '500': '#F59E0B',
+    '600': '#D97706',
+    '700': '#B45309',
+    '800': '#92400E',
+    '900': '#78350F'
+  },
+  
+  purple: {
+    '50': '#F5F3FF',
+    '100': '#EDE9FE',
+    '200': '#DDD6FE',
+    '300': '#C4B5FD',
+    '400': '#A78BFA',
+    '500': '#8B5CF6',
+    '600': '#7C3AED',
+    '700': '#6D28D9',
+    '800': '#5B21B6',
+    '900': '#4C1D95'
+  },
+  
+  orange: {
+    '50': '#FFF7ED',
+    '100': '#FFEDD5',
+    '200': '#FED7AA',
+    '300': '#FDBA74',
+    '400': '#FB923C',
+    '500': '#F97316',
+    '600': '#EA580C',
+    '700': '#C2410C',
+    '800': '#9A3412',
+    '900': '#7C2D12'
   }
 };
 
 /**
- * Spacing System
- * Based on a 4px grid to ensure consistent spacing throughout the application
+ * Typography tokens
  */
-export const spacing = {
-  // Core spacing units (in px)
-  0: '0',
-  1: '4px',
-  2: '8px',
-  3: '12px',
-  4: '16px',
-  5: '20px',
-  6: '24px',
-  7: '28px',
-  8: '32px',
-  9: '36px',
-  10: '40px',
-  12: '48px',
-  16: '64px',
-  20: '80px',
-  24: '96px',
-  32: '128px',
-  40: '160px',
-  
-  // Semantic aliases
-  xs: '8px',
-  sm: '12px',
-  md: '16px',
-  lg: '24px',
-  xl: '32px',
-  '2xl': '40px',
-  '3xl': '48px',
-  '4xl': '64px',
-};
-
-/**
- * Typography System
- * Standardized typography settings for consistent textual presentation
- */
-export const typography = {
-  // Font families
+const typography = {
+  /**
+   * Font families
+   */
   fontFamily: {
-    base: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    /**
+     * Primary font used for most text
+     */
+    base: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+    
+    /**
+     * Monospace font for code, technical content
+     */
+    mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
   },
   
-  // Font sizes (in px)
-  fontSize: {
-    xs: '12px',
-    sm: '14px',
-    md: '16px',
-    lg: '18px',
-    xl: '20px',
-    '2xl': '24px',
-    '3xl': '30px',
-    '4xl': '36px',
-    '5xl': '48px',
-    '6xl': '60px',
-  },
-  
-  // Font weights
+  /**
+   * Font weights
+   */
   fontWeight: {
+    /**
+     * Light text - 300
+     */
     light: 300,
-    regular: 400,
+    
+    /**
+     * Normal text - 400
+     */
+    normal: 400,
+    
+    /**
+     * Medium text - 500
+     */
     medium: 500,
+    
+    /**
+     * Semi-bold text - 600
+     */
     semibold: 600,
-    bold: 700,
+    
+    /**
+     * Bold text - 700
+     */
+    bold: 700
   },
   
-  // Line heights
+  /**
+   * Font sizes (in pixels)
+   */
+  fontSize: {
+    /**
+     * Extra small text - 10px
+     */
+    xs: '10px',
+    
+    /**
+     * Small text - 12px
+     */
+    sm: '12px',
+    
+    /**
+     * Base text - 14px
+     */
+    base: '14px',
+    
+    /**
+     * Medium text - 16px
+     */
+    md: '16px',
+    
+    /**
+     * Large text - 18px
+     */
+    lg: '18px',
+    
+    /**
+     * Extra large text - 20px
+     */
+    xl: '20px',
+    
+    /**
+     * 2XL text - 24px
+     */
+    '2xl': '24px',
+    
+    /**
+     * 3XL text - 30px
+     */
+    '3xl': '30px',
+    
+    /**
+     * 4XL text - 36px
+     */
+    '4xl': '36px',
+    
+    /**
+     * 5XL text - 48px
+     */
+    '5xl': '48px'
+  },
+  
+  /**
+   * Line heights
+   */
   lineHeight: {
-    none: 1,
-    tight: 1.25,
-    snug: 1.375,
+    /**
+     * Tight line height - 1
+     * Used for headings and short text
+     */
+    tight: 1,
+    
+    /**
+     * Snug line height - 1.25
+     */
+    snug: 1.25,
+    
+    /**
+     * Normal line height - 1.5
+     * Used for most text
+     */
     normal: 1.5,
+    
+    /**
+     * Relaxed line height - 1.625
+     */
     relaxed: 1.625,
-    loose: 2,
+    
+    /**
+     * Loose line height - 2
+     * Used for readable long-form content
+     */
+    loose: 2
   },
   
-  // Letter spacing
+  /**
+   * Letter spacing
+   */
   letterSpacing: {
+    /**
+     * Tighter letter spacing - -0.05em
+     */
     tighter: '-0.05em',
+    
+    /**
+     * Tight letter spacing - -0.025em
+     */
     tight: '-0.025em',
+    
+    /**
+     * Normal letter spacing - 0
+     */
     normal: '0',
+    
+    /**
+     * Wide letter spacing - 0.025em
+     */
     wide: '0.025em',
+    
+    /**
+     * Wider letter spacing - 0.05em
+     */
     wider: '0.05em',
-    widest: '0.1em',
-  },
+    
+    /**
+     * Widest letter spacing - 0.1em
+     * Used for all-caps text and decorative purposes
+     */
+    widest: '0.1em'
+  }
 };
 
 /**
- * Border radii
- * Standardized corner roundness values
+ * Spacing tokens (in pixels)
+ * Based on a 4px grid
  */
-export const radii = {
+const spacing = {
+  '0': '0',
+  '1': '4px',
+  '2': '8px',
+  '3': '12px',
+  '4': '16px',
+  '5': '20px',
+  '6': '24px',
+  '8': '32px',
+  '10': '40px',
+  '12': '48px',
+  '16': '64px',
+  '20': '80px',
+  '24': '96px',
+  '32': '128px',
+  '40': '160px',
+  '48': '192px',
+  '56': '224px',
+  '64': '256px'
+};
+
+/**
+ * Border radii (in pixels)
+ */
+const radii = {
+  /**
+   * No radius (square corners)
+   */
   none: '0',
-  xs: '2px',
-  sm: '4px',
-  md: '6px',
-  lg: '8px',
-  xl: '12px',
-  '2xl': '16px',
-  pill: '9999px',
-};
-
-/**
- * Shadow system
- * Standardized elevation values
- */
-export const shadows = {
-  none: 'none',
-  xs: '0 1px 2px rgba(0, 0, 0, 0.05)',
-  sm: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
-  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-  '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-  inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
-};
-
-/**
- * Transition presets
- * Standardized animation settings
- */
-export const transitions = {
-  default: 'all 250ms ease',
-  fast: 'all 150ms ease',
-  slow: 'all 350ms ease',
   
-  // Easing functions
-  easing: {
-    easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
-    easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-    sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
-  },
+  /**
+   * Small radius - 2px
+   */
+  sm: '2px',
+  
+  /**
+   * Default radius - 4px
+   */
+  md: '4px',
+  
+  /**
+   * Large radius - 8px
+   */
+  lg: '8px',
+  
+  /**
+   * Extra large radius - 12px
+   */
+  xl: '12px',
+  
+  /**
+   * 2XL radius - 16px
+   */
+  '2xl': '16px',
+  
+  /**
+   * Full radius (circle/pill)
+   */
+  full: '9999px'
 };
 
 /**
- * Z-index scale
- * Standardized stacking context values
+ * Box shadows
  */
-export const zIndices = {
+const shadows = {
+  /**
+   * No shadow
+   */
+  none: 'none',
+  
+  /**
+   * Small shadow
+   */
+  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  
+  /**
+   * Default shadow
+   */
+  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  
+  /**
+   * Large shadow
+   */
+  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+  
+  /**
+   * Extra large shadow
+   */
+  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+  
+  /**
+   * 2XL shadow - for modal/dialogs
+   */
+  '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  
+  /**
+   * Inner shadow - for pressed states
+   */
+  inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
+};
+
+/**
+ * Z-index values
+ */
+const zIndices = {
+  /**
+   * Hidden under content
+   */
   hide: -1,
-  auto: 'auto',
+  
+  /**
+   * Base layer - default content
+   */
   base: 0,
+  
+  /**
+   * First layer - above base
+   */
+  docked: 10,
+  
+  /**
+   * Dropdown layer - for menus, popups
+   */
   dropdown: 1000,
+  
+  /**
+   * Sticky layer - for sticky headers/footers
+   */
   sticky: 1100,
-  fixed: 1200,
+  
+  /**
+   * Banner layer - for notifications, announcements
+   */
+  banner: 1200,
+  
+  /**
+   * Overlay layer - for modals, dialogs
+   */
   overlay: 1300,
+  
+  /**
+   * Modal layer - for modal content
+   */
   modal: 1400,
+  
+  /**
+   * Popover layer - for popovers, tooltips
+   */
   popover: 1500,
-  tooltip: 1600,
+  
+  /**
+   * Skip link layer - for accessibility skip links
+   */
+  skipLink: 1600,
+  
+  /**
+   * Toast layer - for toast notifications
+   */
+  toast: 1700,
+  
+  /**
+   * Top layer - always visible, above everything
+   */
+  top: 9999
 };
 
 /**
- * Breakpoints
- * Standardized screen size thresholds (in px)
+ * Border widths (in pixels)
  */
-export const breakpoints = {
-  xs: '480px',
-  sm: '576px',
-  md: '768px',
-  lg: '992px',
-  xl: '1200px',
-  '2xl': '1600px',
+const borderWidths = {
+  '0': '0',
+  '1': '1px',
+  '2': '2px',
+  '4': '4px',
+  '8': '8px'
 };
 
-// Combined tokens export
+/**
+ * Animation durations (in milliseconds)
+ */
+const durations = {
+  '0': '0ms',
+  '75': '75ms',
+  '100': '100ms',
+  '150': '150ms',
+  '200': '200ms',
+  '300': '300ms',
+  '500': '500ms',
+  '700': '700ms',
+  '1000': '1000ms'
+};
+
+/**
+ * Animation easing functions
+ */
+const easings = {
+  /**
+   * Default easing - smooth acceleration
+   */
+  default: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  
+  /**
+   * Linear easing - constant velocity
+   */
+  linear: 'linear',
+  
+  /**
+   * In easing - accelerate from zero velocity
+   */
+  in: 'cubic-bezier(0.4, 0, 1, 1)',
+  
+  /**
+   * Out easing - decelerate to zero velocity
+   */
+  out: 'cubic-bezier(0, 0, 0.2, 1)',
+  
+  /**
+   * In-out easing - accelerate, then decelerate
+   */
+  inOut: 'cubic-bezier(0.4, 0, 0.2, 1)'
+};
+
+/**
+ * Media queries for responsive design
+ */
+const breakpoints = {
+  /**
+   * Small screens - mobile phones
+   */
+  sm: '640px',
+  
+  /**
+   * Medium screens - tablets
+   */
+  md: '768px',
+  
+  /**
+   * Large screens - laptops
+   */
+  lg: '1024px',
+  
+  /**
+   * Extra large screens - desktops
+   */
+  xl: '1280px',
+  
+  /**
+   * 2XL screens - large desktops
+   */
+  '2xl': '1536px'
+};
+
+/**
+ * Export all design tokens
+ */
 export const tokens = {
   colors,
-  spacing,
   typography,
+  spacing,
   radii,
   shadows,
-  transitions,
   zIndices,
-  breakpoints,
+  borderWidths,
+  durations,
+  easings,
+  breakpoints
 };
 
 export default tokens;
