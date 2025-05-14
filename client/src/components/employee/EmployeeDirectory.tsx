@@ -7,20 +7,17 @@ import {
   Empty, 
   Spin, 
   Result, 
-  Button, 
-  Skeleton, 
-  Card
+  Button
 } from "antd"
 import { ReloadOutlined } from "@ant-design/icons"
 import { type Employee } from "@shared/schema"
 // Import from centralized theme system
-import { theme } from "@/lib/theme"
 import { colors } from "@/lib/colors"
 // Import shared UI components
 import { EmployeeCard } from "@/components/ui"
 
 export function EmployeeDirectory() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   
   // Parse existing query params from URL
   const getQueryParams = () => {
@@ -224,25 +221,12 @@ export function EmployeeDirectory() {
           <Spin spinning={true} tip="Loading employees..." className="flex justify-center my-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {Array(8).fill(0).map((_, index) => (
-                <Card key={index} className="overflow-hidden border border-border">
-                  <div className="flex items-center">
-                    <Skeleton.Avatar active size={48} shape="circle" />
-                    <div className="ml-3 space-y-2">
-                      <Skeleton.Input active style={{ width: 120 }} />
-                      <Skeleton.Input active style={{ width: 90 }} />
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <Skeleton active paragraph={{ rows: 3 }} />
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-border flex justify-between">
-                    <Skeleton.Button active />
-                    <div className="flex space-x-2">
-                      <Skeleton.Button active shape="circle" />
-                      <Skeleton.Button active shape="circle" />
-                    </div>
-                  </div>
-                </Card>
+                <EmployeeCard 
+                  key={index} 
+                  employee={{} as Employee} 
+                  loading={true}
+                  variant="detailed" 
+                />
               ))}
             </div>
           </Spin>
@@ -305,7 +289,11 @@ export function EmployeeDirectory() {
           <div className="directory-container overflow-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {paginatedEmployees.map(employee => (
-                <EmployeeCard key={employee.id} employee={employee} />
+                <EmployeeCard 
+                  key={employee.id} 
+                  employee={employee} 
+                  variant="detailed" 
+                />
               ))}
             </div>
           </div>
