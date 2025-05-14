@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, Typography, List, Avatar, Space, Input, Button, Form } from 'antd';
 import { UserOutlined, SendOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
@@ -11,6 +11,10 @@ interface DocumentCommentsTabProps {
 
 interface CommentFormValues {
   comment: string;
+}
+
+interface CommentItemProps {
+  comment: DocumentComment;
 }
 
 const { Title, Text } = Typography;

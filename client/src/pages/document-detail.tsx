@@ -194,9 +194,9 @@ export default function DocumentDetail() {
       
       // Optimistically update the document status to PROCESSING if it's not already
       if (previousDocument && previousDocument.processingStatus !== 'PROCESSING') {
-        const optimisticDocument = {
+        const optimisticDocument: Document = {
           ...previousDocument,
-          processingStatus: 'PROCESSING' as DocumentProcessingStatus
+          processingStatus: 'PROCESSING'
         };
         
         queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);

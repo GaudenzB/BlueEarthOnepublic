@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, Typography, Timeline } from 'antd';
 import { EmptyState } from '@/components/common/EmptyState';
 import { 
@@ -10,10 +10,14 @@ import {
   CalendarOutlined 
 } from '@ant-design/icons';
 import { format } from 'date-fns';
-import { Document } from '@/types/document';
+import { Document, DocumentEvent } from '@/types/document';
 
 interface DocumentTimelineTabProps {
   document: Document;
+}
+
+interface TimelineEventProps {
+  event: DocumentEvent;
 }
 
 const { Title, Text } = Typography;
@@ -41,27 +45,40 @@ function getTimelineIcon(type: string) {
 }
 
 /**
- * Timeline tab content for document details page
+ * Individual timeline event component
+ * Memoized to prevent unnecessary re-renders
  */
-export function DocumentTimelineTab({ document }: DocumentTimelineTabProps) {
+const TimelineEvent = memo(function TimelineEvent({ event }: TimelineEventProps) {
+  return (
+    <Timeline.Item dot={getTimelineIcon(event.eventType.toLowerCase())}>
+      <div>
+        <Text strong>{event.eventType}</Text>
+        <div>
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            {format(new Date(event.timestamp), 'PPpp')} by {event.userName}
+          </Text>
+        </div>
+        {event.details && <div>{event.details}</div>}
+      </div>
+    </Timeline.Item>
+  );
+});
+
+/**
+ * Timeline tab content for document details page
+ * Memoized to prevent unnecessary re-renders
+ */
+export const DocumentTimelineTab = memo(function DocumentTimelineTab({ document }: DocumentTimelineTabProps) {
+  const hasEvents = document.events && document.events.length > 0;
+  
   return (
     <Card bordered={false}>
       <Title level={5}>Activity Timeline</Title>
       
-      {document.events && document.events.length > 0 ? (
+      {hasEvents ? (
         <Timeline>
-          {document.events.map((event, index: number) => (
-            <Timeline.Item key={index} dot={getTimelineIcon(event.eventType.toLowerCase())}>
-              <div>
-                <Text strong>{event.eventType}</Text>
-                <div>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {format(new Date(event.timestamp), 'PPpp')} by {event.userName}
-                  </Text>
-                </div>
-                {event.details && <div>{event.details}</div>}
-              </div>
-            </Timeline.Item>
+          {document.events?.map((event, index: number) => (
+            <TimelineEvent key={event.id || index} event={event} />
           ))}
         </Timeline>
       ) : (
@@ -76,4 +93,4 @@ export function DocumentTimelineTab({ document }: DocumentTimelineTabProps) {
       )}
     </Card>
   );
-}
+});
