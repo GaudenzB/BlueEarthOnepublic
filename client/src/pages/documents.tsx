@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { 
@@ -10,11 +10,13 @@ import {
   Card, 
   Radio, 
   Row, 
-  Col 
+  Col, 
+  Switch
 } from "antd";
 import { InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button } from "@/components/ui/button";
 import DocumentList from "@/components/documents/DocumentList";
+import VirtualizedDocumentList from "@/components/documents/VirtualizedDocumentList";
 import DocumentUpload from "@/components/documents/DocumentUpload";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
@@ -24,6 +26,7 @@ const { Title, Text } = Typography;
 export default function Documents() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [useVirtualization, setUseVirtualization] = useState(false);
   const { toast } = useToast();
   
   const { data: documentsResponse, isLoading, refetch } = useQuery({
@@ -103,26 +106,46 @@ export default function Documents() {
             <Text strong>Filter documents</Text>
           </div>
           
-          <Radio.Group 
-            value={activeFilter} 
-            onChange={(e) => setActiveFilter(e.target.value)}
-            style={{ marginBottom: 8 }}
-          >
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Radio.Group 
+              value={activeFilter} 
+              onChange={(e) => setActiveFilter(e.target.value)}
+              style={{ marginBottom: 8 }}
+            >
+              <Space>
+                <Radio.Button value="all">All Documents</Radio.Button>
+                <Radio.Button value="recent">Last 30 Days</Radio.Button>
+                <Radio.Button value="CONTRACT">Contracts</Radio.Button>
+              </Space>
+            </Radio.Group>
+            
             <Space>
-              <Radio.Button value="all">All Documents</Radio.Button>
-              <Radio.Button value="recent">Last 30 Days</Radio.Button>
-              <Radio.Button value="CONTRACT">Contracts</Radio.Button>
+              <Text>Use virtualization for performance:</Text>
+              <Switch 
+                checked={useVirtualization} 
+                onChange={setUseVirtualization}
+              />
             </Space>
-          </Radio.Group>
+          </Space>
         </Card>
         
         {/* Document List */}
         <Card bordered>
-          <DocumentList 
-            documents={documents} 
-            isLoading={isLoading} 
-            filter={activeFilter}
-          />
+          {useVirtualization ? (
+            <VirtualizedDocumentList 
+              documents={documents} 
+              isLoading={isLoading} 
+              filter={activeFilter}
+              height={500} // Set a reasonable default height
+              itemSize={60} // Height of each document row
+            />
+          ) : (
+            <DocumentList 
+              documents={documents} 
+              isLoading={isLoading} 
+              filter={activeFilter}
+            />
+          )}
         </Card>
       </div>
 
