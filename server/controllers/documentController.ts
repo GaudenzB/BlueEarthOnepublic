@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { documentRepository } from '../repositories/documentRepository';
 import { uploadFile, generateStorageKey, deleteFile } from '../services/documentStorage';
-import { documentProcessor } from '../services/documentProcessor';
+// Document processor is now invoked through the job queue
+// import { documentProcessor } from '../services/documentProcessor';
 import { z } from 'zod';
 import { sanitizeFile } from '../middleware/upload';
 import {
@@ -205,49 +206,29 @@ function createDocumentPayload(
 }
 
 /**
- * Start asynchronous document processing in the background
+ * Queue document for asynchronous processing via the job queue
  */
-function startDocumentProcessing(documentId: string, tenantId: string, fileInfo: any): void {
-  logger.info('Starting document processing in the background', { 
+async function queueDocumentForProcessing(documentId: string, tenantId: string, fileInfo: any): Promise<string> {
+  logger.info('Queueing document for background processing', { 
     documentId,
     tenantId,
     fileInfo
   });
   
-  // Start processing in the background with proper error handling
-  documentProcessor.processDocument(documentId, tenantId)
-    .then(success => {
-      logger.info('Document processing completed', { documentId, success });
-    })
-    .catch(error => {
-      logger.error('Document processing failed with uncaught exception', { 
-        documentId, 
-        error: error?.message || 'Unknown error',
-        stack: error?.stack,
-        type: typeof error,
-        name: error?.name
-      });
-      
-      // Try to update the document status to ERROR in case of uncaught exception
-      try {
-        documentRepository.updateProcessingStatusWithError(
-          documentId, 
-          tenantId, 
-          'ERROR', 
-          `Processing failed with error: ${error?.message || 'Unknown error'}`
-        ).catch(updateError => {
-          logger.error('Failed to update document status after processing error', {
-            documentId,
-            error: updateError?.message
-          });
-        });
-      } catch (updateError) {
-        logger.error('Failed to execute error status update', {
-          documentId,
-          error: updateError?.message
-        });
-      }
-    });
+  // Import dynamically to avoid circular dependencies
+  const { queueDocumentProcessing } = await import('../queue/documentJobs');
+  
+  // Add document to the job queue
+  const jobId = await queueDocumentProcessing(documentId, tenantId);
+  
+  logger.info('Document queued for processing', { 
+    documentId, 
+    tenantId, 
+    jobId,
+    fileDetails: fileInfo
+  });
+  
+  return jobId;
 }
 
 /**
@@ -426,8 +407,8 @@ class DocumentController {
         dbSuccess = true;
         logger.debug('Document record created in database', { documentId: document.id });
 
-        // Step 4: Queue the document for AI processing
-        startDocumentProcessing(document.id, tenantId, {
+        // Step 4: Queue the document for AI processing via job queue
+        const jobId = await queueDocumentForProcessing(document.id, tenantId, {
           size: req.file.size,
           mimetype: req.file.mimetype,
           originalname: req.file.originalname

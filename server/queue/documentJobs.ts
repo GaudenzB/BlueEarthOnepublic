@@ -82,7 +82,8 @@ export function initializeDocumentJobs(): void {
     DocumentJobType.CLEANUP_ORPHANED_DOCUMENTS,
     async (data) => {
       const { tenantId, olderThanDays = 7 } = data;
-      const olderThan = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+      // Calculate cutoff date for orphaned documents
+      const cutoffDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
       
       logger.info('Cleaning up orphaned documents', { tenantId, olderThanDays });
       

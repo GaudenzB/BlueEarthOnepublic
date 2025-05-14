@@ -287,7 +287,7 @@ export const jobQueue = new JobQueue({
 });
 
 // Start the job queue when this module is loaded
-if (process.env.NODE_ENV !== 'test') {
+if (process.env['NODE_ENV'] !== 'test') {
   jobQueue.start();
   // Setup periodic cleanup of old jobs
   setInterval(() => {
