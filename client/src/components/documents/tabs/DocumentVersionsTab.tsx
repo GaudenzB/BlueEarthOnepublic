@@ -61,8 +61,8 @@ const VersionActions = memo(function VersionActions({
           size="small"
           ghost
           onClick={handleRestore}
-          loading={isRestoring}
-          disabled={isRestoring}
+          loading={isRestoring || false}
+          disabled={isRestoring || false}
         >
           Restore
         </Button>
@@ -92,6 +92,13 @@ export const DocumentVersionsTab = memo(function DocumentVersionsTab({
   // Safe access to document versions
   const hasVersions = document.versions && document.versions.length > 0;
   
+  // Determine the current version (highest version number)
+  const currentVersion = hasVersions && document.versions
+    ? document.versions.reduce((latest, current) => 
+        (latest.versionNumber > current.versionNumber) ? latest : current
+      )
+    : null;
+  
   const columns = [
     {
       title: 'Version',
@@ -119,7 +126,14 @@ export const DocumentVersionsTab = memo(function DocumentVersionsTab({
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: any, record: DocumentVersion) => <VersionActions version={record} />,
+      render: (_: any, record: DocumentVersion) => (
+        <VersionActions 
+          version={record} 
+          onRestore={onRestoreVersion}
+          isRestoring={isRestoring || false}
+          isCurrentVersion={!!(currentVersion && record.id === currentVersion.id)}
+        />
+      ),
     },
   ];
   
