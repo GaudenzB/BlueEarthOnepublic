@@ -73,11 +73,13 @@ const VirtualizedEmployeeGrid: React.FC<VirtualizedEmployeeGridProps> = ({ emplo
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {employees.map(employee => (
-          <EmployeeCard 
-            key={employee.id} 
-            employee={employee} 
-            variant="detailed" 
-          />
+          employee && (
+            <EmployeeCard 
+              key={employee.id} 
+              employee={employee} 
+              variant="detailed" 
+            />
+          )
         ))}
       </div>
     );
@@ -92,6 +94,10 @@ const VirtualizedEmployeeGrid: React.FC<VirtualizedEmployeeGridProps> = ({ emplo
     }
     
     const employee = employees[index];
+    
+    if (!employee) {
+      return <div style={style} />; // Safety check
+    }
     
     // Apply gap using padding in the style
     const cellStyle = {

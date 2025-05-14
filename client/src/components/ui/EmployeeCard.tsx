@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo } from 'react';
 import { Link } from 'wouter';
 import { Card, Avatar, Skeleton, Typography, Divider } from 'antd';
 import { 
@@ -11,7 +11,6 @@ import {
 import type { Employee } from '@shared/schema';
 import StatusTag from './StatusTag';
 import { ROUTES } from '@/lib/routes';
-import { tokens } from '@/theme/tokens';
 
 const { Title, Text } = Typography;
 
@@ -87,7 +86,7 @@ export interface EmployeeCardProps {
  * <EmployeeCard employee={employee} />
  * <EmployeeCard employee={employee} variant="detailed" />
  */
-export const EmployeeCard = memo<EmployeeCardProps>(({ 
+const EmployeeCardComponent: React.FC<EmployeeCardProps> = ({ 
   employee, 
   onClick, 
   className = '',
@@ -189,6 +188,8 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
             border: '1px solid #eaecf0',
             transition: CARD_STYLES.card.transition
           }}
+          aria-label={`Employee card for ${employee.name}`}
+          role="article"
         >
           <div style={{ 
             padding: '16px 8px',
@@ -207,6 +208,7 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
                 fontSize: '18px',
                 marginBottom: '12px'
               }}
+              alt={`${employee.name}'s profile picture`}
             >
               {!employee.avatarUrl && employee.name ? getInitials(employee.name) : null}
             </Avatar>
@@ -269,6 +271,8 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
         border: '1px solid #eaecf0',
         transition: CARD_STYLES.card.transition
       }}
+      aria-label={`Detailed employee card for ${employee.name}`}
+      role="article"
     >
       <Link href={getEmployeeDetailUrl(employee.id)} className="block cursor-pointer">
         <div>
@@ -282,6 +286,7 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
                 backgroundColor: employee.avatarUrl ? 'transparent' : CARD_STYLES.avatar.background,
                 color: CARD_STYLES.avatar.color
               }}
+              alt={`${employee.name}'s profile picture`}
             >
               {!employee.avatarUrl && employee.name ? getInitials(employee.name) : null}
             </Avatar>
@@ -314,7 +319,8 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
                 <BankOutlined className="mr-3" style={{ 
                   fontSize: '14px',
                   color: CARD_STYLES.iconColor 
-                }} />
+                }} 
+                aria-hidden="true" />
                 <Text style={{ 
                   fontSize: CARD_STYLES.infoLabel.fontSize, 
                   color: CARD_STYLES.infoLabel.color 
@@ -328,7 +334,8 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
                 <EnvironmentOutlined className="mr-3" style={{ 
                   fontSize: '14px',
                   color: CARD_STYLES.iconColor 
-                }} />
+                }}
+                aria-hidden="true" />
                 <Text style={{ 
                   fontSize: CARD_STYLES.infoLabel.fontSize, 
                   color: CARD_STYLES.infoLabel.color 
@@ -342,7 +349,8 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
                 <MailOutlined className="mr-3" style={{ 
                   fontSize: '14px',
                   color: CARD_STYLES.iconColor 
-                }} />
+                }}
+                aria-hidden="true" />
                 <Text 
                   style={{ 
                     fontSize: CARD_STYLES.infoLabel.fontSize, 
@@ -359,7 +367,8 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
                 <PhoneOutlined className="mr-3" style={{ 
                   fontSize: '14px',
                   color: CARD_STYLES.iconColor 
-                }} />
+                }}
+                aria-hidden="true" />
                 <Text style={{ 
                   fontSize: CARD_STYLES.infoLabel.fontSize, 
                   color: CARD_STYLES.infoLabel.color 
@@ -375,6 +384,7 @@ export const EmployeeCard = memo<EmployeeCardProps>(({
   );
 };
 
-});
+// Export memoized version
+const EmployeeCard = memo(EmployeeCardComponent);
 
 export default EmployeeCard;
