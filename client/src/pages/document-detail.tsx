@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
-import { message } from "antd";
 import { Document } from "@/types/document";
 import { DocumentDetailContent } from "@/components/documents/DocumentDetailContent";
 import { DocumentDeleteDialog } from "@/components/documents/DocumentDeleteDialog";

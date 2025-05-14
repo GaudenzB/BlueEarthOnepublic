@@ -27,12 +27,12 @@ interface DocumentHeaderProps {
   onEdit?: () => void;
   onDownload?: () => void;
   onPrint?: () => void;
-  onFavorite?: () => void;
+  onFavorite: (() => void) | undefined;
   onViewHistory?: () => void;
   onViewPermissions?: () => void;
   onPreviewToggle?: () => void;
   isConfidential?: boolean;
-  isFavorited?: boolean;
+  isFavorited: boolean | undefined;
   isPreviewMode?: boolean;
   versionCount?: number;
   loading?: {
