@@ -2,15 +2,36 @@ import React, { useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Employee } from "@shared/schema";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, Mail, Phone, MapPin, Building, Briefcase, User, FileText, DollarSign, Lock, Calendar, RefreshCw } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Card, 
+  Avatar, 
+  Divider, 
+  Button, 
+  Skeleton, 
+  Tabs, 
+  Select, 
+  Tag, 
+  Result, 
+  Empty
+} from "antd";
+import { 
+  MailOutlined, 
+  PhoneOutlined, 
+  EnvironmentOutlined, 
+  BankOutlined, 
+  BriefcaseOutlined, 
+  UserOutlined, 
+  FileTextOutlined, 
+  DollarOutlined, 
+  LockOutlined, 
+  CalendarOutlined, 
+  SyncOutlined,
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  GlobalOutlined,
+  StopOutlined
+} from "@ant-design/icons";
 import { colors } from "@/lib/colors";
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
@@ -58,33 +79,38 @@ export default function EmployeeDetail() {
     refreshData();
   }, [id, refetch]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return { 
+          color: "success", 
+          icon: <CheckCircleOutlined />, 
+          text: 'Active' 
+        };
       case 'inactive':
-        return 'bg-gray-100 text-gray-800';
+        return { 
+          color: "default", 
+          icon: <StopOutlined />, 
+          text: 'Inactive' 
+        };
       case 'on_leave':
-        return 'bg-orange-100 text-orange-800';
+        return { 
+          color: "warning", 
+          icon: <ClockCircleOutlined />, 
+          text: 'On Leave' 
+        };
       case 'remote':
-        return 'bg-blue-100 text-blue-800';
+        return { 
+          color: "processing", 
+          icon: <GlobalOutlined />, 
+          text: 'Remote' 
+        };
       default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'Active';
-      case 'inactive':
-        return 'Inactive';
-      case 'on_leave':
-        return 'On Leave';
-      case 'remote':
-        return 'Remote';
-      default:
-        return 'Unknown';
+        return { 
+          color: "default", 
+          icon: <StopOutlined />, 
+          text: 'Unknown' 
+        };
     }
   };
 
@@ -97,80 +123,36 @@ export default function EmployeeDetail() {
       <div className="container mx-auto p-6">
         <div className="flex items-center mb-6">
           <Button
-            variant="ghost"
+            type="link"
             onClick={goBack}
-            className="mr-4"
+            className="mr-4 flex items-center px-0"
           >
-            <ChevronLeft className="mr-2 h-4 w-4" />
+            <ArrowLeftOutlined className="mr-2" />
             Back
           </Button>
-          <Skeleton className="h-8 w-64" />
+          <Skeleton.Input active style={{ width: 180 }} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="md:col-span-1">
-            <CardHeader>
-              <Skeleton className="h-32 w-32 rounded-full mx-auto" />
-              <Skeleton className="h-6 w-32 mx-auto mt-4" />
-              <Skeleton className="h-4 w-24 mx-auto mt-2" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-              </div>
-            </CardContent>
+            <div className="px-6 pt-6 pb-4 text-center">
+              <Skeleton.Avatar active size={128} shape="circle" style={{ margin: '0 auto' }} />
+              <Skeleton.Input active size="small" style={{ width: 150, margin: '12px auto 4px' }} />
+              <Skeleton.Input active size="small" style={{ width: 100, margin: '0 auto' }} />
+            </div>
+            <div className="px-6 py-4">
+              <Skeleton active paragraph={{ rows: 3 }} title={false} />
+            </div>
           </Card>
           <div className="md:col-span-3">
             <Card>
-              <CardHeader>
+              <div className="px-6 pt-6 pb-2">
                 <div className="flex justify-end items-center">
-                  <div className="flex space-x-1">
-                    <Skeleton className="h-9 w-20" />
-                    <Skeleton className="h-9 w-20" />
-                    <Skeleton className="h-9 w-20" />
-                    <Skeleton className="h-9 w-20 hidden md:block" />
-                    <Skeleton className="h-9 w-20 hidden md:block" />
-                    <Skeleton className="h-9 w-20 hidden md:block" />
-                  </div>
+                  <Skeleton.Button active size="small" shape="default" style={{ width: 300 }} />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-40" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Skeleton className="h-4 w-24 mb-2" />
-                        <Skeleton className="h-5 w-32" />
-                      </div>
-                      <div>
-                        <Skeleton className="h-4 w-24 mb-2" />
-                        <Skeleton className="h-5 w-32" />
-                      </div>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-16 w-full" />
-                  </div>
-                  <Separator />
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-40" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Skeleton className="h-4 w-24 mb-2" />
-                        <Skeleton className="h-5 w-32" />
-                      </div>
-                      <div>
-                        <Skeleton className="h-4 w-24 mb-2" />
-                        <Skeleton className="h-5 w-32" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
+              </div>
+              <div className="px-6 py-4">
+                <Skeleton active paragraph={{ rows: 8 }} />
+              </div>
             </Card>
           </div>
         </div>
