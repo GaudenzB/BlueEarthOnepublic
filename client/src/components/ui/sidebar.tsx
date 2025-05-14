@@ -145,19 +145,19 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         {/* User profile moved to bottom of sidebar */}
         <div className="mt-auto p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="flex items-center">
-            <Avatar>
+            <Avatar className="h-10 w-10">
               <AvatarImage src="/user-profile.jpg" alt={user?.username || "User"} />
               <AvatarFallback>
                 {user?.firstName?.charAt(0) || ""}{user?.lastName?.charAt(0) || user?.username?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-white">
+            <div className="ml-3 flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
                 {user?.firstName && user?.lastName 
                   ? `${user.firstName} ${user.lastName}` 
                   : user?.username || "User"}
               </p>
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.7)' }}>
                 {user?.role === "superadmin" 
                   ? "Super Admin" 
                   : user?.role === "admin" 
@@ -167,26 +167,24 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                   : "User"}
               </p>
             </div>
-            <div className="flex ml-auto">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white transition-colors duration-150"
-                style={{ 
-                  backgroundColor: 'transparent', 
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = colors.primary.hover;
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-                onClick={() => logout.mutate()}
-                title="Logout"
-              >
-                <LogoutOutlined style={{ fontSize: '20px' }} />
-              </Button>
-            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-white transition-colors duration-150 rounded-full ml-1.5"
+              style={{ 
+                backgroundColor: 'transparent', 
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = colors.primary.hover;
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              onClick={() => logout.mutate()}
+              title="Logout"
+            >
+              <LogoutOutlined style={{ fontSize: '18px' }} />
+            </Button>
           </div>
         </div>
       </aside>
