@@ -246,6 +246,12 @@ export default function DocumentDetail() {
     previousDocumentsList: Document[] | undefined;
   }
   
+  // Mutation for restoring a specific document version
+  interface RestoreVersionMutationContext {
+    previousDocument: Document | undefined;
+    previousDocumentsList: Document[] | undefined;
+  }
+  
   const toggleFavoriteMutation = useMutation<void, Error, void, FavoriteMutationContext>({
     mutationFn: () => {
       // The API endpoint would typically accept a parameter to toggle favorite status
@@ -326,6 +332,84 @@ export default function DocumentDetail() {
   const handleFavoriteToggle = () => toggleFavoriteMutation.mutate();
   const handleTabChange = (key: string) => setActiveTab(key);
   const handleReturn = () => setLocation('/documents');
+  
+  // Implementation of the restore version mutation
+  const restoreVersionMutation = useMutation<void, Error, string, RestoreVersionMutationContext>({
+    mutationFn: (versionId: string) => {
+      return apiRequest<void>(`/api/documents/${id}/versions/${versionId}/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    },
+    onMutate: async (versionId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/documents', id] });
+      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
+      
+      // Snapshot the previous document states
+      const previousDocument = queryClient.getQueryData<Document>(['/api/documents', id]);
+      const previousDocumentsList = queryClient.getQueryData<Document[]>(['/api/documents']);
+      
+      if (previousDocument) {
+        // Find the selected version
+        const selectedVersion = previousDocument.versions?.find(v => v.id === versionId);
+        
+        if (selectedVersion) {
+          // Create an optimistic update with the restored version info
+          const optimisticDocument: Document = {
+            ...previousDocument,
+            updatedAt: new Date().toISOString(), // Update timestamp
+            processingStatus: 'PROCESSING' as DocumentProcessingStatus // Show as processing
+          };
+          
+          // Update the individual document
+          queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);
+          
+          // Also update document in the list if it exists there
+          if (previousDocumentsList) {
+            const updatedList = previousDocumentsList.map(doc => 
+              doc.id === id ? optimisticDocument : doc
+            );
+            queryClient.setQueryData<Document[]>(['/api/documents'], updatedList);
+          }
+          
+          // Show optimistic success message
+          message.success(`Restoring to version ${selectedVersion.versionNumber}...`);
+        }
+      }
+      
+      // Return context with the previous document states
+      return { 
+        previousDocument,
+        previousDocumentsList 
+      };
+    },
+    onSuccess: () => {
+      // Invalidate both the individual document and the documents list
+      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+      message.success('Document version restored successfully');
+    },
+    onError: (error: Error, _, context: RestoreVersionMutationContext | undefined) => {
+      // If there was an error, restore previous document states
+      if (context?.previousDocument) {
+        queryClient.setQueryData<Document>(['/api/documents', id], context.previousDocument);
+      }
+      
+      if (context?.previousDocumentsList) {
+        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocumentsList);
+      }
+      
+      message.error(`Failed to restore version: ${error.message || 'Unknown error'}`);
+    }
+  });
+  
+  // Handler for version restore
+  const handleRestoreVersion = (versionId: string) => {
+    restoreVersionMutation.mutate(versionId);
+  };
 
   // Handle loading and error states
   if (isLoading) {

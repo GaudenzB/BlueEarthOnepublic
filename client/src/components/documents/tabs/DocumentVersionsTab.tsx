@@ -7,10 +7,15 @@ import { EmptyState } from '@/components/common/EmptyState';
 
 interface DocumentVersionsTabProps {
   document: Document;
+  onRestoreVersion?: (versionId: string) => void;
+  isRestoring?: boolean;
 }
 
 interface VersionActionsProps {
   version: DocumentVersion;
+  onRestore?: (versionId: string) => void;
+  isRestoring?: boolean;
+  isCurrentVersion?: boolean;
 }
 
 const { Title } = Typography;
@@ -19,7 +24,19 @@ const { Title } = Typography;
  * Version actions component
  * Memoized to prevent unnecessary re-renders
  */
-const VersionActions = memo(function VersionActions({ version }: VersionActionsProps) {
+const VersionActions = memo(function VersionActions({ 
+  version, 
+  onRestore, 
+  isRestoring,
+  isCurrentVersion 
+}: VersionActionsProps) {
+  // Handler for restore button click
+  const handleRestore = () => {
+    if (onRestore) {
+      onRestore(version.id);
+    }
+  };
+
   return (
     <Space>
       <Button 
@@ -38,6 +55,27 @@ const VersionActions = memo(function VersionActions({ version }: VersionActionsP
       >
         Download
       </Button>
+      {onRestore && !isCurrentVersion && (
+        <Button
+          type="primary"
+          size="small"
+          ghost
+          onClick={handleRestore}
+          loading={isRestoring}
+          disabled={isRestoring}
+        >
+          Restore
+        </Button>
+      )}
+      {isCurrentVersion && (
+        <Button
+          type="text"
+          size="small"
+          disabled
+        >
+          Current Version
+        </Button>
+      )}
     </Space>
   );
 });
@@ -46,7 +84,11 @@ const VersionActions = memo(function VersionActions({ version }: VersionActionsP
  * Versions tab content for document details page
  * Memoized to prevent unnecessary re-renders
  */
-export const DocumentVersionsTab = memo(function DocumentVersionsTab({ document }: DocumentVersionsTabProps) {
+export const DocumentVersionsTab = memo(function DocumentVersionsTab({ 
+  document, 
+  onRestoreVersion,
+  isRestoring 
+}: DocumentVersionsTabProps) {
   // Safe access to document versions
   const hasVersions = document.versions && document.versions.length > 0;
   

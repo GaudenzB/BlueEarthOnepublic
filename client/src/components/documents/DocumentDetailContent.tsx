@@ -47,6 +47,9 @@ export const DocumentDetailContent = memo(({
         statusBadge={<DocumentStatusBadge status={document.processingStatus} />}
         onDeleteClick={onDeleteClick}
         onShareClick={onShareClick}
+        onFavorite={onFavoriteToggle}
+        isFavorited={isFavorited}
+        loading={loading}
       />
       
       {/* Processing Alert if needed */}
