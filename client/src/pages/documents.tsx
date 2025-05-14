@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { 
-  Layout, 
   Typography, 
   Alert, 
-  Button as AntButton, 
   Space, 
   Card, 
   Radio, 
@@ -37,19 +35,22 @@ export default function Documents() {
   const documents = React.useMemo(() => {
     if (!documentsResponse) return [];
     
+    // Type assertion to work with the response
+    const response = documentsResponse as any;
+    
     // Check if response has the expected structure
-    if (documentsResponse && 'success' in documentsResponse && 'data' in documentsResponse) {
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
       // This is the standard API response format
-      return documentsResponse.data || [];
+      return response.data || [];
     }
     
     // If it's already an array, return it directly (fall back for direct array responses)
-    if (Array.isArray(documentsResponse)) {
-      return documentsResponse;
+    if (Array.isArray(response)) {
+      return response;
     }
     
     // Default case: we couldn't find documents
-    console.warn('Unexpected document response format:', documentsResponse);
+    console.warn('Unexpected document response format:', response);
     return [];
   }, [documentsResponse]);
 

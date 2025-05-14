@@ -30,9 +30,10 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { queryClient } from "@/lib/queryClient";
-import { Button as ShadcnButton } from "@/components/ui/button";
+// We don't need ShadcnButton - removing unused import
+// import { Button as ShadcnButton } from "@/components/ui/button";
 
-const { Text } = Typography;
+// Typography components are used directly
 
 interface Document {
   id: string;
@@ -211,6 +212,22 @@ export default function VirtualizedDocumentList({
   const rowRenderer = ({ index, style }: { index: number, style: React.CSSProperties }) => {
     const document = filteredDocuments[index];
     
+    // Safety check for undefined document
+    if (!document) {
+      return (
+        <div style={{
+          ...style,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '8px 16px',
+          borderBottom: '1px solid #f0f0f0',
+          background: index % 2 === 0 ? '#ffffff' : '#fafafa'
+        }}>
+          <Typography.Text type="secondary">Loading document data...</Typography.Text>
+        </div>
+      );
+    }
+    
     return (
       <div style={{
         ...style,
@@ -236,9 +253,9 @@ export default function VirtualizedDocumentList({
                   whiteSpace: 'nowrap',
                   maxWidth: 200,
                 }}
-                ellipsis={{ tooltip: document.title || document.originalFilename }}
+                ellipsis={{ tooltip: document.title || document.originalFilename || 'Untitled' }}
               >
-                {document.title || document.originalFilename}
+                {document.title || document.originalFilename || 'Untitled'}
               </Typography.Text>
             </div>
           </Link>
@@ -253,7 +270,7 @@ export default function VirtualizedDocumentList({
         
         {/* Processing status */}
         <div style={{ flex: 1 }}>
-          {getProcessingStatusBadge(document.processingStatus)}
+          {getProcessingStatusBadge(document.processingStatus || 'UNKNOWN')}
         </div>
         
         {/* Created at */}
@@ -305,7 +322,7 @@ export default function VirtualizedDocumentList({
                   label: 'Delete',
                   icon: <DeleteOutlined />,
                   danger: true,
-                  onClick: () => handleDeleteClick(document.id, document.title || document.originalFilename || ""),
+                  onClick: () => handleDeleteClick(document.id, document.title || document.originalFilename || "Untitled"),
                   disabled: !document.canDelete,
                 },
               ],
