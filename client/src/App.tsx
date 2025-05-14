@@ -15,7 +15,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Integrations from "@/pages/integrations";
 import Documents from "@/pages/documents";
-import DocumentDetail from "@/pages/document-detail";
+import DocumentDetail from "@/pages/document-detail-consolidated";
 // Contracts module removed
 import DesignTesting from "@/pages/design-testing";
 import DesignSystem from "@/pages/DesignSystem";
