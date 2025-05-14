@@ -51,7 +51,7 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
   
   // Add null safety for status property
   const status = employee.status || 'inactive'
-  const config = statusConfig[status] || statusConfig['inactive']
+  const config = statusConfig[status.toLowerCase()] || statusConfig['inactive']
   const formattedStatus = status.replace('_', ' ')
   
   // Safely create the detail URL with id validation
@@ -98,8 +98,8 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
           
           <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
             <Tag 
-              icon={config.icon} 
-              color={config.color}
+              icon={config?.icon} 
+              color={config?.color || "default"}
               className="flex items-center h-6 leading-6"
             >
               {formattedStatus.charAt(0).toUpperCase() + formattedStatus.slice(1)}

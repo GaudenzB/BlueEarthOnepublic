@@ -1,292 +1,190 @@
-# BlueEarth Capital UI Design System
+# BlueEarth Capital Design System Guidelines
 
-This document outlines our comprehensive design system which ensures visual consistency, usability, and maintainability across the BlueEarth Capital application.
+This document provides guidelines for implementing the BlueEarth Capital design system in our application. Following these guidelines ensures visual consistency, improves user experience, and speeds up development.
 
-## Table of Contents
+## Core Principles
 
-1. [Design Principles](#design-principles)
-2. [Color System](#color-system)
-3. [Typography](#typography)
-4. [Spacing System](#spacing-system)
-5. [Borders & Shadows](#borders--shadows)
-6. [Component Guidelines](#component-guidelines)
-7. [Pattern Library](#pattern-library)
-8. [Icon Usage](#icon-usage)
-9. [Accessibility Guidelines](#accessibility-guidelines)
-10. [Implementation Details](#implementation-details)
+1. **Consistency** - Use the same visual patterns across the application
+2. **Modularity** - Components should be reusable and self-contained
+3. **Accessibility** - Design should be accessible to all users
+4. **Performance** - Components should be optimized for performance
 
-## Design Principles
+## Design Tokens
 
-Our design system is guided by these core principles:
+All design values should reference the centralized tokens defined in `client/src/lib/theme.ts` instead of using hardcoded values.
 
-- **Clarity**: Information hierarchy should be clear and logical
-- **Consistency**: UI elements should behave predictably and look cohesive
-- **Efficiency**: Users should accomplish tasks with minimal effort
-- **Enterprise-Grade**: Professional appearance appropriate for financial services
-- **Accessibility**: Interfaces should be usable by everyone
+### Usage Example
+
+```tsx
+// ✅ GOOD: Reference theme values
+<div style={{ padding: theme.spacing[4], color: theme.gray[700] }}>
+  Content
+</div>
+
+// ❌ BAD: Hardcoded values
+<div style={{ padding: '16px', color: '#374151' }}>
+  Content
+</div>
+```
 
 ## Color System
 
-We use a carefully selected palette consisting of:
+The color palette is organized into several categories:
 
-### Primary Palette
-
-- **Brand Colors**: Primary brand colors representing BlueEarth Capital's identity
-  - Primary Blue: `#0F5E9C`
-  - Secondary Blue: `#2B80C5`
-  - Accent Blue: `#63A6E2`
-
-### UI Colors
-
-- **Gray Scale**: For text, backgrounds, and UI elements
-  - Gray 50: `#F9FAFB` - Page backgrounds
-  - Gray 100: `#F3F4F6` - Card backgrounds
-  - Gray 200: `#E5E7EB` - Borders, dividers
-  - Gray 300: `#D1D5DB` - Disabled states
-  - Gray 400: `#9CA3AF` - Placeholder text
-  - Gray 500: `#6B7280` - Secondary text
-  - Gray 600: `#4B5563` - Body text
-  - Gray 700: `#374151` - Primary text
-  - Gray 800: `#1F2937` - Headings
-  - Gray 900: `#111827` - High contrast text
-
-### Semantic Colors
-
-- **Feedback Colors**: For status indicators and messaging
-  - Success: `#16A34A` - Positive confirmation
-  - Warning: `#F59E0B` - Attention required
-  - Error: `#DC2626` - Critical issues
-  - Info: `#3B82F6` - Informational content
+- **Brand Colors**: The primary blue palette that represents our brand identity
+- **Grayscale**: Neutral colors for text, backgrounds, and borders
+- **Feedback Colors**: Colors used to communicate status (success, warning, error, info)
 
 ### Usage Guidelines
 
-- Use brand colors sparingly for primary actions and key UI elements
-- Maintain proper contrast ratios (at least 4.5:1 for normal text)
-- Reserve semantic colors for their intended purpose (status, feedback)
-- Use gray scale for most interface elements
+- Use brand colors for primary actions and emphasis
+- Use grayscale for most UI elements, text, and borders
+- Use feedback colors consistently to indicate status
 
 ## Typography
 
-### Font Family
+The typography system is designed for readability and hierarchy:
 
-- **Primary**: 'SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', sans-serif
-- **Monospace**: 'SF Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace
+- **Font Families**: SF Pro Display (sans-serif) and SF Mono (monospace)
+- **Font Sizes**: Range from xs (12px) to 4xl (36px)
+- **Font Weights**: Light (300), Regular (400), Medium (500), Semibold (600), Bold (700)
 
-### Font Sizes
+### Heading Guidelines
 
-- xs: `0.75rem` (12px) - Fine print, captions
-- sm: `0.875rem` (14px) - Secondary text, labels
-- base: `1rem` (16px) - Body text
-- lg: `1.125rem` (18px) - Large body text
-- xl: `1.25rem` (20px) - Small headings
-- 2xl: `1.5rem` (24px) - Headings
-- 3xl: `1.875rem` (30px) - Large headings
-- 4xl: `2.25rem` (36px) - Extra large headings
+```tsx
+// Example heading styles
+<h1 style={{ 
+  fontSize: theme.typography.fontSize['3xl'],
+  fontWeight: theme.typography.fontWeight.semibold 
+}}>
+  Page Title
+</h1>
 
-### Font Weights
-
-- light: 300
-- normal: 400
-- medium: 500
-- semibold: 600
-- bold: 700
-
-### Line Heights
-
-- tight: 1.25 - Headings
-- base: 1.5 - Body text
-- relaxed: 1.75 - Multi-line body text
-
-### Usage Guidelines
-
-- Limit to 2-3 font sizes per page for content
-- Use appropriate weights to establish hierarchy
-- Maintain consistent alignment (usually left-aligned)
-- Ensure proper line height for readability (usually 1.5x for paragraphs)
+<h2 style={{ 
+  fontSize: theme.typography.fontSize['2xl'],
+  fontWeight: theme.typography.fontWeight.medium
+}}>
+  Section Title
+</h2>
+```
 
 ## Spacing System
 
-We use a consistent 4px base unit spacing scale for layout, padding, margins and gaps.
+The spacing system is based on a 4px grid, with tokens ranging from 0 to 24 (96px).
 
-### Spacing Scale
+### Usage Guidelines
 
-- 0: `0` - No spacing
-- 1: `0.25rem` (4px)
-- 2: `0.5rem` (8px) - Compact spacing
-- 3: `0.75rem` (12px)
-- 4: `1rem` (16px) - Standard spacing
-- 5: `1.25rem` (20px)
-- 6: `1.5rem` (24px) - Comfortable spacing
-- 8: `2rem` (32px) - Section spacing
-- 10: `2.5rem` (40px)
-- 12: `3rem` (48px) - Large section spacing
-- 16: `4rem` (64px) - Page section spacing
-- 20: `5rem` (80px) - Page spacing
-- 24: `6rem` (96px) - Extra large spacing
+- Use the spacing tokens for margins, padding, and positioning
+- Maintain consistent spacing between related elements
+- Use larger spacing values to create visual separation between sections
 
-### Layout Guidelines
+## UI Components
 
-- Use consistent margins for page sections (usually 24-48px)
-- Maintain uniform padding within components (usually 16-24px) 
-- Apply consistent gap spacing between items in a group
-- Card padding should be consistent (usually 16-24px)
-- Form field spacing should be uniform (usually 16-24px between fields)
+### StatusTag
 
-## Borders & Shadows
+Used to display status information consistently throughout the application.
 
-### Border Radius
+```tsx
+<StatusTag status="active" />
+<StatusTag status="on_leave" text="Away" />
+<StatusTag status="in_review" size="large" />
+```
 
-- none: `0` - No rounding
-- sm: `0.125rem` (2px) - Subtle rounding
-- md: `0.375rem` (6px) - Button rounding
-- lg: `0.5rem` (8px) - Card rounding
-- xl: `0.75rem` (12px) - Modal rounding
-- 2xl: `1rem` (16px) - Large component rounding
-- full: `9999px` - Circular elements
+### EmployeeCard
 
-### Shadows
+Displays employee information in a standardized card format.
 
-- none: No shadow
-- sm: `0 1px 2px 0 rgba(0, 0, 0, 0.05)` - Subtle elevation
-- md: `0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)` - Cards, dropdowns
-- lg: `0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)` - Modals, popovers
-- xl: `0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)` - Large modals
+```tsx
+<EmployeeCard employee={employee} />
+<EmployeeCard employee={employee} loading={isLoading} />
+```
 
-## Component Guidelines
+### PageHeader
 
-### Buttons
+Provides a consistent header for all pages.
 
-- **Primary**: Brand color background, white text, used for main actions
-- **Secondary**: Gray background, dark text, used for secondary actions
-- **Tertiary/Link**: No background, brand color text, used for minor actions
-- **Danger**: Red background, white text, used for destructive actions
+```tsx
+<PageHeader 
+  title="Employee Directory" 
+  description="View and manage all employees" 
+  actions={<Button>Add Employee</Button>}
+/>
+```
 
-Sizes:
-- Small: 28px height
-- Default: 36px height
-- Large: 44px height
+### CardContainer
 
-### Form Inputs
+Wrapper for card content with consistent styling.
 
-- Standard height: 36px
-- Border radius: 6px
-- Label position: Above input
-- Error state: Red border with error message below
-- Disabled state: Gray background, reduced opacity
+```tsx
+<CardContainer title="Employee Information">
+  <p>Card content goes here</p>
+</CardContainer>
+```
 
-### Cards
+### EmptyState
 
-- Standard padding: 24px
-- Border radius: 8px (lg) or 12px (xl)
-- Shadow: sm for flat design, md for elevated design
-- Title-content spacing: 16px
+Displays a consistent empty state when no data is available.
 
-### Modals and Dialogs
+```tsx
+<EmptyState 
+  title="No Documents Found" 
+  description="Try adjusting your search criteria" 
+  icon={<FileOutlined />}
+  action={<Button>Upload Document</Button>}
+/>
+```
 
-- Border radius: 12px
-- Backdrop: Semi-transparent black
-- Standard padding: 24px
-- Header-content-footer spacing: 24px
-- Max width: 500-600px for standard modals
+## Layout Guidelines
 
-### Tables
+### Page Layout
 
-- Header: Bold text, light gray background
-- Row hover: Subtle highlight
-- Row separation: Light border or alternating background
-- Cell padding: 12px 16px
+Pages should follow a consistent layout structure:
 
-### Status Indicators
+1. **Page Header** - Title, description, and actions
+2. **Content Area** - Main content with appropriate spacing
+3. **Section Headers** - Clear headings for different sections
 
-- Use consistent colors for status states
-- Include icons with status labels when possible
-- Use badges/tags for compact status display
+### Responsive Design
 
-## Pattern Library
+- Use the breakpoint tokens for responsive design
+- Implement mobile-first design, adding complexity for larger screens
+- Ensure all pages work well on mobile, tablet, and desktop
 
-Common UI patterns standardized across the application:
+## Error States
 
-### Navigation Patterns
-- **Sidebar Navigation**: Primary app navigation
-- **Breadcrumbs**: Secondary page navigation
-- **Tabs**: Content organization within a page
-- **Pagination**: For long content lists
+Display errors in a consistent manner using the appropriate feedback colors:
 
-### Content Patterns
-- **Page Headers**: Consistent title, actions, and breadcrumbs
-- **Data Tables**: Consistent sorting, filtering, and actions
-- **Empty States**: When no content is available
-- **Loading States**: Consistent skeleton loaders
-
-### Interaction Patterns
-- **Dialogs**: Confirmation and modal patterns
-- **Notifications**: Toast and alert patterns
-- **Form Submission**: Standard save/cancel patterns
-- **Data Loading**: Skeleton loaders and progress indicators
-
-## Icon Usage
-
-We use Ant Design icons throughout the application:
-
-- Use outlined icons for navigation and general UI elements
-- Use filled icons for selected or active states
-- Maintain consistent size in context (16px for inline, 20px for buttons)
-- Ensure appropriate color contrast
-- Pair with text for improved accessibility
+- **Validation Errors** - Use inline error messages with error colors
+- **System Errors** - Use error components or toast notifications
+- **Empty States** - Use the EmptyState component with appropriate messaging
 
 ## Accessibility Guidelines
 
-- Maintain color contrast ratio of at least 4.5:1 for normal text
-- Ensure keyboard navigability for all interactions
-- Provide text alternatives for non-text content
-- Design focus states for keyboard users
-- Support screen readers with appropriate ARIA attributes
-- Allow zooming without breaking layouts
+- Ensure sufficient color contrast (minimum 4.5:1 for normal text)
+- Provide alternative text for images and icons
+- Make interactive elements keyboard accessible
+- Use semantic HTML elements
 
-## Implementation Details
+## Icons
 
-### Component Architecture
+Use Ant Design icons consistently throughout the application:
 
-Our components are organized in the following structure:
+- Use icons from the @ant-design/icons package
+- Maintain consistent sizing for icons within similar contexts
+- Use icons to enhance, not replace, text labels for important actions
 
-1. **Base Components**: Fundamental building blocks
-2. **Composite Components**: Combinations of base components
-3. **Page Templates**: Full page layouts
+## Implementation Checklist
 
-### Using the Theme System
+When creating new components or pages:
 
-All UI components should reference values from the theme system:
+- [ ] Use design tokens from the theme file
+- [ ] Follow component patterns for consistency
+- [ ] Ensure responsive behavior works correctly
+- [ ] Test accessibility compliance
+- [ ] Document any new patterns or components
 
-```typescript
-import { theme } from '@/lib/theme';
+## Resources
 
-// Use theme values for styling:
-const styles = {
-  padding: theme.spacing[4],
-  fontSize: theme.typography.fontSize.base,
-  color: theme.gray[700],
-  borderRadius: theme.borderRadius.md,
-};
-```
-
-### Using Centralized Components
-
-Always prefer shared components from the UI library over custom implementations:
-
-```tsx
-// Import from centralized UI components
-import { StatusTag, PageHeader, CardContainer } from '@/components/ui';
-
-// Use shared components in your implementation
-<PageHeader 
-  title="Employee Details" 
-  description="View and manage employee information"
-/>
-
-<CardContainer
-  title="Contact Information"
-  description="Personal contact details for this employee"
->
-  {/* Card content */}
-</CardContainer>
-```
+- [Ant Design Documentation](https://ant.design/components/overview/)
+- [Figma Design System](https://www.figma.com) (Internal link)
+- [Accessibility Guidelines (WCAG)](https://www.w3.org/WAI/standards-guidelines/wcag/)
