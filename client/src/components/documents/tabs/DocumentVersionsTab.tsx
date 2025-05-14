@@ -7,15 +7,15 @@ import { EmptyState } from '@/components/common/EmptyState';
 
 interface DocumentVersionsTabProps {
   document: Document;
-  onRestoreVersion?: (versionId: string) => void;
+  onRestoreVersion?: ((versionId: string) => void) | undefined;
   isRestoring?: boolean;
 }
 
 interface VersionActionsProps {
   version: DocumentVersion;
-  onRestore?: (versionId: string) => void;
-  isRestoring?: boolean;
-  isCurrentVersion?: boolean;
+  onRestore?: ((versionId: string) => void) | undefined;
+  isRestoring: boolean;
+  isCurrentVersion: boolean;
 }
 
 const { Title } = Typography;

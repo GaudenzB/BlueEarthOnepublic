@@ -452,11 +452,13 @@ export default function DocumentDetail() {
         onShareClick={handleShareClick}
         onRefreshStatus={handleRefreshStatus}
         onFavoriteToggle={handleFavoriteToggle}
+        onRestoreVersion={handleRestoreVersion}
         isFavorited={safeDocument.isFavorite || false}
         isRefreshing={refreshStatusMutation.isPending}
         loading={{
           favorite: toggleFavoriteMutation.isPending,
-          delete: deleteDocumentMutation.isPending
+          delete: deleteDocumentMutation.isPending,
+          restore: restoreVersionMutation.isPending
         }}
       />
       

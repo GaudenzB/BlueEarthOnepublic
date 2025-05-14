@@ -10,7 +10,7 @@ interface DocumentTabsProps {
   document: Document;
   activeTab: string;
   onTabChange: (key: string) => void;
-  onRestoreVersion?: (versionId: string) => void;
+  onRestoreVersion?: ((versionId: string) => void) | undefined;
   isRestoring?: boolean;
 }
 
@@ -22,7 +22,9 @@ interface DocumentTabsProps {
 export const DocumentTabs = memo(function DocumentTabs({ 
   document, 
   activeTab, 
-  onTabChange 
+  onTabChange,
+  onRestoreVersion,
+  isRestoring
 }: DocumentTabsProps) {
   // Item configuration for Tabs component
   const tabItems = [
@@ -34,7 +36,11 @@ export const DocumentTabs = memo(function DocumentTabs({
     {
       key: "2",
       label: "Version History",
-      children: <DocumentVersionsTab document={document} />
+      children: <DocumentVersionsTab 
+        document={document} 
+        onRestoreVersion={onRestoreVersion}
+        isRestoring={isRestoring}
+      />
     },
     {
       key: "3",
