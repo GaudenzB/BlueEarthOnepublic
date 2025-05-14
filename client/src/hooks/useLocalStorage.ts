@@ -1,178 +1,164 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 
-/**
- * Options for useLocalStorage hook
- */
+type StorageValue<T> = T | null;
+
+type SetValue<T> = Dispatch<SetStateAction<StorageValue<T>>>;
+
 interface UseLocalStorageOptions<T> {
   /**
-   * Initial value to use if no value exists in localStorage
+   * Function to serialize the value before storing
    */
-  defaultValue: T;
+  serializer?: (value: StorageValue<T>) => string;
   
   /**
-   * Whether to parse the stored value with a custom parser
+   * Function to deserialize the value when retrieving
    */
-  parser?: (str: string) => T;
+  deserializer?: (value: string) => StorageValue<T>;
   
   /**
-   * Whether to stringify the value with a custom serializer before storing
+   * Initial value to use if no value exists in storage
    */
-  serializer?: (value: T) => string;
+  initialValue?: StorageValue<T>;
   
   /**
-   * Whether to skip saving the value to localStorage
-   * Useful for SSR environments where localStorage is not available
+   * Event to listen for storage changes
    */
-  skipStorage?: boolean;
+  listenToStorageChanges?: boolean;
   
   /**
-   * Storage object to use instead of localStorage
-   * Useful for testing or when using sessionStorage
+   * Optional error handler
    */
-  storageObject?: Storage;
+  onError?: (error: unknown) => void;
 }
 
 /**
- * Custom hook for using localStorage with type safety and improved error handling
+ * Custom hook for accessing and manipulating localStorage values with type safety
  * 
- * Features:
- * - Type-safe localStorage access with TypeScript generics
- * - Synchronizes state across components using the same localStorage key
- * - Custom serialization/deserialization support
- * - Error handling with fallback to default value
- * - SSR compatibility with "skipStorage" option
- * 
- * @template T - Type of stored value
- * @param key - localStorage key
+ * @param key - localStorage key to manage
  * @param options - Configuration options
  * @returns Tuple containing current value and setter function
  * 
  * @example
  * ```tsx
- * // Basic usage with primitives
- * const [count, setCount] = useLocalStorage('count', { defaultValue: 0 });
+ * // Basic usage with default options
+ * const [count, setCount] = useLocalStorage<number>('count', { initialValue: 0 });
  * 
- * // With complex objects
- * const [user, setUser] = useLocalStorage('user', { 
- *   defaultValue: { name: '', email: '' } 
- * });
+ * // Increment the count and automatically update localStorage
+ * const incrementCount = () => setCount(prev => (prev || 0) + 1);
  * 
- * // With custom serialization
- * const [data, setData] = useLocalStorage('data', {
- *   defaultValue: new Map(),
- *   serializer: map => JSON.stringify(Array.from(map.entries())),
- *   parser: str => new Map(JSON.parse(str))
+ * // Advanced usage with custom serialization/deserialization
+ * const [user, setUser] = useLocalStorage<User>('user', {
+ *   initialValue: null,
+ *   serializer: (user) => user ? JSON.stringify(user) : '',
+ *   deserializer: (str) => str ? JSON.parse(str) : null,
+ *   onError: (err) => console.error('Failed to parse user data', err)
  * });
  * ```
  */
 export function useLocalStorage<T>(
   key: string,
-  options: UseLocalStorageOptions<T>
-): [T, (value: T | ((prevValue: T) => T)) => void, () => void] {
+  options: UseLocalStorageOptions<T> = {}
+): [StorageValue<T>, SetValue<T>] {
   const {
-    defaultValue,
-    parser = JSON.parse,
-    serializer = JSON.stringify,
-    skipStorage = false,
-    storageObject = typeof window !== 'undefined' ? window.localStorage : undefined
+    initialValue = null,
+    serializer = defaultSerializer,
+    deserializer = defaultDeserializer,
+    listenToStorageChanges = true,
+    onError = console.error
   } = options;
   
-  // Check if localStorage is available
-  const isStorageAvailable = useCallback(() => {
-    if (skipStorage || !storageObject) return false;
-    
-    try {
-      const testKey = '__storage_test__';
-      storageObject.setItem(testKey, testKey);
-      storageObject.removeItem(testKey);
-      return true;
-    } catch (error) {
-      return false;
+  // State to store our value
+  // Pass initial state function to useState so logic is only executed once
+  const [storedValue, setStoredValue] = useState<StorageValue<T>>(() => {
+    if (typeof window === 'undefined') {
+      return initialValue;
     }
-  }, [skipStorage, storageObject]);
-  
-  // Get initial value from localStorage or use default
-  const getInitialValue = useCallback((): T => {
-    if (!isStorageAvailable()) return defaultValue;
     
     try {
-      const storedValue = storageObject?.getItem(key);
+      // Get from local storage by key
+      const item = window.localStorage.getItem(key);
       
-      if (storedValue === null) {
-        return defaultValue;
+      // Parse stored json or return initialValue if storage is empty
+      return item ? deserializer(item) as StorageValue<T> : initialValue;
+    } catch (error) {
+      // If error also return initialValue
+      onError(error);
+      return initialValue;
+    }
+  });
+  
+  // Return a wrapped version of useState's setter function that
+  // persists the new value to localStorage.
+  const setValue = useCallback((value: SetStateAction<StorageValue<T>>) => {
+    try {
+      // Allow value to be a function so we have same API as useState
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      
+      // Save state
+      setStoredValue(valueToStore);
+      
+      // Skip localStorage for server-side rendering
+      if (typeof window === 'undefined') {
+        return;
       }
       
-      return parser(storedValue);
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-      return defaultValue;
-    }
-  }, [key, defaultValue, parser, isStorageAvailable, storageObject]);
-  
-  // Initialize state with value from localStorage or default
-  const [value, setValue] = useState<T>(getInitialValue);
-  
-  // Update localStorage when value changes
-  useEffect(() => {
-    if (!isStorageAvailable()) return;
-    
-    try {
-      if (value === undefined) {
-        storageObject?.removeItem(key);
+      if (valueToStore === null) {
+        // Remove from localStorage if null (cleanup)
+        window.localStorage.removeItem(key);
       } else {
-        storageObject?.setItem(key, serializer(value));
+        // Save to localStorage
+        window.localStorage.setItem(key, serializer(valueToStore));
       }
-      
-      // Dispatch storage event for cross-component synchronization
-      const event = new StorageEvent('storage', {
-        key,
-        newValue: value !== undefined ? serializer(value) : null,
-        storageArea: storageObject
-      });
-      window.dispatchEvent(event);
     } catch (error) {
-      console.error(`Error writing to localStorage key "${key}":`, error);
+      // Log any errors during storage operations
+      onError(error);
     }
-  }, [key, value, serializer, isStorageAvailable, storageObject]);
+  }, [key, storedValue, serializer, onError]);
   
-  // Handle storage events from other components
+  // Listen for changes to this localStorage key from other tabs/windows
   useEffect(() => {
-    if (!isStorageAvailable()) return;
+    if (!listenToStorageChanges || typeof window === 'undefined') {
+      return;
+    }
     
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key !== key || event.storageArea !== storageObject) return;
-      
-      try {
-        const newValue = event.newValue !== null
-          ? parser(event.newValue)
-          : defaultValue;
-        
-        setValue(newValue);
-      } catch (error) {
-        console.error(`Error parsing storage event for key "${key}":`, error);
+    // This handles the case where localStorage is updated in another tab/window
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key && e.newValue !== null) {
+        try {
+          setStoredValue(deserializer(e.newValue));
+        } catch (error) {
+          onError(error);
+        }
+      } else if (e.key === key && e.newValue === null) {
+        // Handle case where item was removed from localStorage
+        setStoredValue(initialValue);
       }
     };
     
+    // Add event listener
     window.addEventListener('storage', handleStorageChange);
     
+    // Clean up
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [key, defaultValue, parser, isStorageAvailable, storageObject]);
+  }, [key, deserializer, initialValue, listenToStorageChanges, onError]);
   
-  // Function to remove the item from localStorage
-  const removeItem = useCallback(() => {
-    if (!isStorageAvailable()) return;
-    
-    try {
-      storageObject?.removeItem(key);
-      setValue(defaultValue);
-    } catch (error) {
-      console.error(`Error removing localStorage key "${key}":`, error);
-    }
-  }, [key, defaultValue, isStorageAvailable, storageObject]);
-  
-  return [value, setValue, removeItem];
+  return [storedValue, setValue];
+}
+
+// Default serializer/deserializer functions
+function defaultSerializer<T>(value: StorageValue<T>): string {
+  return JSON.stringify(value);
+}
+
+function defaultDeserializer<T>(value: string): StorageValue<T> {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value as unknown as StorageValue<T>;
+  }
 }
 
 export default useLocalStorage;
