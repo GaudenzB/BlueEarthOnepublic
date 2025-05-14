@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Document } from '@/types/document';
 import { DocumentHeader } from './DocumentHeader';
 import { DocumentProcessingAlert } from './DocumentProcessingAlert';
@@ -18,8 +18,9 @@ interface DocumentDetailContentProps {
 /**
  * Main content component for the document detail page
  * Encapsulates all document display elements
+ * Memoized to prevent unnecessary re-renders
  */
-export function DocumentDetailContent({
+export const DocumentDetailContent = memo(({
   document,
   activeTab,
   onTabChange,
@@ -27,7 +28,7 @@ export function DocumentDetailContent({
   onShareClick,
   onRefreshStatus,
   isRefreshing
-}: DocumentDetailContentProps) {
+}: DocumentDetailContentProps) => {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
       {/* Document Header */}
@@ -53,4 +54,4 @@ export function DocumentDetailContent({
       />
     </div>
   );
-}
+});

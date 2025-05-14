@@ -5,10 +5,7 @@ import { Helmet } from "react-helmet-async";
 import { message } from "antd";
 import { apiRequest } from "@/lib/queryClient";
 import { Document } from "@/types/document";
-import { DocumentHeader } from "@/components/documents/DocumentHeader";
-import { DocumentProcessingAlert } from "@/components/documents/DocumentProcessingAlert";
-import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
-import { DocumentTabs } from "@/components/documents/DocumentTabs";
+import { DocumentDetailContent } from "@/components/documents/DocumentDetailContent";
 import { DocumentDeleteDialog } from "@/components/documents/DocumentDeleteDialog";
 import { DocumentShareDialog } from "@/components/documents/DocumentShareDialog";
 
@@ -223,31 +220,18 @@ export default function DocumentDetail() {
         <meta name="description" content={`View details and insights for ${document.title || "document"}`} />
       </Helmet>
       
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
-        {/* Document Header */}
-        <DocumentHeader 
-          document={document}
-          statusBadge={<DocumentStatusBadge status={document.processingStatus} />}
-          onDeleteClick={handleDeleteClick}
-          onShareClick={handleShareClick}
-        />
-        
-        {/* Processing Alert if needed */}
-        <DocumentProcessingAlert 
-          document={document}
-          onRefresh={handleRefreshStatus}
-          isRefreshing={refreshStatusMutation.isPending}
-        />
-        
-        {/* Document Tabs */}
-        <DocumentTabs 
-          document={document}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-        />
-      </div>
+      {/* Main content area */}
+      <DocumentDetailContent
+        document={document}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onDeleteClick={handleDeleteClick}
+        onShareClick={handleShareClick}
+        onRefreshStatus={handleRefreshStatus}
+        isRefreshing={refreshStatusMutation.isPending}
+      />
       
-      {/* Delete Confirmation Dialog */}
+      {/* Modals and dialogs */}
       <DocumentDeleteDialog 
         document={document}
         open={showDeleteDialog}
@@ -256,7 +240,6 @@ export default function DocumentDetail() {
         isDeleting={deleteDocumentMutation.isPending}
       />
       
-      {/* Share Dialog */}
       <DocumentShareDialog 
         document={document}
         open={showShareDialog}
