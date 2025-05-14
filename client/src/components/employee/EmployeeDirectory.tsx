@@ -435,7 +435,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   
   // Item data for grid virtualization
   const gridItemData = useMemo(() => ({
-    employees: filteredEmployees,
+    employees: filteredEmployees || [],
     columnCount: gridDimensions.columnCount,
     onEmployeeSelect,
     onEmployeeEdit,
@@ -458,7 +458,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   
   // Item data for list virtualization
   const listItemData = useMemo(() => ({
-    employees: filteredEmployees,
+    employees: filteredEmployees || [],
     onEmployeeSelect,
     onEmployeeEdit,
     onEmployeeDelete,
@@ -477,6 +477,12 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   
   // Render grid of employee cards (virtualized)
   const renderVirtualizedGrid = useCallback(() => {
+    if (!filteredEmployees || !Array.isArray(filteredEmployees) || filteredEmployees.length === 0) {
+      return (
+        <Empty description="No employees found" />
+      );
+    }
+    
     const { columnCount, columnWidth, rowHeight } = gridDimensions;
     const rowCount = Math.ceil(filteredEmployees.length / columnCount);
     
@@ -498,6 +504,12 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   
   // Render list of employee cards (virtualized)
   const renderVirtualizedList = useCallback(() => {
+    if (!filteredEmployees || !Array.isArray(filteredEmployees) || filteredEmployees.length === 0) {
+      return (
+        <Empty description="No employees found" />
+      );
+    }
+    
     return (
       <FixedSizeList
         ref={listRef}
