@@ -1,533 +1,751 @@
-import React, { useState, useEffect, useRef, useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { useLocation } from "wouter"
-import { SearchFilters } from "@/components/employee/SearchFilters"
-import { 
-  Pagination, 
-  Empty, 
-  Spin, 
-  Result, 
-  Button
-} from "antd"
-import { FixedSizeGrid as Grid } from 'react-window'
-import { ReloadOutlined } from "@ant-design/icons"
-import { type Employee } from "@shared/schema"
-// Import from centralized theme system
-import { colors } from "@/lib/colors"
-// Import shared UI components
-import { EmployeeCard } from "@/components/ui"
-// Import theme tokens
-import { tokens } from "@/theme/tokens"
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { FixedSizeGrid, FixedSizeList, areEqual } from 'react-window';
+import { Col, Row, Input, Select, Empty, Typography, Space, Button, Spin } from 'antd';
+import { SearchOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Employee, EmployeeCard } from '@/components/ui/EmployeeCard';
+import { useWindowSize } from '@/hooks/useWindowSize';
+import { useDebounce } from '@/hooks/useDebounce';
+import { SkipLink } from '@/components/ui/SkipLink';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { tokens } from '@/theme/tokens';
 
-// VirtualizedEmployeeGrid component
-interface VirtualizedEmployeeGridProps {
+const { Title, Text } = Typography;
+const { Option } = Select;
+
+/**
+ * Props for EmployeeDirectory component
+ */
+export interface EmployeeDirectoryProps {
+  /**
+   * Array of employees to display
+   */
   employees: Employee[];
+  
+  /**
+   * Whether the data is currently loading
+   */
+  isLoading?: boolean;
+  
+  /**
+   * Error message, if any
+   */
+  error?: string | null;
+  
+  /**
+   * Function to reload employee data
+   */
+  onRefresh?: () => void;
+  
+  /**
+   * Function called when an employee card is clicked
+   */
+  onEmployeeSelect?: (employee: Employee) => void;
+  
+  /**
+   * Function called when edit action is triggered
+   */
+  onEmployeeEdit?: (employee: Employee) => void;
+  
+  /**
+   * Function called when delete action is triggered
+   */
+  onEmployeeDelete?: (employee: Employee) => void;
+  
+  /**
+   * ID of currently selected employee, if any
+   */
+  selectedEmployeeId?: string;
+  
+  /**
+   * Directory title
+   */
+  title?: string;
+  
+  /**
+   * Whether to use virtualization for performance
+   */
+  useVirtualization?: boolean;
+  
+  /**
+   * Whether to show action buttons on cards
+   */
+  showCardActions?: boolean;
+  
+  /**
+   * Card size
+   */
+  cardSize?: 'small' | 'default' | 'large';
+  
+  /**
+   * Directory layout
+   * - grid: Displays employees in a grid of cards
+   * - list: Displays employees in a vertical list with detailed cards
+   */
+  layout?: 'grid' | 'list';
+  
+  /**
+   * Whether to show the search and filter bar
+   */
+  showControls?: boolean;
+  
+  /**
+   * Whether the cards are selectable
+   */
+  selectableCards?: boolean;
+  
+  /**
+   * Custom CSS class name
+   */
+  className?: string;
 }
 
-// This component will render a virtualized grid of employee cards
-const VirtualizedEmployeeGrid: React.FC<VirtualizedEmployeeGridProps> = ({ employees }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+// Item renderer for react-window grid (memoized)
+const GridItemRenderer = React.memo(({ 
+  data, 
+  columnIndex, 
+  rowIndex, 
+  style 
+}: { 
+  data: {
+    employees: Employee[];
+    columnCount: number;
+    onEmployeeSelect?: (employee: Employee) => void;
+    onEmployeeEdit?: (employee: Employee) => void;
+    onEmployeeDelete?: (employee: Employee) => void;
+    selectedEmployeeId?: string;
+    showCardActions?: boolean;
+    cardSize?: 'small' | 'default' | 'large';
+    selectableCards?: boolean;
+  };
+  columnIndex: number;
+  rowIndex: number;
+  style: React.CSSProperties;
+}) => {
+  const { 
+    employees, 
+    columnCount, 
+    onEmployeeSelect, 
+    onEmployeeEdit, 
+    onEmployeeDelete,
+    selectedEmployeeId,
+    showCardActions,
+    cardSize,
+    selectableCards
+  } = data;
   
-  // Calculate the number of columns based on container width
-  const columnCount = useMemo(() => {
-    if (dimensions.width < 640) return 1;      // xs: 1 column
-    if (dimensions.width < 1024) return 2;     // sm-md: 2 columns
-    if (dimensions.width < 1280) return 3;     // lg: 3 columns
-    return 4;                                  // xl: 4 columns
-  }, [dimensions.width]);
+  // Calculate the index in the flattened array
+  const index = rowIndex * columnCount + columnIndex;
+  
+  // If index is out of bounds, render empty cell
+  if (index >= employees.length) {
+    return <div style={style} />;
+  }
+  
+  const employee = employees[index];
+  
+  return (
+    <div style={{
+      ...style,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '16px'
+    }}>
+      <EmployeeCard
+        employee={employee}
+        onClick={onEmployeeSelect}
+        onEdit={onEmployeeEdit}
+        onDelete={onEmployeeDelete}
+        showActions={showCardActions}
+        size={cardSize}
+        selectable={selectableCards}
+        isSelected={selectedEmployeeId === employee.id}
+      />
+    </div>
+  );
+}, areEqual);
 
-  // Calculate item dimensions
-  const columnWidth = useMemo(() => {
-    const gap = 24; // gap-6 in Tailwind is 24px
-    return Math.floor((dimensions.width - (gap * (columnCount - 1))) / columnCount);
-  }, [dimensions.width, columnCount]);
+// Item renderer for react-window list (memoized)
+const ListItemRenderer = React.memo(({ 
+  data, 
+  index, 
+  style 
+}: { 
+  data: {
+    employees: Employee[];
+    onEmployeeSelect?: (employee: Employee) => void;
+    onEmployeeEdit?: (employee: Employee) => void;
+    onEmployeeDelete?: (employee: Employee) => void;
+    selectedEmployeeId?: string;
+    showCardActions?: boolean;
+    selectableCards?: boolean;
+  };
+  index: number;
+  style: React.CSSProperties;
+}) => {
+  const { 
+    employees, 
+    onEmployeeSelect, 
+    onEmployeeEdit, 
+    onEmployeeDelete,
+    selectedEmployeeId,
+    showCardActions,
+    selectableCards
+  } = data;
   
-  const rowHeight = 280; // Fixed height for employee cards
+  const employee = employees[index];
   
-  // Update dimensions on resize
-  useEffect(() => {
-    if (!containerRef.current) return;
+  return (
+    <div style={{
+      ...style,
+      display: 'flex',
+      justifyContent: 'center',
+      padding: '12px 24px'
+    }}>
+      <EmployeeCard
+        employee={employee}
+        onClick={onEmployeeSelect}
+        onEdit={onEmployeeEdit}
+        onDelete={onEmployeeDelete}
+        showActions={showCardActions}
+        size="large"
+        detailed
+        selectable={selectableCards}
+        isSelected={selectedEmployeeId === employee.id}
+      />
+    </div>
+  );
+}, areEqual);
+
+/**
+ * EmployeeDirectory Component
+ * 
+ * A high-performance, virtualized employee directory component that
+ * efficiently displays large lists of employees with search and filtering
+ * functionality.
+ * 
+ * Features:
+ * - Virtualized rendering for superior performance with large datasets
+ * - Responsive grid and list layouts
+ * - Search and filter functionality
+ * - Keyboard accessibility
+ * - Loading states and error handling
+ * 
+ * @example
+ * ```tsx
+ * // Basic usage
+ * <EmployeeDirectory 
+ *   employees={employees} 
+ *   isLoading={isLoading}
+ *   onEmployeeSelect={handleEmployeeSelect}
+ * />
+ * 
+ * // With all options
+ * <EmployeeDirectory 
+ *   employees={employees}
+ *   isLoading={isLoading}
+ *   error={error}
+ *   onRefresh={refetchEmployees}
+ *   onEmployeeSelect={handleEmployeeSelect}
+ *   onEmployeeEdit={handleEmployeeEdit}
+ *   onEmployeeDelete={handleEmployeeDelete}
+ *   selectedEmployeeId={selectedEmployeeId}
+ *   title="Company Directory"
+ *   useVirtualization={true}
+ *   showCardActions={true}
+ *   cardSize="default"
+ *   layout="grid"
+ *   showControls={true}
+ *   selectableCards={true}
+ * />
+ * ```
+ */
+export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
+  employees,
+  isLoading = false,
+  error = null,
+  onRefresh,
+  onEmployeeSelect,
+  onEmployeeEdit,
+  onEmployeeDelete,
+  selectedEmployeeId,
+  title = 'Employee Directory',
+  useVirtualization = true,
+  showCardActions = false,
+  cardSize = 'default',
+  layout = 'grid',
+  showControls = true,
+  selectableCards = false,
+  className = ''
+}) => {
+  // Refs
+  const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<FixedSizeGrid>(null);
+  const listRef = useRef<FixedSizeList>(null);
+  
+  // Local state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  
+  // Use the debounced search query for filtering
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Window size for responsive calculations
+  const { width: windowWidth } = useWindowSize();
+  
+  // Calculate grid dimensions based on container width and card size
+  const getGridDimensions = useCallback(() => {
+    if (!containerRef.current) {
+      return { columnCount: 3, columnWidth: 300, rowHeight: 350 };
+    }
     
+    const containerWidth = containerRef.current.offsetWidth;
+    
+    let cardWidth: number;
+    let rowHeight: number;
+    
+    switch (cardSize) {
+      case 'small':
+        cardWidth = 240;
+        rowHeight = 300;
+        break;
+      case 'large':
+        cardWidth = 320;
+        rowHeight = 400;
+        break;
+      case 'default':
+      default:
+        cardWidth = 280;
+        rowHeight = 350;
+        break;
+    }
+    
+    // Add padding for each card
+    const cardWidthWithPadding = cardWidth + 32; // 16px padding on each side
+    
+    // Calculate how many columns can fit
+    const columnCount = Math.max(1, Math.floor(containerWidth / cardWidthWithPadding));
+    
+    // Calculate actual column width to distribute space evenly
+    const columnWidth = Math.floor(containerWidth / columnCount);
+    
+    return { columnCount, columnWidth, rowHeight };
+  }, [cardSize]);
+  
+  // Calculate initial grid dimensions
+  const [gridDimensions, setGridDimensions] = useState(getGridDimensions());
+  
+  // Update grid dimensions when window or container resizes
+  useEffect(() => {
     const updateDimensions = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.offsetWidth,
-          height: window.innerHeight - 300 // Approximate height minus headers and filters
-        });
-      }
+      setGridDimensions(getGridDimensions());
     };
     
+    // Initial calculation
     updateDimensions();
+    
+    // Add resize listener
     window.addEventListener('resize', updateDimensions);
     
+    // Clean up
     return () => {
       window.removeEventListener('resize', updateDimensions);
     };
+  }, [getGridDimensions, windowWidth]);
+  
+  // Filter employees based on search query and filters
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(employee => {
+      // Apply search filter
+      if (debouncedSearchQuery) {
+        const searchText = debouncedSearchQuery.toLowerCase();
+        const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase();
+        
+        // Check if search query matches name, email, position, or department
+        const matchesSearch = 
+          fullName.includes(searchText) ||
+          (employee.email && employee.email.toLowerCase().includes(searchText)) ||
+          (employee.position && employee.position.toLowerCase().includes(searchText)) ||
+          (employee.department && employee.department.toLowerCase().includes(searchText));
+        
+        if (!matchesSearch) return false;
+      }
+      
+      // Apply status filter
+      if (statusFilter !== 'all' && employee.status !== statusFilter) {
+        return false;
+      }
+      
+      // Apply department filter
+      if (departmentFilter !== 'all' && employee.department !== departmentFilter) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [employees, debouncedSearchQuery, statusFilter, departmentFilter]);
+  
+  // Extract unique departments for filter dropdown
+  const departments = useMemo(() => {
+    const departmentSet = new Set<string>();
+    
+    employees.forEach(employee => {
+      if (employee.department) {
+        departmentSet.add(employee.department);
+      }
+    });
+    
+    return Array.from(departmentSet).sort();
+  }, [employees]);
+  
+  // Handle filter changes
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   }, []);
   
-  // If there are no employees or dimensions aren't set, return traditional grid
-  if (employees.length === 0 || dimensions.width === 0) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {employees.map(employee => (
-          employee && (
-            <EmployeeCard 
-              key={employee.id} 
-              employee={employee} 
-              variant="detailed" 
-            />
-          )
-        ))}
-      </div>
-    );
-  }
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setStatusFilter(value);
+  }, []);
   
-  // Cell renderer for the grid
-  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
-    const index = rowIndex * columnCount + columnIndex;
-    
-    if (index >= employees.length) {
-      return <div style={style} />; // Empty cell
+  const handleDepartmentFilterChange = useCallback((value: string) => {
+    setDepartmentFilter(value);
+  }, []);
+  
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setDepartmentFilter('all');
+  }, []);
+  
+  // Reset virtualization scroll position when filters change
+  useEffect(() => {
+    if (layout === 'grid' && gridRef.current) {
+      gridRef.current.scrollTo({ scrollLeft: 0, scrollTop: 0 });
+    } else if (layout === 'list' && listRef.current) {
+      listRef.current.scrollTo(0);
     }
-    
-    const employee = employees[index];
-    
-    if (!employee) {
-      return <div style={style} />; // Safety check
-    }
-    
-    // Apply gap using padding in the style
-    const cellStyle = {
-      ...style,
-      padding: '12px',
-    };
+  }, [filteredEmployees, layout]);
+  
+  // Item data for grid virtualization
+  const gridItemData = useMemo(() => ({
+    employees: filteredEmployees,
+    columnCount: gridDimensions.columnCount,
+    onEmployeeSelect,
+    onEmployeeEdit,
+    onEmployeeDelete,
+    selectedEmployeeId,
+    showCardActions,
+    cardSize,
+    selectableCards
+  }), [
+    filteredEmployees,
+    gridDimensions.columnCount,
+    onEmployeeSelect,
+    onEmployeeEdit,
+    onEmployeeDelete,
+    selectedEmployeeId,
+    showCardActions,
+    cardSize,
+    selectableCards
+  ]);
+  
+  // Item data for list virtualization
+  const listItemData = useMemo(() => ({
+    employees: filteredEmployees,
+    onEmployeeSelect,
+    onEmployeeEdit,
+    onEmployeeDelete,
+    selectedEmployeeId,
+    showCardActions,
+    selectableCards
+  }), [
+    filteredEmployees,
+    onEmployeeSelect,
+    onEmployeeEdit,
+    onEmployeeDelete,
+    selectedEmployeeId,
+    showCardActions,
+    selectableCards
+  ]);
+  
+  // Render grid of employee cards (virtualized)
+  const renderVirtualizedGrid = useCallback(() => {
+    const { columnCount, columnWidth, rowHeight } = gridDimensions;
+    const rowCount = Math.ceil(filteredEmployees.length / columnCount);
     
     return (
-      <div style={cellStyle}>
-        <EmployeeCard 
-          key={employee.id} 
-          employee={employee} 
-          variant="detailed" 
-        />
-      </div>
-    );
-  };
-  
-  // Calculate the number of rows
-  const rowCount = Math.ceil(employees.length / columnCount);
-  
-  return (
-    <div ref={containerRef} style={{ width: '100%', height: dimensions.height }}>
-      <Grid
+      <FixedSizeGrid
+        ref={gridRef}
         columnCount={columnCount}
         columnWidth={columnWidth}
-        height={dimensions.height}
         rowCount={rowCount}
         rowHeight={rowHeight}
-        width={dimensions.width}
+        height={600}
+        width="100%"
+        itemData={gridItemData}
       >
-        {Cell}
-      </Grid>
+        {GridItemRenderer}
+      </FixedSizeGrid>
+    );
+  }, [filteredEmployees.length, gridDimensions, gridItemData]);
+  
+  // Render list of employee cards (virtualized)
+  const renderVirtualizedList = useCallback(() => {
+    return (
+      <FixedSizeList
+        ref={listRef}
+        height={600}
+        width="100%"
+        itemCount={filteredEmployees.length}
+        itemSize={120}
+        itemData={listItemData}
+      >
+        {ListItemRenderer}
+      </FixedSizeList>
+    );
+  }, [filteredEmployees.length, listItemData]);
+  
+  // Render grid of employee cards (non-virtualized)
+  const renderStaticGrid = useCallback(() => {
+    return (
+      <Row gutter={[16, 24]} justify="start">
+        {filteredEmployees.map(employee => (
+          <Col key={employee.id} xs={24} sm={12} md={8} lg={6} xl={6} xxl={4} style={{ display: 'flex', justifyContent: 'center' }}>
+            <EmployeeCard
+              employee={employee}
+              onClick={onEmployeeSelect}
+              onEdit={onEmployeeEdit}
+              onDelete={onEmployeeDelete}
+              showActions={showCardActions}
+              size={cardSize}
+              selectable={selectableCards}
+              isSelected={selectedEmployeeId === employee.id}
+            />
+          </Col>
+        ))}
+      </Row>
+    );
+  }, [
+    filteredEmployees,
+    onEmployeeSelect,
+    onEmployeeEdit,
+    onEmployeeDelete,
+    showCardActions,
+    cardSize,
+    selectableCards,
+    selectedEmployeeId
+  ]);
+  
+  // Render list of employee cards (non-virtualized)
+  const renderStaticList = useCallback(() => {
+    return (
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        {filteredEmployees.map(employee => (
+          <EmployeeCard
+            key={employee.id}
+            employee={employee}
+            onClick={onEmployeeSelect}
+            onEdit={onEmployeeEdit}
+            onDelete={onEmployeeDelete}
+            showActions={showCardActions}
+            size="large"
+            detailed
+            selectable={selectableCards}
+            isSelected={selectedEmployeeId === employee.id}
+          />
+        ))}
+      </Space>
+    );
+  }, [
+    filteredEmployees,
+    onEmployeeSelect,
+    onEmployeeEdit,
+    onEmployeeDelete,
+    showCardActions,
+    selectableCards,
+    selectedEmployeeId
+  ]);
+  
+  // Render employee grid or list based on prop settings
+  const renderEmployeeCards = useCallback(() => {
+    if (filteredEmployees.length === 0) {
+      return (
+        <Empty 
+          description="No employees found" 
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      );
+    }
+    
+    if (useVirtualization) {
+      return layout === 'grid' ? renderVirtualizedGrid() : renderVirtualizedList();
+    } else {
+      return layout === 'grid' ? renderStaticGrid() : renderStaticList();
+    }
+  }, [
+    filteredEmployees.length,
+    useVirtualization,
+    layout,
+    renderVirtualizedGrid,
+    renderVirtualizedList,
+    renderStaticGrid,
+    renderStaticList
+  ]);
+  
+  // Render search and filter controls
+  const renderControls = useCallback(() => {
+    if (!showControls) return null;
+    
+    return (
+      <div style={{ marginBottom: tokens.spacing[5] }}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col flex="auto">
+            <Input
+              placeholder="Search employees..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              prefix={<SearchOutlined />}
+              allowClear
+              aria-label="Search employees"
+            />
+          </Col>
+          
+          <Col>
+            <Space wrap>
+              <Select
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+                style={{ minWidth: '140px' }}
+                aria-label="Filter by status"
+              >
+                <Option value="all">All Statuses</Option>
+                <Option value="active">Active</Option>
+                <Option value="inactive">Inactive</Option>
+                <Option value="on_leave">On Leave</Option>
+                <Option value="remote">Remote</Option>
+              </Select>
+              
+              {departments.length > 0 && (
+                <Select
+                  value={departmentFilter}
+                  onChange={handleDepartmentFilterChange}
+                  style={{ minWidth: '160px' }}
+                  aria-label="Filter by department"
+                >
+                  <Option value="all">All Departments</Option>
+                  {departments.map(dept => (
+                    <Option key={dept} value={dept}>{dept}</Option>
+                  ))}
+                </Select>
+              )}
+              
+              <Button 
+                onClick={handleClearFilters}
+                disabled={searchQuery === '' && statusFilter === 'all' && departmentFilter === 'all'}
+                aria-label="Clear all filters"
+              >
+                Clear
+              </Button>
+              
+              {onRefresh && (
+                <Button 
+                  icon={<ReloadOutlined />} 
+                  onClick={onRefresh}
+                  aria-label="Refresh employee list"
+                >
+                  Refresh
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
+      </div>
+    );
+  }, [
+    showControls,
+    searchQuery,
+    statusFilter,
+    departmentFilter,
+    departments,
+    handleSearchChange, 
+    handleStatusFilterChange,
+    handleDepartmentFilterChange,
+    handleClearFilters,
+    onRefresh
+  ]);
+  
+  // Render error state
+  const renderError = useCallback(() => {
+    if (!error) return null;
+    
+    return (
+      <div style={{ textAlign: 'center', padding: tokens.spacing[6] }}>
+        <Text type="danger" style={{ fontSize: tokens.typography.fontSize.lg }}>
+          {error}
+        </Text>
+        {onRefresh && (
+          <div style={{ marginTop: tokens.spacing[4] }}>
+            <Button onClick={onRefresh} icon={<ReloadOutlined />}>
+              Try Again
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }, [error, onRefresh]);
+  
+  // Render loading state
+  const renderLoading = useCallback(() => {
+    if (!isLoading) return null;
+    
+    return (
+      <LoadingState 
+        variant="result" 
+        message="Loading employees..." 
+      />
+    );
+  }, [isLoading]);
+  
+  // Render content
+  const renderContent = useCallback(() => {
+    if (isLoading) {
+      return renderLoading();
+    }
+    
+    if (error) {
+      return renderError();
+    }
+    
+    return renderEmployeeCards();
+  }, [isLoading, error, renderLoading, renderError, renderEmployeeCards]);
+  
+  // Render the component
+  return (
+    <div className={`employee-directory ${className}`} ref={containerRef}>
+      <SkipLink targetId="directory-content" text="Skip to employee list" />
+      
+      <header style={{ marginBottom: tokens.spacing[4] }}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title level={3}>{title}</Title>
+          </Col>
+          
+          <Col>
+            <Text type="secondary">
+              {filteredEmployees.length} {filteredEmployees.length === 1 ? 'employee' : 'employees'} found
+            </Text>
+          </Col>
+        </Row>
+      </header>
+      
+      {renderControls()}
+      
+      <div id="directory-content" tabIndex={-1} className="directory-content">
+        {renderContent()}
+      </div>
     </div>
   );
 };
 
-export function EmployeeDirectory() {
-  const [location] = useLocation();
-  
-  // Parse existing query params from URL
-  const getQueryParams = () => {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      search: params.get('search') || '',
-      department: params.get('department') || '',
-      active: params.get('active') === 'true',
-      sortBy: (params.get('sortBy') as "name" | "department" | null) || null,
-      sortDirection: (params.get('sortDirection') as "asc" | "desc") || "asc",
-      page: parseInt(params.get('page') || '1'),
-    };
-  };
-  
-  // Initialize state from URL query params
-  const queryParams = getQueryParams();
-  const [searchTerm, setSearchTerm] = useState(queryParams.search)
-  const [department, setDepartment] = useState(queryParams.department)
-  const [activeOnly, setActiveOnly] = useState(queryParams.active)
-  const [sortBy, setSortBy] = useState<"name" | "department" | null>(queryParams.sortBy)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">(queryParams.sortDirection)
-  const [currentPage, setCurrentPage] = useState(queryParams.page)
-  const itemsPerPage = 8
-  
-  // Update URL whenever filters change
-  const updateQueryParams = () => {
-    const params = new URLSearchParams();
-    if (searchTerm) params.set('search', searchTerm);
-    if (department) params.set('department', department);
-    if (activeOnly) params.set('active', 'true');
-    if (sortBy) params.set('sortBy', sortBy);
-    if (sortDirection !== 'asc') params.set('sortDirection', sortDirection);
-    if (currentPage > 1) params.set('page', currentPage.toString());
-    
-    const queryString = params.toString();
-    const newUrl = location + (queryString ? `?${queryString}` : '');
-    
-    // Update URL without causing full page reload
-    window.history.replaceState(null, '', newUrl);
-  };
-
-  // Define the API response type
-  interface ApiResponse {
-    success: boolean;
-    message: string;
-    data: Employee[];
-  }
-  
-  // Add a cache buster that doesn't change on every render
-  const cacheBuster = React.useMemo(() => ({ _t: Date.now() }), []);
-  
-  // Query to fetch employees
-  const { data: apiResponse, isLoading, isError, refetch } = useQuery<Employee[] | ApiResponse>({
-    queryKey: ["/api/employees", cacheBuster], // Static query key that only changes on mount
-    staleTime: 0, // Consider data immediately stale
-    gcTime: 60 * 1000, // Keep in cache for 1 minute (gcTime replaces cacheTime in React Query v5)
-  })
-  
-  // Extract employees from the response data structure
-  // Handle both response formats: either direct array or wrapped in ApiResponse
-  let employees: Employee[] = [];
-  
-  if (apiResponse) {
-    console.log("API response received:", apiResponse);
-    
-    if (Array.isArray(apiResponse)) {
-      // If the response is an array, use it directly
-      employees = apiResponse;
-      console.log("Direct array response, employees count:", employees.length);
-    } else if (apiResponse.data) {
-      // If the response is an object with data property, use that
-      employees = apiResponse.data;
-      console.log("Object response with data property, employees count:", employees.length);
-    } else {
-      console.error("Unexpected response format:", apiResponse);
-    }
-  }
-  
-  // Force refetch data on component mount
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value)
-    setCurrentPage(1)
-    setTimeout(updateQueryParams, 0) // Queue update to execute after state changes
-  }
-
-  const handleDepartmentFilter = (value: string) => {
-    setDepartment(value)
-    setCurrentPage(1)
-    setTimeout(updateQueryParams, 0)
-  }
-
-  const handleStatusFilter = () => {
-    setActiveOnly(!activeOnly)
-    setCurrentPage(1)
-    setTimeout(updateQueryParams, 0)
-  }
-
-  const handleSortBy = (sortType: "name" | "department") => {
-    if (sortType === sortBy) {
-      // If already sorting by this field, toggle direction
-      setSortDirection(prevDirection => {
-        const newDirection = prevDirection === "asc" ? "desc" : "asc";
-        setTimeout(updateQueryParams, 0)
-        return newDirection;
-      })
-    } else {
-      // If sorting by a new field, set it and default to ascending
-      setSortBy(sortType)
-      setSortDirection("asc")
-      setTimeout(updateQueryParams, 0)
-    }
-    setCurrentPage(1)
-  }
-
-  // Filter and sort employees
-  const filteredEmployees = React.useMemo(() => {
-    if (!employees) return []
-    
-    let filtered: Employee[] = [...employees]
-    
-    // Filter by search term
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase()
-      filtered = filtered.filter(
-        employee => 
-          employee.name.toLowerCase().includes(search) ||
-          employee.position.toLowerCase().includes(search) ||
-          employee.department.toLowerCase().includes(search)
-      )
-    }
-    
-    // Filter by department
-    if (department && department !== "all") {
-      filtered = filtered.filter(employee => employee.department === department)
-    }
-    
-    // Filter by active status
-    if (activeOnly) {
-      filtered = filtered.filter(employee => employee.status === "active")
-    }
-    
-    // Sort employees
-    if (sortBy === "name") {
-      filtered.sort((a, b) => {
-        const comparison = a.name.localeCompare(b.name);
-        return sortDirection === "asc" ? comparison : -comparison;
-      });
-    } else if (sortBy === "department") {
-      filtered.sort((a, b) => {
-        const comparison = a.department.localeCompare(b.department);
-        return sortDirection === "asc" ? comparison : -comparison;
-      });
-    }
-    
-    return filtered
-  }, [employees, searchTerm, department, activeOnly, sortBy, sortDirection])
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage)
-  const paginatedEmployees = filteredEmployees.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
-
-  // Removed handlePreviousPage and handleNextPage
-  // since we're using Ant Design's Pagination component instead
-
-  // Reset to page 1 when filters change significantly
-  useEffect(() => {
-    setCurrentPage(1)
-    setTimeout(updateQueryParams, 0)
-  }, [searchTerm, department, activeOnly, sortBy])
-  
-  // Sync URL params to state when the component mounts or location changes
-  useEffect(() => {
-    updateQueryParams()
-  }, [location, searchTerm, department, activeOnly, sortBy, sortDirection, currentPage])
-
-  // Loading skeleton
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <SearchFilters 
-          onSearch={handleSearch}
-          onDepartmentFilter={handleDepartmentFilter}
-          onStatusFilter={handleStatusFilter}
-          onSortByName={() => handleSortBy("name")}
-          onSortByDepartment={() => handleSortBy("department")}
-          searchTerm={searchTerm}
-          department={department}
-          activeOnly={activeOnly}
-          sortBy={sortBy}
-          sortDirection={sortDirection}
-        />
-        
-        <div 
-          className="directory-container overflow-auto"
-          style={{
-            position: 'relative',
-            minHeight: '400px'
-          }}
-        >
-          <Spin 
-            spinning={true} 
-            tip={
-              <div style={{ 
-                marginTop: '12px', 
-                color: '#64748b',
-                fontSize: '14px',
-                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-              }}>
-                Loading employee data...
-              </div>
-            } 
-            className="flex justify-center my-4"
-            style={{
-              maxWidth: '100%'
-            }}
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {Array(8).fill(0).map((_, index) => (
-                <EmployeeCard 
-                  key={index} 
-                  employee={{} as Employee} 
-                  loading={true}
-                  variant="detailed" 
-                />
-              ))}
-            </div>
-          </Spin>
-        </div>
-      </div>
-    )
-  }
-
-  // Error state
-  if (isError) {
-    return (
-      <div 
-        style={{ 
-          padding: '48px 24px', 
-          marginTop: '24px',
-          borderRadius: '8px',
-          border: '1px solid #fee2e2',
-          background: '#fef2f2'
-        }}
-      >
-        <Result
-          status="error"
-          title={
-            <div style={{ 
-              color: '#b91c1c', 
-              fontSize: '22px', 
-              fontWeight: 600,
-              marginBottom: '8px',
-              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-            }}>
-              Failed to load employees
-            </div>
-          }
-          subTitle={
-            <div style={{ 
-              color: '#ef4444', 
-              fontSize: '14px',
-              marginBottom: '24px',
-              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-            }}>
-              There was an error loading the employee directory. Please try again.
-            </div>
-          }
-          extra={[
-            <Button 
-              key="refresh" 
-              type="primary" 
-              onClick={() => window.location.reload()}
-              style={{ 
-                backgroundColor: colors.primary.base,
-                borderColor: colors.primary.base,
-                boxShadow: '0 1px 2px rgba(14, 74, 134, 0.05)',
-                height: '40px',
-                borderRadius: '6px',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 20px',
-                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-              }}
-              icon={<ReloadOutlined />}
-            >
-              Try Again
-            </Button>
-          ]}
-        />
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      <SearchFilters 
-        onSearch={handleSearch}
-        onDepartmentFilter={handleDepartmentFilter}
-        onStatusFilter={handleStatusFilter}
-        onSortByName={() => handleSortBy("name")}
-        onSortByDepartment={() => handleSortBy("department")}
-        searchTerm={searchTerm}
-        department={department}
-        activeOnly={activeOnly}
-        sortBy={sortBy}
-        sortDirection={sortDirection}
-      />
-      
-      {filteredEmployees.length === 0 ? (
-        <div 
-          style={{ 
-            padding: '48px 24px', 
-            textAlign: 'center', 
-            background: '#f9fafc',
-            borderRadius: '8px',
-            border: '1px solid #eaecf0',
-            marginTop: '16px'
-          }}
-        >
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            imageStyle={{ marginBottom: '24px', opacity: 0.8 }}
-            description={
-              <div>
-                <h3 style={{ 
-                  fontSize: '18px', 
-                  fontWeight: 600, 
-                  color: '#1e293b', 
-                  marginBottom: '8px',
-                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-                }}>
-                  No employees found
-                </h3>
-                <p style={{ 
-                  color: '#64748b', 
-                  fontSize: '14px',
-                  maxWidth: '320px',
-                  margin: '0 auto',
-                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-                }}>
-                  Try adjusting your search or filter criteria to find the employees you're looking for
-                </p>
-              </div>
-            }
-          />
-        </div>
-      ) : (
-        <>
-          <div className="directory-container overflow-hidden" style={{ padding: tokens.spacing[4] }}>
-            <VirtualizedEmployeeGrid employees={paginatedEmployees} />
-          </div>
-          
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 pt-6 pb-4 flex items-center justify-center border-t border-gray-100">
-              <Pagination
-                current={currentPage}
-                total={filteredEmployees.length}
-                pageSize={itemsPerPage}
-                onChange={(page) => {
-                  setCurrentPage(page);
-                  setTimeout(updateQueryParams, 0);
-                }}
-                showSizeChanger={false}
-                showTotal={(total, range) => (
-                  <span 
-                    className="text-sm hidden md:inline-block mr-4"
-                    style={{ 
-                      color: '#64748b', 
-                      fontWeight: 500,
-                      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-                    }}
-                  >
-                    Showing {range[0]}-{range[1]} of {total} employees
-                  </span>
-                )}
-                style={{
-                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-                }}
-              />
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
+export default EmployeeDirectory;

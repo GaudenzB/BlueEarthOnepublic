@@ -1,190 +1,639 @@
 /**
- * Accessibility (a11y) Utility Functions
+ * Accessibility (a11y) utility functions
  * 
- * This file contains utility functions for improving accessibility
- * across the application. They help ensure the application meets
- * WCAG standards and provides a good experience for all users.
+ * These utilities help create accessible components with proper ARIA attributes,
+ * keyboard navigation, focus management, and screen reader support.
  */
 
 /**
- * Creates an accessible ID by joining the provided parts and ensuring the result is valid
- * 
- * @param parts - String parts to join
- * @returns A valid ID string
+ * Common ARIA role constants
  */
-export function createAccessibleId(...parts: (string | number | null | undefined)[]): string {
-  // Filter out null/undefined values and convert to strings
-  const validParts = parts
-    .filter(Boolean)
-    .map(part => String(part).toLowerCase());
-  
-  // Join parts and replace invalid characters with hyphens
-  const id = validParts
-    .join('-')
-    .replace(/[^a-z0-9-_]/g, '-')
-    .replace(/-+/g, '-') // Replace multiple consecutive hyphens with a single one
-    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-  
-  return id || 'id'; // Ensure we never return an empty string
-}
+export const ARIA_ROLES = {
+  ALERT: 'alert',
+  ALERTDIALOG: 'alertdialog',
+  BUTTON: 'button',
+  CHECKBOX: 'checkbox',
+  DIALOG: 'dialog',
+  GRID: 'grid',
+  LINK: 'link',
+  LISTBOX: 'listbox',
+  MENU: 'menu',
+  MENUITEM: 'menuitem',
+  MENUITEMCHECKBOX: 'menuitemcheckbox',
+  MENUITEMRADIO: 'menuitemradio',
+  OPTION: 'option',
+  PROGRESSBAR: 'progressbar',
+  RADIO: 'radio',
+  RADIOGROUP: 'radiogroup',
+  REGION: 'region',
+  SCROLLBAR: 'scrollbar',
+  SEARCH: 'search',
+  SEARCHBOX: 'searchbox',
+  SEPARATOR: 'separator',
+  SLIDER: 'slider',
+  SPINBUTTON: 'spinbutton',
+  STATUS: 'status',
+  SWITCH: 'switch',
+  TAB: 'tab',
+  TABLIST: 'tablist',
+  TABPANEL: 'tabpanel',
+  TEXTBOX: 'textbox',
+  TIMER: 'timer',
+  TOOLBAR: 'toolbar',
+  TOOLTIP: 'tooltip',
+  TREE: 'tree',
+  TREEGRID: 'treegrid',
+  TREEITEM: 'treeitem'
+};
 
 /**
- * Generates ARIA attributes for a form field
- * 
- * @param id - Field ID
- * @param label - Field label
- * @param error - Error message
- * @param description - Field description
- * @returns Object containing aria-* attributes
+ * Common ARIA live region announcement politeness levels
  */
-export function getFieldAriaAttributes(
-  id: string,
-  label?: string,
-  error?: string | null,
-  description?: string | null
-): Record<string, string> {
-  const attrs: Record<string, string> = {};
-  
-  // If there's an error, associate with an error ID
-  if (error) {
-    attrs['aria-invalid'] = 'true';
-    attrs['aria-describedby'] = `${id}-error`;
-  } 
-  // If there's a description, associate with a description ID
-  else if (description) {
-    attrs['aria-describedby'] = `${id}-description`;
-  }
-  
-  // If there's a label, ensure it's properly associated
-  if (label) {
-    attrs['aria-labelledby'] = `${id}-label`;
-  }
-  
-  return attrs;
-}
+export const ARIA_LIVE = {
+  OFF: 'off',
+  POLITE: 'polite',
+  ASSERTIVE: 'assertive'
+};
 
 /**
- * Provides accessible hide-visually CSS properties
- * These can be used to hide content visually while keeping it accessible to screen readers
- * 
- * @returns Object with CSS properties for visually hidden elements
- */
-export function visuallyHidden(): React.CSSProperties {
-  return {
-    border: 0,
-    clip: 'rect(0 0 0 0)',
-    height: '1px',
-    margin: '-1px',
-    overflow: 'hidden',
-    padding: 0,
-    position: 'absolute',
-    width: '1px',
-    whiteSpace: 'nowrap',
-    wordWrap: 'normal'
-  };
-}
-
-/**
- * Creates a keyboard accessible event handler that triggers on Enter and Space
- * 
- * @param handler - Function to call when triggered
- * @returns Keyboard event handler
- */
-export function createKeyboardHandler(
-  handler: (event: React.KeyboardEvent) => void
-): (event: React.KeyboardEvent) => void {
-  return (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handler(event);
-    }
-  };
-}
-
-/**
- * Generates a random ID with a prefix
- * Useful for creating unique IDs for ARIA attributes
+ * Creates a unique, accessible ID for DOM elements
  * 
  * @param prefix - Prefix for the ID
- * @returns A unique ID string
+ * @param uniqueId - Unique identifier (string or number)
+ * @returns Formatted ID string
  */
-export function generateId(prefix = 'id'): string {
-  return `${prefix}-${Math.random().toString(36).substring(2, 11)}`;
+export function createAccessibleId(prefix: string, uniqueId: string | number): string {
+  return `${prefix.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${uniqueId}`;
 }
 
 /**
- * Combines multiple ARIA attributes objects into one
+ * Announces a message to screen readers using ARIA live regions
  * 
- * @param objects - ARIA attribute objects to combine
- * @returns Merged ARIA attributes object
+ * @param message - Message to announce
+ * @param politeness - ARIA live politeness setting
  */
-export function mergeAriaAttributes(
-  ...objects: Record<string, string>[]
-): Record<string, string> {
-  const result: Record<string, string> = {};
+export function announce(
+  message: string, 
+  politeness: 'off' | 'polite' | 'assertive' = 'polite'
+): void {
+  // Find existing announcer or create a new one
+  let announcer = document.getElementById('a11y-announcer');
   
-  for (const obj of objects) {
-    for (const [key, value] of Object.entries(obj)) {
-      // Special handling for aria-describedby since it can have multiple values
-      if (key === 'aria-describedby' && result[key]) {
-        result[key] = `${result[key]} ${value}`;
-      } else {
-        result[key] = value;
-      }
-    }
+  if (!announcer) {
+    announcer = document.createElement('div');
+    announcer.id = 'a11y-announcer';
+    announcer.setAttribute('aria-live', politeness);
+    announcer.setAttribute('aria-atomic', 'true');
+    announcer.setAttribute('role', 'status');
+    announcer.setAttribute('tabindex', '-1');
+    announcer.style.cssText = `
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    `;
+    document.body.appendChild(announcer);
   }
   
-  return result;
+  // Set politeness level if different from existing
+  if (announcer.getAttribute('aria-live') !== politeness) {
+    announcer.setAttribute('aria-live', politeness);
+  }
+  
+  // Clear and set the content to trigger announcement
+  announcer.textContent = '';
+  
+  // Use setTimeout to ensure announcement is made even if multiple rapid
+  // announcements are requested
+  setTimeout(() => {
+    announcer!.textContent = message;
+  }, 50);
 }
 
 /**
- * Creates attributes for a live region announcement
+ * Adds keyboard event listeners with common accessibility patterns
  * 
- * @param priority - Politeness setting for screen readers
- * @returns ARIA attributes for a live region
+ * @param element - Element to attach listeners to
+ * @param callbacks - Object with callbacks for different keys
+ * @returns Function to remove listeners
  */
-export function liveRegion(
-  priority: 'off' | 'polite' | 'assertive' = 'polite'
-): Record<string, string> {
+export function addKeyboardSupport(
+  element: HTMLElement,
+  callbacks: {
+    enter?: (event: KeyboardEvent) => void;
+    space?: (event: KeyboardEvent) => void;
+    escape?: (event: KeyboardEvent) => void;
+    tab?: (event: KeyboardEvent) => void;
+    arrowUp?: (event: KeyboardEvent) => void;
+    arrowDown?: (event: KeyboardEvent) => void;
+    arrowLeft?: (event: KeyboardEvent) => void;
+    arrowRight?: (event: KeyboardEvent) => void;
+    home?: (event: KeyboardEvent) => void;
+    end?: (event: KeyboardEvent) => void;
+  }
+): () => void {
+  if (!element) return () => {};
+  
+  const handleKeyDown = (event: KeyboardEvent) => {
+    switch (event.key) {
+      case 'Enter':
+        if (callbacks.enter) {
+          callbacks.enter(event);
+        }
+        break;
+      
+      case ' ':
+      case 'Spacebar': // Older browsers
+        if (callbacks.space) {
+          callbacks.space(event);
+        }
+        break;
+      
+      case 'Escape':
+      case 'Esc': // Older browsers
+        if (callbacks.escape) {
+          callbacks.escape(event);
+        }
+        break;
+      
+      case 'Tab':
+        if (callbacks.tab) {
+          callbacks.tab(event);
+        }
+        break;
+      
+      case 'ArrowUp':
+      case 'Up': // Older browsers
+        if (callbacks.arrowUp) {
+          callbacks.arrowUp(event);
+        }
+        break;
+      
+      case 'ArrowDown':
+      case 'Down': // Older browsers
+        if (callbacks.arrowDown) {
+          callbacks.arrowDown(event);
+        }
+        break;
+      
+      case 'ArrowLeft':
+      case 'Left': // Older browsers
+        if (callbacks.arrowLeft) {
+          callbacks.arrowLeft(event);
+        }
+        break;
+      
+      case 'ArrowRight':
+      case 'Right': // Older browsers
+        if (callbacks.arrowRight) {
+          callbacks.arrowRight(event);
+        }
+        break;
+      
+      case 'Home':
+        if (callbacks.home) {
+          callbacks.home(event);
+        }
+        break;
+      
+      case 'End':
+        if (callbacks.end) {
+          callbacks.end(event);
+        }
+        break;
+      
+      default:
+        break;
+    }
+  };
+  
+  element.addEventListener('keydown', handleKeyDown);
+  
+  // Return a function to remove the listener
+  return () => {
+    element.removeEventListener('keydown', handleKeyDown);
+  };
+}
+
+/**
+ * Creates a focus trap within an element to keep focus within modal dialogs
+ * 
+ * @param element - Container element for the focus trap
+ * @param options - Options for the focus trap
+ * @returns Function to remove trap and restore focus
+ */
+export function createFocusTrap(
+  element: HTMLElement,
+  options: {
+    initialFocus?: HTMLElement;
+    returnFocus?: boolean;
+    escapeDeactivates?: boolean;
+    onDeactivate?: () => void;
+  } = {}
+): () => void {
+  if (!element) return () => {};
+  
+  const {
+    initialFocus,
+    returnFocus = true,
+    escapeDeactivates = true,
+    onDeactivate
+  } = options;
+  
+  // Store previously focused element
+  const previousActiveElement = document.activeElement as HTMLElement;
+  
+  // Find all focusable elements
+  const focusableElements = element.querySelectorAll(
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  );
+  
+  const firstFocusable = focusableElements[0] as HTMLElement;
+  const lastFocusable = focusableElements[focusableElements.length - 1] as HTMLElement;
+  
+  // Focus the initial element
+  if (initialFocus) {
+    initialFocus.focus();
+  } else if (firstFocusable) {
+    firstFocusable.focus();
+  }
+  
+  // Handle tab key to trap focus
+  const handleTabKey = (event: KeyboardEvent) => {
+    // If shift+tab on first element, move to last element
+    if (event.shiftKey && document.activeElement === firstFocusable) {
+      event.preventDefault();
+      lastFocusable.focus();
+    } 
+    // If tab on last element, move to first element
+    else if (!event.shiftKey && document.activeElement === lastFocusable) {
+      event.preventDefault();
+      firstFocusable.focus();
+    }
+  };
+  
+  // Handle escape key
+  const handleEscapeKey = (event: KeyboardEvent) => {
+    if (escapeDeactivates && event.key === 'Escape') {
+      deactivateTrap();
+    }
+  };
+  
+  // Add event listeners
+  element.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab') {
+      handleTabKey(event);
+    } else if (event.key === 'Escape') {
+      handleEscapeKey(event);
+    }
+  });
+  
+  // Function to deactivate the trap
+  const deactivateTrap = () => {
+    element.removeEventListener('keydown', handleTabKey);
+    element.removeEventListener('keydown', handleEscapeKey);
+    
+    if (returnFocus && previousActiveElement && 'focus' in previousActiveElement) {
+      previousActiveElement.focus();
+    }
+    
+    if (onDeactivate) {
+      onDeactivate();
+    }
+  };
+  
+  return deactivateTrap;
+}
+
+/**
+ * Makes an element or component focusable and activatable by keyboard
+ * 
+ * @param element - Element to make activatable
+ * @param onClick - Click handler to trigger on activation
+ * @returns Function to remove event listeners
+ */
+export function makeActivatable(
+  element: HTMLElement,
+  onClick: (event: MouseEvent | KeyboardEvent) => void
+): () => void {
+  if (!element) return () => {};
+  
+  // Make sure the element is focusable
+  if (element.getAttribute('tabindex') === null) {
+    element.setAttribute('tabindex', '0');
+  }
+  
+  // Add role if none exists
+  if (element.getAttribute('role') === null) {
+    element.setAttribute('role', 'button');
+  }
+  
+  // Click handler
+  const handleClick = (event: MouseEvent) => {
+    onClick(event);
+  };
+  
+  // Keyboard handler
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      onClick(event);
+    }
+  };
+  
+  // Add event listeners
+  element.addEventListener('click', handleClick);
+  element.addEventListener('keydown', handleKeyDown);
+  
+  // Return a function to remove listeners
+  return () => {
+    element.removeEventListener('click', handleClick);
+    element.removeEventListener('keydown', handleKeyDown);
+  };
+}
+
+/**
+ * Implements the ARIA listbox pattern for custom select components
+ * 
+ * @param listboxElement - Container element with role="listbox"
+ * @param options - Configuration options
+ */
+export function setupListbox(
+  listboxElement: HTMLElement,
+  options: {
+    onSelectionChange?: (value: string, index: number) => void;
+    initialSelectedIndex?: number;
+    orientation?: 'vertical' | 'horizontal';
+    allowTypeAhead?: boolean;
+    multiselectable?: boolean;
+  } = {}
+): {
+  getSelectedValue: () => string;
+  getSelectedIndex: () => number;
+  setSelectedIndex: (index: number) => void;
+  cleanup: () => void;
+} {
+  if (!listboxElement) {
+    return {
+      getSelectedValue: () => '',
+      getSelectedIndex: () => -1,
+      setSelectedIndex: () => {},
+      cleanup: () => {}
+    };
+  }
+  
+  const {
+    onSelectionChange,
+    initialSelectedIndex = 0,
+    orientation = 'vertical',
+    allowTypeAhead = true,
+    multiselectable = false
+  } = options;
+  
+  // Set ARIA attributes
+  listboxElement.setAttribute('role', 'listbox');
+  listboxElement.setAttribute('tabindex', '0');
+  
+  if (multiselectable) {
+    listboxElement.setAttribute('aria-multiselectable', 'true');
+  }
+  
+  // Get all option elements
+  const getOptions = () => Array.from(
+    listboxElement.querySelectorAll('[role="option"]')
+  ) as HTMLElement[];
+  
+  let selectedIndex = initialSelectedIndex;
+  
+  // Set initial selection
+  const setInitialSelection = () => {
+    const options = getOptions();
+    
+    if (options.length > 0 && selectedIndex >= 0 && selectedIndex < options.length) {
+      selectOption(selectedIndex);
+    }
+  };
+  
+  // Select an option by index
+  const selectOption = (index: number) => {
+    const options = getOptions();
+    
+    if (index < 0 || index >= options.length) {
+      return;
+    }
+    
+    if (!multiselectable) {
+      // Remove selection from all options
+      options.forEach(option => {
+        option.setAttribute('aria-selected', 'false');
+        option.classList.remove('selected');
+      });
+    }
+    
+    // Select the new option
+    options[index].setAttribute('aria-selected', 'true');
+    options[index].classList.add('selected');
+    
+    // Call selection change callback
+    if (onSelectionChange) {
+      const value = options[index].getAttribute('data-value') || options[index].textContent || '';
+      onSelectionChange(value, index);
+    }
+    
+    selectedIndex = index;
+  };
+  
+  // Toggle selection (for multiselect)
+  const toggleOption = (index: number) => {
+    if (!multiselectable) {
+      selectOption(index);
+      return;
+    }
+    
+    const options = getOptions();
+    
+    if (index < 0 || index >= options.length) {
+      return;
+    }
+    
+    const option = options[index];
+    const isSelected = option.getAttribute('aria-selected') === 'true';
+    
+    option.setAttribute('aria-selected', isSelected ? 'false' : 'true');
+    
+    if (isSelected) {
+      option.classList.remove('selected');
+    } else {
+      option.classList.add('selected');
+    }
+    
+    // Call selection change callback
+    if (onSelectionChange) {
+      const value = option.getAttribute('data-value') || option.textContent || '';
+      onSelectionChange(value, index);
+    }
+  };
+  
+  // Handle keyboard navigation
+  const handleKeyDown = (event: KeyboardEvent) => {
+    const options = getOptions();
+    const optionCount = options.length;
+    
+    if (optionCount === 0) return;
+    
+    const isVertical = orientation === 'vertical';
+    let newIndex = selectedIndex;
+    
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'Down':
+        if (isVertical) {
+          newIndex = (selectedIndex + 1) % optionCount;
+          event.preventDefault();
+        }
+        break;
+      
+      case 'ArrowUp':
+      case 'Up':
+        if (isVertical) {
+          newIndex = (selectedIndex - 1 + optionCount) % optionCount;
+          event.preventDefault();
+        }
+        break;
+      
+      case 'ArrowRight':
+      case 'Right':
+        if (!isVertical) {
+          newIndex = (selectedIndex + 1) % optionCount;
+          event.preventDefault();
+        }
+        break;
+      
+      case 'ArrowLeft':
+      case 'Left':
+        if (!isVertical) {
+          newIndex = (selectedIndex - 1 + optionCount) % optionCount;
+          event.preventDefault();
+        }
+        break;
+      
+      case 'Home':
+        newIndex = 0;
+        event.preventDefault();
+        break;
+      
+      case 'End':
+        newIndex = optionCount - 1;
+        event.preventDefault();
+        break;
+      
+      case ' ':
+      case 'Enter':
+        if (multiselectable) {
+          toggleOption(selectedIndex);
+        } else {
+          selectOption(selectedIndex);
+        }
+        event.preventDefault();
+        break;
+      
+      default:
+        // Type-ahead functionality
+        if (allowTypeAhead && event.key.length === 1) {
+          const searchChar = event.key.toLowerCase();
+          let matchIndex = -1;
+          
+          // First try to find an option starting after the current selection
+          for (let i = selectedIndex + 1; i < optionCount; i++) {
+            const text = options[i].textContent || '';
+            if (text.toLowerCase().startsWith(searchChar)) {
+              matchIndex = i;
+              break;
+            }
+          }
+          
+          // If no match found after current selection, start from beginning
+          if (matchIndex === -1) {
+            for (let i = 0; i < selectedIndex; i++) {
+              const text = options[i].textContent || '';
+              if (text.toLowerCase().startsWith(searchChar)) {
+                matchIndex = i;
+                break;
+              }
+            }
+          }
+          
+          if (matchIndex !== -1) {
+            newIndex = matchIndex;
+          }
+        }
+        break;
+    }
+    
+    if (newIndex !== selectedIndex) {
+      selectOption(newIndex);
+      options[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+  
+  // Handle click on option
+  const handleClick = (event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    const option = target.closest('[role="option"]') as HTMLElement;
+    
+    if (!option) return;
+    
+    // Find the index of the clicked option
+    const options = getOptions();
+    const index = options.indexOf(option);
+    
+    if (index !== -1) {
+      if (multiselectable) {
+        toggleOption(index);
+      } else {
+        selectOption(index);
+      }
+    }
+  };
+  
+  // Add event listeners
+  listboxElement.addEventListener('keydown', handleKeyDown);
+  listboxElement.addEventListener('click', handleClick);
+  
+  // Set initial selection
+  setInitialSelection();
+  
+  // Return public API
   return {
-    'aria-live': priority,
-    'aria-atomic': 'true',
-    role: priority === 'off' ? 'status' : undefined
-  } as Record<string, string>;
+    getSelectedValue: () => {
+      const options = getOptions();
+      if (selectedIndex >= 0 && selectedIndex < options.length) {
+        return options[selectedIndex].getAttribute('data-value') || 
+               options[selectedIndex].textContent || '';
+      }
+      return '';
+    },
+    getSelectedIndex: () => selectedIndex,
+    setSelectedIndex: (index: number) => selectOption(index),
+    cleanup: () => {
+      listboxElement.removeEventListener('keydown', handleKeyDown);
+      listboxElement.removeEventListener('click', handleClick);
+    }
+  };
 }
 
-/**
- * Helper to determine if reduced motion should be used
- * Respects user's system preferences
- * 
- * @returns True if reduced motion should be used
- */
-export function shouldUseReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-/**
- * Enhances a component with appropriate ARIA attributes based on its state
- * 
- * @param expanded - Whether the component is expanded
- * @param disabled - Whether the component is disabled
- * @param selected - Whether the component is selected
- * @param pressed - Whether the component is pressed
- * @returns Object with appropriate ARIA attributes
- */
-export function getStateAttributes(
-  expanded?: boolean,
-  disabled?: boolean,
-  selected?: boolean,
-  pressed?: boolean
-): Record<string, string | boolean> {
-  const attrs: Record<string, string | boolean> = {};
-  
-  if (expanded !== undefined) attrs['aria-expanded'] = expanded;
-  if (disabled !== undefined) attrs['aria-disabled'] = disabled;
-  if (selected !== undefined) attrs['aria-selected'] = selected;
-  if (pressed !== undefined) attrs['aria-pressed'] = pressed;
-  
-  return attrs;
-}
+export default {
+  ARIA_ROLES,
+  ARIA_LIVE,
+  createAccessibleId,
+  announce,
+  addKeyboardSupport,
+  createFocusTrap,
+  makeActivatable,
+  setupListbox
+};

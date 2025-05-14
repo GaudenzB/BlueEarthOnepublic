@@ -1,149 +1,113 @@
 import { useState, useEffect } from 'react';
+import { tokens } from '@/theme/tokens';
 
-/**
- * Window size information
- */
-interface WindowSize {
-  /**
-   * Window width in pixels
-   */
+export interface WindowSize {
   width: number;
-  
-  /**
-   * Window height in pixels
-   */
   height: number;
-  
-  /**
-   * Whether the window is in a mobile viewport
-   * Default breakpoint is 768px
-   */
   isMobile: boolean;
-  
-  /**
-   * Whether the window is in a tablet viewport
-   * Between 768px and 1024px by default
-   */
   isTablet: boolean;
-  
-  /**
-   * Whether the window is in a desktop viewport
-   * Default breakpoint is 1024px
-   */
   isDesktop: boolean;
+  breakpoint: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
 /**
- * Hook options
- */
-interface UseWindowSizeOptions {
-  /**
-   * Breakpoint for mobile devices (in pixels)
-   */
-  mobileBreakpoint?: number;
-  
-  /**
-   * Breakpoint for tablet devices (in pixels)
-   */
-  tabletBreakpoint?: number;
-  
-  /**
-   * Debounce delay for resize events (in milliseconds)
-   */
-  debounceDelay?: number;
-}
-
-/**
- * Default window size for SSR environments
- */
-const DEFAULT_WINDOW_SIZE: WindowSize = {
-  width: 1200,
-  height: 800,
-  isMobile: false,
-  isTablet: false,
-  isDesktop: true
-};
-
-/**
- * Hook to track window size and responsive breakpoints
+ * Hook to track window dimensions and current responsive breakpoint
  * 
- * This hook provides the current window dimensions and boolean flags
- * for different device sizes, making it easy to implement responsive
- * behavior in components.
+ * This hook returns the current window dimensions and boolean flags
+ * indicating which responsive breakpoint is active. This is useful for
+ * conditional rendering based on screen size.
  * 
- * @param options - Configuration options
- * @returns Window size information
+ * @returns WindowSize object containing width, height, and breakpoint information
  * 
  * @example
  * ```tsx
- * const { width, height, isMobile, isTablet, isDesktop } = useWindowSize();
+ * const { width, height, isMobile, isTablet, isDesktop, breakpoint } = useWindowSize();
  * 
+ * // Conditional rendering based on screen size
  * return (
  *   <div>
  *     {isMobile ? (
- *       <MobileLayout />
- *     ) : isTablet ? (
- *       <TabletLayout />
+ *       <MobileNavigation />
  *     ) : (
- *       <DesktopLayout />
+ *       <DesktopNavigation />
  *     )}
  *   </div>
  * );
  * ```
  */
-export function useWindowSize(options: UseWindowSizeOptions = {}): WindowSize {
-  const {
-    mobileBreakpoint = 768,
-    tabletBreakpoint = 1024,
-    debounceDelay = 250
-  } = options;
+export function useWindowSize(): WindowSize {
+  // Parse breakpoint values from tokens
+  const breakpoints = {
+    xs: parseInt(tokens.breakpoints.xs, 10),
+    sm: parseInt(tokens.breakpoints.sm, 10),
+    md: parseInt(tokens.breakpoints.md, 10),
+    lg: parseInt(tokens.breakpoints.lg, 10),
+    xl: parseInt(tokens.breakpoints.xl, 10),
+    '2xl': parseInt(tokens.breakpoints['2xl'], 10)
+  };
   
-  // Initialize with default state (for SSR)
-  const [windowSize, setWindowSize] = useState<WindowSize>(DEFAULT_WINDOW_SIZE);
+  // Set initial window size
+  const [windowSize, setWindowSize] = useState<WindowSize>({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+    isMobile: false,
+    isTablet: false,
+    isDesktop: false,
+    breakpoint: 'lg'
+  });
   
   useEffect(() => {
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined') return;
+    // Skip in SSR environment
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
     
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    // Function to update window size
-    const updateSize = () => {
+    // Handler to call on window resize
+    function handleResize() {
       const width = window.innerWidth;
       const height = window.innerHeight;
+      
+      // Determine current breakpoint
+      let breakpoint: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+      
+      if (width < breakpoints.sm) {
+        breakpoint = 'xs';
+      } else if (width < breakpoints.md) {
+        breakpoint = 'sm';
+      } else if (width < breakpoints.lg) {
+        breakpoint = 'md';
+      } else if (width < breakpoints.xl) {
+        breakpoint = 'lg';
+      } else if (width < breakpoints['2xl']) {
+        breakpoint = 'xl';
+      } else {
+        breakpoint = '2xl';
+      }
+      
+      // Set boolean flags for common device categories
+      const isMobile = width < breakpoints.md;
+      const isTablet = width >= breakpoints.md && width < breakpoints.xl;
+      const isDesktop = width >= breakpoints.xl;
       
       setWindowSize({
         width,
         height,
-        isMobile: width < mobileBreakpoint,
-        isTablet: width >= mobileBreakpoint && width < tabletBreakpoint,
-        isDesktop: width >= tabletBreakpoint
+        isMobile,
+        isTablet,
+        isDesktop,
+        breakpoint
       });
-    };
+    }
     
-    // Debounced resize handler
-    const handleResize = () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      
-      timeoutId = setTimeout(updateSize, debounceDelay);
-    };
-    
-    // Add event listener for resize
+    // Add event listener
     window.addEventListener('resize', handleResize);
     
-    // Initial update
-    updateSize();
+    // Call handler right away on mount to set initial size
+    handleResize();
     
-    // Clean up event listener on unmount
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [mobileBreakpoint, tabletBreakpoint, debounceDelay]);
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, [breakpoints.md, breakpoints.sm, breakpoints.lg, breakpoints.xl, breakpoints['2xl']]);
   
   return windowSize;
 }

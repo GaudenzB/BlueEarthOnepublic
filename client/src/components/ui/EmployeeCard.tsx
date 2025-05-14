@@ -1,390 +1,481 @@
-import React, { memo } from 'react';
-import { Link } from 'wouter';
-import { Card, Avatar, Skeleton, Typography, Divider } from 'antd';
-import { 
-  UserOutlined, 
-  BankOutlined, 
-  EnvironmentOutlined, 
-  MailOutlined, 
-  PhoneOutlined
+import React, { memo, useMemo } from 'react';
+import { Avatar, Card, Button, Space, Typography, Tooltip } from 'antd';
+import {
+  PhoneOutlined,
+  MailOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  TeamOutlined,
+  IdcardOutlined
 } from '@ant-design/icons';
-import type { Employee } from '@shared/schema';
-import StatusTag from './StatusTag';
-import { ROUTES } from '@/lib/routes';
+import { StatusTag } from '@/components/ui/StatusTag';
+import { truncateText, formatDate } from '@/utils/formatting';
+import { tokens } from '@/theme/tokens';
+import { createAccessibleId } from '@/utils/a11y';
 
-const { Title, Text } = Typography;
+// Types for employee data
+export interface Employee {
+  /**
+   * Unique identifier for the employee
+   */
+  id: string;
+  
+  /**
+   * Employee first name
+   */
+  firstName: string;
+  
+  /**
+   * Employee last name
+   */
+  lastName: string;
+  
+  /**
+   * Employee email address
+   */
+  email: string;
+  
+  /**
+   * Employee phone number
+   */
+  phone?: string;
+  
+  /**
+   * Employee position/title
+   */
+  position?: string;
+  
+  /**
+   * Employee department
+   */
+  department?: string;
+  
+  /**
+   * Employee hire date (ISO string)
+   */
+  hireDate?: string;
+  
+  /**
+   * Employee status
+   */
+  status: 'active' | 'inactive' | 'on_leave' | 'remote';
+  
+  /**
+   * Employee avatar image URL
+   */
+  avatarUrl?: string;
+  
+  /**
+   * Additional metadata
+   */
+  metadata?: Record<string, any>;
+}
 
 /**
- * Professional color palette for financial style
+ * Props for EmployeeCard component
  */
-const CARD_STYLES = {
-  avatar: {
-    border: '2px solid #f0f0f0',
-    background: '#f6f9fc',
-    color: '#334155'
-  },
-  title: {
-    fontSize: '16px',
-    fontWeight: 600,
-    color: '#1f2937'
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#64748b'
-  },
-  iconColor: '#0e4a86', // Updated to match primary blue from theme
-  infoLabel: {
-    fontSize: '13px',
-    color: '#374151'
-  },
-  card: {
-    boxShadow: '0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
-    borderRadius: '8px',
-    transition: 'all 0.2s ease-in-out',
-    hover: {
-      boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)'
-    }
-  }
-};
-
 export interface EmployeeCardProps {
-  /** 
-   * Employee data object 
+  /**
+   * Employee data object
    */
   employee: Employee;
   
-  /** 
-   * Optional click handler 
+  /**
+   * Card size variant
    */
-  onClick?: (employee: Employee) => void;
+  size?: 'small' | 'default' | 'large';
   
-  /** 
-   * Optional className for additional styling 
+  /**
+   * Whether to show actions (edit, delete)
+   */
+  showActions?: boolean;
+  
+  /**
+   * Whether the card is selectable
+   */
+  selectable?: boolean;
+  
+  /**
+   * Whether the card is currently selected
+   */
+  isSelected?: boolean;
+  
+  /**
+   * Whether to show detailed information
+   */
+  detailed?: boolean;
+  
+  /**
+   * Custom className
    */
   className?: string;
   
-  /** 
-   * Whether to show loading state 
-   */
-  loading?: boolean;
-
   /**
-   * Card display variant
-   * - 'compact': Minimal info, good for grid layouts
-   * - 'detailed': Shows more employee details (contact info, etc.)
+   * Click handler for the entire card
    */
-  variant?: 'compact' | 'detailed';
+  onClick?: (employee: Employee) => void;
+  
+  /**
+   * Edit button click handler
+   */
+  onEdit?: (employee: Employee) => void;
+  
+  /**
+   * Delete button click handler
+   */
+  onDelete?: (employee: Employee) => void;
 }
+
+/**
+ * Employee name component (memoized)
+ */
+const EmployeeName = memo(({ 
+  firstName, 
+  lastName, 
+  position, 
+  detailed 
+}: { 
+  firstName: string; 
+  lastName: string; 
+  position?: string; 
+  detailed?: boolean 
+}) => (
+  <Space direction="vertical" size={0}>
+    <Typography.Title
+      level={detailed ? 4 : 5}
+      style={{ 
+        margin: 0, 
+        overflow: 'hidden', 
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap'
+      }}
+    >
+      {firstName} {lastName}
+    </Typography.Title>
+    
+    {position && (
+      <Typography.Text type="secondary" style={{ fontSize: detailed ? 14 : 12 }}>
+        {position}
+      </Typography.Text>
+    )}
+  </Space>
+));
+
+EmployeeName.displayName = 'EmployeeName';
+
+/**
+ * Employee contact component (memoized)
+ */
+const EmployeeContact = memo(({ 
+  email, 
+  phone, 
+  detailed 
+}: { 
+  email: string; 
+  phone?: string; 
+  detailed?: boolean 
+}) => (
+  <Space direction="vertical" size={detailed ? 4 : 2} style={{ width: '100%' }}>
+    <Typography.Paragraph 
+      style={{ 
+        margin: 0, 
+        fontSize: detailed ? 14 : 12,
+        display: 'flex',
+        alignItems: 'center'
+      }}
+    >
+      <MailOutlined style={{ marginRight: 8, color: tokens.colors.neutral[500] }} />
+      <a href={`mailto:${email}`} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {truncateText(email, detailed ? 30 : 20)}
+      </a>
+    </Typography.Paragraph>
+    
+    {phone && (
+      <Typography.Paragraph 
+        style={{ 
+          margin: 0, 
+          fontSize: detailed ? 14 : 12,
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
+        <PhoneOutlined style={{ marginRight: 8, color: tokens.colors.neutral[500] }} />
+        <a href={`tel:${phone}`}>{phone}</a>
+      </Typography.Paragraph>
+    )}
+  </Space>
+));
+
+EmployeeContact.displayName = 'EmployeeContact';
+
+/**
+ * Employee details component (memoized)
+ */
+const EmployeeDetails = memo(({ 
+  department, 
+  hireDate 
+}: { 
+  department?: string; 
+  hireDate?: string 
+}) => (
+  <Space direction="vertical" size={4} style={{ width: '100%' }}>
+    {department && (
+      <Space align="center">
+        <TeamOutlined style={{ color: tokens.colors.neutral[500] }} />
+        <Typography.Text>{department}</Typography.Text>
+      </Space>
+    )}
+    
+    {hireDate && (
+      <Space align="center">
+        <CalendarOutlined style={{ color: tokens.colors.neutral[500] }} />
+        <Typography.Text>Joined {formatDate(hireDate, 'medium')}</Typography.Text>
+      </Space>
+    )}
+  </Space>
+));
+
+EmployeeDetails.displayName = 'EmployeeDetails';
 
 /**
  * EmployeeCard Component
  * 
- * A standardized card component for displaying an employee in lists and grids.
- * Uses our theme-based design system for consistent styling.
+ * A standardized component for displaying employee information with
+ * proper accessibility attributes, responsive design, and memoization
+ * for optimal performance.
  * 
  * @example
- * <EmployeeCard employee={employee} />
- * <EmployeeCard employee={employee} variant="detailed" />
+ * ```tsx
+ * // Basic usage
+ * <EmployeeCard 
+ *   employee={employeeData} 
+ *   onClick={handleEmployeeSelect} 
+ * />
+ * 
+ * // Detailed card with actions
+ * <EmployeeCard 
+ *   employee={employeeData} 
+ *   detailed
+ *   showActions
+ *   onEdit={handleEdit}
+ *   onDelete={handleDelete}
+ * />
+ * 
+ * // Selectable card
+ * <EmployeeCard 
+ *   employee={employeeData} 
+ *   selectable
+ *   isSelected={selectedEmployeeId === employeeData.id}
+ *   onClick={toggleEmployeeSelection}
+ * />
+ * ```
  */
-const EmployeeCardComponent: React.FC<EmployeeCardProps> = ({ 
-  employee, 
-  onClick, 
+export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
+  employee,
+  size = 'default',
+  showActions = false,
+  selectable = false,
+  isSelected = false,
+  detailed = false,
   className = '',
-  loading = false,
-  variant = 'compact'
+  onClick,
+  onEdit,
+  onDelete
 }) => {
-  // Generate initials for avatar fallback
-  const getInitials = (name: string = '') => {
-    if (!name) return '??';
-    
-    const nameParts = name.split(' ');
-    if (nameParts.length > 1 && nameParts[0] && nameParts[nameParts.length - 1]) {
-      return `${nameParts[0]?.[0] || ''}${nameParts[nameParts.length - 1]?.[0] || ''}`.toUpperCase(); 
-    } else {
-      return nameParts[0]?.substring(0, 2).toUpperCase() || '??';
+  // Generate a unique ID for accessibility attributes
+  const id = useMemo(() => 
+    createAccessibleId('employee', employee.id), 
+    [employee.id]
+  );
+  
+  // Determine card size properties
+  const sizeConfig = useMemo(() => {
+    switch (size) {
+      case 'small':
+        return {
+          cardWidth: '240px',
+          avatarSize: 40,
+          bodyPadding: tokens.spacing[3],
+          cardBodyStyle: { padding: tokens.spacing[3] }
+        };
+      case 'large':
+        return {
+          cardWidth: detailed ? '100%' : '320px',
+          avatarSize: 64,
+          bodyPadding: tokens.spacing[5],
+          cardBodyStyle: { padding: tokens.spacing[5] }
+        };
+      case 'default':
+      default:
+        return {
+          cardWidth: detailed ? '100%' : '280px',
+          avatarSize: 48,
+          bodyPadding: tokens.spacing[4],
+          cardBodyStyle: { padding: tokens.spacing[4] }
+        };
     }
-  };
-
-  // Card click handler
-  const handleClick = () => {
+  }, [size, detailed]);
+  
+  // Click handlers
+  const handleCardClick = () => {
     if (onClick) {
       onClick(employee);
     }
   };
-
-  // Safely create the detail URL
-  const getEmployeeDetailUrl = (id: number | undefined) => {
-    if (id === undefined) {
-      return '/'; // Fallback to home if no ID
+  
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(employee);
     }
-    return ROUTES.EMPLOYEES.DETAIL(id);
   };
-
-  // Add null safety for status property
-  const employeeStatus = employee?.status || 'inactive';
-
-  // Loading state
-  if (loading) {
-    return (
-      <Card
-        className={`employee-card ${className}`}
-        variant="outlined"
-        style={{
-          overflow: 'hidden',
-          height: '100%',
-          boxShadow: CARD_STYLES.card.boxShadow,
-          borderRadius: CARD_STYLES.card.borderRadius,
-          background: '#fff',
-          border: '1px solid #eaecf0'
-        }}
-      >
-        <div style={{ padding: '16px' }}>
-          {variant === 'compact' ? (
-            // Compact skeleton
-            <div style={{ textAlign: 'center' }}>
-              <Skeleton.Avatar active size={64} shape="circle" style={{ margin: '0 auto' }} />
-              <div style={{ marginTop: '16px' }}>
-                <Skeleton.Input active size="small" style={{ width: 150, margin: '0 auto' }} />
-                <Skeleton.Input active size="small" style={{ width: 100, margin: '8px auto 0' }} />
-              </div>
-            </div>
-          ) : (
-            // Detailed skeleton
-            <>
-              <div className="flex items-center">
-                <Skeleton.Avatar active size={64} shape="circle" />
-                <div className="ml-4 space-y-1 flex-1">
-                  <Skeleton.Input active style={{ width: '60%' }} />
-                  <Skeleton.Input active style={{ width: '40%' }} />
-                </div>
-              </div>
-              <Skeleton.Input active style={{ width: '30%', marginTop: '16px' }} />
-              <div className="mt-4 space-y-3">
-                <Skeleton active paragraph={{ rows: 3, width: ['90%', '80%', '70%'] }} />
-              </div>
-            </>
-          )}
+  
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(employee);
+    }
+  };
+  
+  // Generate description for screen readers
+  const ariaDescription = useMemo(() => {
+    const parts = [];
+    
+    if (employee.position) {
+      parts.push(`Position: ${employee.position}`);
+    }
+    
+    if (employee.department) {
+      parts.push(`Department: ${employee.department}`);
+    }
+    
+    if (employee.status) {
+      const statusText = employee.status.replace(/_/g, ' ');
+      parts.push(`Status: ${statusText}`);
+    }
+    
+    if (employee.hireDate) {
+      parts.push(`Hire date: ${formatDate(employee.hireDate, 'short')}`);
+    }
+    
+    return parts.join(', ');
+  }, [employee]);
+  
+  // Card actions
+  const cardActions = useMemo(() => {
+    if (!showActions) return undefined;
+    
+    return [
+      <Tooltip key="edit" title="Edit employee">
+        <Button
+          type="text"
+          icon={<EditOutlined />}
+          onClick={handleEditClick}
+          aria-label="Edit employee"
+        />
+      </Tooltip>,
+      <Tooltip key="delete" title="Delete employee">
+        <Button
+          type="text"
+          icon={<DeleteOutlined />}
+          onClick={handleDeleteClick}
+          aria-label="Delete employee"
+          danger
+        />
+      </Tooltip>
+    ];
+  }, [showActions, handleEditClick, handleDeleteClick]);
+  
+  // Card layout - horizontal for detailed mode, vertical for default
+  const cardContent = detailed ? (
+    <div style={{ display: 'flex', width: '100%' }}>
+      <div style={{ marginRight: tokens.spacing[5] }}>
+        <Avatar
+          size={sizeConfig.avatarSize}
+          src={employee.avatarUrl}
+          icon={!employee.avatarUrl && <UserOutlined />}
+          alt={`${employee.firstName} ${employee.lastName}`}
+        />
+      </div>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing[4], flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <EmployeeName 
+            firstName={employee.firstName} 
+            lastName={employee.lastName} 
+            position={employee.position} 
+            detailed
+          />
+          
+          <StatusTag 
+            status={employee.status} 
+            tooltip={`Employee is currently ${employee.status.replace(/_/g, ' ')}`}
+          />
         </div>
-      </Card>
-    );
-  }
-
-  // Compact variant (centered, minimal info)
-  if (variant === 'compact') {
-    return (
-      <Link href={getEmployeeDetailUrl(employee.id)}>
-        <Card
-          className={`employee-card ${className} transition-all duration-200`}
-          hoverable
-          variant="outlined"
-          onClick={handleClick}
-          style={{
-            overflow: 'hidden',
-            height: '100%',
-            boxShadow: CARD_STYLES.card.boxShadow,
-            borderRadius: CARD_STYLES.card.borderRadius,
-            cursor: 'pointer',
-            background: '#fff',
-            border: '1px solid #eaecf0',
-            transition: CARD_STYLES.card.transition
-          }}
-          aria-label={`Employee card for ${employee.name}`}
-          role="article"
-        >
-          <div style={{ 
-            padding: '16px 8px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center'
-          }}>
-            <Avatar
-              size={64}
-              src={employee.avatarUrl || undefined}
-              icon={<UserOutlined />}
-              style={{ 
-                border: CARD_STYLES.avatar.border,
-                backgroundColor: employee.avatarUrl ? 'transparent' : CARD_STYLES.avatar.background,
-                color: CARD_STYLES.avatar.color,
-                fontSize: '18px',
-                marginBottom: '12px'
-              }}
-              alt={`${employee.name}'s profile picture`}
-            >
-              {!employee.avatarUrl && employee.name ? getInitials(employee.name) : null}
-            </Avatar>
-
-            <Title level={5} style={{ 
-              margin: '0 0 4px 0',
-              fontSize: CARD_STYLES.title.fontSize,
-              textAlign: 'center',
-              fontWeight: CARD_STYLES.title.fontWeight,
-              color: CARD_STYLES.title.color
-            }}>
-              {employee.name || 'Unknown'}
-            </Title>
-            
-            <Text type="secondary" style={{ 
-              fontSize: CARD_STYLES.subtitle.fontSize,
-              lineHeight: 1.4,
-              textAlign: 'center',
-              marginBottom: '12px',
-              color: CARD_STYLES.subtitle.color
-            }}>
-              {employee.position || 'No position'}
-            </Text>
-
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-              <StatusTag status={employeeStatus} size="small" />
-            </div>
-
-            {employee.department && (
-              <div style={{ 
-                padding: '4px 12px',
-                backgroundColor: '#f5f8fe',
-                borderRadius: '16px',
-                color: '#4b5563',
-                fontSize: '12px',
-                fontWeight: 500,
-                letterSpacing: '0.3px',
-                textTransform: 'uppercase'
-              }}>
-                {employee.department}
-              </div>
-            )}
-          </div>
-        </Card>
-      </Link>
-    );
-  }
-
-  // Detailed variant (left-aligned with more info)
+        
+        <div style={{ display: 'flex', gap: tokens.spacing[6] }}>
+          <EmployeeContact email={employee.email} phone={employee.phone} detailed />
+          
+          <EmployeeDetails 
+            department={employee.department} 
+            hireDate={employee.hireDate} 
+          />
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div style={{ textAlign: 'center', width: '100%' }}>
+      <Avatar
+        size={sizeConfig.avatarSize}
+        src={employee.avatarUrl}
+        icon={!employee.avatarUrl && <UserOutlined />}
+        alt={`${employee.firstName} ${employee.lastName}`}
+        style={{ marginBottom: tokens.spacing[3] }}
+      />
+      
+      <div style={{ marginBottom: tokens.spacing[2] }}>
+        <EmployeeName 
+          firstName={employee.firstName} 
+          lastName={employee.lastName} 
+          position={employee.position}
+        />
+      </div>
+      
+      <StatusTag 
+        status={employee.status}
+        size="small"
+        tooltip={`Employee is currently ${employee.status.replace(/_/g, ' ')}`}
+        style={{ marginBottom: tokens.spacing[3] }}
+      />
+      
+      <EmployeeContact email={employee.email} phone={employee.phone} />
+    </div>
+  );
+  
   return (
-    <Card 
-      className={`${className} transition-all duration-200`}
-      hoverable
-      variant="outlined"
+    <Card
+      id={id}
+      hoverable={Boolean(onClick)}
+      className={`employee-card ${className}`}
+      actions={cardActions}
       style={{
-        overflow: 'hidden',
-        height: '100%',
-        boxShadow: CARD_STYLES.card.boxShadow,
-        borderRadius: CARD_STYLES.card.borderRadius,
-        border: '1px solid #eaecf0',
-        transition: CARD_STYLES.card.transition
+        width: sizeConfig.cardWidth,
+        cursor: onClick ? 'pointer' : 'default',
+        border: isSelected ? `2px solid ${tokens.colors.brand.primary}` : undefined
       }}
-      aria-label={`Detailed employee card for ${employee.name}`}
+      bodyStyle={sizeConfig.cardBodyStyle}
+      onClick={handleCardClick}
+      aria-label={`Employee: ${employee.firstName} ${employee.lastName}`}
+      aria-description={ariaDescription}
       role="article"
     >
-      <Link href={getEmployeeDetailUrl(employee.id)} className="block cursor-pointer">
-        <div>
-          <div className="flex items-center mb-3">
-            <Avatar 
-              size={64}
-              src={employee.avatarUrl || undefined}
-              icon={<UserOutlined />}
-              style={{ 
-                border: CARD_STYLES.avatar.border,
-                backgroundColor: employee.avatarUrl ? 'transparent' : CARD_STYLES.avatar.background,
-                color: CARD_STYLES.avatar.color
-              }}
-              alt={`${employee.name}'s profile picture`}
-            >
-              {!employee.avatarUrl && employee.name ? getInitials(employee.name) : null}
-            </Avatar>
-            <div className="ml-4">
-              <Title level={5} style={{ 
-                margin: '0 0 2px 0',
-                fontSize: CARD_STYLES.title.fontSize,
-                fontWeight: CARD_STYLES.title.fontWeight,
-                color: CARD_STYLES.title.color
-              }}>
-                {employee.name || 'Unknown'}
-              </Title>
-              <Text type="secondary" style={{ 
-                fontSize: CARD_STYLES.subtitle.fontSize,
-                color: CARD_STYLES.subtitle.color 
-              }}>
-                {employee.position || 'No position'}
-              </Text>
-              <div className="mt-1">
-                <StatusTag status={employeeStatus} size="small" />
-              </div>
-            </div>
-          </div>
-          
-          <Divider style={{ margin: '12px 0' }} />
-          
-          <div className="grid grid-cols-1 gap-2">
-            {employee.department && (
-              <div className="flex items-center text-sm">
-                <BankOutlined className="mr-3" style={{ 
-                  fontSize: '14px',
-                  color: CARD_STYLES.iconColor 
-                }} 
-                aria-hidden="true" />
-                <Text style={{ 
-                  fontSize: CARD_STYLES.infoLabel.fontSize, 
-                  color: CARD_STYLES.infoLabel.color 
-                }}>
-                  {employee.department.charAt(0).toUpperCase() + employee.department.slice(1)}
-                </Text>
-              </div>
-            )}
-            {employee.location && (
-              <div className="flex items-center text-sm">
-                <EnvironmentOutlined className="mr-3" style={{ 
-                  fontSize: '14px',
-                  color: CARD_STYLES.iconColor 
-                }}
-                aria-hidden="true" />
-                <Text style={{ 
-                  fontSize: CARD_STYLES.infoLabel.fontSize, 
-                  color: CARD_STYLES.infoLabel.color 
-                }}>
-                  {employee.location}
-                </Text>
-              </div>
-            )}
-            {employee.email && (
-              <div className="flex items-center text-sm">
-                <MailOutlined className="mr-3" style={{ 
-                  fontSize: '14px',
-                  color: CARD_STYLES.iconColor 
-                }}
-                aria-hidden="true" />
-                <Text 
-                  style={{ 
-                    fontSize: CARD_STYLES.infoLabel.fontSize, 
-                    color: CARD_STYLES.infoLabel.color 
-                  }} 
-                  ellipsis={{ tooltip: employee.email }}
-                >
-                  {employee.email}
-                </Text>
-              </div>
-            )}
-            {employee.phone && (
-              <div className="flex items-center text-sm">
-                <PhoneOutlined className="mr-3" style={{ 
-                  fontSize: '14px',
-                  color: CARD_STYLES.iconColor 
-                }}
-                aria-hidden="true" />
-                <Text style={{ 
-                  fontSize: CARD_STYLES.infoLabel.fontSize, 
-                  color: CARD_STYLES.infoLabel.color 
-                }}>
-                  {employee.phone}
-                </Text>
-              </div>
-            )}
-          </div>
-        </div>
-      </Link>
+      {cardContent}
     </Card>
   );
-};
+});
 
-// Export memoized version
-const EmployeeCard = memo(EmployeeCardComponent);
+EmployeeCard.displayName = 'EmployeeCard';
 
 export default EmployeeCard;

@@ -1,639 +1,393 @@
 /**
- * Formatting Utility Functions
- * 
- * This file contains utility functions for formatting data
- * consistently across the application. Functions include
- * date formatting, number formatting, string manipulation,
- * and other common formatting tasks.
+ * Formatting utilities for displaying data consistently across the application
  */
 
 /**
- * Formats a date to a standard string representation
+ * Truncates a string to a specified length and adds an ellipsis if needed
  * 
- * @param date - Date to format (Date object or ISO string)
- * @param format - Format string ('short', 'medium', 'long', 'full')
- * @param locale - Optional locale (defaults to user's locale)
+ * @param text - String to truncate
+ * @param maxLength - Maximum allowed length (default: 50)
+ * @param ellipsis - String to append when truncated (default: '...')
+ * @returns Truncated string with ellipsis if needed
+ */
+export function truncateText(
+  text: string,
+  maxLength: number = 50,
+  ellipsis: string = '...'
+): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  
+  return text.slice(0, maxLength) + ellipsis;
+}
+
+/**
+ * Formats a date string into a localized display format
+ * 
+ * @param dateString - ISO date string to format
+ * @param format - Formatting style (short, medium, long, full)
+ * @param locale - Locale to use for formatting (default: user's locale)
  * @returns Formatted date string
  */
 export function formatDate(
-  date: Date | string | number,
+  dateString: string,
   format: 'short' | 'medium' | 'long' | 'full' = 'medium',
   locale?: string
 ): string {
-  if (!date) return '';
+  if (!dateString) return '';
   
-  // Convert to Date object if string or number
-  const dateObj = typeof date === 'string' || typeof date === 'number' 
-    ? new Date(date) 
-    : date;
-  
-  // Check if date is valid
-  if (isNaN(dateObj.getTime())) {
-    return 'Invalid date';
+  try {
+    const date = new Date(dateString);
+    
+    // Format options based on the requested format
+    const options: Intl.DateTimeFormatOptions = 
+      format === 'short' ? { year: 'numeric', month: 'numeric', day: 'numeric' } :
+      format === 'medium' ? { year: 'numeric', month: 'short', day: 'numeric' } :
+      format === 'long' ? { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' } :
+      { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+    
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
   }
-  
-  // Options for different formats
-  const options: Intl.DateTimeFormatOptions = {
-    short: { year: 'numeric', month: 'numeric', day: 'numeric' },
-    medium: { year: 'numeric', month: 'short', day: 'numeric' },
-    long: { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' },
-    full: { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }
-  }[format];
-  
-  // Get user's locale if not specified
-  const userLocale = locale || navigator.language || 'en-US';
-  
-  return new Intl.DateTimeFormat(userLocale, options).format(dateObj);
 }
 
 /**
- * Formats a time to a standard string representation
+ * Formats a time string into a localized display format
  * 
- * @param date - Date/time to format (Date object or ISO string)
- * @param format - Format string ('short', 'medium')
- * @param locale - Optional locale (defaults to user's locale)
+ * @param timeString - ISO date string to extract time from
+ * @param format - Formatting style (short, medium, long)
+ * @param locale - Locale to use for formatting (default: user's locale)
  * @returns Formatted time string
  */
 export function formatTime(
-  date: Date | string | number,
-  format: 'short' | 'medium' = 'short',
-  locale?: string
-): string {
-  if (!date) return '';
-  
-  // Convert to Date object if string or number
-  const dateObj = typeof date === 'string' || typeof date === 'number' 
-    ? new Date(date) 
-    : date;
-  
-  // Check if date is valid
-  if (isNaN(dateObj.getTime())) {
-    return 'Invalid time';
-  }
-  
-  // Options for different formats
-  const options: Intl.DateTimeFormatOptions = {
-    short: { hour: 'numeric', minute: 'numeric' },
-    medium: { hour: 'numeric', minute: 'numeric', second: 'numeric' }
-  }[format];
-  
-  // Get user's locale if not specified
-  const userLocale = locale || navigator.language || 'en-US';
-  
-  return new Intl.DateTimeFormat(userLocale, options).format(dateObj);
-}
-
-/**
- * Formats a date and time to a standard string representation
- * 
- * @param date - Date/time to format (Date object or ISO string)
- * @param format - Format string ('short', 'medium', 'long')
- * @param locale - Optional locale (defaults to user's locale)
- * @returns Formatted date and time string
- */
-export function formatDateTime(
-  date: Date | string | number,
+  timeString: string,
   format: 'short' | 'medium' | 'long' = 'medium',
   locale?: string
 ): string {
-  if (!date) return '';
+  if (!timeString) return '';
   
-  // Convert to Date object if string or number
-  const dateObj = typeof date === 'string' || typeof date === 'number' 
-    ? new Date(date) 
-    : date;
-  
-  // Check if date is valid
-  if (isNaN(dateObj.getTime())) {
-    return 'Invalid date/time';
+  try {
+    const date = new Date(timeString);
+    
+    // Format options based on the requested format
+    const options: Intl.DateTimeFormatOptions = 
+      format === 'short' ? { hour: 'numeric', minute: 'numeric' } :
+      format === 'medium' ? { hour: 'numeric', minute: 'numeric' } :
+      { hour: 'numeric', minute: 'numeric', second: 'numeric' };
+    
+    return new Intl.DateTimeFormat(locale, {
+      ...options,
+      hour12: true
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return timeString;
   }
-  
-  // Options for different formats
-  const options: Intl.DateTimeFormatOptions = {
-    short: { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' },
-    medium: { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' },
-    long: { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }
-  }[format];
-  
-  // Get user's locale if not specified
-  const userLocale = locale || navigator.language || 'en-US';
-  
-  return new Intl.DateTimeFormat(userLocale, options).format(dateObj);
 }
 
 /**
- * Formats a relative time (e.g., "2 hours ago", "in 3 days")
+ * Formats a date and time string into a localized display format
  * 
- * @param date - Date to format relative to now
- * @param options - Formatting options
- * @returns Formatted relative time string
+ * @param dateTimeString - ISO date string to format
+ * @param format - Formatting style (short, medium, long)
+ * @param locale - Locale to use for formatting (default: user's locale)
+ * @returns Formatted date and time string
  */
-export function formatRelativeTime(
-  date: Date | string | number,
-  options: {
-    now?: Date;
-    style?: 'long' | 'short' | 'narrow';
-    numeric?: 'always' | 'auto';
-    locale?: string;
-  } = {}
+export function formatDateTime(
+  dateTimeString: string,
+  format: 'short' | 'medium' | 'long' = 'medium',
+  locale?: string
 ): string {
-  if (!date) return '';
+  if (!dateTimeString) return '';
   
-  const { 
-    now = new Date(),
-    style = 'long',
-    numeric = 'auto',
-    locale = navigator.language || 'en-US'
-  } = options;
-  
-  // Convert to Date object if string or number
-  const dateObj = typeof date === 'string' || typeof date === 'number' 
-    ? new Date(date) 
-    : date;
-  
-  // Check if date is valid
-  if (isNaN(dateObj.getTime())) {
-    return 'Invalid date';
+  try {
+    const date = new Date(dateTimeString);
+    
+    // Format options based on the requested format
+    const options: Intl.DateTimeFormatOptions = 
+      format === 'short' ? { 
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric'
+      } :
+      format === 'medium' ? { 
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: 'numeric'
+      } :
+      { 
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric'
+      };
+    
+    return new Intl.DateTimeFormat(locale, {
+      ...options,
+      hour12: true
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting date and time:', error);
+    return dateTimeString;
   }
+}
+
+/**
+ * Formats a number as currency
+ * 
+ * @param value - Number to format as currency
+ * @param currency - ISO 4217 currency code (default: 'USD')
+ * @param locale - Locale to use for formatting (default: user's locale)
+ * @returns Formatted currency string
+ */
+export function formatCurrency(
+  value: number,
+  currency: string = 'USD',
+  locale?: string
+): string {
+  if (value === null || value === undefined) return '';
   
-  // Difference in seconds
-  const diffSeconds = Math.floor((dateObj.getTime() - now.getTime()) / 1000);
-  const absoluteDiff = Math.abs(diffSeconds);
-  
-  // Determine the appropriate unit
-  let unit: Intl.RelativeTimeFormatUnit;
-  let value: number;
-  
-  if (absoluteDiff < 60) {
-    unit = 'second';
-    value = diffSeconds;
-  } else if (absoluteDiff < 3600) {
-    unit = 'minute';
-    value = Math.floor(diffSeconds / 60);
-  } else if (absoluteDiff < 86400) {
-    unit = 'hour';
-    value = Math.floor(diffSeconds / 3600);
-  } else if (absoluteDiff < 2592000) {
-    unit = 'day';
-    value = Math.floor(diffSeconds / 86400);
-  } else if (absoluteDiff < 31536000) {
-    unit = 'month';
-    value = Math.floor(diffSeconds / 2592000);
-  } else {
-    unit = 'year';
-    value = Math.floor(diffSeconds / 31536000);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  } catch (error) {
+    console.error('Error formatting currency:', error);
+    return value.toString();
   }
-  
-  // Format using RelativeTimeFormat
-  const formatter = new Intl.RelativeTimeFormat(locale, { style, numeric });
-  
-  return formatter.format(value, unit);
 }
 
 /**
  * Formats a number with thousands separators and decimal places
  * 
  * @param value - Number to format
- * @param options - Formatting options
+ * @param decimalPlaces - Number of decimal places to show (default: 0)
+ * @param locale - Locale to use for formatting (default: user's locale)
  * @returns Formatted number string
  */
 export function formatNumber(
-  value: number | string,
-  options: {
-    decimalPlaces?: number;
-    useGrouping?: boolean;
-    locale?: string;
-  } = {}
+  value: number,
+  decimalPlaces: number = 0,
+  locale?: string
 ): string {
-  if (value === undefined || value === null || value === '') return '';
+  if (value === null || value === undefined) return '';
   
-  // Convert to number if string
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
-  // Check if value is a valid number
-  if (isNaN(numValue)) {
-    return 'Invalid number';
+  try {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces
+    }).format(value);
+  } catch (error) {
+    console.error('Error formatting number:', error);
+    return value.toString();
   }
-  
-  const { 
-    decimalPlaces = 2,
-    useGrouping = true,
-    locale = navigator.language || 'en-US'
-  } = options;
-  
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: decimalPlaces,
-    maximumFractionDigits: decimalPlaces,
-    useGrouping
-  }).format(numValue);
-}
-
-/**
- * Formats a currency value
- * 
- * @param value - Currency amount to format
- * @param options - Formatting options
- * @returns Formatted currency string
- */
-export function formatCurrency(
-  value: number | string,
-  options: {
-    currency?: string;
-    locale?: string;
-    minimumFractionDigits?: number;
-    maximumFractionDigits?: number;
-    currencyDisplay?: 'symbol' | 'code' | 'name';
-  } = {}
-): string {
-  if (value === undefined || value === null || value === '') return '';
-  
-  // Convert to number if string
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
-  // Check if value is a valid number
-  if (isNaN(numValue)) {
-    return 'Invalid amount';
-  }
-  
-  const { 
-    currency = 'USD',
-    locale = navigator.language || 'en-US',
-    minimumFractionDigits = 2,
-    maximumFractionDigits = 2,
-    currencyDisplay = 'symbol'
-  } = options;
-  
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits,
-    maximumFractionDigits,
-    currencyDisplay
-  }).format(numValue);
 }
 
 /**
  * Formats a percentage value
  * 
- * @param value - Percentage to format (as decimal or percentage)
- * @param options - Formatting options
+ * @param value - Number to format as percentage (0.1 = 10%)
+ * @param decimalPlaces - Number of decimal places to show (default: 0)
+ * @param locale - Locale to use for formatting (default: user's locale)
  * @returns Formatted percentage string
  */
-export function formatPercentage(
-  value: number | string,
-  options: {
-    decimalPlaces?: number;
-    includeSign?: boolean;
-    locale?: string;
-    convertFromDecimal?: boolean;
-  } = {}
+export function formatPercent(
+  value: number,
+  decimalPlaces: number = 0,
+  locale?: string
 ): string {
-  if (value === undefined || value === null || value === '') return '';
+  if (value === null || value === undefined) return '';
   
-  // Convert to number if string
-  let numValue = typeof value === 'string' ? parseFloat(value) : value;
-  
-  // Check if value is a valid number
-  if (isNaN(numValue)) {
-    return 'Invalid percentage';
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'percent',
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces
+    }).format(value);
+  } catch (error) {
+    console.error('Error formatting percentage:', error);
+    return value.toString();
   }
-  
-  const { 
-    decimalPlaces = 2,
-    includeSign = false,
-    locale = navigator.language || 'en-US',
-    convertFromDecimal = true
-  } = options;
-  
-  // Convert from decimal to percentage if needed (e.g., 0.42 -> 42%)
-  if (convertFromDecimal && numValue < 10) {
-    numValue *= 100;
-  }
-  
-  const formatted = new Intl.NumberFormat(locale, {
-    style: 'percent',
-    minimumFractionDigits: decimalPlaces,
-    maximumFractionDigits: decimalPlaces
-  }).format(numValue / 100);
-  
-  return includeSign ? formatted : formatted;
 }
 
 /**
- * Truncates a string to a maximum length and adds ellipsis if needed
- * 
- * @param text - String to truncate
- * @param length - Maximum length
- * @param options - Truncation options
- * @returns Truncated string
- */
-export function truncateText(
-  text: string,
-  length: number,
-  options: {
-    ellipsis?: string;
-    useWordBoundary?: boolean;
-  } = {}
-): string {
-  if (!text) return '';
-  
-  const { 
-    ellipsis = '...',
-    useWordBoundary = true
-  } = options;
-  
-  // If text is shorter than max length, return it as is
-  if (text.length <= length) {
-    return text;
-  }
-  
-  // Truncate to maximum length
-  let truncated = text.substring(0, length - ellipsis.length);
-  
-  // If using word boundary, find the last space
-  if (useWordBoundary) {
-    const lastSpace = truncated.lastIndexOf(' ');
-    if (lastSpace > 0) {
-      truncated = truncated.substring(0, lastSpace);
-    }
-  }
-  
-  // Add ellipsis
-  return truncated + ellipsis;
-}
-
-/**
- * Converts a string to title case (first letter of each word capitalized)
- * 
- * @param text - String to convert
- * @param options - Conversion options
- * @returns Title-cased string
- */
-export function toTitleCase(
-  text: string,
-  options: {
-    lowerCaseRest?: boolean;
-    keepInternalCapitalization?: boolean;
-    excludedWords?: string[];
-  } = {}
-): string {
-  if (!text) return '';
-  
-  const { 
-    lowerCaseRest = true,
-    keepInternalCapitalization = true,
-    excludedWords = ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'with']
-  } = options;
-  
-  // Split text into words
-  const words = text.split(' ');
-  
-  // Process each word
-  const titleCasedWords = words.map((word, index) => {
-    // Skip small words that aren't at the beginning or end
-    if (index !== 0 && index !== words.length - 1 && excludedWords.includes(word.toLowerCase())) {
-      return lowerCaseRest ? word.toLowerCase() : word;
-    }
-    
-    // Skip empty words
-    if (word.length === 0) {
-      return word;
-    }
-    
-    // Function to capitalize the first letter
-    const capitalizeFirst = (w: string) => w.charAt(0).toUpperCase() + 
-      (lowerCaseRest ? w.substring(1).toLowerCase() : w.substring(1));
-    
-    // Handle internal capitalization (e.g., "iOS", "iPhone")
-    if (keepInternalCapitalization) {
-      // Check if the word has internal capitalization
-      if (/[A-Z]/.test(word.substring(1))) {
-        // Split the word at points where case changes
-        const parts = word.match(/[A-Z]?[a-z]*/g)?.filter(Boolean) || [];
-        
-        if (parts.length > 1) {
-          // Capitalize the first letter of the first part
-          parts[0] = capitalizeFirst(parts[0]);
-          return parts.join('');
-        }
-      }
-    }
-    
-    // Regular capitalization
-    return capitalizeFirst(word);
-  });
-  
-  // Join words back together
-  return titleCasedWords.join(' ');
-}
-
-/**
- * Formats a file size into a human-readable string
+ * Formats a file size in bytes to a human-readable format
  * 
  * @param bytes - File size in bytes
- * @param options - Formatting options
+ * @param decimalPlaces - Number of decimal places to show (default: 1)
+ * @param locale - Locale to use for formatting (default: user's locale)
  * @returns Formatted file size string
  */
 export function formatFileSize(
   bytes: number,
-  options: {
-    decimalPlaces?: number;
-    binary?: boolean;
-    locale?: string;
-  } = {}
+  decimalPlaces: number = 1,
+  locale?: string
 ): string {
-  if (bytes === undefined || bytes === null || isNaN(bytes)) {
-    return 'Unknown size';
-  }
+  if (bytes === 0) return '0 Bytes';
+  if (bytes === null || bytes === undefined) return '';
   
-  const { 
-    decimalPlaces = 2,
-    binary = false,
-    locale = navigator.language || 'en-US'
-  } = options;
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  // Units for decimal (1000-based) and binary (1024-based) formats
-  const units = {
-    decimal: ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
-    binary: ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
-  };
-  
-  // Base for calculation (1000 for decimal, 1024 for binary)
-  const base = binary ? 1024 : 1000;
-  const unitSet = binary ? units.binary : units.decimal;
-  
-  // Handle 0 bytes
-  if (bytes === 0) {
-    return `0 ${unitSet[0]}`;
-  }
-  
-  // Calculate the appropriate unit
-  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(base)), unitSet.length - 1);
-  const value = bytes / Math.pow(base, exponent);
-  
-  // Format the number
-  const formattedValue = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: decimalPlaces,
-    maximumFractionDigits: decimalPlaces
-  }).format(value);
-  
-  // Combine with unit
-  return `${formattedValue} ${unitSet[exponent]}`;
+  return `${formatNumber(parseFloat((bytes / Math.pow(k, i)).toFixed(decimalPlaces)), decimalPlaces, locale)} ${sizes[i]}`;
 }
 
 /**
- * Formats a phone number based on the specified country format
+ * Formats a phone number into a standardized format
  * 
- * @param phoneNumber - Phone number to format
- * @param options - Formatting options
+ * @param phone - Phone number to format
+ * @param countryCode - ISO country code for formatting rules (default: 'US')
  * @returns Formatted phone number
  */
 export function formatPhoneNumber(
-  phoneNumber: string,
-  options: {
-    countryCode?: string;
-    format?: 'national' | 'international';
-  } = {}
+  phone: string,
+  countryCode: string = 'US'
 ): string {
-  if (!phoneNumber) return '';
+  if (!phone) return '';
   
-  const { 
-    countryCode = 'US',
-    format = 'national'
-  } = options;
+  // Strip all non-numeric characters
+  const cleaned = phone.replace(/\D/g, '');
   
-  // Remove all non-digit characters
-  const digits = phoneNumber.replace(/\D/g, '');
-  
-  // Simple formatter for US numbers
-  if (countryCode === 'US') {
-    if (digits.length === 10) {
-      const areaCode = digits.substring(0, 3);
-      const prefix = digits.substring(3, 6);
-      const line = digits.substring(6, 10);
-      
-      if (format === 'national') {
-        return `(${areaCode}) ${prefix}-${line}`;
-      } else {
-        return `+1 ${areaCode} ${prefix} ${line}`;
+  // Apply formatting based on country code
+  switch (countryCode) {
+    case 'US':
+    case 'CA':
+      // Format: (XXX) XXX-XXXX or XXX-XXX-XXXX
+      if (cleaned.length === 10) {
+        return `(${cleaned.substring(0, 3)}) ${cleaned.substring(3, 6)}-${cleaned.substring(6, 10)}`;
+      } else if (cleaned.length === 11 && cleaned[0] === '1') {
+        return `+1 (${cleaned.substring(1, 4)}) ${cleaned.substring(4, 7)}-${cleaned.substring(7, 11)}`;
       }
-    } else if (digits.length === 11 && digits.charAt(0) === '1') {
-      const areaCode = digits.substring(1, 4);
-      const prefix = digits.substring(4, 7);
-      const line = digits.substring(7, 11);
-      
-      if (format === 'national') {
-        return `(${areaCode}) ${prefix}-${line}`;
-      } else {
-        return `+1 ${areaCode} ${prefix} ${line}`;
+      break;
+    
+    case 'UK':
+    case 'GB':
+      // UK numbers have various formats
+      if (cleaned.length === 11 && cleaned.startsWith('07')) {
+        // Mobile: 07XXX XXX XXX
+        return `${cleaned.substring(0, 5)} ${cleaned.substring(5, 8)} ${cleaned.substring(8)}`;
       }
-    }
+      break;
+    
+    // Add more country-specific formats as needed
+    
+    default:
+      // For unsupported countries or formats, return with spaces every 3 digits
+      return cleaned.replace(/(\d{3})(?=\d)/g, '$1 ');
   }
   
-  // For other countries, just do basic grouping
-  // In a real app, you'd want to use a proper phone formatting library like libphonenumber
-  return digits.replace(/(\d{1,3})(?=(\d{3})+(?!\d))/g, '$1 ');
+  // If no specific format matched, return the original
+  return phone;
 }
 
 /**
- * Formats name parts into a full name
+ * Capitalizes the first letter of each word in a string
  * 
- * @param parts - Name parts object
- * @param options - Formatting options
+ * @param text - String to capitalize
+ * @returns Capitalized string
+ */
+export function titleCase(text: string): string {
+  if (!text) return '';
+  
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
+ * Converts snake_case to Title Case
+ * 
+ * @param snakeCase - Snake case string to convert
+ * @returns Title case string
+ */
+export function snakeToTitleCase(snakeCase: string): string {
+  if (!snakeCase) return '';
+  
+  return snakeCase
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Formats a name for display (first name first)
+ * 
+ * @param firstName - First name
+ * @param lastName - Last name
+ * @param middleName - Middle name or initial (optional)
  * @returns Formatted full name
  */
 export function formatName(
-  parts: {
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
-    prefix?: string;
-    suffix?: string;
-  },
-  options: {
-    format?: 'short' | 'medium' | 'long' | 'formal';
-    includeMiddleName?: boolean;
-  } = {}
+  firstName: string,
+  lastName: string,
+  middleName?: string
 ): string {
-  const { 
-    format = 'medium',
-    includeMiddleName = true
-  } = options;
+  if (!firstName && !lastName) return '';
   
-  const { firstName, middleName, lastName, prefix, suffix } = parts;
-  
-  // Handle missing first and last name
-  if (!firstName && !lastName) {
-    return '';
+  if (middleName) {
+    return `${firstName} ${middleName} ${lastName}`.trim();
   }
   
-  // Format based on specified format
-  switch (format) {
-    case 'short':
-      return firstName || lastName || '';
-      
-    case 'formal':
-      return [
-        prefix,
-        lastName,
-        firstName ? `, ${firstName}` : '',
-        (suffix ? `, ${suffix}` : '')
-      ].filter(Boolean).join('');
-      
-    case 'long':
-      return [
-        prefix,
-        firstName,
-        includeMiddleName && middleName ? middleName : '',
-        lastName,
-        suffix
-      ].filter(Boolean).join(' ');
-      
-    case 'medium':
-    default:
-      return [
-        firstName,
-        includeMiddleName && middleName ? middleName.charAt(0) + '.' : '',
-        lastName
-      ].filter(Boolean).join(' ');
-  }
+  return `${firstName} ${lastName}`.trim();
 }
 
 /**
- * Formats a status code into a readable string
+ * Formats a name for formal display (last name first)
  * 
- * @param status - Status to format (string or code)
- * @param options - Formatting options
- * @returns Formatted status string
+ * @param firstName - First name
+ * @param lastName - Last name
+ * @param middleName - Middle name or initial (optional)
+ * @returns Formatted formal name
  */
-export function formatStatus(
-  status: string | number,
-  options: {
-    capitalize?: boolean;
-    replaceUnderscores?: boolean;
-  } = {}
+export function formatFormalName(
+  firstName: string,
+  lastName: string,
+  middleName?: string
 ): string {
-  if (status === undefined || status === null) return '';
+  if (!firstName && !lastName) return '';
   
-  const { 
-    capitalize = true,
-    replaceUnderscores = true
-  } = options;
-  
-  // Convert to string
-  let statusStr = String(status);
-  
-  // Replace underscores with spaces
-  if (replaceUnderscores) {
-    statusStr = statusStr.replace(/_/g, ' ');
+  if (middleName) {
+    return `${lastName}, ${firstName} ${middleName}`.trim();
   }
   
-  // Capitalize
-  if (capitalize) {
-    statusStr = statusStr.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  }
-  
-  return statusStr;
+  return `${lastName}, ${firstName}`.trim();
 }
+
+/**
+ * Extracts initials from a name (up to 2 characters)
+ * 
+ * @param fullName - Full name to extract initials from
+ * @returns Initials (1-2 characters)
+ */
+export function getInitials(fullName: string): string {
+  if (!fullName) return '';
+  
+  const parts = fullName.trim().split(/\s+/);
+  
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase();
+  }
+  
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+export default {
+  truncateText,
+  formatDate,
+  formatTime,
+  formatDateTime,
+  formatCurrency,
+  formatNumber,
+  formatPercent,
+  formatFileSize,
+  formatPhoneNumber,
+  titleCase,
+  snakeToTitleCase,
+  formatName,
+  formatFormalName,
+  getInitials
+};
