@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'stream';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
@@ -378,15 +379,144 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
  * 
  * @param storageKey - S3 storage key
  * @param expiresInSeconds - URL expiration time in seconds
+ * @param contentType - Optional content type to set for download
  * @returns Pre-signed URL
  */
-export async function getDownloadUrl(storageKey: string, expiresInSeconds = 3600): Promise<string> {
+export async function getDownloadUrl(
+  storageKey: string, 
+  expiresInSeconds = 3600,
+  contentType?: string
+): Promise<string> {
   try {
-    // This functionality requires the @aws-sdk/s3-request-presigner package
-    // We'll skip implementation for now and return a placeholder
-    return `/api/documents/download?key=${encodeURIComponent(storageKey)}`;
-  } catch (error) {
-    logger.error('Error generating pre-signed URL', { error, storageKey });
+    if (useLocalStorage) {
+      // For local storage, return a local API endpoint
+      // This will proxy through our API for local file access
+      return `/api/documents/download?key=${encodeURIComponent(storageKey)}`;
+    } else {
+      // For S3, generate a pre-signed URL
+      logger.debug(`Generating pre-signed URL for S3 object: ${storageKey}`);
+      
+      // Create the command for getting the object
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: storageKey,
+        // Add content disposition for better download behavior
+        ...(contentType && { ResponseContentType: contentType }),
+        // Add content disposition to suggest download with original filename
+        ResponseContentDisposition: `attachment; filename="${path.basename(storageKey)}"`
+      });
+      
+      // Generate signed URL with the specified expiration time
+      try {
+        const signedUrl = await getSignedUrl(s3Client!, command, { 
+          expiresIn: expiresInSeconds 
+        });
+        
+        logger.debug(`Successfully generated pre-signed URL (expires in ${expiresInSeconds}s)`);
+        return signedUrl;
+      } catch (presignError: any) {
+        logger.error('Error generating pre-signed URL', {
+          error: presignError.message,
+          code: presignError.code,
+          storageKey,
+          bucket: BUCKET_NAME
+        });
+        throw new Error(`Failed to generate pre-signed URL: ${presignError.message}`);
+      }
+    }
+  } catch (error: any) {
+    logger.error('Error in getDownloadUrl', { 
+      errorType: error.name,
+      errorMessage: error.message,
+      storageKey,
+      useLocalStorage,
+      bucket: useLocalStorage ? null : BUCKET_NAME
+    });
     throw new Error(`Failed to generate download URL: ${error.message}`);
+  }
+}
+
+/**
+ * Generate a pre-signed URL for direct upload
+ * This is useful for allowing clients to upload directly to S3
+ * 
+ * @param storageKey - S3 storage key where the file will be stored
+ * @param contentType - MIME type of the file to be uploaded
+ * @param expiresInSeconds - URL expiration time in seconds
+ * @returns Pre-signed URL for direct upload
+ */
+export async function getUploadUrl(
+  storageKey: string,
+  contentType: string,
+  expiresInSeconds = 900 // 15 minutes default
+): Promise<{
+  url: string;
+  fields?: Record<string, string>; // For S3 POST policy
+  method: 'PUT' | 'POST';
+  expiresAt: Date;
+}> {
+  try {
+    if (useLocalStorage) {
+      // For local storage, return our API endpoint
+      logger.debug(`Generating upload URL for local storage: ${storageKey}`);
+      const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+      
+      return {
+        url: `/api/documents/upload?key=${encodeURIComponent(storageKey)}`,
+        method: 'POST',
+        expiresAt
+      };
+    } else {
+      // For S3, generate a pre-signed PUT URL
+      logger.debug(`Generating pre-signed upload URL for S3 object: ${storageKey}`);
+      
+      // Create the command for putting the object
+      const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: storageKey,
+        ContentType: contentType,
+        // Enable server-side encryption
+        ServerSideEncryption: 'AES256',
+        // Optionally use KMS for enhanced security
+        ...(process.env.KMS_KEY_ID && { 
+          ServerSideEncryption: 'aws:kms',
+          SSEKMSKeyId: process.env.KMS_KEY_ID
+        }),
+      });
+      
+      // Generate signed URL with the specified expiration time
+      try {
+        const signedUrl = await getSignedUrl(s3Client!, command, { 
+          expiresIn: expiresInSeconds 
+        });
+        
+        const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+        logger.debug(`Successfully generated pre-signed upload URL (expires at ${expiresAt.toISOString()})`);
+        
+        return {
+          url: signedUrl,
+          method: 'PUT',
+          expiresAt
+        };
+      } catch (presignError: any) {
+        logger.error('Error generating pre-signed upload URL', {
+          error: presignError.message,
+          code: presignError.code,
+          storageKey,
+          bucket: BUCKET_NAME
+        });
+        throw new Error(`Failed to generate pre-signed upload URL: ${presignError.message}`);
+      }
+    }
+  } catch (error: any) {
+    logger.error('Error in getUploadUrl', { 
+      errorType: error.name,
+      errorMessage: error.message,
+      storageKey,
+      contentType,
+      useLocalStorage,
+      bucket: useLocalStorage ? null : BUCKET_NAME
+    });
+    throw new Error(`Failed to generate upload URL: ${error.message}`);
   }
 }
