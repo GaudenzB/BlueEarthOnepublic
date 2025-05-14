@@ -12,7 +12,14 @@ interface DocumentDetailContentProps {
   onDeleteClick: () => void;
   onShareClick: () => void;
   onRefreshStatus: () => void;
+  onFavoriteToggle?: () => void;
+  isFavorited?: boolean;
   isRefreshing: boolean;
+  loading?: {
+    favorite?: boolean;
+    delete?: boolean;
+    download?: boolean;
+  };
 }
 
 /**
@@ -27,7 +34,10 @@ export const DocumentDetailContent = memo(({
   onDeleteClick,
   onShareClick,
   onRefreshStatus,
-  isRefreshing
+  onFavoriteToggle,
+  isFavorited,
+  isRefreshing,
+  loading = {}
 }: DocumentDetailContentProps) => {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>

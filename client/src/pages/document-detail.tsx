@@ -179,6 +179,7 @@ export default function DocumentDetail() {
   // Mutation for refreshing document status with optimistic updates
   interface RefreshMutationContext {
     previousDocument: Document | undefined;
+    previousDocumentsList: Document[] | undefined;
   }
   
   const refreshStatusMutation = useMutation<void, Error, void, RefreshMutationContext>({
@@ -188,9 +189,11 @@ export default function DocumentDetail() {
     onMutate: async () => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['/api/documents', id] });
+      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
       
       // Snapshot the previous document state
       const previousDocument = queryClient.getQueryData<Document>(['/api/documents', id]);
+      const previousDocumentsList = queryClient.getQueryData<Document[]>(['/api/documents']);
       
       // Optimistically update the document status to PROCESSING if it's not already
       if (previousDocument && previousDocument.processingStatus !== 'PROCESSING') {
@@ -199,22 +202,119 @@ export default function DocumentDetail() {
           processingStatus: 'PROCESSING' as DocumentProcessingStatus
         };
         
+        // Update the individual document
         queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);
+        
+        // Also update document in the list if it exists there
+        if (previousDocumentsList) {
+          const updatedList = previousDocumentsList.map(doc => 
+            doc.id === id ? optimisticDocument : doc
+          );
+          queryClient.setQueryData<Document[]>(['/api/documents'], updatedList);
+        }
       }
       
-      // Return context with the previous document
-      return { previousDocument };
+      // Return context with the previous document states
+      return { 
+        previousDocument,
+        previousDocumentsList 
+      };
     },
     onSuccess: () => {
+      // Invalidate both the individual document and the documents list
       queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
       message.success('Document status updated');
     },
     onError: (error: Error, _, context: RefreshMutationContext | undefined) => {
-      // If there was an error, restore previous document state
+      // If there was an error, restore previous document states
       if (context?.previousDocument) {
         queryClient.setQueryData<Document>(['/api/documents', id], context.previousDocument);
       }
+      
+      if (context?.previousDocumentsList) {
+        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocumentsList);
+      }
+      
       message.error(`Failed to refresh document status: ${error.message || 'Unknown error'}`);
+    }
+  });
+  
+  // Mutation for toggling document favorite status with optimistic updates
+  interface FavoriteMutationContext {
+    previousDocument: Document | undefined;
+    previousDocumentsList: Document[] | undefined;
+  }
+  
+  const toggleFavoriteMutation = useMutation<void, Error, void, FavoriteMutationContext>({
+    mutationFn: () => {
+      // The API endpoint would typically accept a parameter to toggle favorite status
+      const isFavorite = !document?.isFavorite;
+      return apiRequest<void>(`/api/documents/${id}/favorite`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isFavorite })
+      });
+    },
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/documents', id] });
+      await queryClient.cancelQueries({ queryKey: ['/api/documents'] });
+      
+      // Snapshot the previous document states
+      const previousDocument = queryClient.getQueryData<Document>(['/api/documents', id]);
+      const previousDocumentsList = queryClient.getQueryData<Document[]>(['/api/documents']);
+      
+      if (previousDocument) {
+        // Create an optimistic update with toggled favorite status
+        const optimisticDocument: Document = {
+          ...previousDocument,
+          isFavorite: !previousDocument.isFavorite
+        };
+        
+        // Update the individual document
+        queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);
+        
+        // Also update the document in the list if it exists there
+        if (previousDocumentsList) {
+          const updatedList = previousDocumentsList.map(doc => 
+            doc.id === id ? optimisticDocument : doc
+          );
+          queryClient.setQueryData<Document[]>(['/api/documents'], updatedList);
+        }
+        
+        // Show optimistic success message
+        message.success(
+          optimisticDocument.isFavorite 
+            ? 'Added to favorites' 
+            : 'Removed from favorites'
+        );
+      }
+      
+      // Return context with the previous document states
+      return { 
+        previousDocument,
+        previousDocumentsList 
+      };
+    },
+    onSuccess: () => {
+      // Invalidate both the individual document and the documents list
+      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+    },
+    onError: (error: Error, _, context: FavoriteMutationContext | undefined) => {
+      // If there was an error, restore previous document states
+      if (context?.previousDocument) {
+        queryClient.setQueryData<Document>(['/api/documents', id], context.previousDocument);
+      }
+      
+      if (context?.previousDocumentsList) {
+        queryClient.setQueryData<Document[]>(['/api/documents'], context.previousDocumentsList);
+      }
+      
+      message.error(`Failed to update favorite status: ${error.message || 'Unknown error'}`);
     }
   });
   
@@ -223,6 +323,7 @@ export default function DocumentDetail() {
   const handleShareClick = () => setShowShareDialog(true);
   const handleConfirmDelete = () => deleteDocumentMutation.mutate();
   const handleRefreshStatus = () => refreshStatusMutation.mutate();
+  const handleFavoriteToggle = () => toggleFavoriteMutation.mutate();
   const handleTabChange = (key: string) => setActiveTab(key);
   const handleReturn = () => setLocation('/documents');
 
@@ -266,7 +367,13 @@ export default function DocumentDetail() {
         onDeleteClick={handleDeleteClick}
         onShareClick={handleShareClick}
         onRefreshStatus={handleRefreshStatus}
+        onFavoriteToggle={handleFavoriteToggle}
+        isFavorited={safeDocument.isFavorite || false}
         isRefreshing={refreshStatusMutation.isPending}
+        loading={{
+          favorite: toggleFavoriteMutation.isPending,
+          delete: deleteDocumentMutation.isPending
+        }}
       />
       
       {/* Modals and dialogs */}
