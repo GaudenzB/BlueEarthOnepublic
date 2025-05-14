@@ -23,7 +23,11 @@ export type StatusType =
   | 'completed'
   | 'processing'
   | 'on_leave'
-  | 'remote';
+  | 'remote'
+  | 'draft'
+  | 'in_review'
+  | 'expired'
+  | 'custom';
 
 /**
  * Props for the StatusTag component
@@ -79,7 +83,7 @@ const STATUS_CONFIG: Record<StatusType, {
     color: tokens.colors.semantic.success,
     icon: <CheckCircleFilled />,
     text: 'Active',
-    bg: tokens.colors.success.light,
+    bg: tokens.colors.extended.green.light,
   },
   inactive: {
     color: tokens.colors.neutral['600'],
@@ -91,44 +95,68 @@ const STATUS_CONFIG: Record<StatusType, {
     color: tokens.colors.semantic.warning,
     icon: <ClockCircleFilled />,
     text: 'Pending',
-    bg: tokens.colors.warning.light,
+    bg: tokens.colors.extended.orange.light,
   },
   approved: {
     color: tokens.colors.semantic.success,
     icon: <CheckCircleFilled />,
     text: 'Approved',
-    bg: tokens.colors.success.light,
+    bg: tokens.colors.extended.green.light,
   },
   rejected: {
     color: tokens.colors.semantic.error,
     icon: <CloseCircleFilled />,
     text: 'Rejected',
-    bg: tokens.colors.error.light,
+    bg: tokens.colors.extended.red.light,
   },
   completed: {
-    color: tokens.colors.blue.default,
+    color: tokens.colors.extended.blue.default,
     icon: <InfoCircleFilled />,
     text: 'Completed',
-    bg: tokens.colors.blue.light,
+    bg: tokens.colors.extended.blue.light,
   },
   processing: {
-    color: tokens.colors.blue.default,
+    color: tokens.colors.extended.blue.default,
     icon: <SyncOutlined spin />,
     text: 'Processing',
-    bg: tokens.colors.blue.light,
+    bg: tokens.colors.extended.blue.light,
   },
   on_leave: {
     color: tokens.colors.semantic.warning,
     icon: <PauseCircleFilled />,
     text: 'On Leave',
-    bg: tokens.colors.warning.light,
+    bg: tokens.colors.extended.orange.light,
   },
   remote: {
-    color: tokens.colors.blue.default,
+    color: tokens.colors.extended.blue.default,
     icon: <InfoCircleFilled />,
     text: 'Remote',
-    bg: tokens.colors.blue.light,
+    bg: tokens.colors.extended.blue.light,
   },
+  draft: {
+    color: tokens.colors.neutral['600'],
+    icon: <PauseCircleFilled />,
+    text: 'Draft',
+    bg: tokens.colors.neutral['100'],
+  },
+  in_review: {
+    color: tokens.colors.semantic.warning,
+    icon: <ClockCircleFilled />,
+    text: 'In Review',
+    bg: tokens.colors.extended.orange.light,
+  },
+  expired: {
+    color: tokens.colors.semantic.error,
+    icon: <CloseCircleFilled />,
+    text: 'Expired',
+    bg: tokens.colors.extended.red.light,
+  },
+  custom: {
+    color: tokens.colors.extended.purple.default,
+    icon: <InfoCircleFilled />,
+    text: 'Custom',
+    bg: tokens.colors.extended.purple.light,
+  }
 };
 
 /**
