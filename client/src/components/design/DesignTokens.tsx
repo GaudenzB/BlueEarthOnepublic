@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { Card, Typography, Space, Row, Col, Divider } from 'antd';
+import { Card, Typography, Space, Col, Divider } from 'antd';
 import { tokens } from '@/theme/tokens';
 
 const { Title, Text, Paragraph } = Typography;

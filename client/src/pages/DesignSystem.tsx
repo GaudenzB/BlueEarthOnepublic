@@ -130,20 +130,11 @@ function TypographySection() {
           <Title level={3} style={{ margin: '24px 0 16px' }}>Font Weights</Title>
           <Card>
             {Object.entries(tokens.typography.fontWeight).map(([key, value]) => (
-              <div key={key} style={{ marginBottom: '16px' }}>
-                <Text strong style={{ display: 'block' }}>{key}</Text>
-                <Text 
-                  style={{ 
-                    fontWeight: value as number, 
-                    display: 'block', 
-                    fontSize: '16px',
-                    marginTop: '4px'
-                  }}
-                >
-                  The quick brown fox jumps over the lazy dog
-                </Text>
-                <Divider style={{ margin: '12px 0' }} />
-              </div>
+              <FontWeightShowcase 
+                key={key} 
+                name={key} 
+                weight={value as number}
+              />
             ))}
           </Card>
         </Col>
@@ -152,24 +143,11 @@ function TypographySection() {
           <Title level={3} style={{ margin: '24px 0 16px' }}>Line Heights</Title>
           <Card>
             {Object.entries(tokens.typography.lineHeight).map(([key, value]) => (
-              <div key={key} style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Text strong>{key}</Text>
-                  <Text type="secondary">{value}</Text>
-                </div>
-                <Paragraph 
-                  style={{ 
-                    lineHeight: value as number | string, 
-                    margin: '4px 0 0 0',
-                    padding: '8px',
-                    background: tokens.colors.neutral[300],
-                    borderRadius: '4px'
-                  }}
-                >
-                  This paragraph demonstrates the {key} line height ({value}). Notice how the spacing between lines affects readability.
-                </Paragraph>
-                <Divider style={{ margin: '12px 0' }} />
-              </div>
+              <LineHeightShowcase 
+                key={key} 
+                name={key} 
+                value={value as number | string} 
+              />
             ))}
           </Card>
         </Col>
@@ -206,20 +184,7 @@ function SpacingSection() {
       <Title level={3} style={{ margin: '24px 0 16px' }}>Border Radius</Title>
       <Row gutter={[16, 16]}>
         {Object.entries(tokens.radii).map(([key, value]) => (
-          <Col key={key} span={6} xs={12} sm={8} md={6} lg={4} style={{ marginBottom: '16px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '80px', 
-                height: '80px', 
-                backgroundColor: tokens.colors.brand.primary, 
-                borderRadius: value,
-                marginBottom: '8px',
-                margin: '0 auto 8px'
-              }} />
-              <Text strong style={{ display: 'block' }}>{key}</Text>
-              <Text type="secondary">{value}</Text>
-            </div>
-          </Col>
+          <BorderRadiusShowcase key={key} name={key} value={value} />
         ))}
       </Row>
     </div>
@@ -231,39 +196,38 @@ function ComponentsSection() {
   return (
     <div>
       <Title level={3} style={{ margin: '24px 0 16px' }}>Buttons</Title>
-      <Card style={{ marginBottom: '32px' }}>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <div>
-            <Title level={5}>Button Types</Title>
-            <Space wrap>
-              <Button type="primary">Primary Button</Button>
-              <Button>Default Button</Button>
-              <Button type="dashed">Dashed Button</Button>
-              <Button type="text">Text Button</Button>
-              <Button type="link">Link Button</Button>
-            </Space>
-          </div>
-          
-          <div>
-            <Title level={5}>Button Sizes</Title>
-            <Space wrap>
-              <Button type="primary" size="large">Large Button</Button>
-              <Button type="primary">Default Button</Button>
-              <Button type="primary" size="small">Small Button</Button>
-            </Space>
-          </div>
-          
-          <div>
-            <Title level={5}>Button with Icons</Title>
-            <Space wrap>
-              <Button type="primary" icon={<PlusOutlined />}>Add Item</Button>
-              <Button icon={<SearchOutlined />}>Search</Button>
-              <Button icon={<DownloadOutlined />}>Download</Button>
-              <Button type="primary" icon={<SettingOutlined />} />
-            </Space>
-          </div>
+      <ComponentShowcase 
+        title="Button Types"
+        description="Different button types serve different purposes in the interface. Use them consistently based on action importance.">
+        <Space wrap>
+          <Button type="primary">Primary Button</Button>
+          <Button>Default Button</Button>
+          <Button type="dashed">Dashed Button</Button>
+          <Button type="text">Text Button</Button>
+          <Button type="link">Link Button</Button>
         </Space>
-      </Card>
+      </ComponentShowcase>
+      
+      <ComponentShowcase 
+        title="Button Sizes"
+        description="Different button sizes help establish visual hierarchy and adapt to different screen sizes.">
+        <Space wrap>
+          <Button type="primary" size="large">Large Button</Button>
+          <Button type="primary">Default Button</Button>
+          <Button type="primary" size="small">Small Button</Button>
+        </Space>
+      </ComponentShowcase>
+      
+      <ComponentShowcase 
+        title="Button with Icons"
+        description="Icons enhance button recognition and provide visual cues about the action being performed.">
+        <Space wrap>
+          <Button type="primary" icon={<PlusOutlined />}>Add Item</Button>
+          <Button icon={<SearchOutlined />}>Search</Button>
+          <Button icon={<DownloadOutlined />}>Download</Button>
+          <Button type="primary" icon={<SettingOutlined />} />
+        </Space>
+      </ComponentShowcase>
       
       <Title level={3} style={{ margin: '24px 0 16px' }}>Status Tags</Title>
       <Card style={{ marginBottom: '32px' }}>
