@@ -3,7 +3,7 @@ export const colors = {
   // Primary Colors
   primary: {
     base: "#1A2B47", // Deep navy blue for headers, sidebars, primary buttons
-    hover: "#2A3A55", // Slightly lighter navy for hover and active states
+    hover: "#3F4F6F", // Higher contrast navy for hover and active states
     light: "#324D6F", // Softer navy for accents, borders, backgrounds
     ultraLight: "#D5DEE9", // Very light tone for secondary backgrounds
   },
@@ -29,5 +29,6 @@ export const colors = {
     sidebar: "#0C1C36", // Very dark navy for navigation panels
     divider: "#E5E7EB", // Soft grey for separating content
     card: "#FFFFFF", // White for content presentation in cards
+    hover: "#435D85" // High contrast hover for dark sidebar/navbar elements
   }
 };

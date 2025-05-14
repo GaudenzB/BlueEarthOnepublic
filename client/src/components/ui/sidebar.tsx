@@ -125,7 +125,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                   }}
                   onMouseOver={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.backgroundColor = colors.primary.hover;
+                      e.currentTarget.style.backgroundColor = colors.background.hover;
                     }
                   }}
                   onMouseOut={(e) => {
@@ -175,7 +175,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 backgroundColor: 'transparent', 
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = colors.primary.hover;
+                e.currentTarget.style.backgroundColor = colors.background.hover;
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
