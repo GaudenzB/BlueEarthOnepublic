@@ -1,99 +1,63 @@
 import React from 'react';
-import { Box, Text } from '@chakra-ui/react';
+import { Segmented, Space } from 'antd';
+import type { SegmentedProps } from 'antd';
+import { theme } from '../../lib/theme';
 
 export interface SegmentedControlOption {
   value: string;
-  label: string;
+  label: string | React.ReactNode;
   icon?: React.ReactNode | string;
 }
 
 interface SegmentedControlProps {
   options: SegmentedControlOption[];
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string | number) => void;
   backgroundColor?: string;
-  selectedColor?: string;
-  textColor?: string;
-  selectedTextColor?: string;
-  size?: 'sm' | 'md' | 'lg';
+  selectedColor?: string; // No longer used, controlled by Ant Design theme
+  textColor?: string; // No longer used, controlled by Ant Design theme
+  selectedTextColor?: string; // No longer used, controlled by Ant Design theme
+  size?: 'small' | 'middle' | 'large'; // Changed to Ant Design sizes
 }
 
 export const SegmentedControl: React.FC<SegmentedControlProps> = ({
   options,
   value,
   onChange,
-  backgroundColor = 'gray.100',
-  selectedColor = 'white',
-  textColor = 'gray.600',
-  selectedTextColor = 'gray.800',
-  size = 'md',
+  backgroundColor = theme.colors.background.subtle,
+  size = 'middle',
 }) => {
-  // Determine padding and font size based on size prop
-  const getPadding = () => {
-    switch (size) {
-      case 'sm': return { py: 1.5, px: 3 };
-      case 'lg': return { py: 2.5, px: 5 };
-      default: return { py: 2, px: 4 };
+  // Convert our options format to Ant Design's expected format
+  const segmentedOptions: SegmentedProps['options'] = options.map(option => {
+    if (option.icon) {
+      return {
+        label: (
+          <Space style={{ display: 'flex', alignItems: 'center' }}>
+            {typeof option.icon === 'string' ? option.icon : option.icon}
+            <span>{option.label}</span>
+          </Space>
+        ),
+        value: option.value
+      };
     }
-  };
-  
-  const getFontSize = () => {
-    switch (size) {
-      case 'sm': return 'sm';
-      case 'lg': return 'md';
-      default: return 'sm';
-    }
-  };
-  
-  const getIconSize = () => {
-    switch (size) {
-      case 'sm': return 'md';
-      case 'lg': return 'xl';
-      default: return 'lg';
-    }
-  };
-  
-  const { py, px } = getPadding();
-  const fontSize = getFontSize();
-  const iconSize = getIconSize();
+    return {
+      label: option.label,
+      value: option.value
+    };
+  });
 
   return (
-    <Box 
-      display="flex"
-      borderRadius="lg"
-      bg={backgroundColor}
-      p={1}
-      maxW="fit-content"
-    >
-      {options.map((option) => (
-        <Box
-          key={option.value}
-          as="button"
-          py={py}
-          px={px}
-          borderRadius="md"
-          display="flex"
-          alignItems="center"
-          gap={2}
-          bg={value === option.value ? selectedColor : 'transparent'}
-          color={value === option.value ? selectedTextColor : textColor}
-          fontWeight={value === option.value ? "medium" : "normal"}
-          boxShadow={value === option.value ? "sm" : "none"}
-          onClick={() => onChange(option.value)}
-          _hover={{
-            bg: value === option.value ? selectedColor : 'gray.200',
-          }}
-          transition="all 0.2s"
-        >
-          {option.icon && (
-            typeof option.icon === 'string' 
-              ? <Box as="span" fontSize={iconSize}>{option.icon}</Box>
-              : option.icon
-          )}
-          <Text fontSize={fontSize}>{option.label}</Text>
-        </Box>
-      ))}
-    </Box>
+    <Segmented
+      options={segmentedOptions}
+      value={value}
+      onChange={onChange}
+      size={size}
+      style={{
+        backgroundColor,
+        padding: '2px',
+        borderRadius: '8px',
+      }}
+    />
   );
 };
 

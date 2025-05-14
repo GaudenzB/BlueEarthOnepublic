@@ -1,544 +1,611 @@
-# BlueEarth Capital UI Component Examples
+# BlueEarth Capital Component Examples
 
-This document provides examples of UI components styled according to our financial services design system.
+This guide provides examples of common components used throughout the BlueEarth Capital application, demonstrating how to implement the design system using Ant Design.
 
-## Button Examples
+## Layout Components
 
-```jsx
-// Primary Button
-<Button 
-  type="primary"
-  style={{
-    backgroundColor: colors.primary.base,
-    borderColor: colors.primary.base,
-    height: '40px',
-    borderRadius: '6px',
-    fontWeight: 500,
-    boxShadow: '0 1px 2px rgba(16, 24, 40, 0.05)'
-  }}
->
-  Submit Application
-</Button>
+### Page Layout
 
-// Secondary Button
-<Button 
-  style={{
-    backgroundColor: '#ffffff',
-    borderColor: colors.primary.base,
-    color: colors.primary.base,
-    height: '40px',
-    borderRadius: '6px',
-    fontWeight: 500
-  }}
->
-  View Details
-</Button>
+The standard page layout includes a header with title and a content area:
 
-// Tertiary/Ghost Button
-<Button 
-  type="text"
-  style={{
-    color: colors.primary.base,
-    fontWeight: 500,
-    height: '40px'
-  }}
->
-  Learn More
-</Button>
+```tsx
+import { PageLayout } from '../components/PageLayout';
 
-// Danger Button
-<Button 
-  type="primary" 
-  danger
-  style={{
-    height: '40px',
-    borderRadius: '6px',
-    fontWeight: 500,
-    boxShadow: '0 1px 2px rgba(16, 24, 40, 0.05)'
-  }}
->
-  Delete Account
-</Button>
+function MyPage() {
+  return (
+    <PageLayout title="Employee Directory">
+      <div>Page content goes here</div>
+    </PageLayout>
+  );
+}
 ```
 
-## Card Examples
+### Card Container
 
-```jsx
-// Standard Card
-<Card
-  style={{
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
-    border: '1px solid #eaecf0'
-  }}
->
-  <div style={{ padding: '24px' }}>
-    <Typography.Title level={5} style={{ marginBottom: '16px', color: '#1e293b' }}>
-      Investment Summary
-    </Typography.Title>
-    <div style={{ color: '#64748b', fontSize: '14px' }}>
-      Card content goes here...
-    </div>
-  </div>
-</Card>
+Use Card Container to group related content:
 
-// Interactive Card
-<Card
-  hoverable
-  style={{
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
-    border: '1px solid #eaecf0',
-    transition: 'all 0.2s ease-in-out'
-  }}
->
-  <div style={{ padding: '24px' }}>
-    <Typography.Title level={5} style={{ marginBottom: '16px', color: '#1e293b' }}>
-      Client Profile
-    </Typography.Title>
-    <div style={{ color: '#64748b', fontSize: '14px' }}>
-      Hover to see interactive state...
-    </div>
-  </div>
-</Card>
+```tsx
+import { Card } from 'antd';
+import { theme } from '../lib/theme';
 
-// Card with Header
-<Card
-  title={
+function ContentCard({ title, children }) {
+  return (
+    <Card 
+      title={title}
+      style={{
+        borderRadius: theme.borderRadius.lg,
+        boxShadow: theme.shadows.sm,
+        marginBottom: theme.spacing.md
+      }}
+    >
+      {children}
+    </Card>
+  );
+}
+```
+
+## Data Display Components
+
+### Status Tag
+
+Use Status Tags to display entity status with consistent colors:
+
+```tsx
+import { Tag } from 'antd';
+import { 
+  CheckCircleOutlined, 
+  CloseCircleOutlined, 
+  ClockCircleOutlined, 
+  ExclamationCircleOutlined 
+} from '@ant-design/icons';
+import { theme } from '../lib/theme';
+
+function StatusTag({ status }) {
+  const statusConfig = {
+    active: {
+      color: theme.colors.status.active,
+      icon: <CheckCircleOutlined />,
+      text: 'Active'
+    },
+    inactive: {
+      color: theme.colors.status.inactive,
+      icon: <CloseCircleOutlined />,
+      text: 'Inactive'
+    },
+    pending: {
+      color: theme.colors.status.pending,
+      icon: <ClockCircleOutlined />,
+      text: 'Pending'
+    },
+    review: {
+      color: theme.colors.status.info,
+      icon: <ExclamationCircleOutlined />,
+      text: 'In Review'
+    },
+    // Add other statuses as needed
+  };
+
+  const config = statusConfig[status] || statusConfig.pending;
+
+  return (
+    <Tag color={config.color} icon={config.icon}>
+      {config.text}
+    </Tag>
+  );
+}
+```
+
+### Employee Card
+
+The employee card displays employee information in a consistent format:
+
+```tsx
+import { Card, Avatar, Typography, Space } from 'antd';
+import { MailOutlined, PhoneOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { theme } from '../lib/theme';
+
+const { Title, Text } = Typography;
+
+function EmployeeCard({ employee, compact = false }) {
+  if (compact) {
+    return (
+      <Card
+        size="small"
+        style={{
+          borderRadius: theme.borderRadius.lg,
+          boxShadow: theme.shadows.sm,
+          border: `1px solid ${theme.colors.border.light}`
+        }}
+      >
+        <Space align="center">
+          <Avatar 
+            size={48} 
+            src={employee.avatarUrl} 
+          />
+          <div>
+            <Title level={5} style={{ margin: 0 }}>
+              {employee.name}
+            </Title>
+            <Text type="secondary">
+              {employee.position}
+            </Text>
+          </div>
+        </Space>
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      style={{
+        borderRadius: theme.borderRadius.lg,
+        boxShadow: theme.shadows.sm,
+        border: `1px solid ${theme.colors.border.light}`
+      }}
+    >
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Space align="start">
+          <Avatar 
+            size={64} 
+            src={employee.avatarUrl} 
+          />
+          <div>
+            <Title level={4} style={{ margin: 0 }}>
+              {employee.name}
+            </Title>
+            <Text type="secondary" style={{ fontSize: theme.typography.fontSizes.md }}>
+              {employee.position}
+            </Text>
+            <div style={{ marginTop: theme.spacing[2] }}>
+              <StatusTag status={employee.status} />
+            </div>
+          </div>
+        </Space>
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space>
+            <MailOutlined />
+            <Text>{employee.email}</Text>
+          </Space>
+          {employee.phone && (
+            <Space>
+              <PhoneOutlined />
+              <Text>{employee.phone}</Text>
+            </Space>
+          )}
+          {employee.location && (
+            <Space>
+              <EnvironmentOutlined />
+              <Text>{employee.location}</Text>
+            </Space>
+          )}
+        </Space>
+      </Space>
+    </Card>
+  );
+}
+```
+
+### Search Filters
+
+Search filters component for filtering data:
+
+```tsx
+import { Input, Select, DatePicker, Space, Button } from 'antd';
+import { SearchOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import { theme } from '../lib/theme';
+
+function SearchFilters({ 
+  onSearch, 
+  onFilter, 
+  onReset, 
+  departments = [], 
+  locations = [] 
+}) {
+  return (
+    <Space 
+      direction="horizontal" 
+      size="middle"
+      wrap
+      style={{ 
+        marginBottom: theme.spacing.md,
+        padding: theme.spacing.md, 
+        background: theme.colors.background.subtle,
+        borderRadius: theme.borderRadius.md
+      }}
+    >
+      <Input 
+        placeholder="Search employees..."
+        prefix={<SearchOutlined />}
+        style={{ width: 250 }}
+        onChange={(e) => onSearch(e.target.value)}
+      />
+      
+      <Select
+        placeholder="Department"
+        style={{ width: 150 }}
+        allowClear
+        onChange={(value) => onFilter('department', value)}
+        options={departments.map(dept => ({ label: dept, value: dept }))}
+      />
+      
+      <Select
+        placeholder="Location"
+        style={{ width: 180 }}
+        allowClear
+        onChange={(value) => onFilter('location', value)}
+        options={locations.map(loc => ({ label: loc, value: loc }))}
+      />
+      
+      <DatePicker 
+        placeholder="Start date"
+        onChange={(date) => onFilter('startDate', date)}
+      />
+      
+      <Button 
+        icon={<ReloadOutlined />}
+        onClick={onReset}
+      >
+        Reset
+      </Button>
+    </Space>
+  );
+}
+```
+
+### Empty State
+
+Empty state to display when there's no data:
+
+```tsx
+import { Empty, Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { theme } from '../lib/theme';
+
+function EmptyState({ 
+  title = 'No data found', 
+  description = 'There is no data to display.',
+  buttonText,
+  onButtonClick
+}) {
+  return (
     <div style={{ 
-      fontWeight: 600, 
-      fontSize: '18px', 
-      color: '#1e293b',
-      padding: '16px 24px',
-      borderBottom: '1px solid #eaecf0'
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: theme.spacing.xl,
+      background: theme.colors.background.card,
+      borderRadius: theme.borderRadius.lg,
+      border: `1px solid ${theme.colors.border.light}`,
+      minHeight: '300px'
     }}>
-      Performance Metrics
+      <Empty 
+        description={
+          <div>
+            <div style={{ 
+              fontSize: theme.typography.fontSizes.lg,
+              fontWeight: theme.typography.fontWeights.medium,
+              marginBottom: theme.spacing.sm
+            }}>
+              {title}
+            </div>
+            <div style={{ color: theme.colors.text.secondary }}>
+              {description}
+            </div>
+          </div>
+        } 
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+      />
+      
+      {buttonText && (
+        <Button 
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={onButtonClick}
+          style={{ marginTop: theme.spacing.md }}
+        >
+          {buttonText}
+        </Button>
+      )}
     </div>
-  }
-  style={{
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)',
-    border: '1px solid #eaecf0'
-  }}
->
-  <div style={{ padding: '24px' }}>
-    Card content goes here...
-  </div>
-</Card>
+  );
+}
 ```
 
-## Form Input Examples
+## Form Components
 
-```jsx
-// Standard Input
-<Input
-  placeholder="Full Name"
-  style={{ 
-    height: '40px',
-    borderRadius: '6px',
-    borderColor: '#d1d5db'
-  }}
-/>
+### Form with Validation
 
-// Input with Label
-<Form.Item
-  label={
-    <span style={{ 
-      fontSize: '14px', 
-      fontWeight: 500, 
-      color: '#1e293b', 
-      marginBottom: '8px' 
-    }}>
-      Email Address
-    </span>
-  }
->
-  <Input
-    placeholder="Enter your email"
-    style={{ 
-      height: '40px',
-      borderRadius: '6px',
-      borderColor: '#d1d5db'
-    }}
-  />
-</Form.Item>
+Example of a form with validation:
 
-// Select Input
-<Select
-  placeholder="Select Investment Type"
-  style={{ 
-    width: '100%', 
-    height: '40px'
-  }}
->
-  <Option value="equity">Equity</Option>
-  <Option value="debt">Debt</Option>
-  <Option value="mutual_fund">Mutual Fund</Option>
-</Select>
+```tsx
+import { Form, Input, Select, Button, DatePicker, Space } from 'antd';
+import { theme } from '../lib/theme';
 
-// Date Picker
-<DatePicker
-  style={{ 
-    width: '100%', 
-    height: '40px',
-    borderRadius: '6px',
-    borderColor: '#d1d5db'
-  }}
-/>
+function EmployeeForm({ onSubmit, initialValues = {}, departments = [] }) {
+  const [form] = Form.useForm();
+  
+  return (
+    <Form
+      form={form}
+      layout="vertical"
+      initialValues={initialValues}
+      onFinish={onSubmit}
+    >
+      <Form.Item
+        name="name"
+        label="Full Name"
+        rules={[{ required: true, message: 'Please enter the employee name' }]}
+      >
+        <Input placeholder="Enter full name" />
+      </Form.Item>
+      
+      <Form.Item
+        name="email"
+        label="Email Address"
+        rules={[
+          { required: true, message: 'Please enter the email address' },
+          { type: 'email', message: 'Please enter a valid email address' }
+        ]}
+      >
+        <Input placeholder="Enter email address" />
+      </Form.Item>
+      
+      <Form.Item
+        name="position"
+        label="Position"
+        rules={[{ required: true, message: 'Please enter the position' }]}
+      >
+        <Input placeholder="Enter position" />
+      </Form.Item>
+      
+      <Form.Item
+        name="department"
+        label="Department"
+        rules={[{ required: true, message: 'Please select a department' }]}
+      >
+        <Select 
+          placeholder="Select department"
+          options={departments.map(dept => ({ label: dept, value: dept }))}
+        />
+      </Form.Item>
+      
+      <Form.Item
+        name="startDate"
+        label="Start Date"
+      >
+        <DatePicker style={{ width: '100%' }} />
+      </Form.Item>
+      
+      <Form.Item
+        name="status"
+        label="Status"
+        initialValue="active"
+      >
+        <Select
+          options={[
+            { label: 'Active', value: 'active' },
+            { label: 'Inactive', value: 'inactive' },
+            { label: 'On Leave', value: 'on_leave' },
+            { label: 'Pending', value: 'pending' }
+          ]}
+        />
+      </Form.Item>
+      
+      <Form.Item>
+        <Space>
+          <Button 
+            type="primary" 
+            htmlType="submit"
+          >
+            Save Employee
+          </Button>
+          <Button 
+            onClick={() => form.resetFields()}
+          >
+            Reset
+          </Button>
+        </Space>
+      </Form.Item>
+    </Form>
+  );
+}
 ```
 
-## Status Tag Examples
+## Navigation Components
 
-```jsx
-// Status tags for financial services
-<StatusTag 
-  status="approved" 
-  text="Approved" 
-  style={{
-    backgroundColor: '#ecfdf5',
-    color: '#10b981',
-    border: '1px solid #d1fae5',
-    fontWeight: 500,
-    fontSize: '12px',
-    padding: '2px 8px',
-    borderRadius: '4px'
-  }}
-/>
+### Tabs
 
-<StatusTag 
-  status="pending" 
-  text="Pending" 
-  style={{
-    backgroundColor: '#fffbeb',
-    color: '#f59e0b',
-    border: '1px solid #fef3c7',
-    fontWeight: 500,
-    fontSize: '12px',
-    padding: '2px 8px',
-    borderRadius: '4px'
-  }}
-/>
+Example of using tabs:
 
-<StatusTag 
-  status="rejected" 
-  text="Declined" 
-  style={{
-    backgroundColor: '#fee2e2',
-    color: '#ef4444',
-    border: '1px solid #fecaca',
-    fontWeight: 500,
-    fontSize: '12px',
-    padding: '2px 8px',
-    borderRadius: '4px'
-  }}
-/>
+```tsx
+import { Tabs } from 'antd';
+import { theme } from '../lib/theme';
 
-<StatusTag 
-  status="in_review" 
-  text="In Review" 
-  style={{
-    backgroundColor: '#eff6ff',
-    color: '#3b82f6',
-    border: '1px solid #dbeafe',
-    fontWeight: 500,
-    fontSize: '12px',
-    padding: '2px 8px',
-    borderRadius: '4px'
-  }}
-/>
+function DocumentTabs({ activeTab, onChange, document }) {
+  return (
+    <Tabs
+      activeKey={activeTab}
+      onChange={onChange}
+      items={[
+        {
+          key: 'overview',
+          label: 'Overview',
+          children: <DocumentOverviewTab document={document} />
+        },
+        {
+          key: 'versions',
+          label: 'Versions',
+          children: <DocumentVersionsTab document={document} />
+        },
+        {
+          key: 'comments',
+          label: 'Comments',
+          children: <DocumentCommentsTab document={document} />
+        },
+        {
+          key: 'activity',
+          label: 'Activity',
+          children: <DocumentActivityTab document={document} />
+        }
+      ]}
+    />
+  );
+}
 ```
 
-## Table Examples
+### Page Header with Actions
 
-```jsx
-// Financial table styling
-<Table
-  columns={columns}
-  dataSource={data}
-  rowKey="id"
-  style={{
-    border: '1px solid #eaecf0',
-    borderRadius: '8px',
-    overflow: 'hidden'
-  }}
-  rowClassName={() => 'financial-table-row'}
-  className="financial-table"
-  pagination={{
-    showSizeChanger: false,
-    pageSize: 10,
-    style: {
-      marginTop: '24px',
-      textAlign: 'right'
+Page header with action buttons:
+
+```tsx
+import { PageHeader, Button, Space, Dropdown } from 'antd';
+import { 
+  DownloadOutlined, 
+  EditOutlined, 
+  EllipsisOutlined,
+  PrinterOutlined,
+  ShareAltOutlined 
+} from '@ant-design/icons';
+import { theme } from '../lib/theme';
+
+function DocumentHeader({ document, onEdit, onDownload, onShare }) {
+  const moreMenuItems = [
+    {
+      key: 'print',
+      label: 'Print Document',
+      icon: <PrinterOutlined />
+    },
+    {
+      key: 'archive',
+      label: 'Archive Document',
+      icon: <FolderOutlined />
+    },
+    {
+      key: 'delete',
+      label: 'Delete Document',
+      icon: <DeleteOutlined />,
+      danger: true
     }
-  }}
-/>
-
-// CSS for the table
-.financial-table .ant-table-thead > tr > th {
-  background-color: #f8fafc;
-  color: #1e293b;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 16px;
-  border-bottom: 1px solid #eaecf0;
+  ];
+  
+  return (
+    <PageHeader
+      title={document.title}
+      subTitle={`Last updated: ${new Date(document.updatedAt).toLocaleDateString()}`}
+      tags={<StatusTag status={document.status} />}
+      extra={[
+        <Button 
+          key="download" 
+          icon={<DownloadOutlined />}
+          onClick={onDownload}
+        >
+          Download
+        </Button>,
+        <Button 
+          key="edit" 
+          icon={<EditOutlined />}
+          onClick={onEdit}
+        >
+          Edit
+        </Button>,
+        <Button 
+          key="share" 
+          type="primary" 
+          icon={<ShareAltOutlined />}
+          onClick={onShare}
+        >
+          Share
+        </Button>,
+        <Dropdown 
+          key="more" 
+          menu={{ items: moreMenuItems }} 
+          placement="bottomRight"
+        >
+          <Button icon={<EllipsisOutlined />} />
+        </Dropdown>
+      ]}
+    />
+  );
 }
+```
 
-.financial-table .ant-table-tbody > tr > td {
-  padding: 16px;
-  border-bottom: 1px solid #eaecf0;
-  color: #64748b;
-  font-size: 14px;
+## Feedback Components
+
+### Loading States
+
+Example loading states:
+
+```tsx
+import { Skeleton, Card, Space } from 'antd';
+import { theme } from '../lib/theme';
+
+function EmployeeCardSkeleton({ count = 1 }) {
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <Card
+          key={i}
+          style={{
+            borderRadius: theme.borderRadius.lg,
+            boxShadow: theme.shadows.sm,
+            border: `1px solid ${theme.colors.border.light}`
+          }}
+        >
+          <Skeleton avatar paragraph={{ rows: 3 }} active />
+        </Card>
+      ))}
+    </Space>
+  );
 }
+```
 
-.financial-table-row:hover {
-  background-color: #f0f7ff !important;
+### Error State
+
+Error state display:
+
+```tsx
+import { Result, Button } from 'antd';
+import { theme } from '../lib/theme';
+
+function ErrorState({ 
+  title = 'Something went wrong', 
+  subTitle = 'We encountered an error while loading the data.',
+  onRetry
+}) {
+  return (
+    <Result
+      status="error"
+      title={title}
+      subTitle={subTitle}
+      extra={[
+        <Button 
+          type="primary" 
+          key="retry" 
+          onClick={onRetry}
+        >
+          Try Again
+        </Button>
+      ]}
+    />
+  );
 }
 ```
 
-## Empty State Examples
+## Best Practices
 
-```jsx
-// Empty state for financial data
-<div
-  style={{
-    padding: '48px 24px',
-    textAlign: 'center',
-    background: '#f9fafc',
-    borderRadius: '8px',
-    border: '1px solid #eaecf0'
-  }}
->
-  <Empty
-    image={<FileOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}
-    imageStyle={{ marginBottom: '24px' }}
-    description={
-      <div>
-        <h3 style={{
-          fontSize: '18px',
-          fontWeight: 600,
-          color: '#1e293b',
-          marginBottom: '8px'
-        }}>
-          No Documents Found
-        </h3>
-        <p style={{
-          color: '#64748b',
-          fontSize: '14px',
-          maxWidth: '320px',
-          margin: '0 auto'
-        }}>
-          There are no documents in this category. Upload your first document to get started.
-        </p>
-      </div>
-    }
-  >
-    <Button
-      type="primary"
-      icon={<UploadOutlined />}
-      style={{
-        backgroundColor: '#0e4a86',
-        borderColor: '#0e4a86',
-        height: '40px',
-        borderRadius: '6px',
-        fontWeight: 500,
-        marginTop: '24px'
-      }}
-    >
-      Upload Document
-    </Button>
-  </Empty>
-</div>
-```
+1. **Consistent Styling**: Always use the theme tokens for colors, spacing, shadows, etc. to maintain consistency.
 
-## Modal Examples
+2. **Component Composition**: Build complex components by composing simpler Ant Design components.
 
-```jsx
-// Financial styled modal
-<Modal
-  title={
-    <div style={{ 
-      fontWeight: 600, 
-      fontSize: '18px', 
-      color: '#1e293b',
-      padding: '4px 0'
-    }}>
-      Confirm Transaction
-    </div>
-  }
-  open={isModalVisible}
-  onCancel={() => setIsModalVisible(false)}
-  width={480}
-  centered
-  footer={[
-    <Button 
-      key="cancel" 
-      onClick={() => setIsModalVisible(false)}
-      style={{
-        height: '40px',
-        borderRadius: '6px',
-        borderColor: '#d1d5db',
-        fontWeight: 500
-      }}
-    >
-      Cancel
-    </Button>,
-    <Button 
-      key="submit" 
-      type="primary" 
-      onClick={handleConfirm}
-      style={{
-        backgroundColor: '#0e4a86',
-        borderColor: '#0e4a86',
-        height: '40px',
-        borderRadius: '6px',
-        fontWeight: 500
-      }}
-    >
-      Confirm
-    </Button>
-  ]}
-  bodyStyle={{ padding: '24px' }}
-  style={{ borderRadius: '12px', overflow: 'hidden' }}
->
-  <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '16px' }}>
-    Are you sure you want to proceed with this transaction? This action cannot be undone.
-  </p>
-  <div style={{ 
-    background: '#f9fafc', 
-    padding: '16px', 
-    borderRadius: '6px',
-    border: '1px solid #eaecf0',
-    marginBottom: '16px'
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-      <span style={{ color: '#64748b', fontSize: '14px' }}>Amount:</span>
-      <span style={{ color: '#1e293b', fontWeight: 500, fontSize: '14px' }}>$10,000.00</span>
-    </div>
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <span style={{ color: '#64748b', fontSize: '14px' }}>Fee:</span>
-      <span style={{ color: '#1e293b', fontWeight: 500, fontSize: '14px' }}>$25.00</span>
-    </div>
-  </div>
-</Modal>
-```
+3. **Responsive Design**: Ensure all components work well on different screen sizes.
 
-## Alert Examples
+4. **State Management**: Use appropriate React hooks for state management within components.
 
-```jsx
-// Success Alert
-<Alert
-  message="Transaction Successful"
-  description="Your funds have been successfully transferred to the specified account."
-  type="success"
-  showIcon
-  style={{
-    borderRadius: '8px',
-    border: '1px solid #d1fae5',
-    marginBottom: '24px'
-  }}
-/>
+5. **Error Handling**: Always include error states and loading states for components that fetch data.
 
-// Warning Alert
-<Alert
-  message="Unusual Activity Detected"
-  description="We've noticed unusual activity on your account. Please verify your recent transactions."
-  type="warning"
-  showIcon
-  style={{
-    borderRadius: '8px',
-    border: '1px solid #fef3c7',
-    marginBottom: '24px'
-  }}
-/>
+6. **Accessibility**: Follow accessibility best practices, including proper contrast ratios, keyboard navigation, and ARIA attributes.
 
-// Error Alert
-<Alert
-  message="Transaction Failed"
-  description="Your transaction could not be completed. Please check your account balance and try again."
-  type="error"
-  showIcon
-  style={{
-    borderRadius: '8px',
-    border: '1px solid #fecaca',
-    marginBottom: '24px'
-  }}
-/>
+7. **Performance**: Optimize components for performance, using memoization where appropriate.
 
-// Info Alert
-<Alert
-  message="Account Update"
-  description="Your account details will be updated within 24 hours. You'll receive a confirmation email."
-  type="info"
-  showIcon
-  style={{
-    borderRadius: '8px',
-    border: '1px solid #dbeafe',
-    marginBottom: '24px'
-  }}
-/>
-```
-
-## Progress Indicator Examples
-
-```jsx
-// Task Progress
-<div style={{ marginBottom: '24px' }}>
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'space-between', 
-    marginBottom: '8px',
-    alignItems: 'center'
-  }}>
-    <span style={{ 
-      color: '#1e293b', 
-      fontSize: '14px', 
-      fontWeight: 500 
-    }}>
-      Application Progress
-    </span>
-    <span style={{ 
-      color: '#64748b', 
-      fontSize: '14px' 
-    }}>
-      75%
-    </span>
-  </div>
-  <Progress 
-    percent={75} 
-    showInfo={false}
-    strokeColor="#0e4a86"
-    style={{ marginBottom: '4px' }}
-  />
-  <span style={{ color: '#64748b', fontSize: '12px' }}>
-    3 of 4 steps completed
-  </span>
-</div>
-
-// Step Progress
-<Steps
-  current={1}
-  labelPlacement="vertical"
-  style={{ marginBottom: '24px' }}
->
-  <Steps.Step 
-    title="Application" 
-    description="Completed" 
-    style={{ color: '#64748b', fontSize: '14px' }}
-  />
-  <Steps.Step 
-    title="Verification" 
-    description="In progress" 
-    style={{ color: '#64748b', fontSize: '14px' }}
-  />
-  <Steps.Step 
-    title="Approval" 
-    description="Pending" 
-    style={{ color: '#64748b', fontSize: '14px' }}
-  />
-  <Steps.Step 
-    title="Funding" 
-    description="Pending" 
-    style={{ color: '#64748b', fontSize: '14px' }}
-  />
-</Steps>
-```
+These examples demonstrate how to implement the BlueEarth Capital design system using Ant Design components, ensuring a consistent, professional UI throughout the application.
