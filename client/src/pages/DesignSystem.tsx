@@ -107,10 +107,32 @@ function TypographySection() {
     <div>
       <Title level={3} style={{ margin: '24px 0 16px' }}>Font Family</Title>
       <Card style={{ marginBottom: '32px' }}>
-        <Text strong>Base Font Family</Text>
-        <Paragraph style={{ marginTop: '8px', marginBottom: 0 }}>
-          {tokens.typography.fontFamily.base}
-        </Paragraph>
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            <Text strong>Sans-Serif Font Family (Primary)</Text>
+            <Paragraph style={{ marginTop: '8px', marginBottom: 0, fontFamily: tokens.typography.fontFamily.sans }}>
+              {tokens.typography.fontFamily.sans}
+            </Paragraph>
+          </Col>
+          <Col span={24}>
+            <Text strong>Serif Font Family</Text>
+            <Paragraph style={{ marginTop: '8px', marginBottom: 0, fontFamily: tokens.typography.fontFamily.serif }}>
+              {tokens.typography.fontFamily.serif}
+            </Paragraph>
+          </Col>
+          <Col span={24}>
+            <Text strong>Monospace Font Family</Text>
+            <Paragraph style={{ marginTop: '8px', marginBottom: 0, fontFamily: tokens.typography.fontFamily.mono }}>
+              {tokens.typography.fontFamily.mono}
+            </Paragraph>
+          </Col>
+          <Col span={24}>
+            <Text strong>Display Font Family</Text>
+            <Paragraph style={{ marginTop: '8px', marginBottom: 0, fontFamily: tokens.typography.fontFamily.display }}>
+              {tokens.typography.fontFamily.display}
+            </Paragraph>
+          </Col>
+        </Row>
       </Card>
       
       <Title level={3} style={{ margin: '24px 0 16px' }}>Font Sizes</Title>

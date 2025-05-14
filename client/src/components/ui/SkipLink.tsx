@@ -85,11 +85,11 @@ export const SkipLink: React.FC<SkipLinkProps> = ({
         zIndex,
         // Apply design system tokens
         borderRadius: tokens.radii.md,
-        fontFamily: tokens.typography.fontFamily.base,
+        fontFamily: tokens.typography.fontFamily.sans,
         fontSize: tokens.typography.fontSize.sm,
         color: tokens.colors.brand.primary,
         backgroundColor: tokens.colors.neutral[100],
-        boxShadow: tokens.shadows.md
+        boxShadow: tokens.boxShadow.md
       }}
     >
       {text}
