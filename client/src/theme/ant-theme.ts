@@ -2,116 +2,152 @@
  * Ant Design Theme Configuration
  * 
  * This file configures the Ant Design theme to match our financial services aesthetic.
- * It overrides default Ant Design tokens with our custom values.
+ * It overrides default Ant Design tokens with our custom design system values.
  */
-import { theme } from '../lib/theme';
+import { theme } from 'antd';
+import { tokens } from './tokens';
 import type { ThemeConfig } from 'antd';
 
 /**
  * Ant Design theme configuration
+ * 
+ * This theme configuration leverages Ant Design's algorithm system for automatic derivative
+ * token generation along with our custom overrides from our design system.
+ * 
  * See: https://ant.design/docs/react/customize-theme
  */
 export const antThemeConfig: ThemeConfig = {
+  // Use Ant Design's algorithm to generate derivative tokens
+  algorithm: [theme.compactAlgorithm, theme.defaultAlgorithm],
+  
+  // Core token overrides
   token: {
-    // Colors
-    colorPrimary: theme.colors.primary.base,
-    colorSuccess: theme.colors.status.success,
-    colorWarning: theme.colors.status.warning,
-    colorError: theme.colors.status.error,
-    colorInfo: theme.colors.status.info,
+    // Brand colors
+    colorPrimary: tokens.colors.brand.primary,
+    colorSuccess: tokens.colors.semantic.success,
+    colorWarning: tokens.colors.semantic.warning,
+    colorError: tokens.colors.semantic.error,
+    colorInfo: tokens.colors.semantic.info,
     
     // Typography
-    fontFamily: theme.typography.fontFamily,
-    fontSize: 16,
+    fontFamily: tokens.typography.fontFamily.base,
+    fontSize: parseInt(tokens.typography.fontSize.md),
+    fontWeightStrong: tokens.typography.fontWeight.semibold,
     
-    // Border radius
-    borderRadius: 6,
+    // Border radius - using our standardized radius
+    borderRadius: parseInt(tokens.radii.md),
     
-    // Spacing
-    padding: 16,
-    margin: 16,
+    // Spacing - sync with our spacing scale
+    padding: parseInt(tokens.spacing.md),
+    margin: parseInt(tokens.spacing.md),
     
     // Border color
-    colorBorder: theme.colors.border.light,
+    colorBorder: tokens.colors.neutral[400],
     
     // Text colors
-    colorText: theme.colors.text.primary,
-    colorTextSecondary: theme.colors.text.secondary,
-    colorTextTertiary: theme.colors.text.muted,
+    colorText: tokens.colors.neutral[900],
+    colorTextSecondary: tokens.colors.neutral[700],
+    colorTextTertiary: tokens.colors.neutral[600],
+    colorTextQuaternary: tokens.colors.neutral[500],
     
     // Background colors
-    colorBgContainer: theme.colors.background.card,
-    colorBgElevated: theme.colors.background.card,
-    colorBgLayout: theme.colors.background.page,
+    colorBgContainer: tokens.colors.neutral[100],
+    colorBgElevated: tokens.colors.neutral[100],
+    colorBgLayout: tokens.colors.neutral[200],
     
     // Style settings
-    wireframe: false, // Set to true for a more minimalistic style
+    wireframe: false,
+    motion: true,
   },
   
   // Component specific overrides
   components: {
     Button: {
-      borderRadius: 6,
+      borderRadius: parseInt(tokens.radii.md),
       controlHeight: 40,
-      paddingContentHorizontal: 16,
-      fontSize: 14,
-      fontWeight: 500,
+      paddingContentHorizontal: parseInt(tokens.spacing[4]),
+      fontSize: parseInt(tokens.typography.fontSize.sm),
+      fontWeight: tokens.typography.fontWeight.medium,
+      // Add component-specific algorithm
+      algorithm: true,
     },
     Card: {
-      borderRadius: 8,
-      boxShadow: theme.shadows.sm,
-      colorBorderSecondary: theme.colors.border.light,
-      padding: 24,
+      borderRadius: parseInt(tokens.radii.lg),
+      boxShadow: tokens.shadows.sm,
+      colorBorderSecondary: tokens.colors.neutral[400],
+      padding: parseInt(tokens.spacing[6]),
     },
     Input: {
-      borderRadius: 6,
+      borderRadius: parseInt(tokens.radii.md),
       controlHeight: 40,
-      paddingInline: 12,
-      colorBorder: theme.colors.border.default,
+      paddingInline: parseInt(tokens.spacing[3]),
+      colorBorder: tokens.colors.neutral[400],
     },
     Select: {
-      borderRadius: 6,
+      borderRadius: parseInt(tokens.radii.md),
       controlHeight: 40,
-      colorBorder: theme.colors.border.default,
+      colorBorder: tokens.colors.neutral[400],
+      colorTextPlaceholder: tokens.colors.neutral[600],
+      optionSelectedBg: tokens.colors.brand.primaryLighter,
+      optionSelectedColor: tokens.colors.brand.primary,
     },
     Table: {
-      borderRadius: 8,
-      headerBg: theme.colors.background.subtle,
-      headerColor: theme.colors.text.primary,
-      fontWeightStrong: 600,
-      fontSize: 14,
-      paddingContentVertical: 16,
-      paddingContentHorizontal: 16,
+      borderRadius: parseInt(tokens.radii.lg),
+      headerBg: tokens.colors.neutral[300],
+      headerColor: tokens.colors.neutral[900],
+      fontWeightStrong: tokens.typography.fontWeight.semibold,
+      fontSize: parseInt(tokens.typography.fontSize.sm),
+      paddingContentVertical: parseInt(tokens.spacing[4]),
+      paddingContentHorizontal: parseInt(tokens.spacing[4]),
+      rowHoverBg: tokens.colors.brand.primaryLighter,
     },
     Pagination: {
-      borderRadius: 6,
-      colorPrimary: theme.colors.primary.base,
-      colorBgContainer: theme.colors.background.card,
+      borderRadius: parseInt(tokens.radii.md),
+      colorPrimary: tokens.colors.brand.primary,
+      colorBgContainer: tokens.colors.neutral[100],
     },
     Modal: {
-      borderRadius: 8,
-      padding: 24,
-      titleFontSize: 18,
+      borderRadius: parseInt(tokens.radii.lg),
+      padding: parseInt(tokens.spacing[6]),
+      titleFontSize: parseInt(tokens.typography.fontSize.xl),
     },
     Menu: {
       colorItemBg: 'transparent',
-      colorItemText: theme.colors.text.primary,
-      colorItemTextSelected: theme.colors.primary.base,
-      colorItemBgSelected: theme.colors.background.selected,
-      colorItemBgHover: theme.colors.background.selected,
-      borderRadius: 6,
+      colorItemText: tokens.colors.neutral[900],
+      colorItemTextSelected: tokens.colors.brand.primary,
+      colorItemBgSelected: tokens.colors.brand.primaryLighter,
+      colorItemBgHover: tokens.colors.neutral[300],
+      borderRadius: parseInt(tokens.radii.md),
     },
     Tabs: {
-      colorPrimary: theme.colors.primary.base,
-      colorBorder: theme.colors.border.light,
+      colorPrimary: tokens.colors.brand.primary,
+      colorBorder: tokens.colors.neutral[400],
       margin: 0,
     },
     Tooltip: {
-      colorBgDefault: theme.colors.text.primary,
+      colorBgDefault: tokens.colors.neutral[900],
+      borderRadius: parseInt(tokens.radii.md),
     },
     Typography: {
-      colorText: theme.colors.text.primary,
-      colorTextSecondary: theme.colors.text.secondary,
+      colorText: tokens.colors.neutral[900],
+      colorTextSecondary: tokens.colors.neutral[700],
+      fontWeightStrong: tokens.typography.fontWeight.semibold,
+    },
+    Dropdown: {
+      borderRadius: parseInt(tokens.radii.md),
+      controlHeight: 40,
+      boxShadow: tokens.shadows.md,
+    },
+    Popover: {
+      borderRadius: parseInt(tokens.radii.md),
+      boxShadow: tokens.shadows.md,
+    },
+    Tag: {
+      borderRadius: parseInt(tokens.radii.pill),
+      fontSize: parseInt(tokens.typography.fontSize.xs),
+    },
+    Avatar: {
+      borderRadius: parseInt(tokens.radii.pill),
     }
   },
 };
