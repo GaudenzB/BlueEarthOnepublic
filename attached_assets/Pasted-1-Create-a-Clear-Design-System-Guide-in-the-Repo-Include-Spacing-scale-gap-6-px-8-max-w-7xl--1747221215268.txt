@@ -1,0 +1,69 @@
+1. Create a Clear Design System Guide in the Repo
+Include:
+
+Spacing scale (gap-6, px-8, max-w-7xl)
+
+Font sizes (text-base, text-sm, font-semibold)
+
+Card component standard (border, rounded-xl, shadow-sm)
+
+Avatar fallback style (initials, font size, color)
+
+Badge styling rules (e.g., status → rounded pill, lowercase, color palette)
+
+📁 Suggested location:
+
+bash
+Copy
+Edit
+/docs/design-guidelines.md
+2. Centralize Shared Components
+Replace local, per-screen logic like EmployeeCard.tsx with:
+
+tsx
+Copy
+Edit
+import { Card, Avatar, Badge, Typography } from "@/components/ui"
+
+<Card variant="subtle" shadow="sm">
+  <Avatar src={photo} size="lg" fallback={initials} />
+  <Typography.Title size="sm">{name}</Typography.Title>
+  <Typography.Text muted>{position}</Typography.Text>
+  <Badge variant={status === "Active" ? "success" : "neutral"}>
+    {status}
+  </Badge>
+</Card>
+3. Update theme.ts with Brand + Typography Tokens
+Set:
+
+brand.700 → dark navy for headlines
+
+text-muted → gray.500 for secondary info
+
+font.heading = "Inter, sans-serif"
+
+font.body = "Inter, sans-serif"
+
+borderRadius = xl
+
+4. Write Clear Dev Instructions for Replit Chat
+Here’s what to paste into Replit:
+
+markdown
+Copy
+Edit
+Hi Replit — please refactor the Employee Directory and Profile views using our design standards.
+
+Reference:
+- Branding: Professional, understated, modern
+- Typography: Inter, with font sizes defined in `theme.ts`
+- Colors: Use tokens like `brand.700`, `gray.500`, `success.500`
+- Spacing: Use consistent horizontal padding (`px={6}`), grid gaps (`gap-6`)
+- Layout: Cards must use `maxW="300px"`, `borderRadius="xl"`, `shadow="sm"`
+- Avatar: Show initials if no photo; background `gray.100`, font size `lg`
+- Badge: Rounded pill shape, lowercase text, subtle colors (green, gray)
+- Profile view: Two-column layout, with section headers (`text-sm uppercase`) and muted sublabels
+
+Replace ad-hoc or hardcoded styles with shared design tokens and layout rules from `theme.ts`.
+
+Let me know once updated — thank you!

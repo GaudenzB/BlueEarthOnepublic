@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useLocation } from "wouter"
 import { SearchFilters } from "@/components/employee/SearchFilters"
-import { EmployeeCard } from "@/components/employee/EmployeeCard"
 import { 
   Pagination, 
   Empty, 
@@ -14,7 +13,11 @@ import {
 } from "antd"
 import { ReloadOutlined } from "@ant-design/icons"
 import { type Employee } from "@shared/schema"
+// Import from centralized theme system
+import { theme } from "@/lib/theme"
 import { colors } from "@/lib/colors"
+// Import shared UI components
+import { EmployeeCard } from "@/components/ui"
 
 export function EmployeeDirectory() {
   const [location, setLocation] = useLocation();
