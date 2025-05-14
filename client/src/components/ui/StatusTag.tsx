@@ -1,215 +1,246 @@
 import React, { memo } from 'react';
 import { Tag, Tooltip } from 'antd';
-import { 
-  CheckCircleOutlined, 
-  CloseCircleOutlined,
-  ExclamationCircleOutlined,
-  InfoCircleOutlined,
-  ClockCircleOutlined,
-  UserOutlined,
-  ApartmentOutlined,
-  HomeOutlined
+import type { TagProps } from 'antd';
+import {
+  CheckCircleFilled,
+  ClockCircleFilled,
+  CloseCircleFilled,
+  InfoCircleFilled,
+  PauseCircleFilled,
+  SyncOutlined,
 } from '@ant-design/icons';
 import { tokens } from '@/theme/tokens';
 
-export type StatusType = 'active' | 'inactive' | 'on_leave' | 'remote';
+/**
+ * Available status types
+ */
+export type StatusType = 
+  | 'active'
+  | 'inactive'
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'completed'
+  | 'processing'
+  | 'on_leave'
+  | 'remote';
 
+/**
+ * Props for the StatusTag component
+ */
 export interface StatusTagProps {
   /**
-   * Status value
+   * The status to display
    */
   status: StatusType;
   
   /**
-   * Size of the status tag
+   * Optional text override (default is capitalized status)
    */
-  size?: 'small' | 'default' | 'large';
+  text?: string;
   
   /**
-   * Whether to show the status icon
+   * Size of the tag
    */
-  showIcon?: boolean;
+  size?: 'small' | 'medium' | 'large';
   
   /**
-   * Tooltip text when hovering the tag
+   * Whether to animate the tag (pulsing effect for processing status)
+   */
+  animated?: boolean;
+  
+  /**
+   * Optional tooltip text to show on hover
    */
   tooltip?: string;
   
   /**
-   * Optional className for styling
+   * Optional click handler
    */
-  className?: string;
+  onClick?: () => void;
+  
+  /**
+   * Accessibility label for screen readers
+   */
+  ariaLabel?: string;
 }
 
 /**
- * Converts a status value to its corresponding configuration
+ * Configuration for each status type
  */
-const getStatusConfig = (status: StatusType) => {
-  switch (status) {
-    case 'active':
-      return {
-        color: tokens.colors.semantic.success,
-        backgroundColor: tokens.colors.success.light,
-        icon: <CheckCircleOutlined />,
-        text: 'Active',
-        ariaLabel: 'Active status',
-      };
-    
-    case 'inactive':
-      return {
-        color: tokens.colors.semantic.error,
-        backgroundColor: tokens.colors.error.light,
-        icon: <CloseCircleOutlined />,
-        text: 'Inactive',
-        ariaLabel: 'Inactive status',
-      };
-    
-    case 'on_leave':
-      return {
-        color: tokens.colors.semantic.warning,
-        backgroundColor: tokens.colors.warning.light,
-        icon: <ClockCircleOutlined />,
-        text: 'On Leave',
-        ariaLabel: 'On leave status',
-      };
-    
-    case 'remote':
-      return {
-        color: tokens.colors.semantic.info,
-        backgroundColor: tokens.colors.info.light,
-        icon: <HomeOutlined />,
-        text: 'Remote',
-        ariaLabel: 'Remote status',
-      };
-    
-    default:
-      return {
-        color: tokens.colors.neutral['500'],
-        backgroundColor: tokens.colors.neutral['200'],
-        icon: <InfoCircleOutlined />,
-        text: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
-        ariaLabel: `${status.replace('_', ' ')} status`,
-      };
-  }
+const STATUS_CONFIG: Record<StatusType, {
+  color: string; 
+  icon: React.ReactNode; 
+  text: string;
+  borderColor?: string;
+  bg?: string;
+}> = {
+  active: {
+    color: tokens.colors.semantic.success,
+    icon: <CheckCircleFilled />,
+    text: 'Active',
+    bg: tokens.colors.success.light,
+  },
+  inactive: {
+    color: tokens.colors.neutral['600'],
+    icon: <PauseCircleFilled />,
+    text: 'Inactive',
+    bg: tokens.colors.neutral['100'],
+  },
+  pending: {
+    color: tokens.colors.semantic.warning,
+    icon: <ClockCircleFilled />,
+    text: 'Pending',
+    bg: tokens.colors.warning.light,
+  },
+  approved: {
+    color: tokens.colors.semantic.success,
+    icon: <CheckCircleFilled />,
+    text: 'Approved',
+    bg: tokens.colors.success.light,
+  },
+  rejected: {
+    color: tokens.colors.semantic.error,
+    icon: <CloseCircleFilled />,
+    text: 'Rejected',
+    bg: tokens.colors.error.light,
+  },
+  completed: {
+    color: tokens.colors.blue.default,
+    icon: <InfoCircleFilled />,
+    text: 'Completed',
+    bg: tokens.colors.blue.light,
+  },
+  processing: {
+    color: tokens.colors.blue.default,
+    icon: <SyncOutlined spin />,
+    text: 'Processing',
+    bg: tokens.colors.blue.light,
+  },
+  on_leave: {
+    color: tokens.colors.semantic.warning,
+    icon: <PauseCircleFilled />,
+    text: 'On Leave',
+    bg: tokens.colors.warning.light,
+  },
+  remote: {
+    color: tokens.colors.blue.default,
+    icon: <InfoCircleFilled />,
+    text: 'Remote',
+    bg: tokens.colors.blue.light,
+  },
+};
+
+/**
+ * Format the status text - capitalize each word
+ */
+const formatStatusText = (status: StatusType): string => {
+  return status
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
 /**
  * StatusTag Component
  * 
- * A standardized component for displaying status values with consistent 
- * colors, icons, and styling across the application.
+ * A unified component for displaying status indicators throughout the application.
+ * Follows a consistent design language with appropriate colors, icons and sizes.
  * 
  * @example
  * ```tsx
  * // Basic usage
  * <StatusTag status="active" />
  * 
- * // Without icon
- * <StatusTag status="inactive" showIcon={false} />
+ * // With custom text
+ * <StatusTag status="pending" text="Awaiting Review" />
  * 
  * // With tooltip
- * <StatusTag 
- *   status="on_leave" 
- *   tooltip="This employee is on paternity leave until June" 
- * />
+ * <StatusTag status="completed" tooltip="Task finished on March 12, 2025" />
  * 
- * // Custom size
- * <StatusTag status="remote" size="large" />
+ * // Processing state with animation
+ * <StatusTag status="processing" animated />
  * ```
  */
-export const StatusTag: React.FC<StatusTagProps> = memo(({
+function StatusTag({
   status,
-  size = 'default',
-  showIcon = true,
+  text,
+  size = 'medium',
+  animated = false,
   tooltip,
-  className = '',
-}) => {
-  const config = getStatusConfig(status);
+  onClick,
+  ariaLabel,
+}: StatusTagProps): JSX.Element {
+  const config = STATUS_CONFIG[status];
   
-  // Adjust padding based on size
+  // Default to formatted status if no text provided
+  const displayText = text || config.text || formatStatusText(status);
+  
+  // Determine size-specific styles
   const sizeStyles = {
     small: {
-      padding: '0 6px',
-      fontSize: '12px',
+      fontSize: '0.75rem',
+      padding: '0px 6px',
       height: '20px',
-      lineHeight: '20px',
+      iconSize: 12,
     },
-    default: {
-      padding: '0 8px',
-      fontSize: '14px',
+    medium: {
+      fontSize: '0.8125rem',
+      padding: '0px 8px',
       height: '24px',
-      lineHeight: '24px',
+      iconSize: 14,
     },
     large: {
-      padding: '0 10px',
-      fontSize: '16px',
-      height: '30px',
-      lineHeight: '30px',
+      fontSize: '0.875rem',
+      padding: '0px 10px',
+      height: '28px',
+      iconSize: 16,
     },
   };
   
-  // Tag content including icon and text
-  const tagContent = (
-    <>
-      {showIcon && (
-        <span 
-          className="status-icon" 
-          style={{ marginRight: '4px', display: 'inline-flex', alignItems: 'center' }}
-          aria-hidden="true"
-        >
-          {config.icon}
-        </span>
-      )}
-      {config.text}
-    </>
+  const currentSize = sizeStyles[size];
+  
+  // Set tag props
+  const tagProps: TagProps = {
+    icon: animated && status === 'processing' 
+      ? <SyncOutlined spin /> 
+      : config.icon,
+    style: {
+      backgroundColor: config.bg || 'transparent',
+      color: config.color,
+      borderColor: config.borderColor || config.color,
+      padding: currentSize.padding,
+      fontSize: currentSize.fontSize,
+      height: currentSize.height,
+      lineHeight: `${parseInt(currentSize.height) - 2}px`,
+      display: 'inline-flex',
+      alignItems: 'center',
+      fontWeight: 500,
+    },
+    onClick: onClick,
+  };
+  
+  // Create the accessible tag
+  const accessibleTag = (
+    <Tag 
+      {...tagProps} 
+      role="status" 
+      aria-label={ariaLabel || `Status: ${displayText}`}
+    >
+      {displayText}
+    </Tag>
   );
   
-  // Style customizations for the Tag component
-  const tagStyle = {
-    color: config.color,
-    backgroundColor: config.backgroundColor,
-    border: `1px solid ${config.color}`,
-    ...sizeStyles[size],
-    display: 'inline-flex',
-    alignItems: 'center',
-    whiteSpace: 'nowrap',
-    borderRadius: tokens.borderRadius.sm,
-    fontWeight: 500,
-  };
-  
-  // Add accessibility attributes
-  const accessibilityProps = {
-    role: 'status',
-    'aria-label': config.ariaLabel,
-  };
-  
-  // If tooltip is provided, wrap in Tooltip component
+  // Wrap with tooltip if provided
   if (tooltip) {
     return (
       <Tooltip title={tooltip} placement="top">
-        <Tag
-          className={`status-tag ${className}`}
-          style={tagStyle}
-          {...accessibilityProps}
-        >
-          {tagContent}
-        </Tag>
+        {accessibleTag}
       </Tooltip>
     );
   }
   
-  // Otherwise, just return the Tag
-  return (
-    <Tag
-      className={`status-tag ${className}`}
-      style={tagStyle}
-      {...accessibilityProps}
-    >
-      {tagContent}
-    </Tag>
-  );
-});
+  return accessibleTag;
+}
 
-StatusTag.displayName = 'StatusTag';
-
-export default StatusTag;
+export default memo(StatusTag);

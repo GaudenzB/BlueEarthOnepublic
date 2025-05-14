@@ -1,23 +1,11 @@
 /**
- * UI Components Index
+ * UI Components Export
  * 
- * This file exports all shared UI components for easy importing
- * throughout the application.
- * 
- * Usage:
- * import { StatusTag, EmployeeCard, PageHeader } from '@/components/ui';
+ * This file exports all UI components as a centralized entry point.
+ * Components can be imported from '@/components/ui' instead of their individual files.
  */
 
-// Export all UI components
 export { default as StatusTag } from './StatusTag';
-export { default as EmployeeCard } from './EmployeeCard';
-export { default as PageHeader } from './PageHeader';
-export { default as CardContainer } from './CardContainer';
-export { default as EmptyState } from './EmptyState';
+export type { StatusTagProps, StatusType } from './StatusTag';
 
-// Re-export component types
-export type { StatusTagProps } from './StatusTag';
-export type { EmployeeCardProps } from './EmployeeCard';
-export type { PageHeaderProps } from './PageHeader';
-export type { CardContainerProps } from './CardContainer';
-export type { EmptyStateProps } from './EmptyState';
+// Add other UI component exports here as they're created

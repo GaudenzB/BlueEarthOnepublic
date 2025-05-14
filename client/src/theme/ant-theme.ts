@@ -1,240 +1,263 @@
-/**
- * Ant Design Theme Configuration
- * 
- * This file configures the Ant Design theme to match our design system tokens.
- * It customizes component styles globally for a consistent look and feel.
- */
-
-import { ThemeConfig } from 'antd';
+import { theme } from 'antd';
+import type { ThemeConfig } from 'antd';
 import { tokens } from './tokens';
 
 /**
- * Ant Design theme configuration
+ * Ant Design Theme Configuration
  * 
- * This theme configuration customizes Ant Design components to match
- * our design system. It uses tokens from our design system to ensure
- * visual consistency across all components.
+ * This file configures the Ant Design theme using our design system tokens,
+ * ensuring consistent styling across all Ant Design components.
  */
+
+// Create the theme configuration
 export const antTheme: ThemeConfig = {
+  algorithm: theme.defaultAlgorithm,
   token: {
     // Colors
     colorPrimary: tokens.colors.brand.primary,
     colorPrimaryBg: tokens.colors.brand.primaryLight,
-    colorPrimaryHover: tokens.colors.brand.primaryDark,
-    colorLink: tokens.colors.brand.primary,
-    colorLinkHover: tokens.colors.brand.primaryDark,
+    colorPrimaryBgHover: tokens.colors.brand.primaryLight,
+    colorPrimaryBorder: tokens.colors.brand.primary,
+    colorPrimaryText: tokens.colors.brand.primary,
+    colorPrimaryTextHover: tokens.colors.brand.primaryLight,
+    colorPrimaryHover: tokens.colors.brand.primaryLight,
+    colorPrimaryActive: tokens.colors.brand.primaryDark,
+    
     colorSuccess: tokens.colors.semantic.success,
     colorWarning: tokens.colors.semantic.warning,
     colorError: tokens.colors.semantic.error,
     colorInfo: tokens.colors.semantic.info,
-    colorTextBase: tokens.colors.neutral[800],
-    colorBgBase: tokens.colors.neutral[50],
     
-    // Typography
-    fontFamily: tokens.typography.fontFamily.base,
+    colorTextBase: tokens.colors.neutral['800'],
+    colorTextSecondary: tokens.colors.neutral['700'],
+    colorTextTertiary: tokens.colors.neutral['600'],
+    colorTextQuaternary: tokens.colors.neutral['500'],
+    
+    colorBgBase: tokens.colors.neutral['50'],
+    colorBgContainer: '#ffffff',
+    colorBgElevated: '#ffffff',
+    colorBgLayout: tokens.colors.neutral['100'],
+    
+    // Border radius
+    borderRadius: parseInt(tokens.borderRadius.md),
+    borderRadiusLG: parseInt(tokens.borderRadius.lg),
+    borderRadiusSM: parseInt(tokens.borderRadius.sm),
+    borderRadiusXS: parseInt(tokens.borderRadius.xs),
+    
+    // Font family
+    fontFamily: tokens.typography.fontFamily.sans,
+    
+    // Font size
     fontSize: parseInt(tokens.typography.fontSize.base),
     fontSizeSM: parseInt(tokens.typography.fontSize.sm),
     fontSizeLG: parseInt(tokens.typography.fontSize.lg),
-    fontSizeXL: parseInt(tokens.typography.fontSize.xl),
-    fontWeightStrong: tokens.typography.fontWeight.semibold,
     
-    // Border radius
-    borderRadius: parseInt(tokens.radii.md),
-    borderRadiusLG: parseInt(tokens.radii.lg),
-    borderRadiusSM: parseInt(tokens.radii.sm),
-    borderRadiusXS: parseInt(tokens.radii.sm) / 2,
+    // Line height
+    lineHeight: tokens.typography.lineHeight.normal,
+    lineHeightLG: tokens.typography.lineHeight.relaxed,
+    lineHeightSM: tokens.typography.lineHeight.snug,
     
     // Spacing
-    padding: parseInt(tokens.spacing[4]),
-    paddingSM: parseInt(tokens.spacing[3]),
-    paddingXS: parseInt(tokens.spacing[2]),
-    paddingLG: parseInt(tokens.spacing[6]),
-    paddingXL: parseInt(tokens.spacing[8]),
-    margin: parseInt(tokens.spacing[4]),
-    marginSM: parseInt(tokens.spacing[3]),
-    marginXS: parseInt(tokens.spacing[2]),
-    marginLG: parseInt(tokens.spacing[6]),
-    marginXL: parseInt(tokens.spacing[8]),
+    marginXS: parseInt(tokens.spacing['1']),
+    marginSM: parseInt(tokens.spacing['2']),
+    margin: parseInt(tokens.spacing['3']),
+    marginMD: parseInt(tokens.spacing['4']),
+    marginLG: parseInt(tokens.spacing['5']),
+    marginXL: parseInt(tokens.spacing['6']),
+    marginXXL: parseInt(tokens.spacing['8']),
     
-    // Box shadow
-    boxShadow: tokens.shadows.md,
-    boxShadowSecondary: tokens.shadows.sm,
+    // Padding
+    paddingXS: parseInt(tokens.spacing['1']),
+    paddingSM: parseInt(tokens.spacing['2']),
+    padding: parseInt(tokens.spacing['3']),
+    paddingMD: parseInt(tokens.spacing['4']),
+    paddingLG: parseInt(tokens.spacing['5']),
+    paddingXL: parseInt(tokens.spacing['6']),
     
-    // Motion
-    motionEaseInOut: tokens.easings.inOut,
-    motionEaseOut: tokens.easings.out,
-    motionEaseIn: tokens.easings.in,
-    motionDurationFast: '0.2s',
-    motionDurationMid: '0.3s',
-    motionDurationSlow: '0.4s'
+    // Box shadows
+    boxShadow: tokens.boxShadow.sm,
+    boxShadowSecondary: tokens.boxShadow.md,
+    
+    // Animation
+    motionDurationFast: tokens.animation.duration.fast,
+    motionDurationMid: tokens.animation.duration.normal,
+    motionDurationSlow: tokens.animation.duration.slow,
+    
+    motionEaseOut: tokens.animation.easing.easeOut,
+    motionEaseInOut: tokens.animation.easing.easeInOut,
+    
+    // Control height
+    controlHeightSM: 24,
+    controlHeight: 32,
+    controlHeightLG: 40,
+    
+    // Control outline width
+    controlOutlineWidth: 2,
+    
+    // Z-index
+    zIndexBase: tokens.zIndex['0'],
+    zIndexPopupBase: tokens.zIndex['50'],
+    
+    // Opacity
+    opacityLoading: parseFloat(tokens.opacity['50']),
+    
+    // Wire frames
+    wireframe: false,
   },
-  
-  // Component-specific customizations
   components: {
     Button: {
-      primaryColor: tokens.colors.brand.primary,
-      defaultBorderColor: tokens.colors.neutral[300],
-      defaultColor: tokens.colors.neutral[700],
-      defaultBg: tokens.colors.neutral[100],
-      fontWeight: tokens.typography.fontWeight.medium,
-      borderRadius: parseInt(tokens.radii.md),
-      controlHeight: 40,
-      controlHeightLG: 48,
-      controlHeightSM: 32,
-      paddingInlineLG: 20,
-      paddingInline: 16,
-      paddingInlineSM: 12
+      borderRadius: parseInt(tokens.borderRadius.sm),
+      borderRadiusLG: parseInt(tokens.borderRadius.md),
+      borderRadiusSM: parseInt(tokens.borderRadius.xs),
+      colorBorder: tokens.colors.neutral['300'],
+      boxShadow: tokens.boxShadow.none,
+      controlHeightLG: 40,
+      controlHeight: 32,
+      controlHeightSM: 24,
+      paddingInlineLG: 16,
+      paddingInline: 12,
+      paddingInlineSM: 8,
     },
-    
     Card: {
-      borderRadius: parseInt(tokens.radii.lg),
-      boxShadow: tokens.shadows.sm,
-      headerBg: tokens.colors.neutral[50],
-      headerFontSize: parseInt(tokens.typography.fontSize.md),
-      headerFontWeight: tokens.typography.fontWeight.semibold,
-      paddingLG: parseInt(tokens.spacing[6]),
-      colorBorderSecondary: tokens.colors.neutral[200]
+      colorBorderSecondary: tokens.colors.neutral['200'],
+      borderRadius: parseInt(tokens.borderRadius.md),
+      boxShadow: tokens.boxShadow.sm,
+      paddingLG: parseInt(tokens.spacing['5']),
     },
-    
-    Layout: {
-      headerBg: tokens.colors.neutral[50],
-      headerHeight: 64,
-      headerPadding: `0 ${tokens.spacing[6]}`,
-      headerColor: tokens.colors.neutral[800],
-      siderBg: tokens.colors.neutral[50],
-      triggerHeight: 48,
-      triggerBg: tokens.colors.neutral[200],
-      triggerColor: tokens.colors.neutral[700],
-      footerBg: tokens.colors.neutral[50],
-      footerPadding: tokens.spacing[6],
+    Table: {
+      borderRadius: parseInt(tokens.borderRadius.sm),
+      colorBgContainer: '#ffffff',
+      colorBorderSecondary: tokens.colors.neutral['200'],
+      paddingContentVerticalLG: parseInt(tokens.spacing['4']),
+      paddingContentHorizontalLG: parseInt(tokens.spacing['4']),
+      headerBg: tokens.colors.neutral['50'],
+      headerColor: tokens.colors.neutral['700'],
+      headerSortActiveBg: tokens.colors.neutral['100'],
+      headerFilterHoverBg: tokens.colors.neutral['200'],
+      footerBg: tokens.colors.neutral['50'],
+      rowHoverBg: tokens.colors.neutral['100'],
+      borderRadiusLG: parseInt(tokens.borderRadius.md),
+      borderRadiusSM: parseInt(tokens.borderRadius.xs),
     },
-    
+    Select: {
+      borderRadius: parseInt(tokens.borderRadius.sm),
+      colorBorder: tokens.colors.neutral['300'],
+      controlItemBgActive: tokens.colors.neutral['100'],
+      controlItemBgHover: tokens.colors.neutral['50'],
+      colorTextPlaceholder: tokens.colors.neutral['500'],
+      colorTextDisabled: tokens.colors.neutral['400'],
+      borderRadiusLG: parseInt(tokens.borderRadius.md),
+      borderRadiusSM: parseInt(tokens.borderRadius.xs),
+    },
+    Input: {
+      borderRadius: parseInt(tokens.borderRadius.sm),
+      colorBorder: tokens.colors.neutral['300'],
+      colorTextPlaceholder: tokens.colors.neutral['500'],
+      colorTextDisabled: tokens.colors.neutral['400'],
+      borderRadiusLG: parseInt(tokens.borderRadius.md),
+      borderRadiusSM: parseInt(tokens.borderRadius.xs),
+    },
     Menu: {
-      itemHeight: 48,
-      itemHoverBg: tokens.colors.brand.primaryLight,
-      itemHoverColor: tokens.colors.brand.primary,
+      colorItemBgActive: tokens.colors.neutral['100'],
+      colorItemBgHover: tokens.colors.neutral['50'],
+      itemColor: tokens.colors.neutral['700'],
+      itemActiveBg: tokens.colors.brand.primaryLight,
       itemSelectedBg: tokens.colors.brand.primaryLight,
       itemSelectedColor: tokens.colors.brand.primary,
-      itemBorderRadius: parseInt(tokens.radii.md),
-      subMenuItemBorderRadius: parseInt(tokens.radii.md),
-      horizontalItemBorderRadius: parseInt(tokens.radii.md),
-      horizontalItemHoverBg: tokens.colors.brand.primaryLight,
-      horizontalItemSelectedBg: tokens.colors.brand.primaryLight,
-      horizontalItemSelectedColor: tokens.colors.brand.primary
+      borderRadius: parseInt(tokens.borderRadius.md),
+      boxShadow: tokens.boxShadow.md,
     },
-    
-    Table: {
-      headerBg: tokens.colors.neutral[100],
-      headerColor: tokens.colors.neutral[800],
-      headerSortActiveBg: tokens.colors.neutral[200],
-      headerFilterActiveBg: tokens.colors.neutral[200],
-      rowHoverBg: tokens.colors.neutral[100],
-      borderColor: tokens.colors.neutral[200],
-      borderRadius: parseInt(tokens.radii.md),
-      headerBorderRadius: parseInt(tokens.radii.md)
-    },
-    
-    Form: {
-      itemMarginBottom: parseInt(tokens.spacing[5]),
-      verticalLabelPadding: `0 0 ${tokens.spacing[2]} 0`,
-      labelColor: tokens.colors.neutral[700],
-      labelFontSize: parseInt(tokens.typography.fontSize.sm),
-      labelHeight: 24,
-      labelColonMarginInlineEnd: parseInt(tokens.spacing[2]),
-      labelRequiredMarkColor: tokens.colors.semantic.error,
-      controlHeight: 40,
-      controlHeightLG: 48,
-      controlHeightSM: 32
-    },
-    
-    Input: {
-      activeBorderColor: tokens.colors.brand.primary,
-      hoverBorderColor: tokens.colors.brand.primary,
-      activeShadow: `0 0 0 2px ${tokens.colors.brand.primaryLight}`,
-      errorActiveShadow: `0 0 0 2px ${tokens.colors.semantic.error}10`,
-      borderRadius: parseInt(tokens.radii.md),
-      colorError: tokens.colors.semantic.error,
-      colorErrorOutline: `rgba(${parseInt(tokens.colors.semantic.error.slice(1, 3), 16)}, ${parseInt(tokens.colors.semantic.error.slice(3, 5), 16)}, ${parseInt(tokens.colors.semantic.error.slice(5, 7), 16)}, 0.2)`,
-      paddingInline: parseInt(tokens.spacing[3]),
-      controlHeight: 40,
-      controlHeightLG: 48,
-      controlHeightSM: 32
-    },
-    
-    Select: {
-      optionSelectedBg: tokens.colors.brand.primaryLight,
-      optionSelectedColor: tokens.colors.brand.primary,
-      optionActiveBg: tokens.colors.brand.primaryLight,
-      borderRadius: parseInt(tokens.radii.md),
-      controlHeight: 40,
-      controlHeightLG: 48,
-      controlHeightSM: 32,
-      boxShadow: tokens.shadows.md
-    },
-    
-    DatePicker: {
-      cellActiveWithRangeBg: tokens.colors.brand.primaryLight,
-      cellHoverWithRangeBg: `${tokens.colors.brand.primary}20`,
-      cellRangeBorderColor: tokens.colors.brand.primary,
-      timeColumnHeight: 224,
-      cellHeight: 32,
-      borderRadius: parseInt(tokens.radii.md),
-      cellRangeBorderRadius: parseInt(tokens.radii.sm)
-    },
-    
     Modal: {
-      paddingMD: parseInt(tokens.spacing[6]),
-      headerPaddingVertical: parseInt(tokens.spacing[4]),
-      headerFontSize: parseInt(tokens.typography.fontSize.xl),
-      headerBg: tokens.colors.neutral[50],
-      contentBg: tokens.colors.neutral[50],
-      titleFontSize: parseInt(tokens.typography.fontSize.xl),
-      titleLineHeight: 1.5,
-      borderRadius: parseInt(tokens.radii.lg),
-      footerBg: tokens.colors.neutral[50]
+      borderRadius: parseInt(tokens.borderRadius.lg),
+      colorBgElevated: '#ffffff',
+      colorBgMask: 'rgba(0, 0, 0, 0.45)',
+      boxShadow: tokens.boxShadow.lg,
+      headerBg: 'transparent',
+      titleColor: tokens.colors.neutral['900'],
+      contentBg: '#ffffff',
+      padding: parseInt(tokens.spacing['5']),
     },
-    
-    Tabs: {
-      cardBg: tokens.colors.neutral[100],
-      cardHeight: 40,
-      cardPadding: `0 ${tokens.spacing[4]}`,
-      cardGutter: parseInt(tokens.spacing[2]),
-      itemSelectedColor: tokens.colors.brand.primary,
-      itemHoverColor: tokens.colors.brand.primary,
-      itemActiveColor: tokens.colors.brand.primary,
-      inkBarColor: tokens.colors.brand.primary,
-      horizontalItemPadding: `${tokens.spacing[3]} ${tokens.spacing[4]}`,
-      horizontalItemMargin: `0 ${tokens.spacing[2]} 0 0`,
-      titleFontSize: parseInt(tokens.typography.fontSize.md)
+    Drawer: {
+      colorBgElevated: '#ffffff',
+      colorBgMask: 'rgba(0, 0, 0, 0.45)',
+      footerPaddingBlock: parseInt(tokens.spacing['4']),
+      footerPaddingInline: parseInt(tokens.spacing['4']),
     },
-    
-    Tooltip: {
-      colorBgDefault: tokens.colors.neutral[800],
-      borderRadius: parseInt(tokens.radii.md),
-      zIndexPopup: tokens.zIndices.popover
-    },
-    
-    Message: {
-      contentPadding: `${tokens.spacing[3]} ${tokens.spacing[4]}`,
-      contentBg: tokens.colors.neutral[800],
-      contentBorderRadius: parseInt(tokens.radii.md)
-    },
-    
-    Notification: {
-      paddingVertical: parseInt(tokens.spacing[4]),
-      paddingHorizontal: parseInt(tokens.spacing[4]),
-      width: 384,
-      borderRadius: parseInt(tokens.radii.md),
-      boxShadow: tokens.shadows.lg,
-      colorBgElevated: tokens.colors.neutral[50]
-    },
-    
     Tag: {
-      defaultBg: `${tokens.colors.brand.primary}10`,
-      defaultColor: tokens.colors.brand.primary,
-      borderRadiusSM: parseInt(tokens.radii.sm),
-      lineHeight: 1.5
-    }
+      colorBorder: 'transparent',
+      defaultBg: tokens.colors.neutral['100'],
+      defaultColor: tokens.colors.neutral['800'],
+    },
+    Tabs: {
+      cardGutter: 2,
+      cardHeight: 40,
+      horizontalItemGutter: 32,
+      titleFontSize: parseInt(tokens.typography.fontSize.base),
+      horizontalItemPadding: '12px 16px',
+    },
+    Dropdown: {
+      controlItemBgHover: tokens.colors.neutral['100'],
+      controlItemBgActive: tokens.colors.brand.primaryLight,
+      borderRadius: parseInt(tokens.borderRadius.md),
+      boxShadow: tokens.boxShadow.md,
+    },
+    Pagination: {
+      itemActiveBg: tokens.colors.brand.primary,
+      itemSize: 32,
+      itemSizeSM: 24,
+      colorPrimary: tokens.colors.brand.primary,
+      colorPrimaryHover: tokens.colors.brand.primaryLight,
+      colorPrimaryBorder: tokens.colors.brand.primary,
+    },
+    DatePicker: {
+      borderRadius: parseInt(tokens.borderRadius.sm),
+      cellHeight: 36,
+      cellWidth: 36,
+      cellHoverBg: tokens.colors.neutral['100'],
+      borderRadiusLG: parseInt(tokens.borderRadius.md),
+      borderRadiusSM: parseInt(tokens.borderRadius.xs),
+      cellBgDisabled: tokens.colors.neutral['100'],
+    },
+    Form: {
+      labelColor: tokens.colors.neutral['700'],
+      colorTextHeading: tokens.colors.neutral['800'],
+      itemMarginBottom: parseInt(tokens.spacing['4']),
+    },
+    Badge: {
+      colorBgContainer: '#ffffff',
+    },
+    Avatar: {
+      colorBgContainer: '#ffffff',
+      colorTextLightSolid: '#ffffff',
+    },
+    Alert: {
+      colorSuccess: tokens.colors.semantic.success,
+      colorSuccessBg: tokens.colors.success.light,
+      colorWarning: tokens.colors.semantic.warning,
+      colorWarningBg: tokens.colors.warning.light,
+      colorError: tokens.colors.semantic.error,
+      colorErrorBg: tokens.colors.error.light,
+      colorInfo: tokens.colors.semantic.info,
+      colorInfoBg: tokens.colors.info.light,
+    },
+    Notification: {
+      boxShadow: tokens.boxShadow.lg,
+      borderRadius: parseInt(tokens.borderRadius.md),
+    },
+    Tooltip: {
+      borderRadius: parseInt(tokens.borderRadius.xs),
+      colorTextLightSolid: '#ffffff',
+    },
+    Popover: {
+      colorBgElevated: '#ffffff',
+      borderRadius: parseInt(tokens.borderRadius.md),
+      boxShadow: tokens.boxShadow.md,
+    },
+    Spin: {
+      dotSize: 20,
+      dotSizeLG: 32,
+      dotSizeSM: 14,
+    },
   }
 };
 
