@@ -41,18 +41,28 @@ export function SearchFilters({
   return (
     <Card 
       className="shadow-sm mb-6" 
-      style={{ borderRadius: '8px', borderColor: 'var(--border)' }}
+      style={{ 
+        borderRadius: '8px',
+        border: '1px solid #eaecf0',
+        boxShadow: '0 1px 2px rgba(16, 24, 40, 0.05)',
+        background: '#ffffff'
+      }}
     >
-      <div className="p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="p-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {/* Search Input */}
           <div className="md:col-span-2">
             <Input
               placeholder="Search by name, department, or position..."
               value={searchTerm}
               onChange={(e) => onSearch(e.target.value)}
-              prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
-              style={{ borderRadius: '6px' }}
+              prefix={<SearchOutlined style={{ color: '#64748b' }} />}
+              style={{ 
+                borderRadius: '6px',
+                height: '40px',
+                borderColor: '#d1d5db',
+                boxShadow: 'none'
+              }}
               allowClear
             />
           </div>
@@ -63,8 +73,12 @@ export function SearchFilters({
               value={department || "all"}
               onChange={onDepartmentFilter}
               placeholder="All Departments"
-              style={{ width: '100%', borderRadius: '6px' }}
-              suffixIcon={<FilterOutlined />}
+              style={{ 
+                width: '100%', 
+                height: '40px',
+              }}
+              suffixIcon={<FilterOutlined style={{ color: '#64748b' }} />}
+              popupClassName="financial-select-dropdown"
             >
               <Option value="all">All Departments</Option>
               <Option value="engineering">Engineering</Option>
@@ -80,26 +94,37 @@ export function SearchFilters({
         </div>
         
         {/* Additional Filters */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-3">
           <Button 
             type={activeOnly ? "primary" : "default"}
             onClick={onStatusFilter}
             style={{ 
               display: 'flex', 
               alignItems: 'center',
-              height: '36px',
-              backgroundColor: activeOnly ? colors.primary.base : undefined,
-              borderRadius: '6px'
+              height: '38px',
+              backgroundColor: activeOnly ? colors.primary.base : '#f9fafb',
+              borderColor: activeOnly ? colors.primary.base : '#d1d5db',
+              borderRadius: '6px',
+              boxShadow: activeOnly ? '0 1px 2px rgba(14, 74, 134, 0.05)' : 'none',
+              fontWeight: 500
             }}
-            icon={<CheckCircleOutlined style={{ color: activeOnly ? 'white' : '#22c55e' }} />}
+            icon={<CheckCircleOutlined style={{ 
+              color: activeOnly ? 'white' : '#10b981',
+              fontSize: '16px'
+            }} />}
           >
-            Active Only
+            <span style={{ marginLeft: '4px' }}>Active Only</span>
           </Button>
           
           <Radio.Group 
             value={sortBy ? `${sortBy}-${sortDirection}` : undefined} 
             buttonStyle="solid"
             className="ml-2"
+            style={{
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              overflow: 'hidden'
+            }}
           >
             <Radio.Button 
               value={`name-${sortDirection}`}
@@ -107,14 +132,18 @@ export function SearchFilters({
               style={{ 
                 display: 'flex', 
                 alignItems: 'center',
-                height: '36px',
-                borderRadius: sortBy === "name" ? '6px' : undefined
+                height: '38px',
+                borderRight: '1px solid #d1d5db',
+                borderColor: '#d1d5db',
+                fontWeight: 500,
+                background: sortBy === "name" ? '#f0f7ff' : '#ffffff',
+                color: sortBy === "name" ? '#0e4a86' : '#64748b'
               }}
             >
               {sortBy === "name" && sortDirection === "desc" ? (
-                <SortDescendingOutlined style={{ marginRight: '4px' }} />
+                <SortDescendingOutlined style={{ marginRight: '6px', fontSize: '14px' }} />
               ) : (
-                <SortAscendingOutlined style={{ marginRight: '4px' }} />
+                <SortAscendingOutlined style={{ marginRight: '6px', fontSize: '14px' }} />
               )}
               Name
             </Radio.Button>
@@ -125,11 +154,14 @@ export function SearchFilters({
               style={{ 
                 display: 'flex', 
                 alignItems: 'center',
-                height: '36px',
-                borderRadius: sortBy === "department" ? '6px' : undefined
+                height: '38px',
+                borderColor: '#d1d5db',
+                fontWeight: 500,
+                background: sortBy === "department" ? '#f0f7ff' : '#ffffff',
+                color: sortBy === "department" ? '#0e4a86' : '#64748b'
               }}
             >
-              <BankOutlined style={{ marginRight: '4px' }} />
+              <BankOutlined style={{ marginRight: '6px', fontSize: '14px' }} />
               Department
             </Radio.Button>
           </Radio.Group>

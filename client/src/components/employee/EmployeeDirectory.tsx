@@ -219,7 +219,7 @@ export function EmployeeDirectory() {
         
         <div className="directory-container overflow-auto">
           <Spin spinning={true} tip="Loading employees..." className="flex justify-center my-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array(8).fill(0).map((_, index) => (
                 <EmployeeCard 
                   key={index} 
@@ -287,7 +287,7 @@ export function EmployeeDirectory() {
       ) : (
         <>
           <div className="directory-container overflow-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {paginatedEmployees.map(employee => (
                 <EmployeeCard 
                   key={employee.id} 
@@ -300,7 +300,7 @@ export function EmployeeDirectory() {
           
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-6 py-4 flex items-center justify-center">
+            <div className="mt-8 pt-6 pb-4 flex items-center justify-center border-t border-gray-100">
               <Pagination
                 current={currentPage}
                 total={filteredEmployees.length}
@@ -311,10 +311,20 @@ export function EmployeeDirectory() {
                 }}
                 showSizeChanger={false}
                 showTotal={(total, range) => (
-                  <span className="text-sm text-muted-foreground hidden md:inline-block mr-4">
+                  <span 
+                    className="text-sm hidden md:inline-block mr-4"
+                    style={{ 
+                      color: '#64748b', 
+                      fontWeight: 500,
+                      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                    }}
+                  >
                     Showing {range[0]}-{range[1]} of {total} employees
                   </span>
                 )}
+                style={{
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }}
               />
             </div>
           )}

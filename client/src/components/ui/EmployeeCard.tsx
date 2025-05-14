@@ -32,10 +32,18 @@ const CARD_STYLES = {
     fontSize: '14px',
     color: '#64748b'
   },
-  iconColor: '#4f46e5',
+  iconColor: '#0e4a86', // Updated to match primary blue from theme
   infoLabel: {
     fontSize: '13px',
     color: '#374151'
+  },
+  card: {
+    boxShadow: '0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
+    borderRadius: '8px',
+    transition: 'all 0.2s ease-in-out',
+    hover: {
+      boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)'
+    }
   }
 };
 
@@ -122,11 +130,12 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
         className={`employee-card ${className}`}
         variant="outlined"
         style={{
-          borderRadius: '8px',
           overflow: 'hidden',
           height: '100%',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          background: '#fff'
+          boxShadow: CARD_STYLES.card.boxShadow,
+          borderRadius: CARD_STYLES.card.borderRadius,
+          background: '#fff',
+          border: '1px solid #eaecf0'
         }}
       >
         <div style={{ padding: '16px' }}>
@@ -170,12 +179,14 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
           variant="outlined"
           onClick={handleClick}
           style={{
-            borderRadius: '8px',
             overflow: 'hidden',
             height: '100%',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            boxShadow: CARD_STYLES.card.boxShadow,
+            borderRadius: CARD_STYLES.card.borderRadius,
             cursor: 'pointer',
-            background: '#fff'
+            background: '#fff',
+            border: '1px solid #eaecf0',
+            transition: CARD_STYLES.card.transition
           }}
         >
           <div style={{ 
@@ -250,10 +261,12 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
       hoverable
       variant="outlined"
       style={{
-        borderRadius: '8px',
         overflow: 'hidden',
         height: '100%',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        boxShadow: CARD_STYLES.card.boxShadow,
+        borderRadius: CARD_STYLES.card.borderRadius,
+        border: '1px solid #eaecf0',
+        transition: CARD_STYLES.card.transition
       }}
     >
       <Link href={getEmployeeDetailUrl(employee.id)} className="block cursor-pointer">
