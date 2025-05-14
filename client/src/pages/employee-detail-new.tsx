@@ -288,72 +288,13 @@ export default function EmployeeDetail() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Profile Card */}
-        <Card className="md:col-span-1">
-          <div className="px-6 pt-6 pb-4 text-center">
-            <Avatar
-              size={128}
-              src={employee.avatarUrl || undefined}
-              className="mx-auto"
-              style={{ display: 'block', margin: '0 auto 16px' }}
-            >
-              {employee.name 
-                ? employee.name
-                    .split(' ')
-                    .map(part => part.charAt(0) || '')
-                    .join('')
-                : 'EM'
-              }
-            </Avatar>
-            <h3 className="text-lg font-medium mb-1">{employee.name || 'Unknown'}</h3>
-            <p className="text-gray-500 mb-2">{employee.position || 'No position'}</p>
-            <Tag 
-              color={statusConfig.color as any} 
-              icon={statusConfig.icon}
-              className="mx-auto"
-            >
-              {statusConfig.text}
-            </Tag>
-          </div>
-          
-          <Divider style={{ margin: '0 16px 16px' }} />
-          
-          <div className="px-6 pb-6">
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              {employee.email && (
-                <div className="flex items-center">
-                  <MailOutlined className="text-gray-500 mr-2" />
-                  <a href={`mailto:${employee.email}`} className="text-blue-600 hover:underline">
-                    {employee.email}
-                  </a>
-                </div>
-              )}
-              
-              {employee.phone && (
-                <div className="flex items-center">
-                  <PhoneOutlined className="text-gray-500 mr-2" />
-                  <a href={`tel:${employee.phone}`} className="text-blue-600 hover:underline">
-                    {employee.phone}
-                  </a>
-                </div>
-              )}
-              
-              {employee.location && (
-                <div className="flex items-center">
-                  <EnvironmentOutlined className="text-gray-500 mr-2" />
-                  <span>{employee.location}</span>
-                </div>
-              )}
-              
-              {employee.department && (
-                <div className="flex items-center">
-                  <ApartmentOutlined className="text-gray-500 mr-2" />
-                  <span>{employee.department}</span>
-                </div>
-              )}
-            </Space>
-          </div>
-        </Card>
+        {/* Profile Card - using our centralized EmployeeCard component */}
+        <div className="md:col-span-1">
+          <EmployeeCard 
+            employee={employee} 
+            variant="detailed" 
+          />
+        </div>
 
         {/* Details Card with Tabs */}
         <div className="md:col-span-3">
