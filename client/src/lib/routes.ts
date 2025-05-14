@@ -27,10 +27,7 @@ export const ROUTES = {
   // CONTRACTS module removed
   CALENDAR: '/calendar',
   MESSAGES: '/messages',
-  CHAKRA_TEST: '/chakra-test',
   DESIGN_TESTING: '/design-testing',
-  PDF_TEST: '/pdf-test',
-  TEST_ROUTE: '/test-route',
 };
 
 // Admin Routes
@@ -70,24 +67,9 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       icon: "MessageSquare",
     },
     {
-      title: "Chakra UI Test",
-      href: ROUTES.CHAKRA_TEST,
-      icon: "Palette",
-    },
-    {
       title: "Design Testing",
       href: ROUTES.DESIGN_TESTING,
       icon: "Palette",
-    },
-    {
-      title: "PDF Test Tool",
-      href: ROUTES.PDF_TEST,
-      icon: "FileSearch",
-    },
-    {
-      title: "Test Route",
-      href: ROUTES.TEST_ROUTE,
-      icon: "LifeBuoy",
     },
   ];
   

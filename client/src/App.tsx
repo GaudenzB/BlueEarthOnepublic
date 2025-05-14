@@ -17,10 +17,7 @@ import Integrations from "@/pages/integrations";
 import Documents from "@/pages/documents";
 import DocumentDetail from "@/pages/document-detail";
 // Contracts module removed
-import ChakraTest from "@/pages/chakra-test";
 import DesignTesting from "@/pages/design-testing";
-import PdfTest from "@/pages/pdf-test";
-import TestRoute from "@/pages/test-route";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
@@ -86,11 +83,8 @@ function Router() {
       <Route path={ROUTES.DASHBOARD} component={(props) => <ProtectedRoute component={Dashboard} {...props} />} />
       <Route path={ROUTES.DOCUMENTS.LIST} component={(props) => <ProtectedRoute component={Documents} {...props} />} />
       <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={(props) => <ProtectedRoute component={DocumentDetail} {...props} />} />
-      {/* Contracts route removed */}
-      <Route path={ROUTES.CHAKRA_TEST} component={(props) => <ProtectedRoute component={ChakraTest} {...props} />} />
+      {/* Test routes removed */}
       <Route path={ROUTES.DESIGN_TESTING} component={(props) => <ProtectedRoute component={DesignTesting} {...props} />} />
-      <Route path={ROUTES.PDF_TEST} component={(props) => <ProtectedRoute component={PdfTest} {...props} />} />
-      <Route path={ROUTES.TEST_ROUTE} component={(props) => <ProtectedRoute component={TestRoute} {...props} />} />
       
       {/* Super admin routes */}
       <Route 
