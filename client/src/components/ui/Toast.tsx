@@ -187,15 +187,19 @@ const Toast: React.FC<ToastProps> = ({
   
   // Calculate ARIA role and live region settings
   const getAriaAttrs = () => {
+    // Type-safe aria-live values
+    const assertive = 'assertive' as const;
+    const polite = 'polite' as const;
+    
     switch (variant) {
       case 'error':
-        return { role: 'alert', 'aria-live': 'assertive' };
+        return { role: 'alert', 'aria-live': assertive };
       case 'warning':
-        return { role: 'status', 'aria-live': 'polite' };
+        return { role: 'status', 'aria-live': polite };
       case 'success':
       case 'info':
       default:
-        return { role: 'status', 'aria-live': 'polite' };
+        return { role: 'status', 'aria-live': polite };
     }
   };
   
@@ -203,6 +207,9 @@ const Toast: React.FC<ToastProps> = ({
   const ariaAttrs = getAriaAttrs();
   
   if (!isShown) return null;
+  
+  // Destructure aria attributes to apply them properly
+  const { role, 'aria-live': ariaLive } = ariaAttrs;
   
   return (
     <div
@@ -218,7 +225,8 @@ const Toast: React.FC<ToastProps> = ({
       }}
       onMouseEnter={pauseOnHover ? () => setIsPaused(true) : undefined}
       onMouseLeave={pauseOnHover ? () => setIsPaused(false) : undefined}
-      {...ariaAttrs}
+      role={role}
+      aria-live={ariaLive}
     >
       {/* Icon */}
       <div className="flex-shrink-0 mr-3 pt-0.5">

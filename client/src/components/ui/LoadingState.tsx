@@ -145,14 +145,17 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       
     case 'result':
       return (
-        <Result
-          icon={<Spin indicator={spinIcon} />}
-          title={message || 'Loading...'}
+        <div 
           className={className}
           role="status"
           aria-live="polite"
           aria-label={message || 'Loading'}
-        />
+        >
+          <Result
+            icon={<Spin indicator={spinIcon} />}
+            title={message || 'Loading...'}
+          />
+        </div>
       );
       
     case 'inline':
