@@ -1,5 +1,9 @@
-import { Box, Container, Heading } from "@chakra-ui/react";
+import { Layout, Typography } from "antd";
 import React from "react";
+import { theme } from "../lib/theme";
+
+const { Header, Content } = Layout;
+const { Title } = Typography;
 
 /**
  * Page layout component that follows the BlueEarthOne design system.
@@ -18,15 +22,29 @@ type PageLayoutProps = {
 
 export function PageLayout({ title, children }: PageLayoutProps) {
   return (
-    <Box minH="100vh" bg="gray.50">
-      <Box as="header" bg="white" boxShadow="sm" py={4} px={6}>
-        <Heading size="lg" color="brand.700">
+    <Layout style={{ minHeight: '100vh', background: theme.colors.background.page }}>
+      <Header style={{ 
+        background: theme.colors.background.card, 
+        padding: '16px 24px',
+        boxShadow: theme.shadows.sm,
+        height: 'auto',
+        lineHeight: 'normal'
+      }}>
+        <Title level={3} style={{ 
+          margin: 0,
+          color: theme.colors.primary.base
+        }}>
           {title}
-        </Heading>
-      </Box>
-      <Container maxW="6xl" py={6}>
+        </Title>
+      </Header>
+      <Content style={{ 
+        maxWidth: '1200px',
+        width: '100%',
+        margin: '24px auto',
+        padding: '0 24px'
+      }}>
         {children}
-      </Container>
-    </Box>
+      </Content>
+    </Layout>
   );
 }

@@ -4,19 +4,11 @@ import "./index.css";
 import { ThemeProvider } from "next-themes";
 import SidebarProviderWrapper from "./hooks/use-sidebar";
 import { ConfigProvider } from "antd";
-import "antd/dist/reset.css";
+import antThemeConfig from "./theme/ant-theme";
 
-// Ant Design theme configuration
-const antTheme = {
-  token: {
-    colorPrimary: "#1E2A40", // Brand primary color (from theme.ts)
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-    borderRadius: 4,
-  },
-};
-
+// Use the comprehensive Ant Design theme configuration
 createRoot(document.getElementById("root")!).render(
-  <ConfigProvider theme={antTheme}>
+  <ConfigProvider theme={antThemeConfig}>
     <ThemeProvider attribute="class" defaultTheme="light">
       <SidebarProviderWrapper>
         <App />
