@@ -11,10 +11,35 @@ export interface DocumentDetailStateProps {
 
 /**
  * Skeleton loading state for document detail
+ * Enhanced with better visual representation and accessibility
  */
 export function DocumentDetailSkeleton() {
+  // Creating a pulsating animation effect for skeletons
+  const pulseAnimation = {
+    animation: 'pulse 1.5s ease-in-out 0.5s infinite',
+  };
+  
+  // CSS for the animation to be inserted in a style tag
+  const animationStyle = `
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+  `;
+  
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
+    <div 
+      style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <style>{animationStyle}</style>
+      
+      {/* Document Header Skeleton */}
       <div style={{ 
         display: 'flex', 
         flexDirection: 'row', 
@@ -23,20 +48,160 @@ export function DocumentDetailSkeleton() {
         gap: 16,
         flexWrap: 'wrap'
       }}>
-        <div style={{ width: 100, height: 32, backgroundColor: '#f0f0f0', borderRadius: 4 }} />
-        <div style={{ width: 300, height: 32, backgroundColor: '#f0f0f0', borderRadius: 4 }} />
+        {/* Status Badge */}
+        <div style={{ 
+          width: 100, 
+          height: 32, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4,
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+        
+        {/* Document Title */}
+        <div style={{ 
+          width: 300, 
+          height: 32, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4,
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+        
         <div style={{ flex: 1 }}></div>
-        <div style={{ width: 100, height: 32, backgroundColor: '#f0f0f0', borderRadius: 4 }} />
-        <div style={{ width: 100, height: 32, backgroundColor: '#f0f0f0', borderRadius: 4 }} />
+        
+        {/* Action Buttons */}
+        <div style={{ 
+          width: 100, 
+          height: 32, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4,
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+        <div style={{ 
+          width: 100, 
+          height: 32, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4,
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
       </div>
       
-      <div style={{ height: 20, backgroundColor: '#f0f0f0', borderRadius: 4, marginBottom: 16, width: '100%' }} />
-      <div style={{ height: 20, backgroundColor: '#f0f0f0', borderRadius: 4, marginBottom: 16, width: '90%' }} />
-      <div style={{ height: 20, backgroundColor: '#f0f0f0', borderRadius: 4, marginBottom: 16, width: '95%' }} />
+      {/* Document Info Skeleton Lines */}
+      <div style={{ 
+        padding: '16px', 
+        backgroundColor: '#fafafa', 
+        borderRadius: '8px', 
+        marginBottom: '24px',
+        border: '1px solid #f0f0f0'
+      }}>
+        <div style={{ 
+          height: 20, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4, 
+          marginBottom: 12, 
+          width: '100%',
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+        <div style={{ 
+          height: 20, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4, 
+          marginBottom: 12, 
+          width: '90%',
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+        <div style={{ 
+          height: 20, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4, 
+          width: '95%',
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+      </div>
       
-      <div style={{ marginTop: 24 }}>
-        <div style={{ height: 32, backgroundColor: '#f0f0f0', borderRadius: 4, marginBottom: 16, width: '20%' }} />
-        <div style={{ height: 200, backgroundColor: '#f0f0f0', borderRadius: 4, marginBottom: 16, width: '100%' }} />
+      {/* Tabs Skeleton */}
+      <div style={{ 
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)', 
+        padding: '24px',
+        border: '1px solid #e5e7eb',
+      }}>
+        {/* Tab headers */}
+        <div style={{ 
+          display: 'flex',
+          borderBottom: '1px solid #f0f0f0',
+          marginBottom: '24px',
+          paddingBottom: '16px',
+          gap: '24px'
+        }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div 
+              key={i}
+              style={{ 
+                height: 24, 
+                backgroundColor: i === 1 ? '#e6f7ff' : '#f0f0f0', 
+                borderRadius: 4, 
+                width: '80px',
+                ...pulseAnimation
+              }}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+        
+        {/* Tab content */}
+        <div style={{ 
+          height: 32, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4, 
+          marginBottom: 16, 
+          width: '30%',
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+        
+        <div style={{ 
+          height: 250, 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: 4, 
+          marginBottom: 16, 
+          width: '100%',
+          ...pulseAnimation
+        }} 
+        aria-hidden="true"
+        />
+      </div>
+      
+      {/* Screen reader only text */}
+      <div style={{ 
+        position: 'absolute', 
+        width: '1px', 
+        height: '1px', 
+        padding: '0', 
+        margin: '-1px', 
+        overflow: 'hidden', 
+        clip: 'rect(0, 0, 0, 0)', 
+        whiteSpace: 'nowrap', 
+        borderWidth: '0' 
+      }} 
+      role="status"
+      >
+        Loading document details, please wait...
       </div>
     </div>
   );
@@ -44,37 +209,131 @@ export function DocumentDetailSkeleton() {
 
 /**
  * Error display for document detail
+ * Enhanced with better error message formatting and accessibility
  */
 export function DocumentDetailError({ error, onReturn }: DocumentDetailStateProps) {
+  // Parse error message to provide more context
+  const getErrorContext = (err: Error | undefined) => {
+    if (!err) return { title: 'An unexpected error occurred', details: 'Please try again later or contact support.' };
+    
+    const message = err.message || 'Unknown error';
+    
+    // Handle specific error types
+    if (message.includes('401') || message.includes('unauthorized')) {
+      return {
+        title: 'Authentication Error',
+        details: 'You are not authorized to access this document. Please log in again or contact your administrator.'
+      };
+    } else if (message.includes('403') || message.includes('forbidden')) {
+      return {
+        title: 'Access Denied',
+        details: 'You don\'t have permission to access this document. Please request access from your administrator.'
+      };
+    } else if (message.includes('404') || message.includes('not found')) {
+      return {
+        title: 'Document Not Found',
+        details: 'The document you\'re looking for may have been moved or deleted.'
+      };
+    } else if (message.includes('timeout') || message.includes('timed out')) {
+      return {
+        title: 'Request Timeout',
+        details: 'The server took too long to respond. Please check your connection and try again.'
+      };
+    } else if (message.includes('network') || message.includes('connection')) {
+      return {
+        title: 'Network Error',
+        details: 'Please check your internet connection and try again.'
+      };
+    }
+    
+    return { 
+      title: 'Error Loading Document', 
+      details: message 
+    };
+  };
+  
+  const errorInfo = getErrorContext(error);
+  
   return (
-    <div style={{ maxWidth: '800px', margin: '48px auto', padding: '0 16px', textAlign: 'center' }}>
-      <h2 style={{ color: '#cf1322' }}>Error Loading Document</h2>
-      <p style={{ color: '#666' }}>We encountered a problem while retrieving the document.</p>
-      <div style={{ margin: '32px 0', color: '#cf1322' }}>
-        {error ? error.message || 'An unexpected error occurred' : 'An unexpected error occurred'}
+    <div 
+      style={{ maxWidth: '800px', margin: '48px auto', padding: '24px', textAlign: 'center', backgroundColor: '#FFF1F0', borderRadius: '8px', border: '1px solid #FFCCC7' }}
+      role="alert"
+      aria-live="assertive"
+    >
+      <div style={{ fontSize: '48px', color: '#CF1322', marginBottom: '16px' }}>
+        ⚠️
       </div>
-      <Button 
-        type="primary"
-        onClick={onReturn}
-      >
-        Return to Documents
-      </Button>
+      <h2 style={{ color: '#CF1322', fontSize: '24px', marginBottom: '16px' }} id="error-heading">
+        {errorInfo.title}
+      </h2>
+      <p style={{ color: '#666', marginBottom: '16px', fontSize: '16px' }}>
+        {errorInfo.details}
+      </p>
+      <div style={{ margin: '24px 0' }}>
+        <div style={{ fontSize: '14px', backgroundColor: '#FFEBE9', padding: '12px', borderRadius: '4px', color: '#5C0011', fontFamily: 'monospace', textAlign: 'left', maxHeight: '100px', overflow: 'auto' }}>
+          {error?.stack ? error.stack.split('\n')[0] : 'No additional error information available'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+        <Button 
+          type="primary"
+          onClick={onReturn}
+          aria-describedby="error-heading"
+        >
+          Return to Documents
+        </Button>
+        <Button 
+          onClick={() => window.location.reload()}
+          aria-describedby="error-heading"
+        >
+          Refresh Page
+        </Button>
+      </div>
     </div>
   );
 }
 
 /**
  * Not found display for document detail
+ * Enhanced with better visuals and accessibility
  */
 export function DocumentDetailNotFound({ onReturn }: DocumentDetailStateProps) {
   return (
-    <div style={{ maxWidth: '800px', margin: '48px auto', padding: '0 16px', textAlign: 'center' }}>
-      <h2>Document Not Found</h2>
-      <p style={{ color: '#666' }}>The document you're looking for doesn't exist or you don't have permission to view it.</p>
+    <div 
+      style={{ maxWidth: '800px', margin: '48px auto', padding: '32px', textAlign: 'center', backgroundColor: '#F6FFED', borderRadius: '8px', border: '1px solid #B7EB8F' }}
+      role="alert"
+      aria-live="polite"
+    >
+      <div style={{ fontSize: '48px', color: '#52C41A', marginBottom: '16px' }}>
+        🔍
+      </div>
+      <h2 style={{ color: '#135200', fontSize: '24px', marginBottom: '16px' }} id="not-found-heading">
+        Document Not Found
+      </h2>
+      <p style={{ color: '#666', marginBottom: '24px', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
+        The document you're looking for doesn't exist or you don't have permission to view it. 
+        This could be because:
+      </p>
+      <ul style={{ listStyle: 'none', textAlign: 'left', width: 'fit-content', margin: '0 auto 24px', color: '#444' }}>
+        <li style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px', color: '#52C41A' }}>•</span> 
+          The document has been deleted or moved
+        </li>
+        <li style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px', color: '#52C41A' }}>•</span> 
+          The URL you entered is incorrect
+        </li>
+        <li style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '8px', color: '#52C41A' }}>•</span> 
+          You need additional permissions to access this document
+        </li>
+      </ul>
       <div style={{ margin: '32px 0' }}>
         <Button 
           type="primary"
           onClick={onReturn}
+          aria-describedby="not-found-heading"
+          style={{ background: '#52C41A', borderColor: '#52C41A' }}
         >
           Return to Documents
         </Button>
