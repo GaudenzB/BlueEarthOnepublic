@@ -12,40 +12,41 @@ import {
   TagOutlined,
   LockOutlined
 } from '@ant-design/icons';
+import { colors } from '@/lib/theme';
 
 const { Text } = Typography;
 
-// Custom color palette for financial industry styling
+// Custom color palette for financial industry styling using centralized theme
 const STATUS_COLORS = {
   active: {
     background: '#e6f7ef',
     text: '#0e6245',
     border: '#a8e6c9',
-    icon: '#10b981'
+    icon: colors.status.active
   },
   inactive: {
     background: '#f3f4f6',
     text: '#4b5563',
     border: '#d1d5db',
-    icon: '#6b7280'
+    icon: colors.status.inactive
   },
   warning: {
     background: '#fef6e6',
     text: '#92400e',
     border: '#fcd34d',
-    icon: '#f59e0b'
+    icon: colors.status.warning
   },
   processing: {
     background: '#eff6fe',
     text: '#1e40af',
     border: '#bfdbfe',
-    icon: '#3b82f6'
+    icon: colors.status.pending
   },
   error: {
     background: '#fee2e2',
     text: '#b91c1c',
     border: '#fecaca',
-    icon: '#ef4444'
+    icon: colors.status.error
   }
 };
 
