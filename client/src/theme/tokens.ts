@@ -129,6 +129,8 @@ export const tokens = {
       },
     },
     
+    // Status colors are defined in the 'status' object below to avoid duplication
+    
     // Status colors with light, default, and dark variants
     status: {
       success: {

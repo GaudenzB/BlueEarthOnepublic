@@ -64,6 +64,11 @@ export interface StatusTagProps {
   onClick?: () => void;
   
   /**
+   * Whether the tag is interactive (clickable)
+   */
+  interactive?: boolean;
+  
+  /**
    * Accessibility label for screen readers
    */
   ariaLabel?: string;
@@ -83,7 +88,7 @@ const STATUS_CONFIG: Record<StatusType, {
     color: tokens.colors.semantic.success,
     icon: <CheckCircleFilled />,
     text: 'Active',
-    bg: tokens.colors.extended.green.light,
+    bg: tokens.colors.status.success.light,
   },
   inactive: {
     color: tokens.colors.neutral['600'],
@@ -95,43 +100,43 @@ const STATUS_CONFIG: Record<StatusType, {
     color: tokens.colors.semantic.warning,
     icon: <ClockCircleFilled />,
     text: 'Pending',
-    bg: tokens.colors.extended.orange.light,
+    bg: tokens.colors.status.warning.light,
   },
   approved: {
     color: tokens.colors.semantic.success,
     icon: <CheckCircleFilled />,
     text: 'Approved',
-    bg: tokens.colors.extended.green.light,
+    bg: tokens.colors.status.success.light,
   },
   rejected: {
     color: tokens.colors.semantic.error,
     icon: <CloseCircleFilled />,
     text: 'Rejected',
-    bg: tokens.colors.extended.red.light,
+    bg: tokens.colors.status.error.light,
   },
   completed: {
-    color: tokens.colors.extended.blue.default,
+    color: tokens.colors.status.info.default,
     icon: <InfoCircleFilled />,
     text: 'Completed',
-    bg: tokens.colors.extended.blue.light,
+    bg: tokens.colors.status.info.light,
   },
   processing: {
-    color: tokens.colors.extended.blue.default,
+    color: tokens.colors.status.info.default,
     icon: <SyncOutlined spin />,
     text: 'Processing',
-    bg: tokens.colors.extended.blue.light,
+    bg: tokens.colors.status.info.light,
   },
   on_leave: {
     color: tokens.colors.semantic.warning,
     icon: <PauseCircleFilled />,
     text: 'On Leave',
-    bg: tokens.colors.extended.orange.light,
+    bg: tokens.colors.status.warning.light,
   },
   remote: {
-    color: tokens.colors.extended.blue.default,
+    color: tokens.colors.status.info.default,
     icon: <InfoCircleFilled />,
     text: 'Remote',
-    bg: tokens.colors.extended.blue.light,
+    bg: tokens.colors.status.info.light,
   },
   draft: {
     color: tokens.colors.neutral['600'],
@@ -143,19 +148,19 @@ const STATUS_CONFIG: Record<StatusType, {
     color: tokens.colors.semantic.warning,
     icon: <ClockCircleFilled />,
     text: 'In Review',
-    bg: tokens.colors.extended.orange.light,
+    bg: tokens.colors.status.warning.light,
   },
   expired: {
     color: tokens.colors.semantic.error,
     icon: <CloseCircleFilled />,
     text: 'Expired',
-    bg: tokens.colors.extended.red.light,
+    bg: tokens.colors.status.error.light,
   },
   custom: {
-    color: tokens.colors.extended.purple.default,
+    color: tokens.colors.status.pending.default,
     icon: <InfoCircleFilled />,
     text: 'Custom',
-    bg: tokens.colors.extended.purple.light,
+    bg: tokens.colors.status.pending.light,
   }
 };
 
