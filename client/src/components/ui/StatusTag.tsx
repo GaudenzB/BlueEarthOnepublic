@@ -39,83 +39,6 @@ export interface StatusTagProps {
 }
 
 /**
- * Maps status values to their display configuration (color, icon, text)
- */
-export const getStatusConfig = (status: string) => {
-  const lowercaseStatus = status.toLowerCase();
-
-  switch (lowercaseStatus) {
-    // Employee statuses
-    case 'active':
-      return { 
-        color: "success", 
-        icon: <CheckCircleOutlined />, 
-        text: 'Active' 
-      };
-    case 'inactive':
-      return { 
-        color: "default", 
-        icon: <StopOutlined />, 
-        text: 'Inactive' 
-      };
-    case 'on_leave':
-      return { 
-        color: "warning", 
-        icon: <ClockCircleOutlined />, 
-        text: 'On Leave' 
-      };
-    case 'remote':
-      return { 
-        color: "processing", 
-        icon: <GlobalOutlined />, 
-        text: 'Remote' 
-      };
-    
-    // Document statuses
-    case 'draft':
-      return { 
-        color: "default", 
-        icon: <FileTextOutlined />, 
-        text: 'Draft' 
-      };
-    case 'in_review':
-    case 'pending':
-      return { 
-        color: "processing", 
-        icon: <ClockCircleOutlined />, 
-        text: lowercaseStatus === 'in_review' ? 'In Review' : 'Pending' 
-      };
-    case 'approved':
-    case 'completed':
-      return { 
-        color: "success", 
-        icon: <CheckCircleOutlined />, 
-        text: lowercaseStatus === 'approved' ? 'Approved' : 'Completed' 
-      };
-    case 'rejected':
-      return { 
-        color: "error", 
-        icon: <ExclamationCircleOutlined />, 
-        text: 'Rejected' 
-      };
-    case 'expired':
-      return { 
-        color: "warning", 
-        icon: <WarningOutlined />, 
-        text: 'Expired' 
-      };
-    
-    // Default case
-    default:
-      return { 
-        color: "default", 
-        icon: <StopOutlined />, 
-        text: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace('_', ' ')
-      };
-  }
-};
-
-/**
  * StatusTag Component
  * 
  * A standardized component to display entity status across the application.
@@ -128,19 +51,74 @@ export const getStatusConfig = (status: string) => {
 export const StatusTag: React.FC<StatusTagProps> = ({ 
   status, 
   className = '', 
-  icon, 
-  text,
+  icon: customIcon, 
+  text: customText,
   size = 'default'
 }) => {
-  const config = getStatusConfig(status);
+  // Get status configuration based on status value
+  let color = "default";
+  let statusIcon = <StopOutlined />;
+  let statusText = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace('_', ' ');
+  
+  // Handle based on specific status values
+  const lowercaseStatus = status.toLowerCase();
+  
+  // Employee statuses
+  if (lowercaseStatus === 'active') {
+    color = "success";
+    statusIcon = <CheckCircleOutlined />;
+    statusText = 'Active';
+  } else if (lowercaseStatus === 'inactive') {
+    color = "default";
+    statusIcon = <StopOutlined />;
+    statusText = 'Inactive';
+  } else if (lowercaseStatus === 'on_leave') {
+    color = "warning";
+    statusIcon = <ClockCircleOutlined />;
+    statusText = 'On Leave';
+  } else if (lowercaseStatus === 'remote') {
+    color = "processing";
+    statusIcon = <GlobalOutlined />;
+    statusText = 'Remote';
+  }
+  // Document statuses
+  else if (lowercaseStatus === 'draft') {
+    color = "default";
+    statusIcon = <FileTextOutlined />;
+    statusText = 'Draft';
+  } else if (lowercaseStatus === 'in_review') {
+    color = "processing";
+    statusIcon = <ClockCircleOutlined />;
+    statusText = 'In Review';
+  } else if (lowercaseStatus === 'pending') {
+    color = "processing";
+    statusIcon = <ClockCircleOutlined />;
+    statusText = 'Pending';
+  } else if (lowercaseStatus === 'approved') {
+    color = "success";
+    statusIcon = <CheckCircleOutlined />;
+    statusText = 'Approved';
+  } else if (lowercaseStatus === 'completed') {
+    color = "success";
+    statusIcon = <CheckCircleOutlined />;
+    statusText = 'Completed';
+  } else if (lowercaseStatus === 'rejected') {
+    color = "error";
+    statusIcon = <ExclamationCircleOutlined />;
+    statusText = 'Rejected';
+  } else if (lowercaseStatus === 'expired') {
+    color = "warning";
+    statusIcon = <WarningOutlined />;
+    statusText = 'Expired';
+  }
   
   return (
     <Tag
-      color={config.color}
-      icon={icon || config.icon}
+      color={color}
+      icon={customIcon || statusIcon}
       className={className}
       style={{
-        borderRadius: theme.borderRadius.full,
+        borderRadius: '9999px', // Using direct value instead of theme to avoid any issues
         textTransform: 'lowercase',
         display: 'inline-flex',
         alignItems: 'center',
@@ -155,7 +133,7 @@ export const StatusTag: React.FC<StatusTagProps> = ({
                    '20px',
       }}
     >
-      {text || config.text}
+      {customText || statusText}
     </Tag>
   );
 };

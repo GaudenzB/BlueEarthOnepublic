@@ -149,6 +149,7 @@ export const theme = {
     xl: '0.75rem',   // 12px
     '2xl': '1rem',   // 16px
     full: '9999px',  // Circular
+    pill: '9999px',  // Alias for full
   },
 
   // Shadows
