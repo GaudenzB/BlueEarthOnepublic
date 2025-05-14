@@ -7,9 +7,7 @@ import {
   Empty, 
   Spin, 
   Result, 
-  Button,
-  Row,
-  Col
+  Button
 } from "antd"
 import { FixedSizeGrid as Grid } from 'react-window'
 import { ReloadOutlined } from "@ant-design/icons"
