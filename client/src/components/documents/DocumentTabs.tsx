@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Tabs } from 'antd';
 import { Document } from '@/types/document';
 import { DocumentOverviewTab } from './tabs/DocumentOverviewTab';
@@ -15,8 +15,13 @@ interface DocumentTabsProps {
 /**
  * Tabbed view component for document details
  * Provides a consistent tab interface for all document content
+ * Memoized to prevent unnecessary re-renders
  */
-export function DocumentTabs({ document, activeTab, onTabChange }: DocumentTabsProps) {
+export const DocumentTabs = memo(function DocumentTabs({ 
+  document, 
+  activeTab, 
+  onTabChange 
+}: DocumentTabsProps) {
   // Item configuration for Tabs component
   const tabItems = [
     {
@@ -50,4 +55,4 @@ export function DocumentTabs({ document, activeTab, onTabChange }: DocumentTabsP
       tabBarStyle={{ marginBottom: 24 }}
     />
   );
-}
+});

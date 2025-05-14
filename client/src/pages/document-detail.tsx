@@ -4,7 +4,7 @@ import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { message } from "antd";
 import { apiRequest } from "@/lib/queryClient";
-import { Document } from "@/types/document";
+import { Document, DocumentProcessingStatus } from "@/types/document";
 import { DocumentDetailContent } from "@/components/documents/DocumentDetailContent";
 import { DocumentDeleteDialog } from "@/components/documents/DocumentDeleteDialog";
 import { DocumentShareDialog } from "@/components/documents/DocumentShareDialog";
@@ -176,16 +176,44 @@ export default function DocumentDetail() {
     },
   });
   
-  // Mutation for refreshing document status
-  const refreshStatusMutation = useMutation<void, Error, void>({
+  // Mutation for refreshing document status with optimistic updates
+  interface RefreshMutationContext {
+    previousDocument: Document | undefined;
+  }
+  
+  const refreshStatusMutation = useMutation<void, Error, void, RefreshMutationContext>({
     mutationFn: () => {
       return apiRequest<void>(`/api/documents/${id}/refresh-status`, { method: 'POST' });
+    },
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/documents', id] });
+      
+      // Snapshot the previous document state
+      const previousDocument = queryClient.getQueryData<Document>(['/api/documents', id]);
+      
+      // Optimistically update the document status to PROCESSING if it's not already
+      if (previousDocument && previousDocument.processingStatus !== 'PROCESSING') {
+        const optimisticDocument = {
+          ...previousDocument,
+          processingStatus: 'PROCESSING' as DocumentProcessingStatus
+        };
+        
+        queryClient.setQueryData<Document>(['/api/documents', id], optimisticDocument);
+      }
+      
+      // Return context with the previous document
+      return { previousDocument };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
       message.success('Document status updated');
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _, context: RefreshMutationContext | undefined) => {
+      // If there was an error, restore previous document state
+      if (context?.previousDocument) {
+        queryClient.setQueryData<Document>(['/api/documents', id], context.previousDocument);
+      }
       message.error(`Failed to refresh document status: ${error.message || 'Unknown error'}`);
     }
   });
