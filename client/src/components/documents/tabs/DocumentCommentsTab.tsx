@@ -1,11 +1,16 @@
 import React from 'react';
-import { Card, Typography, List, Avatar, Space, Empty, Input, Button, Form } from 'antd';
+import { Card, Typography, List, Avatar, Space, Input, Button, Form } from 'antd';
 import { UserOutlined, SendOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
-import { Document } from '@/types/document';
+import { Document, DocumentComment } from '@/types/document';
+import { EmptyState } from '@/components/common/EmptyState';
 
 interface DocumentCommentsTabProps {
   document: Document;
+}
+
+interface CommentFormValues {
+  comment: string;
 }
 
 const { Title, Text } = Typography;
@@ -15,10 +20,11 @@ const { TextArea } = Input;
  * Comments tab content for document details page
  */
 export function DocumentCommentsTab({ document }: DocumentCommentsTabProps) {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<CommentFormValues>();
+  const hasComments = document.comments && document.comments.length > 0;
 
   // Would be implemented in a real application
-  const handleSubmitComment = (values: { comment: string }) => {
+  const handleSubmitComment = (values: CommentFormValues) => {
     console.log('New comment:', values.comment);
     form.resetFields();
   };
@@ -27,19 +33,24 @@ export function DocumentCommentsTab({ document }: DocumentCommentsTabProps) {
     <Card bordered={false}>
       <Title level={5}>Comments</Title>
       
-      {document.comments && document.comments.length > 0 ? (
+      {hasComments ? (
         <List
           itemLayout="horizontal"
-          dataSource={document.comments}
-          renderItem={(comment: any) => (
+          dataSource={document.comments || []}
+          renderItem={(comment: DocumentComment) => (
             <List.Item>
               <List.Item.Meta
-                avatar={<Avatar icon={<UserOutlined />} />}
+                avatar={
+                  <Avatar 
+                    src={comment.userAvatar} 
+                    icon={!comment.userAvatar ? <UserOutlined /> : undefined} 
+                  />
+                }
                 title={
                   <Space>
-                    <Text strong>{comment.author}</Text>
+                    <Text strong>{comment.userName}</Text>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {format(new Date(comment.date), 'PP')}
+                      {format(new Date(comment.createdAt), 'PP')}
                     </Text>
                   </Space>
                 }
@@ -49,10 +60,14 @@ export function DocumentCommentsTab({ document }: DocumentCommentsTabProps) {
           )}
         />
       ) : (
-        <Empty 
-          description="No comments yet" 
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <div style={{ marginTop: 24, marginBottom: 24 }}>
+          <EmptyState
+            title="No Comments Yet"
+            description="Be the first to add a comment to this document."
+            type="compact"
+            size="default"
+          />
+        </div>
       )}
       
       <div style={{ marginTop: 24 }}>

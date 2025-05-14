@@ -210,11 +210,12 @@ export default function DocumentDetail() {
   }
   
   if (isError && error) {
-    return <DocumentDetailError error={error as Error} onReturn={handleReturn} />;
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    return <DocumentDetailError error={errorObj} onReturn={handleReturn} />;
   }
   
-  // Handle not found
-  if (!document.id) {
+  // Handle not found or empty document response
+  if (!document || !document.id) {
     return <DocumentDetailNotFound onReturn={handleReturn} />;
   }
   

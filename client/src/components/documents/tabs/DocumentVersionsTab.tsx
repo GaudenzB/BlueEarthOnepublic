@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, Typography, Table, Space, Button, Empty } from 'antd';
+import { Card, Typography, Table, Space, Button } from 'antd';
 import { EyeOutlined, DownloadOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { Document } from '@/types/document';
+import { EmptyState } from '@/components/common/EmptyState';
 
 interface DocumentVersionsTabProps {
   document: Document;
@@ -14,30 +15,40 @@ const { Title } = Typography;
  * Versions tab content for document details page
  */
 export function DocumentVersionsTab({ document }: DocumentVersionsTabProps) {
+  // Safe access to document versions
+  const hasVersions = document.versions && document.versions.length > 0;
+  
   return (
     <Card bordered={false}>
       <Title level={5}>Document Versions</Title>
       
-      {document.versions && document.versions.length > 0 ? (
+      {hasVersions ? (
         <Table
           dataSource={document.versions}
-          rowKey="version"
+          rowKey="id"
           columns={[
             {
               title: 'Version',
-              dataIndex: 'version',
-              key: 'version',
+              dataIndex: 'versionNumber',
+              key: 'versionNumber',
+              render: (versionNumber) => `v${versionNumber}`,
             },
             {
               title: 'Date',
-              dataIndex: 'date',
-              key: 'date',
-              render: (date) => format(new Date(date), 'PP'),
+              dataIndex: 'createdAt',
+              key: 'createdAt',
+              render: (createdAt) => createdAt ? format(new Date(createdAt), 'PP') : 'Unknown',
             },
             {
-              title: 'Modified By',
-              dataIndex: 'modifiedBy',
-              key: 'modifiedBy',
+              title: 'Created By',
+              dataIndex: 'createdBy',
+              key: 'createdBy',
+            },
+            {
+              title: 'Size',
+              dataIndex: 'sizeBytes',
+              key: 'sizeBytes',
+              render: (sizeBytes) => sizeBytes ? `${(sizeBytes / 1024 / 1024).toFixed(2)} MB` : 'Unknown',
             },
             {
               title: 'Actions',
@@ -53,10 +64,14 @@ export function DocumentVersionsTab({ document }: DocumentVersionsTabProps) {
           pagination={false}
         />
       ) : (
-        <Empty 
-          description="No version history available" 
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <div style={{ marginTop: 24 }}>
+          <EmptyState
+            title="No Version History"
+            description="This document doesn't have any recorded versions. When document updates are made, version history will be tracked here."
+            type="compact"
+            size="default"
+          />
+        </div>
       )}
     </Card>
   );
