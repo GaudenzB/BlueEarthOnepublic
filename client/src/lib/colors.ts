@@ -25,10 +25,10 @@ export const colors = {
   
   // Accent Colors
   accent: {
-    success: theme.status.success.base, // Green for confirming actions or positive status
-    warning: theme.status.warning.base, // Amber for alerts and cautions
-    error: theme.status.error.base, // Red for destructive actions or errors
-    info: theme.status.info.base, // Blue for highlights or informational messages
+    success: theme.success[500], // Green for confirming actions or positive status
+    warning: theme.warning[500], // Amber for alerts and cautions
+    error: theme.error[500], // Red for destructive actions or errors
+    info: theme.info[500], // Blue for highlights or informational messages
   },
   
   // Backgrounds and Neutrals
