@@ -1,0 +1,35 @@
+
+Evaluate the whole code systematically across five core areas, ensuring it's secure, scalable, maintainable, and user-friendly:
+
+1. Security
+* Authentication & Authorization: Are access controls in place and role-based? Is SSO implemented properly (e.g., Microsoft SSO)?
+* Input Validation & Sanitization: Are user inputs (e.g., search, uploads) protected against injection attacks?
+* Data Exposure: Are sensitive fields (emails, internal data) protected in APIs and front-end displays?
+* Token handling: Are tokens (e.g., JWT) validated and securely stored?
+* Third-party integration: Are API keys, AWS credentials, etc., securely managed (e.g., in environment variables)?
+
+2. Architecture & Maintainability
+* Component structure: Are UI components modular, reusable, and consistently organized?
+* State management: Is state handled cleanly (e.g., via hooks, global state, or context where needed)?
+* Code separation: Are concerns clearly separated (API calls, business logic, UI rendering)?
+* Scalability: Can features and users be added without breaking the system?
+* Tech debt: Are there obvious workarounds or shortcuts that should be flagged for refactoring?
+
+3. Functionality & UX
+* Feature coverage: Do features like employee directory, document upload, and dashboards work as intended?
+* Edge cases: Are errors gracefully handled? What happens when a file fails to upload, or a user lacks permissions?
+* Accessibility: Are ARIA tags used? Is it usable by keyboard alone?
+* Responsiveness: Does the portal work across devices and screen sizes?
+* Feedback: Are there loading indicators, success messages, and error prompts?
+
+4. Integration & Infrastructure
+* Backend endpoints: Are API routes efficient, protected, and using the correct HTTP methods?
+* Database operations: Are queries optimized? Is data normalized appropriately?
+* File storage: Are S3 or other external services correctly integrated? Are large files chunked/streamed?
+* CI/CD: Are there deployment pipelines, staging environments, and rollback strategies?
+
+5. Code Quality & Style
+* Consistency: Are naming conventions, formatting, and folder structures consistent?
+* Linting & Typing: Are TypeScript types defined and used? Is linting enforced?
+* Comments & Docs: Is the code self-explanatory or well-commented?
+* Test coverage: Are there unit/integration tests for critical modules?
