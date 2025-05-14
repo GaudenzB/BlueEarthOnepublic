@@ -223,7 +223,7 @@ export async function uploadFileInChunks(
  */
 export async function abortChunkedUpload(uploadId: string, documentKey: string): Promise<boolean> {
   try {
-    const response = await apiRequest("/api/documents/abort-upload", {
+    const response = await apiRequest("/api/chunked-uploads/abort", {
       method: "POST",
       body: { uploadId, documentKey }
     });
