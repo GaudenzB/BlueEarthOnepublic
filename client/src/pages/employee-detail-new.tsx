@@ -8,7 +8,8 @@ import {
   Tabs, 
   Result, 
   Empty,
-  Skeleton
+  Skeleton,
+  Divider
 } from "antd";
 import { 
   ApartmentOutlined, 

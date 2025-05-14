@@ -120,7 +120,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
     return (
       <Card
         className={`employee-card ${className}`}
-        bordered={false}
+        variant="outlined"
         style={{
           borderRadius: '8px',
           overflow: 'hidden',
@@ -167,7 +167,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
         <Card
           className={`employee-card ${className} transition-all duration-200`}
           hoverable
-          bordered={false}
+          variant="outlined"
           onClick={handleClick}
           style={{
             borderRadius: '8px',
@@ -248,7 +248,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
     <Card 
       className={`${className} transition-all duration-200`}
       hoverable
-      bordered={false}
+      variant="outlined"
       style={{
         borderRadius: '8px',
         overflow: 'hidden',
