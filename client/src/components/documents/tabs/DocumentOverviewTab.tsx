@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import { Row, Col, Card, Typography, Descriptions, Space, Tag, Avatar, Badge } from "antd";
 import { FileOutlined, UserOutlined } from "@ant-design/icons";
 import { format } from "date-fns";
-import { Document, DOC_TYPES, VISIBILITY_OPTIONS, DocumentSharedUser } from "@/types/document";
+import { Document, DOC_TYPES, VISIBILITY_OPTIONS, DocumentShare } from "@/types/document";
 import { DocumentStatusBadge } from "../DocumentStatusBadge";
 
 interface DocumentOverviewTabProps {
@@ -22,7 +22,7 @@ interface DocumentDetailsProps {
 }
 
 interface SharedUserItemProps {
-  user: DocumentSharedUser;
+  user: DocumentShare;
 }
 
 const { Title, Text, Paragraph } = Typography;
@@ -174,7 +174,7 @@ const DocumentDetails = memo(function DocumentDetails({ document }: DocumentDeta
               Shared With
             </Title>
             <Space direction="vertical" style={{ width: '100%' }}>
-              {document.sharedWith.map((user, index) => (
+              {document.sharedWith?.map((user, index) => (
                 <SharedUserItem key={`${user.id || index}`} user={user} />
               ))}
             </Space>
