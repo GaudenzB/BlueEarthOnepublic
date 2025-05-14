@@ -12,9 +12,9 @@ interface DocumentDetailContentProps {
   onDeleteClick: () => void;
   onShareClick: () => void;
   onRefreshStatus: () => void;
-  onFavoriteToggle?: () => void;
-  onRestoreVersion?: (versionId: string) => void;
-  isFavorited?: boolean;
+  onFavoriteToggle: (() => void) | undefined;
+  onRestoreVersion: ((versionId: string) => void) | undefined;
+  isFavorited: boolean | undefined;
   isRefreshing: boolean;
   loading?: {
     favorite?: boolean;

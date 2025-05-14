@@ -7,8 +7,8 @@ import { EmptyState } from '@/components/common/EmptyState';
 
 interface DocumentVersionsTabProps {
   document: Document;
-  onRestoreVersion?: ((versionId: string) => void) | undefined;
-  isRestoring?: boolean;
+  onRestoreVersion: ((versionId: string) => void) | undefined;
+  isRestoring: boolean;
 }
 
 interface VersionActionsProps {
