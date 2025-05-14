@@ -2,17 +2,18 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Link, useLocation } from "wouter"
 import { 
-  Users, 
-  LayoutDashboard, 
-  Calendar, 
-  FileText, 
-  MessageSquare, 
-  Settings,
-  UserCog,
-  LogOut,
-  Link as LinkIcon,
-  GanttChart
-} from "lucide-react"
+  TeamOutlined, 
+  DashboardOutlined, 
+  CalendarOutlined, 
+  FileTextOutlined, 
+  MessageOutlined,
+  SettingOutlined,
+  UserSwitchOutlined,
+  LogoutOutlined,
+  LinkOutlined,
+  BarChartOutlined,
+  PieChartOutlined
+} from "@ant-design/icons"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -31,35 +32,41 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
   // Get navigation items from centralized routes configuration
   const navItems = getNavItems(isSuperAdmin).map(item => {
-    // Map the icon string to the corresponding Lucide icon component
+    // Map the icon string to the corresponding Ant Design icon component
+    const iconStyle = { fontSize: '20px' };
     let icon;
+    
+    // Using Ant Design icons based on the icon name from routes
     switch (item.icon) {
       case 'Users':
-        icon = <Users className="mr-3 h-5 w-5" />;
+        icon = <TeamOutlined className="mr-3" style={iconStyle} />;
         break;
       case 'LayoutDashboard':
-        icon = <LayoutDashboard className="mr-3 h-5 w-5" />;
+        icon = <DashboardOutlined className="mr-3" style={iconStyle} />;
         break;
       case 'Calendar':
-        icon = <Calendar className="mr-3 h-5 w-5" />;
+        icon = <CalendarOutlined className="mr-3" style={iconStyle} />;
         break;
       case 'FileText':
-        icon = <FileText className="mr-3 h-5 w-5" />;
+        icon = <FileTextOutlined className="mr-3" style={iconStyle} />;
         break;
       case 'GanttChart':
-        icon = <GanttChart className="mr-3 h-5 w-5" />;
+        icon = <BarChartOutlined className="mr-3" style={iconStyle} />;
         break;
       case 'MessageSquare':
-        icon = <MessageSquare className="mr-3 h-5 w-5" />;
+        icon = <MessageOutlined className="mr-3" style={iconStyle} />;
+        break;
+      case 'Palette':
+        icon = <PieChartOutlined className="mr-3" style={iconStyle} />;
         break;
       case 'UserCog':
-        icon = <UserCog className="mr-3 h-5 w-5" />;
+        icon = <UserSwitchOutlined className="mr-3" style={iconStyle} />;
         break;
       case 'Link':
-        icon = <LinkIcon className="mr-3 h-5 w-5" />;
+        icon = <LinkOutlined className="mr-3" style={iconStyle} />;
         break;
       default:
-        icon = <div className="mr-3 h-5 w-5" />;
+        icon = <div className="mr-3" style={{ width: '20px', height: '20px' }} />;
     }
     return {
       ...item,
@@ -177,7 +184,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 onClick={() => logout.mutate()}
                 title="Logout"
               >
-                <LogOut className="h-5 w-5" />
+                <LogoutOutlined style={{ fontSize: '20px' }} />
               </Button>
             </div>
           </div>
