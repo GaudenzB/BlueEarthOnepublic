@@ -1,28 +1,86 @@
 /**
  * DOM Utility Functions
  * 
- * This file contains utility functions for DOM manipulation and browser interactions.
- * These can be used across the application for consistent behavior.
+ * This file contains utility functions for DOM manipulation
+ * and interaction. These functions help standardize common
+ * DOM operations across the application.
  */
 
 /**
- * Smoothly scrolls to an element with a specified offset
+ * Checks if the current environment is a browser
  * 
- * @param elementId - ID of the element to scroll to
- * @param offset - Offset from the top (default: 0)
- * @param behavior - Scroll behavior (default: smooth)
+ * @returns True if code is running in a browser environment
+ */
+export function isBrowser(): boolean {
+  return typeof window !== 'undefined';
+}
+
+/**
+ * Gets an element by ID with type safety
+ * 
+ * @param id - The ID of the element to find
+ * @returns The element or null if not found
+ */
+export function getElementById<T extends HTMLElement = HTMLElement>(id: string): T | null {
+  if (!isBrowser()) return null;
+  return document.getElementById(id) as T | null;
+}
+
+/**
+ * Gets elements by class name with type safety
+ * 
+ * @param className - The class name to search for
+ * @param parent - Optional parent element to search within
+ * @returns Array of matching elements
+ */
+export function getElementsByClassName<T extends HTMLElement = HTMLElement>(
+  className: string,
+  parent: HTMLElement | Document = document
+): T[] {
+  if (!isBrowser()) return [];
+  return Array.from(parent.getElementsByClassName(className)) as T[];
+}
+
+/**
+ * Checks if an element is visible in the viewport
+ * 
+ * @param element - The element to check
+ * @param offset - Optional offset from viewport edges (in pixels)
+ * @returns True if the element is visible in the viewport
+ */
+export function isElementInViewport(
+  element: HTMLElement,
+  offset: number = 0
+): boolean {
+  if (!isBrowser() || !element) return false;
+  
+  const rect = element.getBoundingClientRect();
+  
+  return (
+    rect.top >= 0 - offset &&
+    rect.left >= 0 - offset &&
+    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) + offset &&
+    rect.right <= (window.innerWidth || document.documentElement.clientWidth) + offset
+  );
+}
+
+/**
+ * Smoothly scrolls to an element
+ * 
+ * @param element - The element to scroll to
+ * @param options - Scroll options
  */
 export function scrollToElement(
-  elementId: string,
-  offset = 0,
-  behavior: ScrollBehavior = 'smooth'
+  element: HTMLElement | null,
+  options: {
+    behavior?: ScrollBehavior;
+    offset?: number;
+    align?: 'start' | 'center' | 'end';
+  } = {}
 ): void {
-  const element = document.getElementById(elementId);
+  if (!isBrowser() || !element) return;
   
-  if (!element) {
-    console.warn(`Element with ID "${elementId}" not found for scrolling`);
-    return;
-  }
+  const { behavior = 'smooth', offset = 0, align = 'start' } = options;
   
   const elementPosition = element.getBoundingClientRect().top;
   const offsetPosition = elementPosition + window.pageYOffset - offset;
@@ -31,161 +89,260 @@ export function scrollToElement(
     top: offsetPosition,
     behavior
   });
-}
-
-/**
- * Copy text to clipboard with fallback for older browsers
- * 
- * @param text - Text to copy to clipboard
- * @returns Promise that resolves to true if successful, false otherwise
- */
-export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    // Modern approach using Clipboard API
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-    
-    // Fallback for older browsers
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed'; // Avoid scrolling to bottom
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    
-    return successful;
-  } catch (error) {
-    console.error('Error copying to clipboard:', error);
-    return false;
+  
+  // If browser supports scrollIntoView with options, use it for more control
+  if ('scrollBehavior' in document.documentElement.style) {
+    element.scrollIntoView({
+      behavior,
+      block: align,
+      inline: 'nearest'
+    });
   }
 }
 
 /**
- * Detects if the device is a mobile device
+ * Creates a new HTML element with specified attributes
  * 
- * @returns True if the device is mobile, false otherwise
+ * @param tagName - The type of element to create
+ * @param attributes - Optional attributes to set on the element
+ * @param textContent - Optional text content for the element
+ * @returns The created element
  */
-export function isMobileDevice(): boolean {
-  // Use regex to check common mobile user agents
-  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-  return mobileRegex.test(navigator.userAgent);
+export function createElement<T extends HTMLElement = HTMLElement>(
+  tagName: string,
+  attributes: Record<string, string> = {},
+  textContent?: string
+): T {
+  if (!isBrowser()) {
+    throw new Error('createElement cannot be called outside of a browser environment');
+  }
+  
+  const element = document.createElement(tagName) as T;
+  
+  // Set attributes
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, value);
+  });
+  
+  // Set text content if provided
+  if (textContent !== undefined) {
+    element.textContent = textContent;
+  }
+  
+  return element;
 }
 
 /**
- * Creates a downloadable file from data
+ * Adds or removes a class based on a condition
  * 
- * @param filename - Name of the file to download
- * @param data - File content (string or Blob)
- * @param type - MIME type (default: text/plain)
+ * @param element - The element to modify
+ * @param className - The class name to toggle
+ * @param condition - Whether to add or remove the class
  */
-export function downloadFile(
-  filename: string,
-  data: string | Blob,
-  type = 'text/plain'
+export function toggleClass(
+  element: HTMLElement,
+  className: string,
+  condition: boolean
 ): void {
-  // Create blob if data is string
-  const blob = typeof data === 'string' 
-    ? new Blob([data], { type }) 
-    : data;
+  if (!element) return;
   
-  // Create download URL
-  const url = URL.createObjectURL(blob);
-  
-  // Create temporary link and trigger download
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.style.display = 'none';
-  
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  setTimeout(() => {
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, 100);
-}
-
-/**
- * Adds or removes a class to the document body
- * 
- * @param className - Class to toggle
- * @param force - If true, adds the class; if false, removes it
- */
-export function toggleBodyClass(className: string, force?: boolean): void {
-  if (force === undefined) {
-    document.body.classList.toggle(className);
-  } else if (force) {
-    document.body.classList.add(className);
+  if (condition) {
+    element.classList.add(className);
   } else {
-    document.body.classList.remove(className);
+    element.classList.remove(className);
   }
 }
 
 /**
- * Gets the current viewport dimensions
+ * Gets the scroll position of the page
  * 
- * @returns Object with viewport width and height
+ * @returns Object containing x and y scroll positions
  */
-export function getViewportDimensions(): { width: number; height: number } {
+export function getScrollPosition(): { x: number; y: number } {
+  if (!isBrowser()) {
+    return { x: 0, y: 0 };
+  }
+  
   return {
-    width: Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
-    height: Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+    x: window.pageXOffset || document.documentElement.scrollLeft,
+    y: window.pageYOffset || document.documentElement.scrollTop
   };
 }
 
 /**
- * Focus trap utility for modal dialogs
- * Trap focus within a specified element (for accessibility)
+ * Checks if an element has a specific attribute
  * 
- * @param containerElement - Element to trap focus within
- * @returns Function to remove the focus trap
+ * @param element - The element to check
+ * @param attributeName - The name of the attribute to check for
+ * @returns True if the element has the attribute
  */
-export function createFocusTrap(containerElement: HTMLElement): () => void {
-  // Identify all focusable elements within the container
-  const focusableElements = containerElement.querySelectorAll(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+export function hasAttribute(
+  element: HTMLElement | null,
+  attributeName: string
+): boolean {
+  return element ? element.hasAttribute(attributeName) : false;
+}
+
+/**
+ * Gets all form field values as an object
+ * 
+ * @param form - The form element
+ * @returns Object containing all form field values
+ */
+export function getFormValues(form: HTMLFormElement): Record<string, string | string[]> {
+  if (!form) return {};
+  
+  const formData = new FormData(form);
+  const values: Record<string, string | string[]> = {};
+  
+  for (const [key, value] of formData.entries()) {
+    if (typeof value === 'string') {
+      // Check if this is a multi-value field (like checkboxes)
+      if (values[key]) {
+        if (Array.isArray(values[key])) {
+          (values[key] as string[]).push(value);
+        } else {
+          values[key] = [values[key] as string, value];
+        }
+      } else {
+        values[key] = value;
+      }
+    }
+  }
+  
+  return values;
+}
+
+/**
+ * Gets the dimensions of an element
+ * 
+ * @param element - The element to measure
+ * @returns Object containing width, height, top, left, right, and bottom
+ */
+export function getElementDimensions(element: HTMLElement): DOMRect | null {
+  if (!element) return null;
+  return element.getBoundingClientRect();
+}
+
+/**
+ * Disables all interactive elements within a container
+ * 
+ * @param container - The container element
+ * @returns Function to re-enable the elements
+ */
+export function disableInteractiveElements(container: HTMLElement): () => void {
+  if (!container) return () => {};
+  
+  const elements = container.querySelectorAll<HTMLElement>(
+    'button, input, select, textarea, a, [tabindex]:not([tabindex="-1"])'
   );
   
-  if (focusableElements.length === 0) return () => {}; // No focusable elements
+  const originalState: Array<{ element: HTMLElement; tabIndex: number; disabled: boolean }> = [];
   
-  const firstElement = focusableElements[0] as HTMLElement;
-  const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-  
-  // Focus first element
-  firstElement.focus();
-  
-  // Handle tab key to create the loop
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key !== 'Tab') return;
+  elements.forEach(element => {
+    // Store original state
+    originalState.push({
+      element,
+      tabIndex: element.tabIndex,
+      disabled: element.hasAttribute('disabled')
+    });
     
-    // Shift + Tab
-    if (e.shiftKey) {
-      if (document.activeElement === firstElement) {
-        e.preventDefault();
-        lastElement.focus();
-      }
-    } 
-    // Tab
-    else {
-      if (document.activeElement === lastElement) {
-        e.preventDefault();
-        firstElement.focus();
-      }
+    // Disable element
+    element.tabIndex = -1;
+    
+    // For form elements
+    if ('disabled' in element) {
+      (element as HTMLInputElement).disabled = true;
     }
-  };
+    
+    // For other elements
+    element.setAttribute('aria-disabled', 'true');
+  });
   
-  // Add event listener
-  document.addEventListener('keydown', handleKeyDown);
-  
-  // Return function that removes the focus trap
+  // Return function to restore original state
   return () => {
-    document.removeEventListener('keydown', handleKeyDown);
+    originalState.forEach(({ element, tabIndex, disabled }) => {
+      element.tabIndex = tabIndex;
+      
+      if ('disabled' in element) {
+        (element as HTMLInputElement).disabled = disabled;
+      }
+      
+      if (!disabled) {
+        element.removeAttribute('aria-disabled');
+      }
+    });
+  };
+}
+
+/**
+ * Sets multiple CSS properties on an element
+ * 
+ * @param element - The element to style
+ * @param styles - Object containing CSS properties and values
+ */
+export function setStyles(
+  element: HTMLElement,
+  styles: Partial<CSSStyleDeclaration>
+): void {
+  if (!element) return;
+  
+  Object.entries(styles).forEach(([property, value]) => {
+    if (property in element.style) {
+      element.style[property as any] = value as string;
+    }
+  });
+}
+
+/**
+ * Checks if an element is a descendant of another element
+ * 
+ * @param child - The potential child element
+ * @param parent - The potential parent element
+ * @returns True if child is a descendant of parent
+ */
+export function isDescendant(
+  child: HTMLElement | null,
+  parent: HTMLElement | null
+): boolean {
+  if (!child || !parent) return false;
+  
+  let node = child.parentNode;
+  
+  while (node) {
+    if (node === parent) {
+      return true;
+    }
+    node = node.parentNode;
+  }
+  
+  return false;
+}
+
+/**
+ * Adds event listeners to multiple elements
+ * 
+ * @param elements - Array of elements to add listeners to
+ * @param event - Event type to listen for
+ * @param handler - Event handler function
+ * @param options - Event listener options
+ * @returns Function to remove all event listeners
+ */
+export function addEventListeners<K extends keyof HTMLElementEventMap>(
+  elements: HTMLElement[],
+  event: K,
+  handler: (event: HTMLElementEventMap[K]) => void,
+  options?: boolean | AddEventListenerOptions
+): () => void {
+  if (!elements || !elements.length) return () => {};
+  
+  elements.forEach(element => {
+    element.addEventListener(event, handler as EventListener, options);
+  });
+  
+  return () => {
+    elements.forEach(element => {
+      element.removeEventListener(event, handler as EventListener, options);
+    });
   };
 }

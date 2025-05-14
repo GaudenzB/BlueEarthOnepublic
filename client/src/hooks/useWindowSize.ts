@@ -1,80 +1,151 @@
 import { useState, useEffect } from 'react';
 
 /**
- * Interface for window dimensions
+ * Window size information
  */
-export interface WindowSize {
+interface WindowSize {
+  /**
+   * Window width in pixels
+   */
   width: number;
+  
+  /**
+   * Window height in pixels
+   */
   height: number;
+  
+  /**
+   * Whether the window is in a mobile viewport
+   * Default breakpoint is 768px
+   */
+  isMobile: boolean;
+  
+  /**
+   * Whether the window is in a tablet viewport
+   * Between 768px and 1024px by default
+   */
+  isTablet: boolean;
+  
+  /**
+   * Whether the window is in a desktop viewport
+   * Default breakpoint is 1024px
+   */
+  isDesktop: boolean;
 }
 
 /**
- * Hook that tracks the window size
+ * Hook options
+ */
+interface UseWindowSizeOptions {
+  /**
+   * Breakpoint for mobile devices (in pixels)
+   */
+  mobileBreakpoint?: number;
+  
+  /**
+   * Breakpoint for tablet devices (in pixels)
+   */
+  tabletBreakpoint?: number;
+  
+  /**
+   * Debounce delay for resize events (in milliseconds)
+   */
+  debounceDelay?: number;
+}
+
+/**
+ * Default window size for SSR environments
+ */
+const DEFAULT_WINDOW_SIZE: WindowSize = {
+  width: 1200,
+  height: 800,
+  isMobile: false,
+  isTablet: false,
+  isDesktop: true
+};
+
+/**
+ * Hook to track window size and responsive breakpoints
  * 
- * This hook provides the current window dimensions and updates when the window is resized.
- * Useful for responsive layouts and conditional rendering based on screen size.
+ * This hook provides the current window dimensions and boolean flags
+ * for different device sizes, making it easy to implement responsive
+ * behavior in components.
  * 
- * @returns WindowSize object containing width and height
+ * @param options - Configuration options
+ * @returns Window size information
  * 
  * @example
  * ```tsx
- * const { width, height } = useWindowSize();
+ * const { width, height, isMobile, isTablet, isDesktop } = useWindowSize();
  * 
  * return (
  *   <div>
- *     {width < 768 ? <MobileComponent /> : <DesktopComponent />}
+ *     {isMobile ? (
+ *       <MobileLayout />
+ *     ) : isTablet ? (
+ *       <TabletLayout />
+ *     ) : (
+ *       <DesktopLayout />
+ *     )}
  *   </div>
  * );
  * ```
  */
-export function useWindowSize(): WindowSize {
-  // Initialize with undefined to consider SSR
-  const [windowSize, setWindowSize] = useState<WindowSize>({
-    width: typeof window !== 'undefined' ? window.innerWidth : 0,
-    height: typeof window !== 'undefined' ? window.innerHeight : 0
-  });
-
+export function useWindowSize(options: UseWindowSizeOptions = {}): WindowSize {
+  const {
+    mobileBreakpoint = 768,
+    tabletBreakpoint = 1024,
+    debounceDelay = 250
+  } = options;
+  
+  // Initialize with default state (for SSR)
+  const [windowSize, setWindowSize] = useState<WindowSize>(DEFAULT_WINDOW_SIZE);
+  
   useEffect(() => {
-    // Handler to call on window resize
-    function handleResize() {
-      // Set window width/height to state
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    }
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') return;
     
-    // Add event listener
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    // Function to update window size
+    const updateSize = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      setWindowSize({
+        width,
+        height,
+        isMobile: width < mobileBreakpoint,
+        isTablet: width >= mobileBreakpoint && width < tabletBreakpoint,
+        isDesktop: width >= tabletBreakpoint
+      });
+    };
+    
+    // Debounced resize handler
+    const handleResize = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      timeoutId = setTimeout(updateSize, debounceDelay);
+    };
+    
+    // Add event listener for resize
     window.addEventListener('resize', handleResize);
     
-    // Call handler right away so state gets updated with initial window size
-    handleResize();
+    // Initial update
+    updateSize();
     
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('resize', handleResize);
-  }, []); // Empty array ensures effect runs only on mount and unmount
-
+    // Clean up event listener on unmount
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [mobileBreakpoint, tabletBreakpoint, debounceDelay]);
+  
   return windowSize;
-}
-
-// Breakpoint helpers (matching Tailwind's default breakpoints)
-export const BREAKPOINTS = {
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-  '2xl': 1536
-};
-
-/**
- * Checks if the current window width is below a given breakpoint
- * 
- * @param windowWidth - Current window width
- * @param breakpoint - Breakpoint to check against
- * @returns True if window width is less than the breakpoint
- */
-export function isBelowBreakpoint(windowWidth: number, breakpoint: keyof typeof BREAKPOINTS): boolean {
-  return windowWidth < BREAKPOINTS[breakpoint];
 }
 
 export default useWindowSize;

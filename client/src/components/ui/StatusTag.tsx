@@ -1,329 +1,297 @@
-import React, { memo } from 'react';
-import { Typography } from 'antd';
+import React, { useMemo } from 'react';
+import { Tag, Tooltip } from 'antd';
 import { 
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  GlobalOutlined,
-  StopOutlined,
-  WarningOutlined,
-  ExclamationCircleOutlined,
-  FileTextOutlined,
-  HistoryOutlined,
-  TagOutlined,
-  LockOutlined
+  CheckCircleOutlined, 
+  ClockCircleOutlined, 
+  ExclamationCircleOutlined, 
+  CloseCircleOutlined, 
+  SyncOutlined,
+  QuestionCircleOutlined,
+  UserOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 import { tokens } from '@/theme/tokens';
+import { createAccessibleId } from '@/utils/a11y';
 
-const { Text } = Typography;
+// Document status types
+type DocumentStatus = 
+  | 'draft' 
+  | 'in_review' 
+  | 'pending'
+  | 'approved'
+  | 'completed'
+  | 'rejected'
+  | 'expired'
+  | 'custom';
+
+// Employee status types
+type EmployeeStatus = 
+  | 'active'
+  | 'inactive'
+  | 'on_leave'
+  | 'remote'
+  | 'custom';
+
+// Combined status types
+export type StatusType = DocumentStatus | EmployeeStatus;
 
 /**
- * StatusConfig interface defines the visual appearance of a status
+ * Props for StatusTag component
  */
-interface StatusConfig {
-  background: string;
-  text: string;
-  border: string;
-  icon: string;
-  IconComponent: React.ComponentType<any>;
-  displayName?: string;
-}
-
-// Default status config to use as fallback
-const DEFAULT_STATUS_CONFIG: StatusConfig = {
-  background: '#f3f4f6',
-  text: '#4b5563',
-  border: '#d1d5db',
-  icon: tokens.colors.neutral[600],
-  IconComponent: TagOutlined
-};
-
-/**
- * Map all common status values to their visual representation
- * This allows for consistent status representation across the application
- */
-const STATUS_CONFIG: Record<string, StatusConfig> = {
-  // Employee statuses
-  active: {
-    background: '#e6f7ef',
-    text: '#0e6245',
-    border: '#a8e6c9',
-    icon: tokens.colors.semantic.success,
-    IconComponent: CheckCircleOutlined,
-    displayName: 'Active'
-  },
-  inactive: {
-    background: '#f3f4f6',
-    text: '#4b5563',
-    border: '#d1d5db',
-    icon: tokens.colors.neutral[600],
-    IconComponent: StopOutlined,
-    displayName: 'Inactive'
-  },
-  on_leave: {
-    background: '#fef6e6',
-    text: '#92400e',
-    border: '#fcd34d',
-    icon: tokens.colors.semantic.warning,
-    IconComponent: ClockCircleOutlined,
-    displayName: 'On Leave'
-  },
-  remote: {
-    background: '#eff6fe',
-    text: '#1e40af',
-    border: '#bfdbfe',
-    icon: tokens.colors.semantic.info,
-    IconComponent: GlobalOutlined,
-    displayName: 'Remote'
-  },
-  
-  // Document statuses
-  draft: {
-    background: '#f3f4f6',
-    text: '#4b5563',
-    border: '#d1d5db',
-    icon: tokens.colors.neutral[600],
-    IconComponent: FileTextOutlined,
-    displayName: 'Draft'
-  },
-  in_review: {
-    background: '#eff6fe',
-    text: '#1e40af',
-    border: '#bfdbfe',
-    icon: tokens.colors.semantic.info,
-    IconComponent: ClockCircleOutlined,
-    displayName: 'In Review'
-  },
-  pending: {
-    background: '#eff6fe',
-    text: '#1e40af',
-    border: '#bfdbfe',
-    icon: tokens.colors.semantic.info,
-    IconComponent: ClockCircleOutlined,
-    displayName: 'Pending'
-  },
-  approved: {
-    background: '#e6f7ef',
-    text: '#0e6245',
-    border: '#a8e6c9',
-    icon: tokens.colors.semantic.success,
-    IconComponent: CheckCircleOutlined,
-    displayName: 'Approved'
-  },
-  completed: {
-    background: '#e6f7ef',
-    text: '#0e6245',
-    border: '#a8e6c9',
-    icon: tokens.colors.semantic.success,
-    IconComponent: CheckCircleOutlined,
-    displayName: 'Completed'
-  },
-  rejected: {
-    background: '#fee2e2',
-    text: '#b91c1c',
-    border: '#fecaca',
-    icon: tokens.colors.semantic.error,
-    IconComponent: ExclamationCircleOutlined,
-    displayName: 'Rejected'
-  },
-  expired: {
-    background: '#fef6e6',
-    text: '#92400e',
-    border: '#fcd34d',
-    icon: tokens.colors.semantic.warning,
-    IconComponent: WarningOutlined,
-    displayName: 'Expired'
-  },
-  
-  // Version status
-  version: {
-    background: '#f3f0ff',
-    text: '#5b21b6',
-    border: '#c4b5fd',
-    icon: '#8b5cf6',
-    IconComponent: HistoryOutlined,
-    displayName: 'Version'
-  },
-  
-  // Document visibility/access
-  restricted: {
-    background: '#fff1f2',
-    text: '#9f1239',
-    border: '#fda4af',
-    icon: '#f43f5e',
-    IconComponent: LockOutlined,
-    displayName: 'Restricted'
-  },
-  
-  // Archive status
-  archived: {
-    background: '#f8fafc',
-    text: '#334155',
-    border: '#cbd5e1',
-    icon: tokens.colors.neutral[600],
-    IconComponent: TagOutlined,
-    displayName: 'Archived'
-  },
-  
-  // Add the default to the map itself
-  default: DEFAULT_STATUS_CONFIG
-};
-
 export interface StatusTagProps {
   /**
-   * The status value (e.g., 'active', 'inactive', 'on_leave', 'remote', 'draft', etc.)
+   * Status value to display
    */
-  status: string;
-
+  status: StatusType;
+  
   /**
-   * Optional className for additional styling
-   */
-  className?: string;
-
-  /**
-   * Optional custom icon to override the default icon for the status
-   */
-  icon?: React.ReactNode;
-
-  /**
-   * Optional custom text to override the default text for the status
+   * Custom text to display (only for status="custom")
    */
   text?: string;
-
+  
   /**
-   * Optional size of the tag. Default is 'default'
+   * Size of the tag
    */
   size?: 'small' | 'default' | 'large';
-
+  
   /**
-   * Optional callback for click events
+   * Optional tooltip text
    */
-  onClick?: (e: React.MouseEvent) => void;
-
+  tooltip?: string;
+  
   /**
-   * Optional flag to make the status tag interactive (hover/focus states)
+   * Makes the tag interactive with hover and click states
    */
   interactive?: boolean;
+  
+  /**
+   * Click handler - only triggered if interactive=true
+   */
+  onClick?: () => void;
+  
+  /**
+   * Custom className
+   */
+  className?: string;
 }
-
-/**
- * Size configurations for different tag sizes
- */
-const SIZE_STYLES = {
-  small: {
-    fontSize: '11px',
-    padding: '0 8px',
-    height: '20px',
-    borderRadius: tokens.radii.pill
-  },
-  default: {
-    fontSize: '12px',
-    padding: '0 10px',
-    height: '24px',
-    borderRadius: tokens.radii.pill
-  },
-  large: {
-    fontSize: '13px',
-    padding: '0 12px',
-    height: '28px',
-    borderRadius: tokens.radii.pill
-  }
-} as const;
 
 /**
  * StatusTag Component
  * 
- * A standardized component to display entity status across the application.
- * Provides consistent styling and representation of various status types.
- * Optimized for financial services with a professional, trustworthy appearance.
+ * A standardized component for displaying status indicators throughout the application.
+ * Provides consistent styling, iconography, and accessibility attributes.
  * 
  * @example
- * <StatusTag status="active" />
- * <StatusTag status="in_review" text="Under Review" />
- * <StatusTag status="approved" size="large" onClick={handleClick} />
+ * ```tsx
+ * // Document status
+ * <StatusTag status="approved" />
+ * 
+ * // Employee status
+ * <StatusTag status="on_leave" />
+ * 
+ * // With tooltip
+ * <StatusTag status="expired" tooltip="Expired on Jan 15, 2025" />
+ * 
+ * // Interactive with click handler
+ * <StatusTag 
+ *   status="draft" 
+ *   interactive 
+ *   onClick={() => handleStatusChange()} 
+ * />
+ * 
+ * // Custom status
+ * <StatusTag status="custom" text="Under Review" />
+ * ```
  */
-export const StatusTag = memo(({ 
-  status, 
-  className = '', 
-  icon: customIcon, 
-  text: customText,
+export const StatusTag: React.FC<StatusTagProps> = ({
+  status,
+  text,
   size = 'default',
+  tooltip,
+  interactive = false,
   onClick,
-  interactive = false
-}: StatusTagProps) => {
-  // Get config based on normalized status value
-  const normalizedStatus = status?.toLowerCase().replace(/[^a-z0-9_]/g, '_') || 'default';
+  className = ''
+}) => {
+  // Generate a unique ID for ARIA attributes
+  const id = useMemo(() => createAccessibleId('status', status), [status]);
   
-  // Get status config with type-safe fallback
-  const statusConfig = STATUS_CONFIG[normalizedStatus] || DEFAULT_STATUS_CONFIG;
+  // Determine configuration for the current status
+  const config = useMemo(() => {
+    // Get display text based on status
+    const getStatusText = () => {
+      if (status === 'custom' && text) {
+        return text;
+      }
+      
+      const statusTextMap: Record<StatusType, string> = {
+        // Document statuses
+        draft: 'Draft',
+        in_review: 'In Review',
+        pending: 'Pending',
+        approved: 'Approved',
+        completed: 'Completed',
+        rejected: 'Rejected',
+        expired: 'Expired',
+        
+        // Employee statuses
+        active: 'Active',
+        inactive: 'Inactive',
+        on_leave: 'On Leave',
+        remote: 'Remote',
+        
+        // Custom
+        custom: text || 'Custom'
+      };
+      
+      return statusTextMap[status];
+    };
+    
+    // Get color based on status
+    const getStatusColor = () => {
+      const statusColorMap: Record<StatusType, string> = {
+        // Document statuses
+        draft: tokens.colors.neutral[400],
+        in_review: tokens.colors.blue[500],
+        pending: tokens.colors.orange[500],
+        approved: tokens.colors.green[500],
+        completed: tokens.colors.green[700],
+        rejected: tokens.colors.red[500],
+        expired: tokens.colors.red[300],
+        
+        // Employee statuses
+        active: tokens.colors.green[500],
+        inactive: tokens.colors.neutral[400],
+        on_leave: tokens.colors.amber[500],
+        remote: tokens.colors.blue[500],
+        
+        // Custom
+        custom: tokens.colors.purple[500]
+      };
+      
+      return statusColorMap[status];
+    };
+    
+    // Get icon based on status
+    const getStatusIcon = () => {
+      const statusIconMap: Record<StatusType, React.ReactNode> = {
+        // Document statuses
+        draft: <ClockCircleOutlined />,
+        in_review: <SyncOutlined spin={interactive} />,
+        pending: <ClockCircleOutlined />,
+        approved: <CheckCircleOutlined />,
+        completed: <CheckCircleOutlined />,
+        rejected: <CloseCircleOutlined />,
+        expired: <ExclamationCircleOutlined />,
+        
+        // Employee statuses
+        active: <CheckCircleOutlined />,
+        inactive: <CloseCircleOutlined />,
+        on_leave: <ClockCircleOutlined />,
+        remote: <HomeOutlined />,
+        
+        // Custom
+        custom: <QuestionCircleOutlined />
+      };
+      
+      return statusIconMap[status];
+    };
+    
+    return {
+      text: getStatusText(),
+      color: getStatusColor(),
+      icon: getStatusIcon()
+    };
+  }, [status, text, interactive]);
   
-  // Determine text content (priority: custom text > config display name > formatted status)
-  const displayText = customText || 
-    statusConfig.displayName || 
-    (status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace(/_/g, ' ') : 'Unknown');
+  // Calculate styles based on size
+  const sizeStyles = useMemo(() => {
+    const sizeMap = {
+      small: {
+        fontSize: '10px',
+        padding: '0 6px',
+        height: '20px',
+        lineHeight: '20px'
+      },
+      default: {
+        fontSize: '12px',
+        padding: '0 8px',
+        height: '24px',
+        lineHeight: '24px'
+      },
+      large: {
+        fontSize: '14px',
+        padding: '0 12px',
+        height: '32px',
+        lineHeight: '32px'
+      }
+    };
+    
+    return sizeMap[size];
+  }, [size]);
   
-  // Get size styling with type safety
-  const sizeStyle = SIZE_STYLES[size] || SIZE_STYLES.default;
+  // Combine styles
+  const tagStyle = useMemo(() => ({
+    backgroundColor: `${config.color}10`, // 10% opacity version of color
+    color: config.color,
+    border: `1px solid ${config.color}40`, // 40% opacity version of color
+    cursor: interactive ? 'pointer' : 'default',
+    ...sizeStyles
+  }), [config.color, interactive, sizeStyles]);
   
-  // Handle interactive styles
-  const interactiveStyle: React.CSSProperties = interactive ? {
-    cursor: 'pointer',
-    transition: tokens.transitions.default,
-  } : {};
-  
-  // Enhance keyboard interaction for interactive tags
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault();
-      onClick(e as unknown as React.MouseEvent);
+  // Handle click
+  const handleClick = () => {
+    if (interactive && onClick) {
+      onClick();
     }
   };
-
-  return (
-    <div 
-      className={`inline-flex items-center ${className}`}
-      style={{
-        backgroundColor: statusConfig.background,
-        border: `1px solid ${statusConfig.border}`,
-        color: statusConfig.text,
-        height: sizeStyle.height,
-        borderRadius: sizeStyle.borderRadius,
-        padding: sizeStyle.padding,
-        fontSize: sizeStyle.fontSize,
-        fontWeight: tokens.typography.fontWeight.medium,
-        lineHeight: 1,
-        letterSpacing: '0.2px',
-        whiteSpace: 'nowrap',
-        ...interactiveStyle
-      }}
-      onClick={onClick}
-      onKeyDown={onClick ? handleKeyDown : undefined}
-      role={onClick ? 'button' : 'status'}
-      tabIndex={onClick ? 0 : undefined}
-      aria-label={`Status: ${displayText}`}
+  
+  // Determine ARIA attributes based on status type
+  const ariaAttrs = useMemo(() => {
+    // For document statuses
+    if (['draft', 'in_review', 'pending', 'approved', 'completed', 'rejected', 'expired'].includes(status)) {
+      return {
+        'aria-label': `Document status: ${config.text}`
+      };
+    }
+    
+    // For employee statuses
+    if (['active', 'inactive', 'on_leave', 'remote'].includes(status)) {
+      return {
+        'aria-label': `Employee status: ${config.text}`
+      };
+    }
+    
+    // For custom status
+    return {
+      'aria-label': `Status: ${config.text}`
+    };
+  }, [status, config.text]);
+  
+  // Render tag with or without tooltip
+  const tag = (
+    <Tag
+      className={`status-tag status-tag-${status} ${className}`}
+      style={tagStyle}
+      icon={config.icon}
+      onClick={handleClick}
+      id={id}
+      {...ariaAttrs}
+      role="status"
     >
-      {customIcon || (
-        <span 
-          style={{ 
-            fontSize: sizeStyle.fontSize, 
-            color: statusConfig.icon, 
-            marginRight: '4px', 
-            display: 'inline-flex' 
-          }}
-          aria-hidden="true"
-        >
-          <statusConfig.IconComponent />
-        </span>
-      )}
-      
-      <Text style={{ color: 'inherit', fontSize: 'inherit', margin: 0 }}>
-        {displayText}
-      </Text>
-    </div>
+      {config.text}
+    </Tag>
   );
-});
+  
+  // Wrap with tooltip if provided
+  if (tooltip) {
+    return (
+      <Tooltip title={tooltip} aria-describedby={id}>
+        {tag}
+      </Tooltip>
+    );
+  }
+  
+  return tag;
+};
 
-// Set displayName for better debugging experience
-StatusTag.displayName = 'StatusTag';
-
-// Default export
 export default StatusTag;
