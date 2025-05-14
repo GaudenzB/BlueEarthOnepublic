@@ -1,639 +1,262 @@
 /**
- * Accessibility (a11y) utility functions
+ * Accessibility (a11y) Utility Functions
  * 
- * These utilities help create accessible components with proper ARIA attributes,
- * keyboard navigation, focus management, and screen reader support.
+ * This module contains utility functions for improving accessibility.
+ * These functions help make the application more usable for people with disabilities.
  */
 
 /**
- * Common ARIA role constants
+ * ARIA roles for common UI elements
  */
-export const ARIA_ROLES = {
-  ALERT: 'alert',
-  ALERTDIALOG: 'alertdialog',
-  BUTTON: 'button',
-  CHECKBOX: 'checkbox',
-  DIALOG: 'dialog',
-  GRID: 'grid',
-  LINK: 'link',
-  LISTBOX: 'listbox',
-  MENU: 'menu',
-  MENUITEM: 'menuitem',
-  MENUITEMCHECKBOX: 'menuitemcheckbox',
-  MENUITEMRADIO: 'menuitemradio',
-  OPTION: 'option',
-  PROGRESSBAR: 'progressbar',
-  RADIO: 'radio',
-  RADIOGROUP: 'radiogroup',
-  REGION: 'region',
-  SCROLLBAR: 'scrollbar',
-  SEARCH: 'search',
-  SEARCHBOX: 'searchbox',
-  SEPARATOR: 'separator',
-  SLIDER: 'slider',
-  SPINBUTTON: 'spinbutton',
-  STATUS: 'status',
-  SWITCH: 'switch',
-  TAB: 'tab',
-  TABLIST: 'tablist',
-  TABPANEL: 'tabpanel',
-  TEXTBOX: 'textbox',
-  TIMER: 'timer',
-  TOOLBAR: 'toolbar',
-  TOOLTIP: 'tooltip',
-  TREE: 'tree',
-  TREEGRID: 'treegrid',
-  TREEITEM: 'treeitem'
+export const ariaRoles = {
+  button: 'button',
+  link: 'link',
+  checkbox: 'checkbox',
+  radio: 'radio',
+  tab: 'tab',
+  tablist: 'tablist',
+  tabpanel: 'tabpanel',
+  dialog: 'dialog',
+  alertdialog: 'alertdialog',
+  navigation: 'navigation',
+  menu: 'menu',
+  menuitem: 'menuitem',
+  menubar: 'menubar',
+  tooltip: 'tooltip',
+  search: 'search',
+  searchbox: 'searchbox',
+  status: 'status',
+  alert: 'alert',
+  progressbar: 'progressbar',
+  slider: 'slider',
+  listbox: 'listbox',
+  option: 'option',
+  combobox: 'combobox',
+  grid: 'grid',
+  row: 'row',
+  cell: 'cell',
+  columnheader: 'columnheader',
+  rowheader: 'rowheader',
+  separator: 'separator',
+  article: 'article',
+  document: 'document',
+  application: 'application',
+  banner: 'banner',
+  complementary: 'complementary',
+  contentinfo: 'contentinfo',
+  form: 'form',
+  main: 'main',
+  region: 'region',
+  group: 'group',
 };
 
 /**
- * Common ARIA live region announcement politeness levels
+ * Check if element can receive focus
  */
-export const ARIA_LIVE = {
-  OFF: 'off',
-  POLITE: 'polite',
-  ASSERTIVE: 'assertive'
-};
-
-/**
- * Creates a unique, accessible ID for DOM elements
- * 
- * @param prefix - Prefix for the ID
- * @param uniqueId - Unique identifier (string or number)
- * @returns Formatted ID string
- */
-export function createAccessibleId(prefix: string, uniqueId: string | number): string {
-  return `${prefix.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${uniqueId}`;
+export function canFocus(element: HTMLElement): boolean {
+  const focusableElements = [
+    'a',
+    'button',
+    'input',
+    'textarea',
+    'select',
+    'details',
+    '[tabindex]',
+  ];
+  
+  const selector = focusableElements.join(', ');
+  
+  if (element.matches(selector)) {
+    return !element.hasAttribute('disabled') && 
+      !element.hasAttribute('aria-disabled') &&
+      (
+        element.getAttribute('tabindex') !== '-1' ||
+        element.nodeName.toLowerCase() === 'a' ||
+        element.nodeName.toLowerCase() === 'button' ||
+        element.nodeName.toLowerCase() === 'input' ||
+        element.nodeName.toLowerCase() === 'textarea' ||
+        element.nodeName.toLowerCase() === 'select'
+      );
+  }
+  
+  return false;
 }
 
 /**
- * Announces a message to screen readers using ARIA live regions
- * 
- * @param message - Message to announce
- * @param politeness - ARIA live politeness setting
+ * Get all focusable elements within a container
  */
-export function announce(
-  message: string, 
-  politeness: 'off' | 'polite' | 'assertive' = 'polite'
-): void {
-  // Find existing announcer or create a new one
+export function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  const focusableElements = [
+    'a[href]:not([disabled]):not([aria-disabled="true"])',
+    'button:not([disabled]):not([aria-disabled="true"])',
+    'input:not([disabled]):not([aria-disabled="true"])',
+    'select:not([disabled]):not([aria-disabled="true"])',
+    'textarea:not([disabled]):not([aria-disabled="true"])',
+    'details:not([disabled]):not([aria-disabled="true"])',
+    '[tabindex]:not([tabindex="-1"])',
+  ];
+  
+  const elements = Array.from(
+    container.querySelectorAll(focusableElements.join(', '))
+  ) as HTMLElement[];
+  
+  return elements.filter(element => element.offsetParent !== null);
+}
+
+/**
+ * Trap focus within a container (modal dialog, etc.)
+ */
+export function trapFocus(container: HTMLElement, event: KeyboardEvent): void {
+  if (event.key !== 'Tab') return;
+  
+  const focusableElements = getFocusableElements(container);
+  if (focusableElements.length === 0) return;
+  
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  
+  if (event.shiftKey && document.activeElement === firstElement) {
+    lastElement.focus();
+    event.preventDefault();
+  } else if (!event.shiftKey && document.activeElement === lastElement) {
+    firstElement.focus();
+    event.preventDefault();
+  }
+}
+
+/**
+ * Set up focus trap and remove it when done
+ */
+export function setupFocusTrap(container: HTMLElement): () => void {
+  const keydownHandler = (event: KeyboardEvent) => trapFocus(container, event);
+  
+  document.addEventListener('keydown', keydownHandler);
+  
+  // Return cleanup function
+  return () => {
+    document.removeEventListener('keydown', keydownHandler);
+  };
+}
+
+/**
+ * Focus first focusable element in container
+ */
+export function focusFirstElement(container: HTMLElement): void {
+  const focusableElements = getFocusableElements(container);
+  if (focusableElements.length > 0) {
+    focusableElements[0].focus();
+  }
+}
+
+/**
+ * Create an accessible announcement
+ */
+export function announce(message: string, politeness: 'polite' | 'assertive' = 'polite'): void {
   let announcer = document.getElementById('a11y-announcer');
   
   if (!announcer) {
     announcer = document.createElement('div');
     announcer.id = 'a11y-announcer';
-    announcer.setAttribute('aria-live', politeness);
-    announcer.setAttribute('aria-atomic', 'true');
-    announcer.setAttribute('role', 'status');
-    announcer.setAttribute('tabindex', '-1');
-    announcer.style.cssText = `
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    `;
+    announcer.style.position = 'absolute';
+    announcer.style.width = '1px';
+    announcer.style.height = '1px';
+    announcer.style.padding = '0';
+    announcer.style.overflow = 'hidden';
+    announcer.style.clip = 'rect(0, 0, 0, 0)';
+    announcer.style.whiteSpace = 'nowrap';
+    announcer.style.border = '0';
+    
+    // Create both politeness levels
+    const politeRegion = document.createElement('div');
+    politeRegion.id = 'a11y-announcer-polite';
+    politeRegion.setAttribute('aria-live', 'polite');
+    
+    const assertiveRegion = document.createElement('div');
+    assertiveRegion.id = 'a11y-announcer-assertive';
+    assertiveRegion.setAttribute('aria-live', 'assertive');
+    
+    announcer.appendChild(politeRegion);
+    announcer.appendChild(assertiveRegion);
     document.body.appendChild(announcer);
   }
   
-  // Set politeness level if different from existing
-  if (announcer.getAttribute('aria-live') !== politeness) {
-    announcer.setAttribute('aria-live', politeness);
+  const region = document.getElementById(`a11y-announcer-${politeness}`);
+  if (region) {
+    region.textContent = message;
+    
+    // Clear after a short delay to allow for repeat announcements
+    setTimeout(() => {
+      region.textContent = '';
+    }, 500);
   }
-  
-  // Clear and set the content to trigger announcement
-  announcer.textContent = '';
-  
-  // Use setTimeout to ensure announcement is made even if multiple rapid
-  // announcements are requested
-  setTimeout(() => {
-    announcer!.textContent = message;
-  }, 50);
 }
 
 /**
- * Adds keyboard event listeners with common accessibility patterns
- * 
- * @param element - Element to attach listeners to
- * @param callbacks - Object with callbacks for different keys
- * @returns Function to remove listeners
+ * Check if high contrast mode is enabled
  */
-export function addKeyboardSupport(
-  element: HTMLElement,
-  callbacks: {
-    enter?: (event: KeyboardEvent) => void;
-    space?: (event: KeyboardEvent) => void;
-    escape?: (event: KeyboardEvent) => void;
-    tab?: (event: KeyboardEvent) => void;
-    arrowUp?: (event: KeyboardEvent) => void;
-    arrowDown?: (event: KeyboardEvent) => void;
-    arrowLeft?: (event: KeyboardEvent) => void;
-    arrowRight?: (event: KeyboardEvent) => void;
-    home?: (event: KeyboardEvent) => void;
-    end?: (event: KeyboardEvent) => void;
-  }
-): () => void {
-  if (!element) return () => {};
-  
-  const handleKeyDown = (event: KeyboardEvent) => {
-    switch (event.key) {
-      case 'Enter':
-        if (callbacks.enter) {
-          callbacks.enter(event);
-        }
-        break;
-      
-      case ' ':
-      case 'Spacebar': // Older browsers
-        if (callbacks.space) {
-          callbacks.space(event);
-        }
-        break;
-      
-      case 'Escape':
-      case 'Esc': // Older browsers
-        if (callbacks.escape) {
-          callbacks.escape(event);
-        }
-        break;
-      
-      case 'Tab':
-        if (callbacks.tab) {
-          callbacks.tab(event);
-        }
-        break;
-      
-      case 'ArrowUp':
-      case 'Up': // Older browsers
-        if (callbacks.arrowUp) {
-          callbacks.arrowUp(event);
-        }
-        break;
-      
-      case 'ArrowDown':
-      case 'Down': // Older browsers
-        if (callbacks.arrowDown) {
-          callbacks.arrowDown(event);
-        }
-        break;
-      
-      case 'ArrowLeft':
-      case 'Left': // Older browsers
-        if (callbacks.arrowLeft) {
-          callbacks.arrowLeft(event);
-        }
-        break;
-      
-      case 'ArrowRight':
-      case 'Right': // Older browsers
-        if (callbacks.arrowRight) {
-          callbacks.arrowRight(event);
-        }
-        break;
-      
-      case 'Home':
-        if (callbacks.home) {
-          callbacks.home(event);
-        }
-        break;
-      
-      case 'End':
-        if (callbacks.end) {
-          callbacks.end(event);
-        }
-        break;
-      
-      default:
-        break;
-    }
-  };
-  
-  element.addEventListener('keydown', handleKeyDown);
-  
-  // Return a function to remove the listener
-  return () => {
-    element.removeEventListener('keydown', handleKeyDown);
-  };
+export function isHighContrastMode(): boolean {
+  // This is a basic detection and may not work in all browsers
+  const highContrastMedia = window.matchMedia('(forced-colors: active)');
+  return highContrastMedia.matches;
 }
 
 /**
- * Creates a focus trap within an element to keep focus within modal dialogs
- * 
- * @param element - Container element for the focus trap
- * @param options - Options for the focus trap
- * @returns Function to remove trap and restore focus
+ * Check if reduced motion is preferred
  */
-export function createFocusTrap(
-  element: HTMLElement,
-  options: {
-    initialFocus?: HTMLElement;
-    returnFocus?: boolean;
-    escapeDeactivates?: boolean;
-    onDeactivate?: () => void;
-  } = {}
-): () => void {
-  if (!element) return () => {};
-  
-  const {
-    initialFocus,
-    returnFocus = true,
-    escapeDeactivates = true,
-    onDeactivate
-  } = options;
-  
-  // Store previously focused element
-  const previousActiveElement = document.activeElement as HTMLElement;
-  
-  // Find all focusable elements
-  const focusableElements = element.querySelectorAll(
-    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+export function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * Generate random ID for ARIA attributes
+ */
+export function generateAriaId(prefix: string = 'aria'): string {
+  return `${prefix}-${Math.floor(Math.random() * 10000000)}`;
+}
+
+/**
+ * Check if screen reader is potentially being used
+ * Note: This is not 100% reliable and should only be used for enhanced features
+ */
+export function isPotentialScreenReaderUser(): boolean {
+  return (
+    // Check for common screen reader detection flags
+    'speechSynthesis' in window ||
+    // @ts-ignore - These properties might not exist in all browsers
+    !!document.documentElement.getAttribute('data-at-detected') ||
+    // @ts-ignore
+    !!window.onvoiceschanged
   );
-  
-  const firstFocusable = focusableElements[0] as HTMLElement;
-  const lastFocusable = focusableElements[focusableElements.length - 1] as HTMLElement;
-  
-  // Focus the initial element
-  if (initialFocus) {
-    initialFocus.focus();
-  } else if (firstFocusable) {
-    firstFocusable.focus();
-  }
-  
-  // Handle tab key to trap focus
-  const handleTabKey = (event: KeyboardEvent) => {
-    // If shift+tab on first element, move to last element
-    if (event.shiftKey && document.activeElement === firstFocusable) {
-      event.preventDefault();
-      lastFocusable.focus();
-    } 
-    // If tab on last element, move to first element
-    else if (!event.shiftKey && document.activeElement === lastFocusable) {
-      event.preventDefault();
-      firstFocusable.focus();
-    }
-  };
-  
-  // Handle escape key
-  const handleEscapeKey = (event: KeyboardEvent) => {
-    if (escapeDeactivates && event.key === 'Escape') {
-      deactivateTrap();
-    }
-  };
-  
-  // Add event listeners
-  element.addEventListener('keydown', (event) => {
-    if (event.key === 'Tab') {
-      handleTabKey(event);
-    } else if (event.key === 'Escape') {
-      handleEscapeKey(event);
-    }
-  });
-  
-  // Function to deactivate the trap
-  const deactivateTrap = () => {
-    element.removeEventListener('keydown', handleTabKey);
-    element.removeEventListener('keydown', handleEscapeKey);
-    
-    if (returnFocus && previousActiveElement && 'focus' in previousActiveElement) {
-      previousActiveElement.focus();
-    }
-    
-    if (onDeactivate) {
-      onDeactivate();
-    }
-  };
-  
-  return deactivateTrap;
 }
 
 /**
- * Makes an element or component focusable and activatable by keyboard
- * 
- * @param element - Element to make activatable
- * @param onClick - Click handler to trigger on activation
- * @returns Function to remove event listeners
+ * Get CSS for screen reader only elements
  */
-export function makeActivatable(
-  element: HTMLElement,
-  onClick: (event: MouseEvent | KeyboardEvent) => void
-): () => void {
-  if (!element) return () => {};
-  
-  // Make sure the element is focusable
-  if (element.getAttribute('tabindex') === null) {
-    element.setAttribute('tabindex', '0');
-  }
-  
-  // Add role if none exists
-  if (element.getAttribute('role') === null) {
-    element.setAttribute('role', 'button');
-  }
-  
-  // Click handler
-  const handleClick = (event: MouseEvent) => {
-    onClick(event);
-  };
-  
-  // Keyboard handler
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-      event.preventDefault();
-      onClick(event);
-    }
-  };
-  
-  // Add event listeners
-  element.addEventListener('click', handleClick);
-  element.addEventListener('keydown', handleKeyDown);
-  
-  // Return a function to remove listeners
-  return () => {
-    element.removeEventListener('click', handleClick);
-    element.removeEventListener('keydown', handleKeyDown);
-  };
-}
-
-/**
- * Implements the ARIA listbox pattern for custom select components
- * 
- * @param listboxElement - Container element with role="listbox"
- * @param options - Configuration options
- */
-export function setupListbox(
-  listboxElement: HTMLElement,
-  options: {
-    onSelectionChange?: (value: string, index: number) => void;
-    initialSelectedIndex?: number;
-    orientation?: 'vertical' | 'horizontal';
-    allowTypeAhead?: boolean;
-    multiselectable?: boolean;
-  } = {}
-): {
-  getSelectedValue: () => string;
-  getSelectedIndex: () => number;
-  setSelectedIndex: (index: number) => void;
-  cleanup: () => void;
-} {
-  if (!listboxElement) {
-    return {
-      getSelectedValue: () => '',
-      getSelectedIndex: () => -1,
-      setSelectedIndex: () => {},
-      cleanup: () => {}
-    };
-  }
-  
-  const {
-    onSelectionChange,
-    initialSelectedIndex = 0,
-    orientation = 'vertical',
-    allowTypeAhead = true,
-    multiselectable = false
-  } = options;
-  
-  // Set ARIA attributes
-  listboxElement.setAttribute('role', 'listbox');
-  listboxElement.setAttribute('tabindex', '0');
-  
-  if (multiselectable) {
-    listboxElement.setAttribute('aria-multiselectable', 'true');
-  }
-  
-  // Get all option elements
-  const getOptions = () => Array.from(
-    listboxElement.querySelectorAll('[role="option"]')
-  ) as HTMLElement[];
-  
-  let selectedIndex = initialSelectedIndex;
-  
-  // Set initial selection
-  const setInitialSelection = () => {
-    const options = getOptions();
-    
-    if (options.length > 0 && selectedIndex >= 0 && selectedIndex < options.length) {
-      selectOption(selectedIndex);
-    }
-  };
-  
-  // Select an option by index
-  const selectOption = (index: number) => {
-    const options = getOptions();
-    
-    if (index < 0 || index >= options.length) {
-      return;
-    }
-    
-    if (!multiselectable) {
-      // Remove selection from all options
-      options.forEach(option => {
-        option.setAttribute('aria-selected', 'false');
-        option.classList.remove('selected');
-      });
-    }
-    
-    // Select the new option
-    options[index].setAttribute('aria-selected', 'true');
-    options[index].classList.add('selected');
-    
-    // Call selection change callback
-    if (onSelectionChange) {
-      const value = options[index].getAttribute('data-value') || options[index].textContent || '';
-      onSelectionChange(value, index);
-    }
-    
-    selectedIndex = index;
-  };
-  
-  // Toggle selection (for multiselect)
-  const toggleOption = (index: number) => {
-    if (!multiselectable) {
-      selectOption(index);
-      return;
-    }
-    
-    const options = getOptions();
-    
-    if (index < 0 || index >= options.length) {
-      return;
-    }
-    
-    const option = options[index];
-    const isSelected = option.getAttribute('aria-selected') === 'true';
-    
-    option.setAttribute('aria-selected', isSelected ? 'false' : 'true');
-    
-    if (isSelected) {
-      option.classList.remove('selected');
-    } else {
-      option.classList.add('selected');
-    }
-    
-    // Call selection change callback
-    if (onSelectionChange) {
-      const value = option.getAttribute('data-value') || option.textContent || '';
-      onSelectionChange(value, index);
-    }
-  };
-  
-  // Handle keyboard navigation
-  const handleKeyDown = (event: KeyboardEvent) => {
-    const options = getOptions();
-    const optionCount = options.length;
-    
-    if (optionCount === 0) return;
-    
-    const isVertical = orientation === 'vertical';
-    let newIndex = selectedIndex;
-    
-    switch (event.key) {
-      case 'ArrowDown':
-      case 'Down':
-        if (isVertical) {
-          newIndex = (selectedIndex + 1) % optionCount;
-          event.preventDefault();
-        }
-        break;
-      
-      case 'ArrowUp':
-      case 'Up':
-        if (isVertical) {
-          newIndex = (selectedIndex - 1 + optionCount) % optionCount;
-          event.preventDefault();
-        }
-        break;
-      
-      case 'ArrowRight':
-      case 'Right':
-        if (!isVertical) {
-          newIndex = (selectedIndex + 1) % optionCount;
-          event.preventDefault();
-        }
-        break;
-      
-      case 'ArrowLeft':
-      case 'Left':
-        if (!isVertical) {
-          newIndex = (selectedIndex - 1 + optionCount) % optionCount;
-          event.preventDefault();
-        }
-        break;
-      
-      case 'Home':
-        newIndex = 0;
-        event.preventDefault();
-        break;
-      
-      case 'End':
-        newIndex = optionCount - 1;
-        event.preventDefault();
-        break;
-      
-      case ' ':
-      case 'Enter':
-        if (multiselectable) {
-          toggleOption(selectedIndex);
-        } else {
-          selectOption(selectedIndex);
-        }
-        event.preventDefault();
-        break;
-      
-      default:
-        // Type-ahead functionality
-        if (allowTypeAhead && event.key.length === 1) {
-          const searchChar = event.key.toLowerCase();
-          let matchIndex = -1;
-          
-          // First try to find an option starting after the current selection
-          for (let i = selectedIndex + 1; i < optionCount; i++) {
-            const text = options[i].textContent || '';
-            if (text.toLowerCase().startsWith(searchChar)) {
-              matchIndex = i;
-              break;
-            }
-          }
-          
-          // If no match found after current selection, start from beginning
-          if (matchIndex === -1) {
-            for (let i = 0; i < selectedIndex; i++) {
-              const text = options[i].textContent || '';
-              if (text.toLowerCase().startsWith(searchChar)) {
-                matchIndex = i;
-                break;
-              }
-            }
-          }
-          
-          if (matchIndex !== -1) {
-            newIndex = matchIndex;
-          }
-        }
-        break;
-    }
-    
-    if (newIndex !== selectedIndex) {
-      selectOption(newIndex);
-      options[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  };
-  
-  // Handle click on option
-  const handleClick = (event: MouseEvent) => {
-    const target = event.target as HTMLElement;
-    const option = target.closest('[role="option"]') as HTMLElement;
-    
-    if (!option) return;
-    
-    // Find the index of the clicked option
-    const options = getOptions();
-    const index = options.indexOf(option);
-    
-    if (index !== -1) {
-      if (multiselectable) {
-        toggleOption(index);
-      } else {
-        selectOption(index);
-      }
-    }
-  };
-  
-  // Add event listeners
-  listboxElement.addEventListener('keydown', handleKeyDown);
-  listboxElement.addEventListener('click', handleClick);
-  
-  // Set initial selection
-  setInitialSelection();
-  
-  // Return public API
+export function srOnlyStyles(): Record<string, string> {
   return {
-    getSelectedValue: () => {
-      const options = getOptions();
-      if (selectedIndex >= 0 && selectedIndex < options.length) {
-        return options[selectedIndex].getAttribute('data-value') || 
-               options[selectedIndex].textContent || '';
-      }
-      return '';
-    },
-    getSelectedIndex: () => selectedIndex,
-    setSelectedIndex: (index: number) => selectOption(index),
-    cleanup: () => {
-      listboxElement.removeEventListener('keydown', handleKeyDown);
-      listboxElement.removeEventListener('click', handleClick);
-    }
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: '0',
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: '0',
   };
 }
 
 export default {
-  ARIA_ROLES,
-  ARIA_LIVE,
-  createAccessibleId,
+  ariaRoles,
+  canFocus,
+  getFocusableElements,
+  trapFocus,
+  setupFocusTrap,
+  focusFirstElement,
   announce,
-  addKeyboardSupport,
-  createFocusTrap,
-  makeActivatable,
-  setupListbox
+  isHighContrastMode,
+  prefersReducedMotion,
+  generateAriaId,
+  isPotentialScreenReaderUser,
+  srOnlyStyles,
 };

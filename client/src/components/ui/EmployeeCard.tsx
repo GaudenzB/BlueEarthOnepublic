@@ -8,12 +8,11 @@ import {
   UserOutlined,
   CalendarOutlined,
   TeamOutlined,
-  IdcardOutlined
 } from '@ant-design/icons';
-import { StatusTag } from '@/components/ui/StatusTag';
+import { StatusTag } from '@/components/ui';
 import { truncateText, formatDate } from '@/utils/formatting';
 import { tokens } from '@/theme/tokens';
-import { createAccessibleId } from '@/utils/a11y';
+import a11y from '@/utils/a11y';
 
 // Types for employee data
 export interface Employee {
@@ -286,7 +285,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
 }) => {
   // Generate a unique ID for accessibility attributes
   const id = useMemo(() => 
-    createAccessibleId('employee', employee.id), 
+    a11y.generateAriaId(`employee-${employee.id}`), 
     [employee.id]
   );
   
@@ -443,12 +442,13 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
         />
       </div>
       
-      <StatusTag 
-        status={employee.status}
-        size="small"
-        tooltip={`Employee is currently ${employee.status.replace(/_/g, ' ')}`}
-        style={{ marginBottom: tokens.spacing[3] }}
-      />
+      <div style={{ marginBottom: tokens.spacing[3] }}>
+        <StatusTag 
+          status={employee.status}
+          size="small"
+          tooltip={`Employee is currently ${employee.status.replace(/_/g, ' ')}`}
+        />
+      </div>
       
       <EmployeeContact email={employee.email} phone={employee.phone} />
     </div>
