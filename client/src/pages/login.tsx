@@ -7,10 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import Logo from "@/components/logo";
 import { colors } from "@/lib/colors";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Login() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [rememberMe, setRememberMe] = React.useState(false);
   const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
@@ -52,7 +54,7 @@ export default function Login() {
     }
     
     try {
-      await login.mutateAsync({ username, password });
+      await login.mutateAsync({ username, password, rememberMe });
       toast({
         title: "Success",
         description: "Logged in successfully",
@@ -101,6 +103,20 @@ export default function Login() {
               required
               autoComplete="current-password"
             />
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="remember-me" 
+                checked={rememberMe} 
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <label
+                htmlFor="remember-me"
+                className="text-sm cursor-pointer"
+                style={{ color: colors.text.secondary }}
+              >
+                Remember me for 30 days
+              </label>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-2">
             <Button 
