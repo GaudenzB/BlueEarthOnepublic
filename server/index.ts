@@ -2,7 +2,7 @@
 import './utils/env-loader.js';
 
 import express, { type Express } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes-new"; // Use our new routes file
 import { setupVite, serveStatic } from "./vite";
 import { runMigrations } from "./migrations";
 import { checkDatabaseConnection } from "./db";
@@ -11,6 +11,7 @@ import { requestLoggerMiddleware } from "./middleware/requestLogger";
 import { setupSecurityMiddleware } from "./middleware/security";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { setupSession } from "./middleware/session";
+import { setupAuth } from "./passport-auth"; // Import our new passport auth setup
 import { logger } from "./utils/logger";
 import { setupDefaultTenant } from "./utils/setupDefaultTenant";
 import { env, isDevelopment } from "./config/env";
@@ -37,6 +38,7 @@ async function bootstrap(): Promise<void> {
     // Apply essential middleware
     setupSecurityMiddleware(app);
     setupSession(app);
+    setupAuth(app); // Initialize Passport authentication after session setup
     app.use(requestLoggerMiddleware);
     
     // Database initialization
