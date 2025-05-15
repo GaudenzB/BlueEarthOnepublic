@@ -17,15 +17,7 @@ import {
   type DocumentType
 } from '../../shared/schema/documents/documents';
 
-// Function to get user by ID for session-based auth fallback
-const getUserById = async (id: number) => {
-  try {
-    return await userRepository.findById(id);
-  } catch (error) {
-    logger.error('Error in getUserById', { error, userId: id });
-    return null;
-  }
-};
+// Keep userRepository import but remove duplicate getUserById function
 
 // Get the JWT secret key - use same approach as in server/auth.ts
 const JWT_SECRET = process.env.JWT_SECRET || (
@@ -140,14 +132,14 @@ const documentUploadAuth = async (req: Request, res: Response, next: NextFunctio
   }
   
   // Check for session authentication
-  if (req.session && req.session.user && req.session.user.id) {
+  if (req.session && req.session.userId) {
     logger.info('Document upload: Using session authentication fallback', {
-      sessionUserId: req.session.user.id
+      sessionUserId: req.session.userId
     });
     
     try {
       // Try to get user from database using session userId
-      const user = await userRepository.findById(req.session.user.id);
+      const user = await userRepository.findById(req.session.userId);
       if (user) {
         // Set user in request
         req.user = {
@@ -166,7 +158,7 @@ const documentUploadAuth = async (req: Request, res: Response, next: NextFunctio
   // If we get here, both token and session auth failed
   logger.error('Document upload authentication completely failed', {
     hasSession: !!req.session,
-    hasSessionUser: !!(req.session && req.session.user),
+    hasSessionUserId: !!(req.session && req.session.userId),
     path: req.path
   });
   
