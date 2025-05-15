@@ -414,20 +414,10 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         
         // First try with XMLHttpRequest for better progress reporting
         try {
-          // Await the upload to complete with a timeout
-          // Increase timeout to 5 minutes for larger files
-          const timeoutDuration = 300000; // 5 minutes in milliseconds
-          console.log(`Setting upload timeout to ${timeoutDuration/60000} minutes`);
-          
-          const uploadPromiseWithTimeout = Promise.race([
-            uploadPromise,
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error(`Upload timed out after ${timeoutDuration/60000} minutes`)), timeoutDuration)
-            )
-          ]);
-          
-          // Wait for the upload to complete
-          const responseData = await uploadPromiseWithTimeout;
+          // Wait for the upload to complete - we're managing timeout in the XHR object itself
+          // No need for race conditions that could cause additional timeouts
+          console.log('Waiting for upload to complete...');
+          const responseData = await uploadPromise;
           console.log('XMLHttpRequest upload completed successfully');
           return handleSuccess(responseData);
         } catch (xhrError) {
@@ -701,7 +691,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                   <FormLabel>Document Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value || "OTHER"}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -783,7 +773,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             />
 
             {/* Upload progress */}
-            {(uploadStage !== 'idle' && uploadStage !== 'error') && (
+            {['uploading', 'processing', 'complete'].includes(uploadStage) && (
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   {statusInfo.icon}
@@ -791,7 +781,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                 </div>
                 <Progress 
                   percent={uploadProgress} 
-                  status={uploadStage === 'error' ? 'exception' : uploadStage === 'complete' ? 'success' : 'active'} 
+                  status={uploadStage === 'error' ? 'exception' : (uploadStage === 'complete' ? 'success' : 'active')} 
                   size="small"
                 />
                 <p className="text-sm text-muted-foreground">{statusInfo.description}</p>
@@ -799,7 +789,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             )}
 
             {/* Error message */}
-            {uploadStage === 'error' && (
+            {uploadStage === 'error' && errorDetails && (
               <div className="bg-destructive/10 p-3 rounded border border-destructive/20">
                 <div className="flex items-center space-x-2">
                   {statusInfo.icon}
