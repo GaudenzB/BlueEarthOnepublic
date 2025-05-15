@@ -14,6 +14,42 @@ import { logger } from '../utils/logger';
 import { formatRelevanceScore } from '../utils/formatting';
 
 /**
+ * User role types used for permission handling
+ * This supports both uppercase and lowercase formats for backward compatibility
+ */
+export type UserRole = 
+  | 'SUPER_ADMIN' | 'superadmin' 
+  | 'ADMIN' | 'admin' 
+  | 'MANAGER' | 'manager'
+  | 'USER' | 'user';
+
+/**
+ * Helper functions for role checks
+ */
+export const roleHelpers = {
+  /**
+   * Check if a role has admin privileges (ADMIN or SUPER_ADMIN)
+   */
+  isAdmin: (role?: UserRole): boolean => {
+    if (!role) return false;
+    return (
+      role === 'ADMIN' || 
+      role === 'admin' || 
+      role === 'SUPER_ADMIN' || 
+      role === 'superadmin'
+    );
+  },
+  
+  /**
+   * Check if a role is a super admin
+   */
+  isSuperAdmin: (role?: UserRole): boolean => {
+    if (!role) return false;
+    return role === 'SUPER_ADMIN' || role === 'superadmin';
+  }
+};
+
+/**
  * Repository for Document-related database operations
  */
 export const documentRepository = {
@@ -332,8 +368,8 @@ export const documentRepository = {
         
         // Check if user has permission to access confidential documents
         if (userRole && docResult && docResult.isConfidential === true) {
-          // Admins always have access to all documents
-          const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+          // Check if user has admin privileges
+          const isAdmin = roleHelpers.isAdmin(userRole as UserRole);
           
           // If not admin, check if document is in user's accessible confidential docs
           if (!isAdmin && 
