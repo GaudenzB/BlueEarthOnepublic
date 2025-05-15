@@ -55,11 +55,13 @@ export function useAuth() {
   const { data, isLoading, error, refetch } = useQuery<MeResponse | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 5 * 60 * 1000, // Reduced from 1 minute to 5 minutes to match staleTime
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    refetchInterval: 30 * 60 * 1000, // Increase from 5 minutes to 30 minutes to reduce polling
     refetchOnWindowFocus: false, // Don't refetch on window focus
     refetchOnReconnect: false, // Don't refetch on reconnect
-    // Always enabled, the API will return 401 if not authenticated
+    refetchOnMount: false, // Prevent refetching on component mount
+    // Only fetch if the component is visible, this will prevent background polling
+    networkMode: 'online', // Only fetch when online
   });
   
   // Extract the user from the standardized API response

@@ -14,6 +14,18 @@ export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
+  const usernameInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Set focus once when component mounts
+  React.useEffect(() => {
+    if (usernameInputRef.current) {
+      // Use a slight delay to ensure focus after any re-renders
+      const timer = setTimeout(() => {
+        usernameInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Redirect if authenticated (as a proper side effect)
   React.useEffect(() => {
@@ -67,7 +79,7 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <Input
-              autoFocus
+              ref={usernameInputRef}
               id="username"
               placeholder="Username"
               value={username}
