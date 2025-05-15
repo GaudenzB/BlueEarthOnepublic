@@ -34,6 +34,12 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   try {
+    // Handle missing or undefined inputs
+    if (!supplied || !stored) {
+      console.error("Missing password inputs");
+      return false;
+    }
+    
     // Check if the stored password is in the correct format
     const parts = stored.split(".");
     if (parts.length !== 2) {
@@ -43,20 +49,39 @@ export async function comparePasswords(supplied: string, stored: string): Promis
     
     const [hashed, salt] = parts;
     if (!hashed || !salt) {
-      console.error("Missing hash or salt");
+      console.error("Missing hash or salt components");
       return false;
     }
     
     try {
+      // Create buffer from stored hash
       const hashedBuf = Buffer.from(hashed, "hex");
+      
+      // Hash the supplied password with the same salt
       const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
       
-      // Make sure the buffers are of the same length to avoid the "Input buffers must have the same byte length" error
+      // Verify buffers are valid
+      if (!hashedBuf || !suppliedBuf) {
+        console.error("Invalid buffer generation");
+        return false;
+      }
+      
+      // Convert to same format before comparison
+      const hashedHex = hashedBuf.toString('hex');
+      const suppliedHex = suppliedBuf.toString('hex');
+      
+      // Simple string comparison for backup if timing-safe equality fails
+      if (hashedHex === suppliedHex) {
+        return true;
+      }
+      
+      // If buffers are different lengths, they're definitely not equal
       if (hashedBuf.length !== suppliedBuf.length) {
         console.error(`Buffer length mismatch: ${hashedBuf.length} vs ${suppliedBuf.length}`);
         return false;
       }
       
+      // Use timing-safe comparison to prevent timing attacks
       return timingSafeEqual(hashedBuf, suppliedBuf);
     } catch (error) {
       console.error("Error in password comparison:", error);
@@ -94,13 +119,28 @@ export function setupAuth(app: Express): void {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        // Check if username exists
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
-        } else {
+        if (!user) {
+          return done(null, false, { message: 'Invalid username or password' });
+        }
+        
+        // Verify password
+        try {
+          const isValidPassword = await comparePasswords(password, user.password);
+          if (!isValidPassword) {
+            console.log('Password comparison failed');
+            return done(null, false, { message: 'Invalid username or password' });
+          }
+          
+          // Valid credentials
           return done(null, user);
+        } catch (passwordError) {
+          console.error('Password comparison error:', passwordError);
+          return done(null, false, { message: 'Error validating credentials' });
         }
       } catch (error) {
+        console.error('Login strategy error:', error);
         return done(error);
       }
     }),
