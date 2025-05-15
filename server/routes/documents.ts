@@ -206,6 +206,114 @@ const getDocumentsSchema = z.object({
 // We'll create this route there
 
 /**
+ * @route POST /api/documents/dev-upload
+ * @desc Upload a document in development mode without authentication
+ * @access Only available in development environment
+ */
+router.post('/dev-upload', singleFileUpload, async (req: Request, res: Response) => {
+  // Only available in development environment
+  if (process.env.NODE_ENV === 'production') {
+    return apiResponse.unauthorized(res, "This endpoint is only available in development");
+  }
+
+  try {
+    // Enhanced debug logging to help diagnose upload issues
+    logger.warn('DEV MODE: Document upload via development endpoint', {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      hasFile: !!req.file,
+      fileDetails: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      } : 'No file'
+    });
+
+    // Check if file was provided
+    if (!req.file) {
+      return apiResponse.badRequest(res, "No file uploaded");
+    }
+
+    // Use a development tenant ID and user ID
+    req.user = {
+      id: 1,
+      username: 'dev-admin',
+      email: 'dev-admin@example.com',
+      role: 'superadmin'
+    };
+    
+    const tenantId = '00000000-0000-0000-0000-000000000001';
+    const file = req.file;
+    const sanitizedFilename = sanitizeFile(file.originalname);
+    
+    // Generate storage key
+    const storageKey = generateStorageKey(
+      tenantId,
+      'OTHER', // Default document type
+      sanitizedFilename
+    );
+
+    // Upload file to storage
+    logger.info('DEV MODE: Attempting to upload file to storage', {
+      storageKey,
+      mimeType: file.mimetype,
+      fileSize: file.size
+    });
+    
+    const uploadResult = await uploadFile(
+      file.buffer,
+      storageKey,
+      file.mimetype
+    );
+    
+    logger.info('DEV MODE: File uploaded to storage successfully', { 
+      storageKey, 
+      checksum: uploadResult.checksum
+    });
+    
+    // Build document payload for database
+    const createPayload: InsertDocument = {
+      filename: sanitizedFilename,
+      originalFilename: file.originalname,
+      mimeType: file.mimetype,
+      fileSize: file.size.toString(),
+      storageKey: uploadResult.storageKey,
+      checksum: uploadResult.checksum,
+      title: sanitizedFilename,
+      uploadedBy: '00000000-0000-0000-0000-000000000001', // Admin UUID
+      tenantId,
+      deleted: false,
+      processingStatus: 'PENDING',
+      documentType: 'OTHER',
+      isConfidential: req.body.isConfidential === 'true'
+    };
+    
+    // Create document record in database
+    const document = await documentRepository.createDocument(createPayload);
+    
+    // Trigger processing
+    documentProcessor.processDocument(document);
+    
+    // Return success response
+    return apiResponse.created(res, {
+      message: "Document uploaded successfully via development endpoint",
+      document: {
+        id: document.id,
+        filename: document.filename,
+        storageKey: document.storageKey,
+        url: `/api/documents/${document.id}/download`
+      }
+    });
+  } catch (error) {
+    logger.error('DEV MODE: Error in development document upload', { 
+      error: (error as Error).message,
+      stack: (error as Error).stack
+    });
+    return apiResponse.serverError(res, "Error uploading document: " + (error as Error).message);
+  }
+});
+
+/**
  * @route POST /api/documents
  * @desc Upload a new document
  * @access Authenticated users

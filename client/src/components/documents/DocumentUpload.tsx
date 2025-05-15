@@ -221,11 +221,16 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         }
       });
       
+      // Use development endpoint in dev mode for better testing
+      const uploadEndpoint = import.meta.env.DEV ? 
+        '/api/documents/dev-upload' : 
+        '/api/documents';
+      
       // Wrap XHR in a promise for async/await support
       const uploadPromise = new Promise<any>((resolve, reject) => {
         // Use the withCredentials flag to ensure cookies are sent with the request
         xhr.withCredentials = true;
-        xhr.open('POST', '/api/documents', true);
+        xhr.open('POST', uploadEndpoint, true);
         
         // Log authentication status from our auth hook
         console.log('Authentication status before XHR upload:', {
