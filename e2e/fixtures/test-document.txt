@@ -1,2 +1,29 @@
-This is a test document for E2E testing.
-It contains simple text data that can be used in document upload tests.
+BlueEarthOne Test Document
+
+This is a test document for E2E testing purposes. It contains sample text that can be used to test document upload and processing features.
+
+DOCUMENT TYPE: Technical Report
+PROJECT: BlueEarthOne Platform
+CLASSIFICATION: Internal
+STATUS: Draft
+
+OVERVIEW:
+The BlueEarthOne platform provides enterprise-level document management capabilities with robust security features. This document outlines the key components and their functionality.
+
+KEY FEATURES:
+1. Secure Authentication
+2. Document Versioning
+3. Role-Based Access Control
+4. Document Classification
+5. AI-Powered Search
+
+IMPLEMENTATION DETAILS:
+The platform utilizes a modern stack including:
+- React 18+ for the frontend
+- Express for the backend API
+- PostgreSQL for data storage
+- S3-compatible storage for document files
+- Microsoft Entra ID for SSO authentication
+
+CONCLUSION:
+This test document demonstrates the text processing capabilities of the BlueEarthOne platform. It should be appropriately indexed and searchable after processing.

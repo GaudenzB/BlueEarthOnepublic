@@ -1,138 +1,183 @@
 /**
- * Health check routes
- * Used to verify the application status during deployment and monitoring
+ * Health Check Routes
+ * 
+ * These endpoints are used by monitoring services to verify that the application
+ * is running correctly and all dependencies are available.
  */
 
-import express from 'express';
+import { Router, Request, Response } from 'express';
 import { pool } from '../db';
-import os from 'os';
-import { version } from '../../package.json';
+import fs from 'fs';
+import path from 'path';
 
-const router = express.Router();
+// Basic health check that confirms server is running
+const basicHealth = async (req: Request, res: Response) => {
+  const health = {
+    status: 'UP',
+    timestamp: new Date(),
+    environment: process.env.NODE_ENV || 'development',
+    version: getVersion()
+  };
 
-// Basic health check endpoint
-router.get('/', async (req, res) => {
+  return res.status(200).json(health);
+};
+
+// Get the version from package.json
+function getVersion(): string {
   try {
-    // Check database connectivity
-    const dbHealthy = await checkDatabaseConnection();
-    
-    // Get system information
-    const systemInfo = {
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      cpuLoad: os.loadavg(),
-      nodeVersion: process.version,
-      hostname: os.hostname(),
-    };
-    
-    // Get application information
-    const appInfo = {
-      version,
-      env: process.env.NODE_ENV || 'development',
-      startTime: new Date(Date.now() - process.uptime() * 1000).toISOString(),
-    };
-    
-    // Check overall health status
-    const isHealthy = dbHealthy;
-    
-    // Respond with appropriate status code based on health
-    const statusCode = isHealthy ? 200 : 503;
-    
-    res.status(statusCode).json({
-      status: isHealthy ? 'ok' : 'unhealthy',
-      timestamp: new Date().toISOString(),
+    const packageJsonPath = path.join(__dirname, '../../package.json');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return packageJson.version || 'unknown';
+  } catch (error) {
+    return 'unknown';
+  }
+}
+
+// Detailed health check that verifies database connection
+const detailedHealth = async (req: Request, res: Response) => {
+  const health: any = {
+    status: 'UP',
+    timestamp: new Date(),
+    environment: process.env.NODE_ENV || 'development',
+    version: getVersion(),
+    components: {
       database: {
-        connected: dbHealthy,
-      },
-      system: systemInfo,
-      app: appInfo
-    });
-  } catch (error) {
-    console.error('Health check failed:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Health check failed',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+        status: 'UNKNOWN'
+      }
+    }
+  };
 
-// Detailed database health check
-router.get('/db', async (req, res) => {
   try {
-    const dbHealthy = await checkDatabaseConnection();
-    const dbStats = await getDatabaseStats();
-    
-    res.status(dbHealthy ? 200 : 503).json({
-      status: dbHealthy ? 'ok' : 'unhealthy',
-      timestamp: new Date().toISOString(),
-      stats: dbStats
-    });
-  } catch (error) {
-    console.error('Database health check failed:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Database health check failed',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-/**
- * Check database connection
- * @returns Promise<boolean> True if database is connected
- */
-async function checkDatabaseConnection(): Promise<boolean> {
-  try {
+    // Check database connection
     const client = await pool.connect();
     try {
-      await client.query('SELECT 1');
-      return true;
+      const result = await client.query('SELECT NOW()');
+      if (result.rows.length > 0) {
+        health.components.database = {
+          status: 'UP',
+          responseTime: '0ms', // You could measure this for more detail
+          timestamp: result.rows[0].now
+        };
+      } else {
+        health.components.database = {
+          status: 'DEGRADED',
+          details: 'Database query returned no results'
+        };
+        health.status = 'DEGRADED';
+      }
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Database connection check failed:', error);
-    return false;
-  }
-}
-
-/**
- * Get database statistics
- * @returns Promise<object> Database statistics
- */
-async function getDatabaseStats(): Promise<any> {
-  const client = await pool.connect();
-  try {
-    // Get database size
-    const dbSizeResult = await client.query(`
-      SELECT pg_size_pretty(pg_database_size(current_database())) as size
-    `);
-    
-    // Get table counts
-    const tableCountResult = await client.query(`
-      SELECT COUNT(*) as table_count 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-    `);
-    
-    // Get connection information
-    const connectionResult = await client.query(`
-      SELECT count(*) as connections
-      FROM pg_stat_activity
-    `);
-    
-    return {
-      size: dbSizeResult.rows[0]?.size || 'unknown',
-      tables: parseInt(tableCountResult.rows[0]?.table_count, 10) || 0,
-      connections: parseInt(connectionResult.rows[0]?.connections, 10) || 0
+    health.components.database = {
+      status: 'DOWN',
+      details: error instanceof Error ? error.message : 'Unknown database error'
     };
-  } catch (error) {
-    console.error('Error fetching database stats:', error);
-    return { error: 'Failed to fetch database statistics' };
-  } finally {
-    client.release();
+    health.status = 'DOWN';
+    return res.status(503).json(health);
   }
-}
+
+  return res.status(200).json(health);
+};
+
+// Deep health check that verifies all critical components
+const deepHealth = async (req: Request, res: Response) => {
+  const health: any = {
+    status: 'UP',
+    timestamp: new Date(),
+    environment: process.env.NODE_ENV || 'development',
+    version: getVersion(),
+    components: {
+      database: {
+        status: 'UNKNOWN'
+      },
+      storage: {
+        status: 'UNKNOWN'
+      }
+    }
+  };
+
+  // Check database connection
+  try {
+    const client = await pool.connect();
+    try {
+      // Verify database schema by checking for critical tables
+      const tablesResult = await client.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name IN ('users', 'documents', 'employees')
+      `);
+      
+      const foundTables = tablesResult.rows.map((row: any) => row.table_name);
+      const requiredTables = ['users', 'documents', 'employees'];
+      const missingTables = requiredTables.filter(table => !foundTables.includes(table));
+      
+      if (missingTables.length === 0) {
+        health.components.database = {
+          status: 'UP',
+          tables: foundTables,
+          details: 'All required tables found'
+        };
+      } else {
+        health.components.database = {
+          status: 'DEGRADED',
+          tables: foundTables,
+          missing: missingTables,
+          details: 'Missing required tables'
+        };
+        health.status = 'DEGRADED';
+      }
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    health.components.database = {
+      status: 'DOWN',
+      details: error instanceof Error ? error.message : 'Unknown database error'
+    };
+    health.status = 'DOWN';
+  }
+
+  // Check storage configuration
+  try {
+    const hasS3Config = process.env.AWS_S3_BUCKET && 
+                        process.env.AWS_REGION && 
+                        process.env.AWS_ACCESS_KEY_ID && 
+                        process.env.AWS_SECRET_ACCESS_KEY;
+    
+    health.components.storage = {
+      status: hasS3Config ? 'UP' : 'DEGRADED',
+      type: hasS3Config ? 's3' : 'local',
+      details: hasS3Config ? 'S3 configuration found' : 'Using local storage (not recommended for production)'
+    };
+    
+    if (!hasS3Config && process.env.NODE_ENV === 'production') {
+      health.status = 'DEGRADED';
+    }
+  } catch (error) {
+    health.components.storage = {
+      status: 'DEGRADED',
+      details: error instanceof Error ? error.message : 'Unknown storage error'
+    };
+    
+    if (process.env.NODE_ENV === 'production') {
+      health.status = 'DEGRADED';
+    }
+  }
+
+  const httpStatus = health.status === 'UP' ? 200 : 
+                    health.status === 'DEGRADED' ? 200 : 503;
+  
+  return res.status(httpStatus).json(health);
+};
+
+// Create router
+const router = Router();
+
+// Register health check routes
+router.get('/health', basicHealth);
+router.get('/health/detailed', detailedHealth);
+router.get('/health/deep', deepHealth);
 
 export default router;

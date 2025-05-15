@@ -1,0 +1,26 @@
+{
+  "admin": {
+    "username": "admin_test",
+    "password": "AdminTest@123",
+    "email": "admin_test@blueearth.example.com",
+    "firstName": "Admin",
+    "lastName": "Test",
+    "role": "ADMIN"
+  },
+  "user": {
+    "username": "user_test",
+    "password": "UserTest@123",
+    "email": "user_test@blueearth.example.com",
+    "firstName": "User",
+    "lastName": "Test",
+    "role": "USER"
+  },
+  "superAdmin": {
+    "username": "superadmin_test",
+    "password": "SuperAdminTest@123",
+    "email": "superadmin_test@blueearth.example.com",
+    "firstName": "SuperAdmin",
+    "lastName": "Test",
+    "role": "SUPER_ADMIN"
+  }
+}
