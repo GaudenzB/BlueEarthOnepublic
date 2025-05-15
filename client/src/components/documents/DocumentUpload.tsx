@@ -215,12 +215,19 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           cookies: document.cookie ? 'Present' : 'None'
         });
         
-        // For debug purposes, log current cookies
+        // Include the auth token in the header if we have one from auto-login
+        if (authToken) {
+          xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+          console.log('Added Authorization header with token');
+        }
+        
+        // For debug purposes, log authentication methods
         const authCookie = document.cookie.includes('accessToken');
         const sessionCookie = document.cookie.includes('connect.sid');
         console.log('Authentication status:', {
           authCookie,
           sessionCookie,
+          hasToken: !!authToken,
           usingCookieAuth: true
         });
         
@@ -353,6 +360,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
 
       try {
         // Debug any authentication issues
+        let authToken = '';
         const authStatus = { 
           authCookie: document.cookie.includes('accessToken'),
           sessionCookie: document.cookie.includes('connect.sid'),
@@ -368,7 +376,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           console.log('No authentication detected, attempting dev auto-login...');
           
           try {
-            // Call the development login endpoint to get a valid session
+            // Call the development login endpoint to get a valid token
             const devLoginResponse = await fetch('/api/auth/dev-login', {
               method: 'POST',
               credentials: 'include',
@@ -381,18 +389,25 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               const authData = await devLoginResponse.json();
               console.log('Development auto-login successful', authData);
               
+              // Save the token for direct use in the upload
+              if (authData.data?.token) {
+                authToken = authData.data.token;
+                console.log('Obtained auth token for upload');
+              }
+              
               // Wait a moment for cookies to be set
               await new Promise(resolve => setTimeout(resolve, 500));
               
               // Verify cookies were set
               const postLoginAuthStatus = {
                 authCookie: document.cookie.includes('accessToken'),
-                sessionCookie: document.cookie.includes('connect.sid')
+                sessionCookie: document.cookie.includes('connect.sid'),
+                hasToken: !!authToken
               };
               console.log('Post-login auth status:', postLoginAuthStatus);
               
-              if (!postLoginAuthStatus.authCookie && !postLoginAuthStatus.sessionCookie) {
-                console.warn('Auto-login succeeded but cookies were not set properly');
+              if (!postLoginAuthStatus.authCookie && !postLoginAuthStatus.sessionCookie && !postLoginAuthStatus.hasToken) {
+                console.warn('Auto-login succeeded but no authentication method is available');
               }
             } else {
               console.error('Development auto-login failed', await devLoginResponse.text());
@@ -473,8 +488,16 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               usingCookieAuth: true
             });
             
+            // Prepare headers
+            const headers: HeadersInit = {};
+            if (authToken) {
+              headers['Authorization'] = `Bearer ${authToken}`;
+              console.log('Added Authorization header to fetch request');
+            }
+            
             const response = await fetch('/api/documents', {
               method: 'POST',
+              headers,
               body: fetchFormData,
               credentials: 'include',
               signal: fetchController.signal
