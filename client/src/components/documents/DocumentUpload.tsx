@@ -206,11 +206,22 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       const uploadPromise = new Promise<any>((resolve, reject) => {
         xhr.open('POST', '/api/documents', true);
         
-        // No need to set auth headers manually - session cookies will be sent automatically
-        // Log authentication attempt
+        // Log authentication status from our auth hook
         console.log('Authentication status:', {
-          isAuthenticated: document.cookie.includes('accessToken'),
+          isAuthenticated,
+          userId: user?.id,
+          username: user?.username,
+          role: user?.role,
           cookies: document.cookie ? 'Present' : 'None'
+        });
+        
+        // For debug purposes, log current cookies
+        const authCookie = document.cookie.includes('accessToken');
+        const sessionCookie = document.cookie.includes('connect.sid');
+        console.log('Authentication status:', {
+          authCookie,
+          sessionCookie,
+          usingCookieAuth: true
         });
         
         // Add debug logging to console
@@ -444,9 +455,24 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           
           // Try with fetch API
           console.log('Attempting fetch API upload...');
-          // No need to manually set auth headers when using credentials: 'include'
-          // Session cookies will be automatically sent with the request
+          
+          // Prepare headers with authentication information
           const headers: HeadersInit = {};
+          
+          // Log auth status before fetch attempt
+          console.log('About to send FormData', {
+            formDataHasFile: !!fetchFormData.get('file'),
+            usingCookieAuth: true
+          });
+          
+          // Log comprehensive auth status
+          const authCookie = document.cookie.includes('accessToken');
+          const sessionCookie = document.cookie.includes('connect.sid');
+          console.log('Authentication status:', {
+            authCookie,
+            sessionCookie,
+            usingCookieAuth: true
+          });
           
           const response = await fetch('/api/documents', {
             method: 'POST',

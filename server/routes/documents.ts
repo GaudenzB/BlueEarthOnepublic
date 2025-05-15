@@ -124,10 +124,24 @@ const documentUploadAuth = async (req: Request, res: Response, next: NextFunctio
   // DEVELOPMENT ONLY - Auto-authenticate as admin user in development
   if (process.env['NODE_ENV'] !== 'production') {
     try {
-      // Find admin user for dev environment
-      const adminUser = await userRepository.findByUsername('admin');
+      // Find admin user for dev environment - first try 'admin', then try any user if that fails
+      let adminUser = await userRepository.findByUsername('admin');
+      
+      // If no admin user found, try to get any user
+      if (!adminUser) {
+        logger.warn('DEV MODE: No admin user found, trying to find any user for dev auth');
+        const users = await userRepository.findAll({ limit: 1 });
+        if (users && users.length > 0) {
+          adminUser = users[0];
+          logger.warn('DEV MODE: Using fallback user for auth', {
+            userId: adminUser.id,
+            username: adminUser.username
+          });
+        }
+      }
+      
       if (adminUser) {
-        logger.warn('DEV MODE: Auto-authenticating as admin user', {
+        logger.warn('DEV MODE: Auto-authenticating for document upload', {
           userId: adminUser.id,
           username: adminUser.username,
           method: 'Development auto-auth fallback'
@@ -146,11 +160,20 @@ const documentUploadAuth = async (req: Request, res: Response, next: NextFunctio
           req.session.userId = adminUser.id;
           req.session.userRole = adminUser.role;
           logger.debug('DEV MODE: Set session userId for document uploads');
+          
+          // Force session save to ensure it's available immediately
+          req.session.save(err => {
+            if (err) {
+              logger.error('Error saving session in dev mode', { error: err });
+            } else {
+              logger.debug('DEV MODE: Successfully saved session');
+            }
+          });
         }
         
         return next();
       } else {
-        logger.error('DEV MODE: Admin user not found for auto-authentication');
+        logger.error('DEV MODE: No suitable user found for auto-authentication');
       }
     } catch (err) {
       logger.error('Error in development auto-authentication', { error: err });
