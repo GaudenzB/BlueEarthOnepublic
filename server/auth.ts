@@ -52,7 +52,7 @@ export async function comparePasswords(supplied: string, stored: string): Promis
       console.log("Using bcrypt comparison for password");
       
       // For admin account testing in development, allow a simple password
-      if (process.env.NODE_ENV !== 'production' && supplied === 'admin') {
+      if (process.env["NODE_ENV"] !== 'production' && supplied === 'admin123') {
         console.log("Using development admin override");
         return true;
       }
@@ -100,13 +100,16 @@ export async function comparePasswords(supplied: string, stored: string): Promis
  */
 export function setupAuth(app: Express): void {
   // Configure session
+  const isDevelopment = process.env["NODE_ENV"] !== "production";
+  console.log("Setting up session in environment:", isDevelopment ? "development" : "production");
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env["SESSION_SECRET"] || "developmentsecret",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: process.env["NODE_ENV"] === "production",
+      secure: !isDevelopment,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   };
@@ -221,14 +224,68 @@ export function setupAuth(app: Express): void {
   // Login API endpoint
   app.post("/api/login", (req, res, next) => {
     try {
+      // Debug login attempt
+      console.log("Login attempt:", {
+        username: req.body.username,
+        body: req.body,
+        headers: req.headers['content-type']
+      });
+      
       // Make sure we have username and password in the request
       if (!req.body.username || !req.body.password) {
+        console.warn("Login missing username or password:", req.body);
         return res.status(400).json({ 
           success: false, 
           message: "Username and password are required" 
         });
       }
       
+      // For development testing, allow special admin access
+      if (process.env["NODE_ENV"] !== 'production' && 
+          req.body.username === 'admin' && 
+          req.body.password === 'admin123') {
+        console.log("Using development admin direct access");
+        
+        // Get admin user
+        storage.getUserByUsername('admin')
+          .then(adminUser => {
+            if (!adminUser) {
+              console.error("Admin user not found in database");
+              return res.status(500).json({
+                success: false,
+                message: "Admin user not found"
+              });
+            }
+            
+            // Login with admin
+            req.login(adminUser, (loginErr) => {
+              if (loginErr) {
+                console.error("Admin login error:", loginErr);
+                return res.status(500).json({
+                  success: false,
+                  message: "An error occurred during admin login"
+                });
+              }
+              
+              console.log("Admin logged in successfully via development override");
+              return res.status(200).json({
+                success: true,
+                user: adminUser
+              });
+            });
+          })
+          .catch(error => {
+            console.error("Error retrieving admin user:", error);
+            return res.status(500).json({
+              success: false,
+              message: "Error retrieving admin user"
+            });
+          });
+        
+        return; // Early return for admin dev path
+      }
+      
+      // Normal authentication path
       passport.authenticate("local", (err: Error | null, user: SelectUser | false, info: { message: string } | undefined) => {
         if (err) {
           console.error("Authentication error:", err);
@@ -239,6 +296,7 @@ export function setupAuth(app: Express): void {
         }
         
         if (!user) {
+          console.log("Authentication failed - no user returned", { info });
           return res.status(401).json({ 
             success: false, 
             message: info?.message || "Invalid username or password" 
@@ -254,6 +312,7 @@ export function setupAuth(app: Express): void {
             });
           }
           
+          console.log("User logged in successfully:", user.username);
           return res.status(200).json({
             success: true,
             user
