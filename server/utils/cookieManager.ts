@@ -109,18 +109,30 @@ export function clearCookie(res: Response, name: string): void {
 
 /**
  * Set authentication cookies
+ * @param res - Express response object
+ * @param accessToken - JWT access token
+ * @param refreshToken - JWT refresh token (optional)
+ * @param rememberMe - Whether to set a longer expiry (30 days) for persistent login
  */
 export function setAuthCookies(
   res: Response, 
   accessToken: string, 
-  refreshToken?: string
+  refreshToken?: string,
+  rememberMe: boolean = false
 ): void {
-  // Set access token cookie
+  // Default token expiry from environment or fallback
+  const defaultAccessTokenExpiry = parseInt(process.env.JWT_ACCESS_TOKEN_EXPIRY_SECONDS || '3600') * 1000;
+  const defaultRefreshTokenExpiry = parseInt(process.env.JWT_REFRESH_TOKEN_EXPIRY_SECONDS || '604800') * 1000;
+  
+  // For "Remember Me", use a longer expiry (30 days) for both tokens
+  const rememberMeExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+  
+  // Set access token cookie with appropriate expiry
   setSecureCookie(
     res, 
     'accessToken', 
     accessToken, 
-    parseInt(process.env.JWT_ACCESS_TOKEN_EXPIRY_SECONDS || '3600') * 1000
+    rememberMe ? rememberMeExpiry : defaultAccessTokenExpiry
   );
   
   // Set refresh token cookie if provided
@@ -129,11 +141,11 @@ export function setAuthCookies(
       res, 
       'refreshToken', 
       refreshToken, 
-      parseInt(process.env.JWT_REFRESH_TOKEN_EXPIRY_SECONDS || '604800') * 1000
+      rememberMe ? rememberMeExpiry : defaultRefreshTokenExpiry
     );
   }
   
-  logger.debug('Set authentication cookies');
+  logger.debug('Set authentication cookies', { rememberMe });
 }
 
 /**

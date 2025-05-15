@@ -44,7 +44,7 @@ export const userRegistrationSchema = baseUserSchema.pick({
 export const userLoginSchema = z.object({
   username: z.string().min(1, ValidationMessages.required),
   password: z.string().min(1, ValidationMessages.required),
-  remember: z.boolean().optional(),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 /**

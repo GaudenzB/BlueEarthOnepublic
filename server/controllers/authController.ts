@@ -71,8 +71,14 @@ const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   // Generate tokens
   const { accessToken, refreshToken } = generateUserToken(user);
   
-  // Set authentication cookies
-  setAuthCookies(res, accessToken, refreshToken);
+  // Set authentication cookies with remember me option
+  const rememberMe = loginData.rememberMe || false;
+  
+  // Log the rememberMe status
+  logger.debug('Login with rememberMe option:', { rememberMe });
+  
+  // Set authentication cookies with the rememberMe parameter
+  setAuthCookies(res, accessToken, refreshToken, rememberMe);
   
   // Store user information in session for session-based auth fallback
   if (req.session) {

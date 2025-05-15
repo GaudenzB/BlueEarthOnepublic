@@ -3,6 +3,7 @@ import { apiResponse } from '../utils/apiResponse';
 import { logger } from '../utils/logger';
 import { userRepository } from '../repositories/userRepository';
 import { generateToken, TokenType } from '../utils/jwtConfig';
+import { setAuthCookies } from '../utils/cookieManager';
 
 const router = express.Router();
 

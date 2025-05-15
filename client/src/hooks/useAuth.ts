@@ -5,6 +5,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 interface LoginCredentials {
   username: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 interface AuthTokens {
