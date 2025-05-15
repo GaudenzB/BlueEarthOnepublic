@@ -294,10 +294,10 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           console.error("Error during upload process:", e);
         };
         
-        xhr.timeout = 120000; // 2 minute timeout
+        xhr.timeout = 300000; // 5 minute timeout (300,000 ms)
         xhr.ontimeout = function() {
-          console.error("Upload timed out");
-          reject(new Error('Upload timed out after 2 minutes'));
+          console.error("Upload timed out after 5 minutes");
+          reject(new Error('Upload timed out after 5 minutes'));
         };
         
         // Connect abort controller to XHR
@@ -474,15 +474,26 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             usingCookieAuth: true
           });
           
-          const response = await fetch('/api/documents', {
-            method: 'POST',
-            body: fetchFormData,
-            credentials: 'include',
-            headers
-          });
+          // Create AbortController for fetch timeout of 5 minutes
+          const fetchController = new AbortController();
+          const fetchTimeout = setTimeout(() => {
+            fetchController.abort();
+          }, 300000); // 5 minute timeout
           
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+          try {
+            const response = await fetch('/api/documents', {
+              method: 'POST',
+              body: fetchFormData,
+              credentials: 'include',
+              headers,
+              signal: fetchController.signal
+            });
+            
+            // Clear timeout since fetch completed
+            clearTimeout(fetchTimeout);
+          
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
             
             // Special handling for authentication errors
             if (response.status === 401) {
