@@ -135,9 +135,17 @@ export const documentRepository = {
         )
         .returning();
       return result;
-    } catch (error) {
-      logger.error('Error updating document processing status', { error, id, tenantId, status });
-      throw new Error(`Failed to update document processing status: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logger.error('Error updating document processing status', { 
+        error: errorMessage, 
+        id, 
+        tenantId, 
+        status 
+      });
+      
+      throw new Error(`Failed to update document processing status: ${errorMessage}`);
     }
   },
 
@@ -172,9 +180,16 @@ export const documentRepository = {
         )
         .returning();
       return result;
-    } catch (error) {
-      logger.error('Error updating document after processing', { error, id, tenantId });
-      throw new Error(`Failed to update document after processing: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logger.error('Error updating document after processing', { 
+        error: errorMessage, 
+        id, 
+        tenantId 
+      });
+      
+      throw new Error(`Failed to update document after processing: ${errorMessage}`);
     }
   },
 
@@ -316,7 +331,7 @@ export const documentRepository = {
         const docResult = docResults[0];
         
         // Check if user has permission to access confidential documents
-        if (userRole && docResult.isConfidential === true) {
+        if (userRole && docResult && docResult.isConfidential === true) {
           // Admins always have access to all documents
           const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
           
@@ -480,21 +495,35 @@ export const documentRepository = {
       }
 
       // Apply permissions filters based on user role
-      if (userRole && userRole !== 'superadmin') {
-        if (userRole === 'admin') {
-          // Admins can see all documents in their tenant
-        } else if (userAccessibleConfidentialDocs.length > 0) {
-          // Users with specific confidential document access
-          conditions.push(
-            or(
-              eq(documents.isConfidential, false),
-              sql`${documents.id}::text IN (${sql.join(userAccessibleConfidentialDocs.map(id => sql`${id}`))})`
-            )
-          );
-        } else {
-          // Regular users can't see confidential documents
-          conditions.push(eq(documents.isConfidential, false));
+      if (userRole) {
+        // Handle both uppercase and lowercase role formats for compatibility
+        const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'superadmin';
+        const isAdmin = userRole === 'ADMIN' || userRole === 'admin' || isSuperAdmin;
+        
+        if (!isAdmin) {
+          // For non-admin users, apply confidentiality restrictions
+          if (userAccessibleConfidentialDocs && userAccessibleConfidentialDocs.length > 0) {
+            // Create an array of SQL parameters for each document ID
+            const accessibleDocIds = userAccessibleConfidentialDocs.map(id => sql`${id}`);
+            
+            // Users with specific confidential document access
+            if (accessibleDocIds.length > 0) {
+              conditions.push(
+                or(
+                  eq(documents.isConfidential, false),
+                  sql`${documents.id}::text IN (${sql.join(accessibleDocIds, sql`, `)})`
+                )
+              );
+            } else {
+              // Empty array - only show non-confidential docs
+              conditions.push(eq(documents.isConfidential, false));
+            }
+          } else {
+            // Regular users can't see confidential documents
+            conditions.push(eq(documents.isConfidential, false));
+          }
         }
+        // Admins can see all documents in their tenant (no additional filters)
       }
 
       // Log the SQL query for debugging (in development only)
@@ -911,20 +940,26 @@ export const documentRepository = {
       }
       
       // Apply permissions filters based on user role
-      if (userRole && userRole !== 'superadmin') {
-        if (userRole === 'admin') {
-          // Admins can see all documents in their tenant
-        } else if (userAccessibleConfidentialDocs.length > 0) {
-          // Users with specific confidential document access
-          const accessParams = userAccessibleConfidentialDocs.map(id => sql`${id}`);
-          query = sql`${query} AND (
-            d.is_confidential = false 
-            OR d.id IN (${sql.join(accessParams)})
-          )`;
-        } else {
-          // Regular users can't see confidential documents
-          query = sql`${query} AND d.is_confidential = false`;
+      if (userRole) {
+        // Handle both uppercase and lowercase role formats for compatibility
+        const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'superadmin';
+        const isAdmin = userRole === 'ADMIN' || userRole === 'admin' || isSuperAdmin;
+        
+        if (!isAdmin) {
+          // For non-admin users, apply confidentiality restrictions
+          if (userAccessibleConfidentialDocs && userAccessibleConfidentialDocs.length > 0) {
+            // Users with specific confidential document access
+            const accessParams = userAccessibleConfidentialDocs.map(id => sql`${id}`);
+            query = sql`${query} AND (
+              d.is_confidential = false 
+              OR d.id IN (${sql.join(accessParams, sql`, `)})
+            )`;
+          } else {
+            // Regular users can't see confidential documents
+            query = sql`${query} AND d.is_confidential = false`;
+          }
         }
+        // Admins can see all documents in their tenant (no additional filters)
       }
       
       // Add order and limit
