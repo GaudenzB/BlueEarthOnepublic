@@ -1,26 +1,26 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
+} from '../ui/select';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { semanticSearch, type SearchResult } from '@/services/documentSearchService';
-import { formatDate } from '@/utils/formatting';
-import { cn } from '@/lib/utils';
+} from '../ui/tooltip';
+import { semanticSearch, type SearchResult } from '../services/documentSearchService';
+import { formatDate } from '../utils/formatting';
+import { cn } from '../lib/utils';
 
 interface SemanticSearchBarProps {
   onResultClick?: (result: SearchResult) => void;

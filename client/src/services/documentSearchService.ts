@@ -1,5 +1,5 @@
-import { apiRequest } from '@/lib/api';
-import type { Document } from '@/types/document';
+import { apiRequest } from '../lib/api';
+import type { Document } from '../types/document';
 
 export interface SearchResult {
   id: string;
@@ -7,6 +7,7 @@ export interface SearchResult {
   description: string | null;
   documentType: string;
   textChunk: string;
+  chunkIndex: number;
   updatedAt: Date;
   createdAt: Date;
   similarity: number;
