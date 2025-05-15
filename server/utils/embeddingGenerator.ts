@@ -1,181 +1,177 @@
-import OpenAI from "openai";
-import { logger } from "./logger";
+/**
+ * Embedding Generator Utility
+ * 
+ * This utility provides functions to generate vector embeddings for text
+ * using OpenAI's text embedding API. These embeddings are used for semantic search.
+ */
+import OpenAI from 'openai';
+import { logger } from './logger';
+import { documentRepository } from '../repositories/documentRepository';
+import { InsertDocumentEmbedding } from '../../shared/schema/documents/embeddings';
 
-// Initialize OpenAI client - same client used for chat completions
-const openai = new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
+// Configure OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env['OPENAI_API_KEY'],
+});
 
-// Default embedding model - ada-002 is the current recommended model for embeddings
-const DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
+// Chunk size in tokens (approximately 100 words per chunk, OpenAI recommends ~1000 tokens)
+const CHUNK_SIZE = 1000;
+// Overlap between chunks to maintain context
+const CHUNK_OVERLAP = 100;
 
 /**
- * Split text into chunks of approximately the specified size
- * This uses a simple character-based approach, but more sophisticated
- * methods could be used (sentence/paragraph boundaries, etc.)
+ * Split text into overlapping chunks of roughly equal size
  * 
- * @param text The text to split
- * @param maxChunkSize Maximum size of each chunk in characters
+ * @param text - The text to split into chunks
  * @returns Array of text chunks
  */
-export function splitTextIntoChunks(text: string, maxChunkSize: number = 4000): string[] {
-  if (!text || text.length <= maxChunkSize) {
-    return [text];
-  }
+export function splitTextIntoChunks(text: string): string[] {
+  if (!text) return [];
   
+  // Simple splitting by paragraphs first, then combining to reach target size
+  const paragraphs = text.split(/\n\s*\n/);
   const chunks: string[] = [];
-  let currentIndex = 0;
+  let currentChunk = '';
   
-  while (currentIndex < text.length) {
-    // If we're at the end of the text, just add the remaining text
-    if (currentIndex + maxChunkSize >= text.length) {
-      chunks.push(text.substring(currentIndex));
-      break;
+  // Estimate tokens (roughly 4 chars per token for English)
+  const estimateTokens = (text: string) => Math.ceil(text.length / 4);
+  
+  for (const paragraph of paragraphs) {
+    // If adding this paragraph would exceed chunk size, save current chunk and start a new one
+    if (currentChunk && estimateTokens(currentChunk + paragraph) > CHUNK_SIZE) {
+      chunks.push(currentChunk.trim());
+      // Start new chunk with overlap
+      const words = currentChunk.split(/\s+/);
+      const overlapWords = words.slice(-Math.floor(CHUNK_OVERLAP / 4)).join(' ');
+      currentChunk = overlapWords + ' ' + paragraph;
+    } else {
+      currentChunk += (currentChunk ? ' ' : '') + paragraph;
     }
-    
-    // Try to find a sensible place to split (paragraph or sentence)
-    let splitIndex = text.lastIndexOf("\n\n", currentIndex + maxChunkSize);
-    
-    if (splitIndex <= currentIndex) {
-      // If no paragraph break, try sentence
-      splitIndex = text.lastIndexOf(". ", currentIndex + maxChunkSize);
-    }
-    
-    if (splitIndex <= currentIndex) {
-      // If no sentence break, try any space
-      splitIndex = text.lastIndexOf(" ", currentIndex + maxChunkSize);
-    }
-    
-    if (splitIndex <= currentIndex) {
-      // If no space, just split at the max size
-      splitIndex = currentIndex + maxChunkSize;
-    }
-    
-    chunks.push(text.substring(currentIndex, splitIndex + 1).trim());
-    currentIndex = splitIndex + 1;
   }
   
-  return chunks.filter(chunk => chunk.trim().length > 0);
+  // Add the last chunk if not empty
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  return chunks;
 }
 
 /**
- * Generate embeddings for text using OpenAI's embedding model
+ * Generate embeddings for a text chunk
  * 
- * @param text Text to generate embeddings for
- * @param model OpenAI embedding model to use
- * @returns Float32Array of embeddings, or null if generation failed
+ * @param text - The text to generate embeddings for
+ * @returns Vector embedding as an array of numbers
  */
-export async function generateEmbedding(
-  text: string, 
-  model: string = DEFAULT_EMBEDDING_MODEL
-): Promise<number[] | null> {
-  const startTime = Date.now();
-  
+export async function generateEmbedding(text: string): Promise<number[] | null> {
+  if (!text || !openai) {
+    logger.error('Missing text or OpenAI configuration');
+    return null;
+  }
+
   try {
-    if (!process.env['OPENAI_API_KEY']) {
-      logger.error('OPENAI_API_KEY is not configured');
-      return null;
-    }
-    
-    // Log basic info about the request
-    logger.debug('Generating embedding', { 
-      model, 
-      textLength: text.length,
-      textPreview: text.substring(0, 50) + (text.length > 50 ? '...' : '')
-    });
-    
-    // Generate embedding
     const response = await openai.embeddings.create({
-      model: model,
-      input: text,
-      encoding_format: "float"
+      model: "text-embedding-ada-002",
+      input: text
     });
-    
-    const processingTime = Date.now() - startTime;
-    
-    // Check if we have a result
-    if (response.data && response.data.length > 0) {
-      const embedding = response.data[0].embedding;
-      
-      logger.debug('Successfully generated embedding', { 
-        model, 
-        dimensions: embedding.length,
-        processingTime: `${processingTime}ms`
-      });
-      
-      return embedding;
-    } else {
-      logger.error('No embedding data in response', { model, response });
-      return null;
+
+    if (response.data[0]?.embedding) {
+      return response.data[0].embedding;
     }
-  } catch (error: any) {
-    const errorMessage = error?.message || 'Unknown error';
-    const processingTime = Date.now() - startTime;
     
-    logger.error('Error generating embedding with OpenAI', { 
-      error: errorMessage,
-      model,
-      processingTime: `${processingTime}ms`,
-      apiKey: process.env['OPENAI_API_KEY'] ? 'configured' : 'missing'
+    logger.error('Failed to get embedding from OpenAI response', { 
+      response: response
     });
-    
+    return null;
+  } catch (error: any) {
+    logger.error('Error generating embedding', { 
+      error: error.message,
+      status: error.status,
+      statusText: error.statusText,
+      data: error.error
+    });
     return null;
   }
 }
 
 /**
- * Process text and generate embeddings for chunks
+ * Process a document and store its embeddings
  * 
- * @param text The document text to process
- * @param maxChunkSize Maximum size of each text chunk
- * @param model OpenAI embedding model to use
- * @returns Array of chunks with their embeddings, or empty array if processing failed
+ * @param documentId - ID of the document to process
+ * @param tenantId - Tenant ID for the document
+ * @param text - The document text content to embed
+ * @returns True if embeddings were generated and stored successfully
  */
-export async function generateEmbeddingsForText(
-  text: string,
-  maxChunkSize: number = 4000,
-  model: string = DEFAULT_EMBEDDING_MODEL
-): Promise<Array<{
-  textChunk: string;
-  embedding: number[] | null;
-  chunkIndex: number;
-}>> {
+export async function processDocumentEmbeddings(documentId: string, tenantId: string, text: string): Promise<boolean> {
   try {
-    // Split text into chunks
-    const textChunks = splitTextIntoChunks(text, maxChunkSize);
+    if (!documentId || !tenantId || !text) {
+      logger.warn('Missing required data for embedding generation', { 
+        documentId: documentId || 'missing', 
+        tenantId: tenantId || 'missing',
+        hasText: !!text
+      });
+      return false;
+    }
     
-    logger.info('Text split into chunks', { 
-      chunkCount: textChunks.length,
-      totalTextLength: text.length,
-      averageChunkSize: Math.round(text.length / textChunks.length)
-    });
+    logger.info('Processing document for embeddings', { documentId, tenantId, textLength: text.length });
     
-    // Generate embeddings for each chunk
-    const results = await Promise.all(
-      textChunks.map(async (chunk, index) => {
-        const embedding = await generateEmbedding(chunk, model);
-        return {
+    // Split the document text into chunks
+    const chunks = splitTextIntoChunks(text);
+    logger.info('Document split into chunks', { documentId, chunkCount: chunks.length });
+    
+    let successCount = 0;
+    
+    // Process each chunk
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const embedding = await generateEmbedding(chunk);
+      
+      if (embedding) {
+        // Create embedding record
+        const embeddingData = {
+          documentId,
+          chunkIndex: i,
           textChunk: chunk,
           embedding,
-          chunkIndex: index
+          embeddingModel: 'text-embedding-ada-002'
         };
-      })
-    );
+        
+        // Store in database
+        const result = await documentRepository.storeEmbedding(embeddingData);
+        if (result) {
+          successCount++;
+        }
+      }
+    }
     
-    // Filter out any failed embeddings
-    const successfulResults = results.filter(result => result.embedding !== null);
-    
-    logger.info('Generated embeddings for text chunks', { 
-      totalChunks: textChunks.length,
-      successfulChunks: successfulResults.length,
-      failedChunks: textChunks.length - successfulResults.length,
-      model
+    logger.info('Completed embedding generation', {
+      documentId,
+      totalChunks: chunks.length,
+      successfulChunks: successCount
     });
     
-    return successfulResults;
+    return successCount > 0;
   } catch (error: any) {
-    logger.error('Error in generateEmbeddingsForText', { 
-      error: error?.message || 'Unknown error', 
-      textLength: text?.length || 0
+    logger.error('Error processing document embeddings', {
+      error: error.message,
+      documentId,
+      tenantId
     });
-    return [];
+    return false;
   }
+}
+
+/**
+ * Generate embedding for a search query
+ * 
+ * @param query - The search query text
+ * @returns Vector embedding as an array of numbers or null if generation failed
+ */
+export async function generateSearchQueryEmbedding(query: string): Promise<number[] | null> {
+  if (!query) {
+    logger.warn('Empty search query provided');
+    return null;
+  }
+  
+  return generateEmbedding(query);
 }
