@@ -1,14 +1,15 @@
 import React from "react"
 import { Sidebar } from "@/components/ui/sidebar"
-import { useSidebar } from "@/hooks/use-sidebar"
 
 interface MainLayoutProps {
   children: React.ReactNode
 }
 
+/**
+ * Main layout component that provides the application frame with sidebar
+ * and main content area with proper spacing and overflow handling
+ */
 export default function MainLayout({ children }: MainLayoutProps) {
-  const { toggleSidebar } = useSidebar()
-  
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
