@@ -1288,37 +1288,130 @@ export default function DocumentDetail() {
                         display="none"
                         id="preview-fallback"
                         flexDirection="column"
-                        p={8}
+                        p={10}
+                        backdropFilter="blur(4px)"
+                        borderRadius="md"
                       >
-                        <Icon as={WarningIcon} boxSize={12} color="orange.500" mb={4} />
-                        <Heading size="md" mb={2}>Preview temporarily unavailable</Heading>
-                        <Text textAlign="center" color="gray.600" mb={4}>
-                          The document preview is currently experiencing technical difficulties.
-                        </Text>
-                        <Button 
-                          as="a"
-                          href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
-                          leftIcon={<DownloadIcon />}
-                          colorScheme="blue"
-                          target="_blank"
+                        <Box
+                          p={5}
+                          bg="white"
+                          _dark={{ bg: "gray.800" }}
+                          borderRadius="xl"
+                          boxShadow="xl"
+                          display="flex"
+                          flexDirection="column"
+                          alignItems="center"
+                          maxW="md"
+                          border="1px solid"
+                          borderColor="gray.100"
+                          _dark={{ borderColor: "gray.700" }}
                         >
-                          Download document
-                        </Button>
+                          <Icon 
+                            as={WarningIcon} 
+                            boxSize={16} 
+                            color="orange.400" 
+                            mb={6}
+                            sx={{
+                              animation: "pulse 2s infinite",
+                              "@keyframes pulse": {
+                                "0%": { opacity: 0.7, transform: "scale(1)" },
+                                "50%": { opacity: 1, transform: "scale(1.05)" },
+                                "100%": { opacity: 0.7, transform: "scale(1)" }
+                              }
+                            }}
+                          />
+                          <Heading 
+                            size="md" 
+                            mb={3} 
+                            color="gray.700" 
+                            _dark={{ color: "gray.100" }}
+                            textAlign="center"
+                          >
+                            Preview temporarily unavailable
+                          </Heading>
+                          <Text 
+                            textAlign="center" 
+                            color="gray.500" 
+                            mb={6}
+                            fontSize="sm"
+                            lineHeight="1.7"
+                          >
+                            The document preview is currently experiencing technical difficulties.
+                            You can download the document to view it directly.
+                          </Text>
+                          <Button 
+                            as="a"
+                            href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
+                            leftIcon={<DownloadIcon />}
+                            colorScheme="blue"
+                            size="md"
+                            target="_blank"
+                            boxShadow="md"
+                            _hover={{ 
+                              transform: "translateY(-2px)",
+                              boxShadow: "lg" 
+                            }}
+                            transition="all 0.3s"
+                          >
+                            Download document
+                          </Button>
+                        </Box>
                       </Flex>
                     </Box>
                   ) : (
-                    <Flex direction="column" alignItems="center" justifyContent="center" height="100%" p={8}>
-                      <Icon as={AttachmentIcon} boxSize={12} color="gray.400" mb={4} />
-                      <Heading size="md" mb={2}>Preview not available</Heading>
-                      <Text textAlign="center" color="gray.500" mb={4}>
-                        Preview is not available for this file type ({document.mimeType}).
+                    <Flex 
+                      direction="column" 
+                      alignItems="center" 
+                      justifyContent="center" 
+                      height="100%" 
+                      p={10}
+                      bg="gray.50"
+                      _dark={{ bg: "gray.700" }}
+                      borderRadius="md"
+                      borderBottomRadius="md"
+                      boxShadow="inner"
+                    >
+                      <Icon 
+                        as={AttachmentIcon} 
+                        boxSize={16} 
+                        color="blue.400" 
+                        mb={6}
+                        sx={{
+                          animation: "pulse 2s infinite",
+                          "@keyframes pulse": {
+                            "0%": { opacity: 0.7, transform: "scale(1)" },
+                            "50%": { opacity: 1, transform: "scale(1.05)" },
+                            "100%": { opacity: 0.7, transform: "scale(1)" }
+                          }
+                        }}
+                      />
+                      <Heading size="md" mb={3} color="gray.700" _dark={{ color: "gray.100" }}>
+                        Preview not available
+                      </Heading>
+                      <Text 
+                        textAlign="center" 
+                        color="gray.500" 
+                        mb={6}
+                        maxW="md"
+                        fontSize="sm"
+                        lineHeight="1.7"
+                      >
+                        Preview is not available for this file type ({document.mimeType}). 
+                        You can download the file to view it in your preferred application.
                       </Text>
                       <Button 
                         as="a"
                         href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
                         leftIcon={<DownloadIcon />}
                         colorScheme="blue"
+                        size="md"
                         target="_blank"
+                        boxShadow="md"
+                        _hover={{ 
+                          transform: "translateY(-2px)",
+                          boxShadow: "lg" 
+                        }}
+                        transition="all 0.3s"
                       >
                         Download instead
                       </Button>
@@ -1334,31 +1427,127 @@ export default function DocumentDetail() {
                 <Grid templateColumns={{base: "1fr", lg: "2fr 1fr"}} gap={6}>
                   <GridItem>
                     {/* Summary */}
-                    <Card variant="outline" mb={6}>
-                      <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                    <Card 
+                      variant="outline" 
+                      mb={6} 
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      boxShadow="sm"
+                      transition="all 0.2s"
+                      _hover={{ boxShadow: "md" }}
+                    >
+                      <CardHeader 
+                        bg={headerBg} 
+                        py={3} 
+                        px={5} 
+                        borderBottomWidth="1px" 
+                        borderColor={borderColor}
+                        display="flex"
+                        alignItems="center"
+                      >
+                        <Icon as={InfoOutlineIcon} mr={2} color="blue.500" />
                         <Heading size="sm">Document Summary</Heading>
                       </CardHeader>
-                      <CardBody p={4}>
+                      <CardBody p={5}>
                         {document.aiMetadata.summary ? (
-                          <Text>{document.aiMetadata.summary}</Text>
+                          <Box>
+                            <Text 
+                              lineHeight="1.7" 
+                              fontSize="sm" 
+                              whiteSpace="pre-line"
+                              color="gray.700"
+                              _dark={{ color: "gray.300" }}
+                              sx={{
+                                "p:not(:last-of-type)": {
+                                  marginBottom: "1rem"
+                                }
+                              }}
+                            >
+                              {document.aiMetadata.summary}
+                            </Text>
+                            <Box 
+                              mt={4} 
+                              pt={4} 
+                              borderTop="1px dashed" 
+                              borderColor="gray.200"
+                              _dark={{ borderColor: "gray.700" }}
+                              fontSize="xs"
+                              color="gray.500"
+                              display="flex"
+                              alignItems="center"
+                            >
+                              <Icon as={TimeIcon} mr={1} fontSize="xs" />
+                              Generated {new Date(document.updatedAt || document.createdAt).toLocaleDateString()}
+                            </Box>
+                          </Box>
                         ) : (
-                          <Text color="gray.500">No summary available</Text>
+                          <Flex 
+                            direction="column" 
+                            align="center" 
+                            justify="center" 
+                            py={8}
+                            color="gray.400"
+                          >
+                            <Icon as={WarningTwoIcon} boxSize={10} mb={3} />
+                            <Text fontSize="sm">No summary available</Text>
+                            <Text fontSize="xs" mt={2} maxW="sm" textAlign="center" color="gray.500">
+                              AI processing couldn't generate a summary for this document.
+                            </Text>
+                          </Flex>
                         )}
                       </CardBody>
                     </Card>
 
                     {/* Key Points */}
                     {document.aiMetadata.keyPoints && Array.isArray(document.aiMetadata.keyPoints) && (
-                      <Card variant="outline" mb={6}>
-                        <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                      <Card 
+                        variant="outline" 
+                        mb={6}
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                        boxShadow="sm"
+                        transition="all 0.2s"
+                        _hover={{ boxShadow: "md" }}
+                      >
+                        <CardHeader 
+                          bg={headerBg} 
+                          py={3} 
+                          px={5} 
+                          borderBottomWidth="1px" 
+                          borderColor={borderColor}
+                          display="flex"
+                          alignItems="center"
+                        >
+                          <Icon as={ListIcon} mr={2} color="blue.500" />
                           <Heading size="sm">Key Points</Heading>
                         </CardHeader>
-                        <CardBody p={4}>
-                          <List spacing={2}>
+                        <CardBody p={5}>
+                          <List spacing={3}>
                             {document.aiMetadata.keyPoints.map((point: string, index: number) => (
-                              <ListItem key={index} display="flex" alignItems="baseline">
-                                <Icon as={CheckIcon} color="green.500" mr={2} boxSize={3} />
-                                <Text>{point}</Text>
+                              <ListItem 
+                                key={index} 
+                                display="flex" 
+                                alignItems="flex-start"
+                                p={2}
+                                _hover={{ bg: "gray.50", _dark: { bg: "gray.800" } }}
+                                borderRadius="md"
+                                transition="background-color 0.2s"
+                              >
+                                <Icon 
+                                  as={CheckCircleIcon} 
+                                  color="green.500" 
+                                  mr={3} 
+                                  mt={1}
+                                  boxSize={4} 
+                                />
+                                <Text 
+                                  fontSize="sm" 
+                                  lineHeight="1.6"
+                                  color="gray.700"
+                                  _dark={{ color: "gray.300" }}
+                                >
+                                  {point}
+                                </Text>
                               </ListItem>
                             ))}
                           </List>
@@ -1368,37 +1557,84 @@ export default function DocumentDetail() {
 
                     {/* Entities */}
                     {document.aiMetadata.entities && Array.isArray(document.aiMetadata.entities) && document.aiMetadata.entities.length > 0 && (
-                      <Card variant="outline" mb={6}>
-                        <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                      <Card 
+                        variant="outline" 
+                        mb={6}
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                        boxShadow="sm"
+                        transition="all 0.2s"
+                        _hover={{ boxShadow: "md" }}
+                      >
+                        <CardHeader 
+                          bg={headerBg} 
+                          py={3} 
+                          px={5} 
+                          borderBottomWidth="1px" 
+                          borderColor={borderColor}
+                          display="flex"
+                          alignItems="center"
+                        >
+                          <Icon as={AtSignIcon} mr={2} color="blue.500" />
                           <Heading size="sm">Entities Mentioned</Heading>
                         </CardHeader>
-                        <CardBody p={4}>
-                          <Table size="sm" variant="simple">
-                            <Thead>
-                              <Tr>
-                                <Th pl={0}>Entity</Th>
-                                <Th>Type</Th>
-                                <Th>Relevance</Th>
-                              </Tr>
-                            </Thead>
-                            <Tbody>
-                              {document.aiMetadata.entities.map((entity: any, index: number) => (
-                                <Tr key={index}>
-                                  <Td pl={0} borderColor={borderColor}>{entity.name}</Td>
-                                  <Td borderColor={borderColor}>
-                                    <Badge size="sm" colorScheme="blue" variant="subtle">
-                                      {entity.type}
-                                    </Badge>
-                                  </Td>
-                                  <Td borderColor={borderColor}>
-                                    {entity.relevance ? (
-                                      <Progress 
-                                        value={entity.relevance * 100} 
-                                        size="xs" 
-                                        colorScheme="blue" 
-                                        borderRadius="full"
-                                        width="80px"
-                                      />
+                        <CardBody p={0}>
+                          <Box overflow="auto" maxH="400px">
+                            <Table size="sm" variant="simple">
+                              <Thead position="sticky" top={0} bg={headerBg} zIndex={1}>
+                                <Tr>
+                                  <Th pl={5} py={3}>Entity</Th>
+                                  <Th py={3}>Type</Th>
+                                  <Th py={3} pr={5}>Relevance</Th>
+                                </Tr>
+                              </Thead>
+                              <Tbody>
+                                {document.aiMetadata.entities.map((entity: any, index: number) => (
+                                  <Tr 
+                                    key={index}
+                                    _hover={{ bg: "gray.50", _dark: { bg: "gray.800" } }}
+                                    transition="background-color 0.2s"
+                                  >
+                                    <Td 
+                                      pl={5} 
+                                      borderColor={borderColor}
+                                      fontWeight="medium"
+                                      color="gray.700"
+                                      _dark={{ color: "gray.300" }}
+                                    >
+                                      {entity.name}
+                                    </Td>
+                                    <Td borderColor={borderColor}>
+                                      <Badge 
+                                        px={2} 
+                                        py={1} 
+                                        borderRadius="full" 
+                                        colorScheme={
+                                          entity.type === 'PERSON' ? 'purple' : 
+                                          entity.type === 'ORGANIZATION' ? 'blue' : 
+                                          entity.type === 'LOCATION' ? 'green' : 
+                                          entity.type === 'DATE' ? 'orange' : 
+                                          entity.type === 'MONEY' ? 'teal' : 
+                                          'gray'
+                                        }
+                                        variant="subtle"
+                                        fontWeight="medium"
+                                        fontSize="xs"
+                                      >
+                                        {entity.type}
+                                      </Badge>
+                                    </Td>
+                                    <Td borderColor={borderColor} pr={5}>
+                                      {entity.relevance ? (
+                                        <Flex alignItems="center">
+                                          <Progress 
+                                            value={entity.relevance * 100} 
+                                            size="xs" 
+                                            colorScheme={entity.relevance > 0.7 ? "green" : entity.relevance > 0.4 ? "blue" : "gray"} 
+                                            borderRadius="full"
+                                            width="70px"
+                                            mr={2}
+                                          />
                                     ) : (
                                       <Text>-</Text>
                                     )}
