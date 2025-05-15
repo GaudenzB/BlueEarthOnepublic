@@ -14,8 +14,8 @@ import { insertUserSchema, userLoginSchema } from "@shared/schema";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-// Import Microsoft logo
-import { SiMicrosoft } from "react-icons/si";
+// Import Microsoft logo from a different icon set
+import { FaMicrosoft } from "react-icons/fa";
 
 // Extend the userLoginSchema to include rememberMe option
 const extendedLoginSchema = userLoginSchema.extend({
@@ -42,7 +42,7 @@ const LoginForm = () => {
   // Function to handle Microsoft SSO login
   const handleMicrosoftLogin = () => {
     // Redirect to the Microsoft SSO login endpoint
-    window.location.href = "/api/auth/entra/microsoft";
+    window.location.href = "/api/auth/entra/login";
   };
 
   return (
@@ -122,7 +122,7 @@ const LoginForm = () => {
               className="w-full" 
               onClick={handleMicrosoftLogin}
             >
-              <SiMicrosoft className="mr-2 h-4 w-4" />
+              <FaMicrosoft className="mr-2 h-4 w-4" />
               Microsoft
             </Button>
           </>
