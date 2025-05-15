@@ -319,14 +319,14 @@ export default function AuthPage() {
               {activeTab === "login" ? (
                 <>
                   Don't have an account?{" "}
-                  <Button variant="link" className="p-0" onClick={() => setActiveTab("register")}>
+                  <Button variant="link" className="p-0 text-[#1E2A40] hover:underline" onClick={() => setActiveTab("register")}>
                     Register
                   </Button>
                 </>
               ) : (
                 <>
                   Already have an account?{" "}
-                  <Button variant="link" className="p-0" onClick={() => setActiveTab("login")}>
+                  <Button variant="link" className="p-0 text-[#1E2A40] hover:underline" onClick={() => setActiveTab("login")}>
                     Login
                   </Button>
                 </>

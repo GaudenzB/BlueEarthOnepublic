@@ -29,7 +29,7 @@ const TabsTrigger = React.forwardRef<
     className={cn(
       "inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600",
       "border-b-2 border-transparent",
-      "data-[state=active]:border-b-2 data-[state=active]:border-brand-700 data-[state=active]:text-brand-700",
+      "data-[state=active]:border-b-2 data-[state=active]:border-[#1E2A40] data-[state=active]:text-[#1E2A40]",
       "hover:text-gray-800 transition-colors",
       "focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
       className
