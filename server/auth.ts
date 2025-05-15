@@ -4,6 +4,7 @@ import { User } from "@shared/schema";
 import { apiResponse } from "./utils/apiResponse";
 import { generateToken, verifyToken, revokeToken, TokenType } from "./utils/jwtConfig";
 import { roleHelpers, UserRole } from './utils/roleHelpers';
+import { logger } from './utils/logger';
 
 /**
  * Enhanced Authentication System
@@ -89,7 +90,20 @@ export const authenticate = (
   // Use the cookie token if available, otherwise use the header token
   const token = cookieToken || headerToken;
 
+  // Special handling for document upload routes to provide better error diagnostics
+  const isDocumentUpload = req.path.includes('/documents') && req.method === 'POST';
+  
   if (!token) {
+    if (isDocumentUpload) {
+      logger.error('Document upload authentication failed - no token provided', {
+        path: req.path,
+        method: req.method,
+        hasAuthHeader: !!req.header("Authorization"),
+        hasCookies: !!req.cookies?.accessToken,
+        headers: Object.keys(req.headers),
+        ip: req.ip
+      });
+    }
     apiResponse.unauthorized(res, "Authentication required");
     return;
   }
