@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useLocation } from "wouter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { LoadingState } from "@/components/ui"
 import { Search, Building, FilterX, RefreshCw } from "lucide-react"
+import { ROUTES } from "@/lib/routes"
 
 // Define the Employee type to match the API response
 interface Employee {
@@ -26,6 +28,14 @@ interface Employee {
 }
 
 export default function EmployeeDirectoryPage() {
+  // For navigation to employee detail
+  const [, setLocation] = useLocation();
+  
+  // Navigate to employee detail view
+  const navigateToEmployeeDetail = (employeeId: number) => {
+    setLocation(ROUTES.EMPLOYEES.DETAIL(employeeId));
+  };
+  
   // Direct query to /api/employees which returns array of employees
   const { data: employees = [], isLoading, error, refetch } = useQuery<Employee[]>({
     queryKey: ['/api/employees'],
@@ -301,7 +311,11 @@ export default function EmployeeDirectoryPage() {
       {/* Employee grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredEmployees.map(employee => (
-          <Card key={employee.id} className="overflow-hidden hover:shadow-md transition-shadow">
+          <Card 
+            key={employee.id} 
+            className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigateToEmployeeDetail(employee.id)}
+          >
             <div className="flex flex-col h-full">
               {/* Employee Avatar */}
               <div className="relative pt-6 pb-2 px-6 flex items-center justify-center">
