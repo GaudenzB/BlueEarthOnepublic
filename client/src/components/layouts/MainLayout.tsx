@@ -14,7 +14,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <Sidebar />
       
       <div className="flex flex-col flex-1 overflow-hidden">
-        <main className="flex-1 overflow-auto bg-muted p-4 md:p-6">
+        <main className="flex-1 overflow-auto bg-slate-100 p-4 md:p-6">
           {children}
         </main>
       </div>
