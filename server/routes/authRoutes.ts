@@ -40,13 +40,11 @@ router.post('/dev-login', (req: Request, res: Response) => {
   // Generate JWT token for token-based auth
   const token = generateToken(devUser, TokenType.ACCESS);
   
-  // Set as cookie as well
-  res.cookie('accessToken', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 1000 * 60 * 60 * 24 // 24 hours
-  });
+  // Extract rememberMe from request body, default to true for dev login
+  const rememberMe = req.body?.rememberMe !== false;
+  
+  // Use our common auth cookie helper
+  setAuthCookies(res, token, undefined, rememberMe);
   
   // Return success with user data
   apiResponse.success(res, {
