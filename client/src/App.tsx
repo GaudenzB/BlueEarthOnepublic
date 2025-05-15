@@ -21,6 +21,7 @@ import DocumentDetail from "@/pages/document-detail-consolidated";
 // Contracts module removed
 import DesignTesting from "@/pages/design-testing";
 import DesignSystem from "@/pages/DesignSystem";
+import ThemeShowcasePage from "@/pages/ThemeShowcasePage";
 import MainLayout from "@/components/layouts/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
@@ -91,6 +92,7 @@ function Router() {
       {/* Test routes removed */}
       <Route path={ROUTES.DESIGN_TESTING} component={(props) => <ProtectedRoute component={DesignTesting} {...props} />} />
       <Route path={ROUTES.DESIGN_SYSTEM} component={(props) => <ProtectedRoute component={DesignSystem} {...props} />} />
+      <Route path={ROUTES.THEME_SHOWCASE} component={(props) => <ProtectedRoute component={ThemeShowcasePage} {...props} />} />
       
       {/* Super admin routes */}
       <Route 

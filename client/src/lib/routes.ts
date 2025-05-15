@@ -31,6 +31,7 @@ export const ROUTES = {
   MESSAGES: '/messages',
   DESIGN_TESTING: '/design-testing',
   DESIGN_SYSTEM: '/design-system',
+  THEME_SHOWCASE: '/theme-showcase',
 };
 
 // Admin Routes
@@ -78,6 +79,11 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       title: "Design System",
       href: ROUTES.DESIGN_SYSTEM,
       icon: "PenTool",
+    },
+    {
+      title: "Theme Showcase",
+      href: ROUTES.THEME_SHOWCASE,
+      icon: "Palette",
     },
   ];
   
