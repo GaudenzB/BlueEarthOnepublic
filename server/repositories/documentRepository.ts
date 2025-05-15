@@ -9,9 +9,9 @@ import {
   type InsertAnalysisVersion,
   documentEmbeddings,
   type DocumentEmbedding,
-  type InsertDocumentEmbedding,
-  type SemanticSearch
+  type InsertDocumentEmbedding
 } from '../../shared/schema/index';
+import { type SemanticSearchParams } from '../../shared/schema/documents/embeddings';
 import { logger } from '../utils/logger';
 
 /**
