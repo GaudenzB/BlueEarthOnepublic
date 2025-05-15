@@ -20,7 +20,7 @@ export const blueEarthTheme = {
     secondary: "#1A1A1A", // Dark neutral
     accent: "#E1F4F3", // Light accent background
     muted: "#6B7280", // Gray 500
-    background: "#F9FAFB",
+    background: "#FFFFFF", // Lighter background color
     border: "#E5E7EB",
     destructive: "#B91C1C"
   } as Record<ThemeColorKey, string>,
