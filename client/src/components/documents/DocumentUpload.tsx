@@ -294,11 +294,14 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           console.error("Error during upload process:", e);
         };
         
-        xhr.timeout = 300000; // 5 minute timeout (300,000 ms)
-        xhr.ontimeout = function() {
-          console.error("Upload timed out after 5 minutes");
-          reject(new Error('Upload timed out after 5 minutes'));
-        };
+        // Only add timeout for files larger than 5MB
+        if (data.file.size > 5 * 1024 * 1024) {
+          xhr.timeout = 300000; // 5 minute timeout (300,000 ms)
+          xhr.ontimeout = function() {
+            console.error("Upload timed out after 5 minutes");
+            reject(new Error('Upload timed out after 5 minutes'));
+          };
+        }
         
         // Connect abort controller to XHR
         if (abortControllerRef.current) {
@@ -455,11 +458,15 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           
           // Attempt fetch API fallback
           try {
-            // Create a new AbortController for fetch timeout
+            // Only add timeout for files larger than 5MB
             const fetchController = new AbortController();
-            const fetchTimeout = setTimeout(() => {
-              fetchController.abort();
-            }, 300000); // 5 minute timeout
+            let fetchTimeout: number | undefined = undefined;
+            
+            if (data.file.size > 5 * 1024 * 1024) {
+              fetchTimeout = window.setTimeout(() => {
+                fetchController.abort();
+              }, 300000); // 5 minute timeout
+            }
             
             // Log auth status before fetch attempt
             console.log('About to send FormData via fetch', {
@@ -483,8 +490,10 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               signal: fetchController.signal
             });
             
-            // Clear timeout since fetch completed
-            clearTimeout(fetchTimeout);
+            // Clear timeout if it was set
+            if (fetchTimeout !== undefined) {
+              window.clearTimeout(fetchTimeout);
+            }
             
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
@@ -602,7 +611,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !isUploading && !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Upload Document</DialogTitle>
           <DialogDescription>
@@ -611,7 +620,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-2">
             {/* File drop area */}
             <div className="space-y-2">
               <FormLabel>Document File</FormLabel>
@@ -744,7 +753,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-xs">
                     Tags help with searching and filtering documents.
                   </FormDescription>
                   <FormMessage />
@@ -756,7 +765,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               control={form.control}
               name="isConfidential"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -764,8 +773,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>Confidential Document</FormLabel>
-                    <FormDescription>
+                    <FormLabel className="mb-0">Confidential Document</FormLabel>
+                    <FormDescription className="text-xs">
                       Mark this document as confidential to restrict access.
                     </FormDescription>
                   </div>
@@ -800,7 +809,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               </div>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="pt-2 border-t">
               {isUploading ? (
                 <Button 
                   type="button" 
