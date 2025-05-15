@@ -3,7 +3,7 @@
 /**
  * Type definitions for theme elements
  */
-export type ThemeColorKey = 'primary' | 'secondary' | 'accent' | 'muted' | 'background' | 'border' | 'destructive';
+export type ThemeColorKey = 'primary' | 'secondary' | 'accent' | 'muted' | 'background' | 'border' | 'destructive' | 'link';
 export type ThemeSpacingKey = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 export type ThemeBorderRadiusKey = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 export type ThemeFontSizeKey = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
@@ -22,7 +22,8 @@ export const blueEarthTheme = {
     muted: "#6B7280", // Gray 500
     background: "#FFFFFF", // Lighter background color
     border: "#E5E7EB",
-    destructive: "#B91C1C"
+    destructive: "#B91C1C",
+    link: "#2563EB" // Bright blue for links
   } as Record<ThemeColorKey, string>,
   
   spacing: {
@@ -142,5 +143,6 @@ export const themeHSL = {
   muted: hexToHSL(blueEarthTheme.colors.muted),
   background: hexToHSL(blueEarthTheme.colors.background),
   border: hexToHSL(blueEarthTheme.colors.border),
-  destructive: hexToHSL(blueEarthTheme.colors.destructive)
+  destructive: hexToHSL(blueEarthTheme.colors.destructive),
+  link: hexToHSL(blueEarthTheme.colors.link)
 };

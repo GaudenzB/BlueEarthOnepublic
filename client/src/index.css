@@ -22,6 +22,8 @@
   --accent-foreground: 179 100% 19%; /* #005E5D converted to HSL */
   --destructive: 0 74% 42%; /* #B91C1C converted to HSL */
   --destructive-foreground: 0 0% 100%;
+  --link: 216 100% 53%; /* #2563EB converted to HSL */
+  --link-foreground: 0 0% 100%;
   --ring: 179 100% 19%; /* #005E5D converted to HSL */
   --radius: 0.5rem;
   --chart-1: 179 100% 19%; /* Primary teal */
@@ -72,6 +74,8 @@
     --accent-foreground: 0 0% 95%; /* Light text on accent */
     --destructive: 0 74% 42%; /* Same destructive color */
     --destructive-foreground: 0 0% 100%; /* White text on destructive */
+    --link: 214 100% 60%; /* Brighter blue for links in dark mode */
+    --link-foreground: 0 0% 100%; /* White text on links */
     --ring: 178 100% 30%; /* Brighter ring for dark mode */
     --radius: 0.5rem;
     --chart-1: 178 100% 30%; /* Primary teal - brighter */
