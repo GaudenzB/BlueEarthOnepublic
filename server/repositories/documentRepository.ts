@@ -246,10 +246,18 @@ export const documentRepository = {
    * Get a document by its ID
    * 
    * @param id - Document ID
-   * @param tenantId - Tenant ID for multi-tenancy
+   * @param tenantIdOrOptions - Either a tenant ID string or an options object with security context
    * @returns The document with optional user info, or undefined if not found
+   * @throws Error if the user doesn't have permission to access the document
    */
-  async getById(id: string, tenantId: string): Promise<(Document & { 
+  async getById(
+    id: string, 
+    tenantIdOrOptions: string | {
+      userRole: 'ADMIN' | 'MANAGER' | 'USER' | 'SUPER_ADMIN';
+      userTenantId: string;
+      userAccessibleConfidentialDocs?: string[];
+    }
+  ): Promise<(Document & { 
     uploadedByUser?: { 
       id: number; 
       username: string; 
@@ -257,6 +265,19 @@ export const documentRepository = {
     } 
   }) | undefined> {
     try {
+      // Extract tenant ID and security context info
+      const tenantId = typeof tenantIdOrOptions === 'string' 
+        ? tenantIdOrOptions 
+        : tenantIdOrOptions.userTenantId;
+      
+      const userRole = typeof tenantIdOrOptions === 'string' 
+        ? undefined 
+        : tenantIdOrOptions.userRole;
+      
+      const userAccessibleConfidentialDocs = typeof tenantIdOrOptions === 'string' 
+        ? undefined 
+        : tenantIdOrOptions.userAccessibleConfidentialDocs || [];
+      
       // Validate inputs
       if (!id) {
         logger.warn('getById called with undefined or null id');
@@ -268,7 +289,11 @@ export const documentRepository = {
         return undefined;
       }
       
-      logger.info('Getting document by ID', { id, tenantId });
+      logger.info('Getting document by ID', { 
+        id, 
+        tenantId,
+        withPermissions: !!userRole
+      });
       
       // Execute a simpler query first to avoid join issues
       try {
@@ -289,6 +314,24 @@ export const documentRepository = {
 
         // We know docResult exists from the check above
         const docResult = docResults[0];
+        
+        // Check if user has permission to access confidential documents
+        if (userRole && docResult.isConfidential === true) {
+          // Admins always have access to all documents
+          const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+          
+          // If not admin, check if document is in user's accessible confidential docs
+          if (!isAdmin && 
+              (!userAccessibleConfidentialDocs || 
+               !userAccessibleConfidentialDocs.includes(id))) {
+            logger.warn('User does not have permission to access confidential document', {
+              id,
+              userRole,
+              isConfidential: docResult.isConfidential
+            });
+            throw new Error('User is not authorized to access this confidential document');
+          }
+        }
         
         // Now get the user info separately if uploadedBy exists
         let userInfo = undefined;
@@ -789,7 +832,8 @@ export const documentRepository = {
     minSimilarity?: number;
     documentType?: string;
     documentIds?: string[];
-    userRole?: string;
+    // Add proper types for role-based access control
+    userRole?: 'ADMIN' | 'MANAGER' | 'USER' | 'SUPER_ADMIN' | 'admin' | 'superadmin';
     userAccessibleConfidentialDocs?: string[];
   }): Promise<{ documents: Document[], scores: Record<string, number> }> {
     try {
