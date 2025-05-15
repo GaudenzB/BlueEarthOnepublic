@@ -1,253 +1,258 @@
-import bcrypt from "bcryptjs";
-import { Request, Response, NextFunction } from "express";
-import { User } from "@shared/schema";
-import { apiResponse } from "./utils/apiResponse";
-import { generateToken, verifyToken, revokeToken, TokenType } from "./utils/jwtConfig";
-import { roleHelpers, UserRole } from './utils/roleHelpers';
-import { logger } from './utils/logger';
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
+import { Express, Request, Response, NextFunction } from "express";
+import session from "express-session";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
+import jwt from "jsonwebtoken";
+import { storage } from "./storage";
+import { User as SelectUser } from "@shared/schema";
+import microsoftAuthRouter from "./auth/microsoft";
 
-/**
- * Enhanced Authentication System
- * 
- * Features:
- * - Configurable password hashing strength via environment variable
- * - JWT token with claims for better validation (audience, issuer)
- * - Separate access and refresh tokens with different lifetimes
- * - Token revocation support for logout functionality
- * - Standardized API responses for auth errors
- * - Role-based access control with fine-grained error messages
- */
+// Type for token payload used for authentication
+export interface UserTokenPayload {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+}
 
-// Extend Express Request type to include user property
 declare global {
   namespace Express {
-    interface Request {
-      user?: {
-        id: number;
-        username: string;
-        email: string;
-        role: string;
-        jti?: string; // JWT token ID
-      };
-    }
+    interface User extends SelectUser {}
   }
 }
 
-// Configurable security settings with environment variable overrides
-const SALT_ROUNDS = parseInt(process.env['PASSWORD_SALT_ROUNDS'] || '10', 10);
-
-// Token storage and cleanup is now handled in jwtConfig.ts
-
-// Function to hash a password with configurable salt rounds
-export const hashPassword = async (password: string): Promise<string> => {
-  const salt = await bcrypt.genSalt(SALT_ROUNDS);
-  return bcrypt.hash(password, salt);
-};
-
-// Function to compare a password with a hash
-export const comparePassword = async (
-  password: string,
-  hash: string
-): Promise<boolean> => {
-  return bcrypt.compare(password, hash);
-};
-
-/**
- * Generate a JWT token pair for a user
- * 
- * @param user - The user object to generate tokens for
- * @returns An object containing access token and refresh token
- */
-export const generateUserToken = (user: User): { accessToken: string, refreshToken: string } => {
-  const payload = {
-    id: user.id,
-    username: user.username || '',
-    email: user.email || '',
-    role: user.role
-  };
-
-  // Generate access token
-  const accessToken = generateToken(payload, TokenType.ACCESS);
-  
-  // Generate refresh token with minimal info (just ID and JTI)
-  const refreshToken = generateToken({ id: user.id }, TokenType.REFRESH);
-  
-  return { accessToken, refreshToken };
-};
-
-// Middleware to authenticate requests
-export const authenticate = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  // Special handling for document upload routes to provide better error diagnostics
-  const isDocumentUpload = req.path.includes('/documents') && req.method === 'POST';
-  
-  // Enhanced debug logging for document uploads
-  if (isDocumentUpload) {
-    logger.debug('Document upload authentication attempt', {
-      path: req.path,
-      method: req.method,
-      hasAuthHeader: !!req.header("Authorization"),
-      authHeader: req.header("Authorization")?.substring(0, 20) + '...',
-      hasCookies: !!req.cookies?.accessToken,
-      cookieNames: Object.keys(req.cookies || {}),
-      hasSession: !!req.session,
-      hasSessionID: !!req.sessionID,
-      sessionUserId: req.session?.userId,
-      headers: Object.keys(req.headers),
-      origin: req.headers.origin,
-      referer: req.headers.referer
-    });
+// Authentication middleware
+export function authenticate(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
-  
-  // Try to get token from cookies first (our new preferred method)
-  const cookieToken = req.cookies?.accessToken;
-  
-  // Fallback to Authorization header if no cookie (for backward compatibility)
-  const headerToken = req.header("Authorization")?.replace("Bearer ", "");
-  
-  // Use the cookie token if available, otherwise use the header token
-  const token = cookieToken || headerToken;
-
-  // Check for session authentication if no token
-  // This fallback is especially important for document uploads
-  if (!token && req.session && req.session.userId) {
-    // We have an active session but no token
-    if (isDocumentUpload) {
-      logger.info('Document upload: Using session authentication', {
-        sessionId: req.sessionID,
-        userId: req.session.userId
-      });
-    }
-    
-    // Fall through to session auth handling code in documentUploadAuth middleware
-    return next();
-  }
-  
-  if (!token) {
-    if (isDocumentUpload) {
-      logger.error('Document upload authentication failed - no token or session', {
-        path: req.path,
-        method: req.method,
-        hasAuthHeader: !!req.header("Authorization"),
-        hasCookies: !!req.cookies?.accessToken,
-        hasSession: !!req.session,
-        headers: Object.keys(req.headers),
-        ip: req.ip
-      });
-    }
-    apiResponse.unauthorized(res, "Authentication required");
-    return;
-  }
-
-  try {
-    // Verify token using our centralized token verification
-    const decoded = verifyToken(token, TokenType.ACCESS);
-    
-    if (!decoded) {
-      apiResponse.unauthorized(res, "Invalid authentication token");
-      return;
-    }
-    
-    // Set user in request
-    req.user = {
-      id: decoded.id,
-      username: decoded.username,
-      email: decoded.email,
-      role: decoded.role,
-      jti: decoded.jti
-    };
-    
-    next();
-  } catch (err) {
-    const error = err as Error;
-    
-    // Enhanced error logging for document uploads
-    if (isDocumentUpload) {
-      logger.error('Document upload authentication failed during token verification', {
-        path: req.path,
-        method: req.method,
-        errorName: error.name,
-        errorMessage: error.message,
-        hasAuthHeader: !!req.header("Authorization"),
-        hasCookies: !!req.cookies?.accessToken
-      });
-    }
-    
-    // Provide specific error responses based on verification failure type
-    if (error.name === 'TokenExpiredError') {
-      apiResponse.unauthorized(res, "Authentication session expired");
-      return;
-    } else if (error.name === 'JsonWebTokenError') {
-      apiResponse.unauthorized(res, "Invalid authentication token");
-      return;
-    } else if (error.name === 'NotBeforeError') {
-      apiResponse.unauthorized(res, "Authentication token not yet active");
-      return;
-    }
-    
-    // Default case for other JWT errors
-    apiResponse.unauthorized(res, "Authentication failed");
-    return;
-  }
-};
+  next();
+}
 
 // Role-based access control middleware
-export const authorize = (roles: UserRole[] = []): ((req: Request, res: Response, next: NextFunction) => void) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      apiResponse.unauthorized(res, "Authentication required");
-      return;
-    }
-
-    // If no roles are specified, allow all authenticated users
-    if (roles.length === 0) {
-      next();
-      return;
-    }
-
-    // Check if the user's role is included in the allowed roles
-    if (!roles.includes(req.user.role as UserRole)) {
-      apiResponse.forbidden(
-        res, 
-        "Insufficient permissions for this resource"
-      );
-      return;
-    }
-
-    next();
-  };
-};
-
-// Superadmin authorization middleware
-export const isSuperAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
-    apiResponse.unauthorized(res, "Authentication required");
-    return;
+export function isSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  if (req.user?.role !== "superadmin") {
+    return res.status(403).json({ message: "Forbidden: Requires superadmin role" });
   }
-
-  // Use roleHelpers for consistent role checking
-  if (!roleHelpers.isSuperAdmin(req.user.role as UserRole)) {
-    apiResponse.forbidden(
-      res, 
-      "This operation requires superadmin privileges"
-    );
-    return;
-  }
-
   next();
-};
+}
 
-// Password reset functions
-// Use Node's native crypto for reset tokens instead of JWT
-export const generateResetToken = (): string => {
-  return crypto.randomUUID();
-};
+export function isAdminOrHigher(req: Request, res: Response, next: NextFunction) {
+  if (req.user?.role !== "superadmin" && req.user?.role !== "admin") {
+    return res.status(403).json({ message: "Forbidden: Requires admin or superadmin role" });
+  }
+  next();
+}
 
-export const calculateExpiryTime = (hours: number = 24): string => {
-  const now = new Date();
-  now.setHours(now.getHours() + hours);
-  return now.toISOString();
-};
+// Permission-based authorization middleware
+export function authorize(permission: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // Super admins have access to everything
+    if (req.user.role === "superadmin") {
+      return next();
+    }
+    
+    // For regular users, perform permission check
+    // Here we would typically check the user's permissions from the database
+    // For simplicity, we're allowing access to admins for all permissions
+    if (req.user.role === "admin") {
+      return next();
+    }
+    
+    // For other roles, we would check specific permissions
+    // Placeholder for actual permission check
+    return res.status(403).json({ message: `Forbidden: Insufficient permissions for ${permission}` });
+  };
+}
+
+// Generate JWT tokens for user authentication
+export function generateUserToken(payload: UserTokenPayload) {
+  // Get token secrets and expiry times from environment variables or use defaults
+  const accessTokenSecret = process.env.JWT_SECRET || 'access-token-secret';
+  const refreshTokenSecret = process.env.JWT_REFRESH_SECRET || 'refresh-token-secret';
+  
+  // Get token expiry times (in seconds)
+  const accessTokenExpiry = parseInt(process.env.JWT_ACCESS_TOKEN_EXPIRY_SECONDS || '3600', 10);
+  const refreshTokenExpiry = parseInt(process.env.JWT_REFRESH_TOKEN_EXPIRY_SECONDS || '604800', 10);
+  
+  // Create tokens
+  const accessToken = jwt.sign(payload, accessTokenSecret, {
+    expiresIn: accessTokenExpiry
+  });
+  
+  const refreshToken = jwt.sign(payload, refreshTokenSecret, {
+    expiresIn: refreshTokenExpiry
+  });
+  
+  return {
+    accessToken,
+    refreshToken,
+    expiresIn: accessTokenExpiry
+  };
+}
+
+const scryptAsync = promisify(scrypt);
+
+// Securely hash password with scrypt
+export async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+// Verify password against stored hash
+export async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+// Alias for compatibility with existing code
+export const comparePassword = comparePasswords;
+
+export function setupAuth(app: Express) {
+  // Check if session secret is set
+  if (!process.env.SESSION_SECRET) {
+    console.warn("SESSION_SECRET not set, using a random secret (not secure for production)");
+    process.env.SESSION_SECRET = randomBytes(32).toString("hex");
+  }
+  
+  try {
+    // Configure session middleware
+    app.use(
+      session({
+        secret: process.env.SESSION_SECRET || "fallback-secret-dev-only",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 24 * 60 * 60 * 1000, // 1 day
+        },
+        store: storage.sessionStore
+      })
+    );
+
+    // Initialize Passport and restore authentication state from session
+    app.use(passport.initialize());
+    app.use(passport.session());
+    
+    console.log("Passport and session middleware configured successfully");
+  } catch (error) {
+    console.error("Error setting up auth middleware:", error);
+    throw error;
+  }
+
+  // Configure Passport.js with local strategy
+  passport.use(
+    new LocalStrategy(async (username, password, done) => {
+      try {
+        const user = await storage.getUserByUsername(username);
+        if (!user || !(await comparePasswords(password, user.password))) {
+          return done(null, false, { message: "Invalid username or password" });
+        }
+        return done(null, user);
+      } catch (error) {
+        return done(error);
+      }
+    }),
+  );
+
+  // Serialize user to the session
+  passport.serializeUser((user, done) => {
+    done(null, user.id);
+  });
+
+  // Deserialize user from the session
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
+  });
+
+  // Initialize Passport.js and session
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Routes for authentication
+  // Register new user
+  app.post("/api/register", async (req, res, next) => {
+    try {
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+
+      // Also check email
+      const existingEmail = await storage.getUserByEmail(req.body.email);
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+
+      // Create user with hashed password
+      const hashedPassword = await hashPassword(req.body.password);
+      const user = await storage.createUser({
+        ...req.body,
+        password: hashedPassword,
+      });
+
+      // Log in the user automatically after registration
+      req.login(user, (err) => {
+        if (err) return next(err);
+        // Return user without password
+        const { password, ...userWithoutPassword } = user;
+        res.status(201).json(userWithoutPassword);
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Error creating user" });
+    }
+  });
+
+  // Login with username/password
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) return next(err);
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Authentication failed" });
+      }
+      req.login(user, (err) => {
+        if (err) return next(err);
+        // Return user without password
+        const { password, ...userWithoutPassword } = user;
+        return res.json(userWithoutPassword);
+      });
+    })(req, res, next);
+  });
+
+  // Logout
+  app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      res.status(200).json({ message: "Logged out successfully" });
+    });
+  });
+
+  // Get current user
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    // Return user without password
+    const { password, ...userWithoutPassword } = req.user as SelectUser;
+    res.json(userWithoutPassword);
+  });
+
+  // Use Microsoft Entra auth routes
+  app.use("/api/auth", microsoftAuthRouter);
+}

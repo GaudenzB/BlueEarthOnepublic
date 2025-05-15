@@ -4,7 +4,7 @@ import { json, urlencoded } from "express";
 import cors from "cors";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { registerRoutes as registerOriginalRoutes } from "./routes";
-import { setupAuth } from "./passport-auth";
+import { setupAuth, authenticate } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply common middleware
@@ -16,13 +16,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupSwaggerDocs(app);
   
   // Set up authentication (this will register the auth routes)
-  const { requireAuth } = setupAuth(app);
+  setupAuth(app);
   
   // Register existing routes
   const httpServer = await registerOriginalRoutes(app);
   
   // Define a simple test endpoint to verify our auth is working
-  app.get('/api/protected', requireAuth, (req, res) => {
+  app.get('/api/protected', authenticate, (req, res) => {
     res.json({ 
       message: 'This is a protected endpoint',
       user: req.user,

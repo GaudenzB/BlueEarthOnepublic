@@ -2,6 +2,7 @@ import { users, type User, type InsertUser, employees, type Employee, type Inser
 import { db } from "./db";
 import { eq, like, or, sql } from "drizzle-orm";
 import session from "express-session";
+import type { SessionStore } from "express-session";
 import connectPg from "connect-pg-simple";
 
 export interface IStorage {
@@ -37,11 +38,11 @@ export interface IStorage {
   hasPermission(userId: number, area: string, permission: 'view' | 'edit' | 'delete'): Promise<boolean>;
   
   // Session store for authentication
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
   
   constructor() {
     // Set up PostgreSQL session store

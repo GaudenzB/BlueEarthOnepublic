@@ -1,0 +1,155 @@
+Hi Replit, please help me implement the following auth setup in my Next.js project:
+
+Install required dependencies:
+
+bash
+Copy
+Edit
+npm install next-auth @next-auth/azure-ad-provider bcrypt zod
+npm install --save-dev @types/bcrypt
+Add these secrets (under Environment Variables):
+
+ini
+Copy
+Edit
+NEXTAUTH_URL=https://<your-repl>.repl.co
+NEXTAUTH_SECRET=<a-long-random-string>
+
+AZURE_AD_CLIENT_ID=<your-client-id>
+AZURE_AD_CLIENT_SECRET=<your-client-secret>
+AZURE_AD_TENANT_ID=<your-tenant-id>
+
+DATABASE_URL=<your-database-url>   # Optional: used for sessions and classic login
+Create the file pages/api/auth/[...nextauth].ts with the following content:
+
+ts
+Copy
+Edit
+import NextAuth from "next-auth";
+import AzureADProvider from "next-auth/providers/azure-ad";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { compare } from "bcrypt";
+import { z } from "zod";
+
+// Schema validation
+const credsSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+export default NextAuth({
+  providers: [
+    AzureADProvider({
+      clientId: process.env.AZURE_AD_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      tenantId: process.env.AZURE_AD_TENANT_ID!,
+    }),
+    CredentialsProvider({
+      name: "Email / Password",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const { email, password } = credsSchema.parse(credentials);
+        // TODO: replace with actual DB call
+        const user = await getUserByEmail(email);
+        if (user && await compare(password, user.passwordHash)) {
+          return { id: user.id, name: user.name, email: user.email };
+        }
+        return null;
+      },
+    }),
+  ],
+  session: { strategy: "database" },
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: { signIn: "/auth/signin" },
+});
+Create the file pages/auth/signin.tsx with this custom login UI:
+
+tsx
+Copy
+Edit
+import { signIn, getCsrfToken } from "next-auth/react";
+
+export default function SignIn({ csrfToken }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full max-w-md rounded-2xl shadow-md bg-white p-6 space-y-6">
+        <h1 className="text-3xl font-semibold text-primary text-center">
+          Welcome to BlueEarthOne
+        </h1>
+        <button
+          onClick={() => signIn("azure-ad")}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg shadow hover:shadow-md transition"
+        >
+          <img src="/azure-icon.svg" alt="" className="w-5 h-5" />
+          Continue with Microsoft
+        </button>
+        <div className="flex items-center">
+          <div className="flex-grow border-t border-border" />
+          <span className="px-2 text-sm text-muted">or</span>
+          <div className="flex-grow border-t border-border" />
+        </div>
+        <form method="post" action="/api/auth/callback/credentials" className="space-y-4">
+          <input name="csrfToken" type="hidden" defaultValue={csrfToken} />
+          <div>
+            <label className="block text-sm font-medium text-secondary">Email</label>
+            <input
+              name="email" type="email" required
+              className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-secondary">Password</label>
+            <input
+              name="password" type="password" required
+              className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition"
+          >
+            Sign in
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+SignIn.getInitialProps = async (ctx) => ({
+  csrfToken: await getCsrfToken(ctx),
+});
+Update tailwind.config.js to include our design tokens:
+
+js
+Copy
+Edit
+const { theme: myTheme } = require("./client/src/theme/theme");
+
+module.exports = {
+  content: ["./pages/**/*.{js,tsx}", "./client/src/**/*.{js,tsx}"],
+  theme: {
+    extend: {
+      colors: myTheme.colors,
+      spacing: myTheme.spacing,
+      borderRadius: myTheme.borderRadius,
+      fontSize: myTheme.fontSize,
+      fontWeight: myTheme.fontWeight,
+      boxShadow: {
+        sm: myTheme.shadow.sm,
+        md: myTheme.shadow.md,
+        lg: myTheme.shadow.lg,
+      },
+    },
+  },
+};
+Finally, run the project:
+
+bash
+Copy
+Edit
+npm run dev
+Then visit /auth/signin and test both login methods.

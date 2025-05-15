@@ -11,7 +11,7 @@ import { requestLoggerMiddleware } from "./middleware/requestLogger";
 import { setupSecurityMiddleware } from "./middleware/security";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { setupSession } from "./middleware/session";
-import { setupAuth } from "./passport-auth"; // Import our new passport auth setup
+import { setupAuth } from "./auth"; // Import our updated auth system
 import { logger } from "./utils/logger";
 import { setupDefaultTenant } from "./utils/setupDefaultTenant";
 import { env, isDevelopment } from "./config/env";
