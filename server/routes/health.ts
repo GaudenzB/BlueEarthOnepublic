@@ -1,183 +1,192 @@
 /**
  * Health Check Routes
  * 
- * These endpoints are used by monitoring services to verify that the application
- * is running correctly and all dependencies are available.
+ * These routes provide different levels of health checks for the application:
+ * - Basic: Simple ping to verify server is running
+ * - Detailed: Includes database connectivity check
+ * - Deep: Comprehensive check of all system components
  */
 
-import { Router, Request, Response } from 'express';
-import { pool } from '../db';
-import fs from 'fs';
-import path from 'path';
+import express, { Request, Response } from 'express';
+import { db, pool } from '../db';
+import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { logger } from '../utils/logger';
+import { sendSuccess, sendError } from '../utils/apiResponse';
+import { sql } from 'drizzle-orm';
 
-// Basic health check that confirms server is running
-const basicHealth = async (req: Request, res: Response) => {
-  const health = {
-    status: 'UP',
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV || 'development',
-    version: getVersion()
-  };
+const router = express.Router();
 
-  return res.status(200).json(health);
-};
-
-// Get the version from package.json
-function getVersion(): string {
+// Basic health check - just confirms the server is running
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const packageJsonPath = path.join(__dirname, '../../package.json');
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    return packageJson.version || 'unknown';
+    const healthData = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+    };
+    
+    return sendSuccess(res, healthData);
   } catch (error) {
-    return 'unknown';
+    logger.error({ error }, 'Health check failed');
+    return sendError(res, 'Health check failed', 500);
   }
-}
+});
 
-// Detailed health check that verifies database connection
-const detailedHealth = async (req: Request, res: Response) => {
-  const health: any = {
-    status: 'UP',
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV || 'development',
-    version: getVersion(),
-    components: {
-      database: {
-        status: 'UNKNOWN'
-      }
-    }
-  };
-
+// Detailed health check - includes database connectivity
+router.get('/detailed', async (req: Request, res: Response) => {
   try {
-    // Check database connection
-    const client = await pool.connect();
+    // Basic health info
+    const healthData = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+      components: {
+        server: { status: 'ok' },
+        database: { status: 'unknown' },
+      }
+    };
+    
+    // Check database connectivity
     try {
-      const result = await client.query('SELECT NOW()');
-      if (result.rows.length > 0) {
-        health.components.database = {
-          status: 'UP',
-          responseTime: '0ms', // You could measure this for more detail
-          timestamp: result.rows[0].now
-        };
-      } else {
-        health.components.database = {
-          status: 'DEGRADED',
-          details: 'Database query returned no results'
-        };
-        health.status = 'DEGRADED';
-      }
-    } finally {
-      client.release();
+      const startTime = Date.now();
+      await pool.query('SELECT 1');
+      const responseTime = Date.now() - startTime;
+      
+      healthData.components.database = { 
+        status: 'ok',
+        responseTime: `${responseTime}ms`
+      };
+    } catch (dbError) {
+      logger.error({ error: dbError }, 'Database health check failed');
+      healthData.components.database = { 
+        status: 'error',
+        message: 'Failed to connect to database'
+      };
+      healthData.status = 'degraded';
     }
+    
+    const httpStatus = healthData.status === 'ok' ? 200 : 
+                        healthData.status === 'degraded' ? 200 : 500;
+    
+    return res.status(httpStatus).json(healthData);
   } catch (error) {
-    health.components.database = {
-      status: 'DOWN',
-      details: error instanceof Error ? error.message : 'Unknown database error'
-    };
-    health.status = 'DOWN';
-    return res.status(503).json(health);
+    logger.error({ error }, 'Detailed health check failed');
+    return sendError(res, 'Detailed health check failed', 500);
   }
+});
 
-  return res.status(200).json(health);
-};
-
-// Deep health check that verifies all critical components
-const deepHealth = async (req: Request, res: Response) => {
-  const health: any = {
-    status: 'UP',
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV || 'development',
-    version: getVersion(),
-    components: {
-      database: {
-        status: 'UNKNOWN'
-      },
-      storage: {
-        status: 'UNKNOWN'
-      }
-    }
-  };
-
-  // Check database connection
+// Deep health check - comprehensive check of all system components
+router.get('/deep', async (req: Request, res: Response) => {
   try {
-    const client = await pool.connect();
+    // Basic health info
+    const healthData = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+      components: {
+        server: { 
+          status: 'ok',
+          memory: process.memoryUsage(),
+          cpuUsage: process.cpuUsage()
+        },
+        database: { status: 'unknown' },
+        storage: { status: 'unknown' },
+      }
+    };
+    
+    // Check database connectivity
     try {
-      // Verify database schema by checking for critical tables
-      const tablesResult = await client.query(`
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name IN ('users', 'documents', 'employees')
-      `);
+      const startTime = Date.now();
+      await db.execute(sql`SELECT 1`);
+      const responseTime = Date.now() - startTime;
       
-      const foundTables = tablesResult.rows.map((row: any) => row.table_name);
-      const requiredTables = ['users', 'documents', 'employees'];
-      const missingTables = requiredTables.filter(table => !foundTables.includes(table));
-      
-      if (missingTables.length === 0) {
-        health.components.database = {
-          status: 'UP',
-          tables: foundTables,
-          details: 'All required tables found'
+      healthData.components.database = { 
+        status: 'ok',
+        responseTime: `${responseTime}ms`,
+        connection: 'active'
+      };
+    } catch (dbError) {
+      logger.error({ error: dbError }, 'Database health check failed');
+      healthData.components.database = { 
+        status: 'error',
+        message: 'Failed to connect to database'
+      };
+      healthData.status = 'degraded';
+    }
+    
+    // Check S3 storage connectivity (if configured)
+    if (process.env.AWS_S3_BUCKET && 
+        process.env.AWS_REGION && 
+        process.env.AWS_ACCESS_KEY_ID && 
+        process.env.AWS_SECRET_ACCESS_KEY) {
+      try {
+        const startTime = Date.now();
+        
+        const s3Client = new S3Client({
+          region: process.env.AWS_REGION,
+          credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+          }
+        });
+        
+        await s3Client.send(new HeadBucketCommand({ 
+          Bucket: process.env.AWS_S3_BUCKET 
+        }));
+        
+        const responseTime = Date.now() - startTime;
+        
+        healthData.components.storage = {
+          status: 'ok',
+          responseTime: `${responseTime}ms`,
+          provider: 'aws-s3',
+          bucket: process.env.AWS_S3_BUCKET
         };
-      } else {
-        health.components.database = {
-          status: 'DEGRADED',
-          tables: foundTables,
-          missing: missingTables,
-          details: 'Missing required tables'
+      } catch (s3Error) {
+        logger.error({ error: s3Error }, 'S3 storage health check failed');
+        
+        // Don't expose sensitive information in error messages
+        healthData.components.storage = {
+          status: 'error',
+          provider: 'aws-s3',
+          message: process.env.NODE_ENV === 'production' ? 
+            'Failed to connect to storage service' : 
+            `S3 Error: ${(s3Error as Error).message}`
         };
-        health.status = 'DEGRADED';
+        
+        healthData.status = 'degraded';
       }
-    } finally {
-      client.release();
+    } else {
+      healthData.components.storage = {
+        status: 'not_configured',
+        message: 'S3 storage not configured'
+      };
+      
+      if (process.env.NODE_ENV === 'production') {
+        healthData.status = 'degraded';
+      }
     }
-  } catch (error) {
-    health.components.database = {
-      status: 'DOWN',
-      details: error instanceof Error ? error.message : 'Unknown database error'
-    };
-    health.status = 'DOWN';
-  }
-
-  // Check storage configuration
-  try {
-    const hasS3Config = process.env.AWS_S3_BUCKET && 
-                        process.env.AWS_REGION && 
-                        process.env.AWS_ACCESS_KEY_ID && 
-                        process.env.AWS_SECRET_ACCESS_KEY;
     
-    health.components.storage = {
-      status: hasS3Config ? 'UP' : 'DEGRADED',
-      type: hasS3Config ? 's3' : 'local',
-      details: hasS3Config ? 'S3 configuration found' : 'Using local storage (not recommended for production)'
-    };
-    
-    if (!hasS3Config && process.env.NODE_ENV === 'production') {
-      health.status = 'DEGRADED';
-    }
-  } catch (error) {
-    health.components.storage = {
-      status: 'DEGRADED',
-      details: error instanceof Error ? error.message : 'Unknown storage error'
-    };
-    
+    // Additional checks for production environments
     if (process.env.NODE_ENV === 'production') {
-      health.status = 'DEGRADED';
+      // Here you would add additional production-specific health checks
+      // For example: cache servers, message queues, etc.
     }
+    
+    const httpStatus = healthData.status === 'ok' ? 200 : 
+                       healthData.status === 'degraded' ? 200 : 500;
+    
+    return res.status(httpStatus).json(healthData);
+  } catch (error) {
+    logger.error({ error }, 'Deep health check failed');
+    return sendError(res, 'Deep health check failed', 500);
   }
-
-  const httpStatus = health.status === 'UP' ? 200 : 
-                    health.status === 'DEGRADED' ? 200 : 503;
-  
-  return res.status(httpStatus).json(health);
-};
-
-// Create router
-const router = Router();
-
-// Register health check routes
-router.get('/health', basicHealth);
-router.get('/health/detailed', detailedHealth);
-router.get('/health/deep', deepHealth);
+});
 
 export default router;
