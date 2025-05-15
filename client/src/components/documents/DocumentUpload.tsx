@@ -562,8 +562,17 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               console.log('Added Authorization header to fetch request');
             }
             
-            console.log('Starting fetch upload attempt...');
-            const response = await fetch('/api/documents', {
+            // Use development endpoint in dev mode for better testing
+            const fetchUploadEndpoint = import.meta.env.DEV ? 
+              '/api/documents/dev-upload' : 
+              '/api/documents';
+              
+            console.log('Starting fetch upload attempt...', {
+              endpoint: fetchUploadEndpoint,
+              isDev: import.meta.env.DEV
+            });
+            
+            const response = await fetch(fetchUploadEndpoint, {
               method: 'POST',
               headers,
               body: fetchFormData,
