@@ -295,7 +295,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         // Log right before sending
         console.log("About to send FormData", {
           formDataHasFile: formData.has('file'),
-          token: token ? "Present" : "Missing"
+          usingCookieAuth: true
         });
         
         // Send the request with FormData
