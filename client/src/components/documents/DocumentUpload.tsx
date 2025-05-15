@@ -335,16 +335,17 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
 
       try {
         // Debug any authentication issues
-        console.log('Authentication status:', { 
+        const authStatus = { 
           authCookie: document.cookie.includes('accessToken'),
           sessionCookie: document.cookie.includes('connect.sid'),
           usingCookieAuth: true
-        });
+        };
+        console.log('Authentication status:', authStatus);
         
         // Development-only: Check if we need to auto-authenticate
-        if (process.env.NODE_ENV !== 'production' && 
-            !document.cookie.includes('accessToken') && 
-            !document.cookie.includes('connect.sid')) {
+        if ((process.env['NODE_ENV'] !== 'production' || import.meta.env.DEV) && 
+            !authStatus.authCookie && 
+            !authStatus.sessionCookie) {
           
           console.log('No authentication detected, attempting dev auto-login...');
           
@@ -361,12 +362,35 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             if (devLoginResponse.ok) {
               const authData = await devLoginResponse.json();
               console.log('Development auto-login successful', authData);
-              // No need to store token in localStorage as it's set in the cookie
+              
+              // Wait a moment for cookies to be set
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              // Verify cookies were set
+              const postLoginAuthStatus = {
+                authCookie: document.cookie.includes('accessToken'),
+                sessionCookie: document.cookie.includes('connect.sid')
+              };
+              console.log('Post-login auth status:', postLoginAuthStatus);
+              
+              if (!postLoginAuthStatus.authCookie && !postLoginAuthStatus.sessionCookie) {
+                console.warn('Auto-login succeeded but cookies were not set properly');
+              }
             } else {
               console.error('Development auto-login failed', await devLoginResponse.text());
+              toast({
+                title: "Authentication Error",
+                description: "Failed to auto-authenticate in development mode. Document upload may fail.",
+                variant: "destructive",
+              });
             }
           } catch (devLoginError) {
             console.error('Error in development auto-login:', devLoginError);
+            toast({
+              title: "Authentication Error",
+              description: "Failed to connect to authentication service.",
+              variant: "destructive",
+            });
           }
         }
         
@@ -575,7 +599,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                 <FormField
                   control={form.control}
                   name="file"
-                  render={({ field: { value, onChange, ...field } }) => (
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Upload File</FormLabel>
                       <FormControl>
@@ -590,13 +614,17 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                           onDrop={handleDrop}
                           onClick={() => fileRef.current?.click()}
                         >
+                          {/* Use our own ref instead of the field's ref to avoid duplication */}
                           <input
                             type="file"
                             ref={fileRef}
                             className="hidden"
-                            onChange={handleFileSelection}
+                            onChange={(e) => {
+                              handleFileSelection(e);
+                              field.onChange(e); // Still notify the form
+                            }}
                             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg"
-                            {...field}
+                            name={field.name}
                           />
 
                           {selectedFile ? (
