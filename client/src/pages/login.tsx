@@ -177,8 +177,7 @@ export default function Login() {
             <div className="text-sm text-center mt-4">
               <Button 
                 variant="link" 
-                className="p-0 h-auto font-normal"
-                style={{ color: colors.primary.light }}
+                className="p-0 h-auto font-normal text-link hover:text-link/90"
                 asChild
               >
                 <Link href="/forgot-password">

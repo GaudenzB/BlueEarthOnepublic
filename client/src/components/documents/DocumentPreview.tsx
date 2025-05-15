@@ -223,6 +223,7 @@ export function DocumentPreview({
               type="primary" 
               icon={<EyeOutlined />} 
               onClick={onViewFullScreen}
+              className="bg-link hover:bg-link/90"
             >
               View Document
             </Button>
@@ -230,6 +231,7 @@ export function DocumentPreview({
             <Button 
               icon={<DownloadOutlined />} 
               onClick={onDownload}
+              className="text-link hover:text-link/90 border-link hover:border-link/90"
             >
               Download to View
             </Button>
