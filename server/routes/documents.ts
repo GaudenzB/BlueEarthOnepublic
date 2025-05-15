@@ -129,7 +129,52 @@ const getDocumentsSchema = z.object({
  * @desc Upload a new document
  * @access Authenticated users
  */
-router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
+/**
+ * Custom middleware for document uploads that tries multiple auth approaches
+ * This is used as a fallback if standard authentication fails
+ */
+const documentUploadAuth = async (req: Request, res: Response, next: NextFunction) => {
+  // If request already has a user (from previous middleware), continue
+  if (req.user) {
+    return next();
+  }
+  
+  // Check for session authentication
+  if (req.session && req.session.user && req.session.user.id) {
+    logger.info('Document upload: Using session authentication fallback', {
+      sessionUserId: req.session.user.id
+    });
+    
+    try {
+      // Try to get user from database using session userId
+      const user = await userRepository.findById(req.session.user.id);
+      if (user) {
+        // Set user in request
+        req.user = {
+          id: user.id,
+          username: user.username || '',
+          email: user.email || '',
+          role: user.role || 'user'
+        };
+        return next();
+      }
+    } catch (err) {
+      logger.error('Error getting user by ID from session', { error: err });
+    }
+  }
+  
+  // If we get here, both token and session auth failed
+  logger.error('Document upload authentication completely failed', {
+    hasSession: !!req.session,
+    hasSessionUser: !!(req.session && req.session.user),
+    path: req.path
+  });
+  
+  // Fall back to the standard auth middleware response
+  return apiResponse.unauthorized(res, "Authentication required");
+};
+
+router.post('/', authenticate, documentUploadAuth, tenantContext, (req: Request, res: Response) => {
   singleFileUpload(req, res, async (err) => {
     try {
       // Enhanced debug logging to help diagnose upload issues
