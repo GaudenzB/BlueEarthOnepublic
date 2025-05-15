@@ -6,6 +6,11 @@ interface LoginCredentials {
   password: string;
 }
 
+interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+}
+
 interface User {
   id: number;
   username: string;
@@ -167,10 +172,32 @@ export function useAuth() {
     ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username
     : '';
 
+  // Function to set tokens directly (used for SSO flows)
+  const setTokens = async (tokens: AuthTokens) => {
+    try {
+      // Store the access token
+      localStorage.setItem("token", tokens.accessToken);
+      
+      // Store refresh token if provided
+      if (tokens.refreshToken) {
+        localStorage.setItem("refreshToken", tokens.refreshToken);
+      }
+      
+      // Manually trigger a user data fetch to update the UI
+      await refetch();
+      
+      return true;
+    } catch (error) {
+      console.error("Error setting tokens:", error);
+      return false;
+    }
+  };
+
   return {
     user,
     login,
     logout,
+    setTokens,
     isLoading,
     error,
     isAuthenticated,

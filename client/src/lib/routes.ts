@@ -10,6 +10,8 @@ export const AUTH_ROUTES = {
   LOGIN: '/login',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password', // :token is appended dynamically
+  ENTRA_COMPLETE: '/auth/entra-complete',
+  ENTRA_ERROR: '/auth/entra-error',
 };
 
 // Main Routes
@@ -103,5 +105,7 @@ export const getNavItems = (isSuperAdmin: boolean) => {
 export const isAuthRoute = (path: string): boolean => {
   return path === AUTH_ROUTES.LOGIN || 
     path === AUTH_ROUTES.FORGOT_PASSWORD || 
-    path.startsWith(`${AUTH_ROUTES.RESET_PASSWORD}/`);
+    path.startsWith(`${AUTH_ROUTES.RESET_PASSWORD}/`) ||
+    path === AUTH_ROUTES.ENTRA_COMPLETE ||
+    path === AUTH_ROUTES.ENTRA_ERROR;
 };
