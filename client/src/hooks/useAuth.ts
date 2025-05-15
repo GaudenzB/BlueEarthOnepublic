@@ -166,15 +166,12 @@ export function useAuth() {
     ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username
     : '';
 
-  // Function to set tokens directly (used for SSO flows)
-  // Note: This function is now primarily used to trigger a refetch
-  // after a successful authentication flow that sets cookies server-side
+  // Function to refresh user data after successful authentication
+  // This is primarily used after a successful SSO flow that sets cookies server-side
+  // We've removed the tokens parameter as we're not storing tokens in localStorage anymore
   const setTokens = async () => {
     try {
-      // No need to store tokens in localStorage anymore
-      // Tokens are now handled via HttpOnly cookies
-      
-      // Manually trigger a user data fetch to update the UI
+      // Manually trigger a user data fetch to update the UI after cookie-based auth
       await refetch();
       
       return true;

@@ -17,7 +17,7 @@ export default function EntraComplete() {
 
   useEffect(() => {
     // Function to process tokens from the URL hash
-    const processTokens = () => {
+    const processTokens = async () => {
       try {
         // Extract the tokens from the URL hash
         const hash = window.location.hash.substring(1);
@@ -29,11 +29,27 @@ export default function EntraComplete() {
           throw new Error('Invalid or missing authentication tokens');
         }
 
-        // Store the tokens
-        setTokens({
-          accessToken,
-          refreshToken,
+        // Exchange the tokens for HttpOnly cookies via an API call
+        const response = await fetch('/api/auth/entra/exchange', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken,
+            refreshToken,
+          }),
+          credentials: 'include', // Important to receive and store cookies
         });
+
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Token exchange failed');
+        }
+
+        // Refresh user data since cookies are now set
+        await setTokens();
 
         // Show success message
         toast({

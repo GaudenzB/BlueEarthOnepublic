@@ -9,6 +9,8 @@ import {
 } from '../services/entraIdService';
 import { logger } from '../utils/logger';
 import { generateUserToken } from '../auth';
+import { setAuthCookies } from '../utils/cookieManager';
+import { wrapHandler } from '../utils/errorHandling';
 
 const router = Router();
 
@@ -72,75 +74,94 @@ router.get('/login', requireEntraIdEnabled, (req: Request, res: Response) => {
 });
 
 // Callback route for Microsoft Entra ID
-router.get('/callback', requireEntraIdEnabled, async (req: Request, res: Response) => {
-  try {
-    // Verify state parameter to prevent CSRF
-    const { state } = req.query as { state: string };
-    const storedState = req.session?.entraIdState;
-    
-    if (!state || !storedState || state !== storedState) {
-      throw new Error('Invalid state parameter');
-    }
-    
-    // Clear session state
-    if (req.session) {
-      delete req.session.entraIdState;
-    }
-    
-    // Get authorization code and exchange for tokens
-    const tokenSet = await handleCallback(req, {
-      clientId: env.ENTRA_ID_CLIENT_ID!,
-      clientSecret: env.ENTRA_ID_CLIENT_SECRET!,
-      tenantId: env.ENTRA_ID_TENANT_ID!,
-      redirectUri: env.ENTRA_ID_REDIRECT_URI!,
-      scopes: env.ENTRA_ID_SCOPES.split(' ')
-    });
-    
-    // Get user info from tokens
-    const entraIdUser = await getUserInfo(tokenSet);
-    
-    // Find or create user in our database
-    const user = await findOrCreateUser(entraIdUser);
-    
-    // Generate JWT tokens for our application
-    const tokens = generateUserToken({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role
-    });
-    
-    // Set JWT in cookie or send back to client
-    // For SPA applications, return the token in the response
-    if (user.isNewUser) {
-      logger.info('New user created from Microsoft Entra ID login', { 
-        userId: user.id, 
-        email: user.email 
-      });
-    } else {
-      logger.info('Existing user logged in with Microsoft Entra ID', { 
-        userId: user.id, 
-        email: user.email 
-      });
-    }
-    
-    // Redirect with token as URL fragment
-    // This is a common pattern for SPA authentication flows
-    // The client-side app will read the token from the URL fragment
-    const frontendUrl = new URL(env.API_URL || 'http://localhost:3000');
-    frontendUrl.pathname = '/auth/entra/complete';
-    frontendUrl.hash = `token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
-    
-    res.redirect(frontendUrl.toString());
-  } catch (error) {
-    logger.error('Microsoft Entra ID authentication callback error', { error });
-    
-    // Redirect to error page
-    const frontendUrl = new URL(env.API_URL || 'http://localhost:3000');
-    frontendUrl.pathname = '/auth/entra/error';
-    res.redirect(frontendUrl.toString());
+router.get('/callback', requireEntraIdEnabled, wrapHandler(async (req: Request, res: Response) => {
+  // Verify state parameter to prevent CSRF
+  const { state } = req.query as { state: string };
+  const storedState = req.session?.entraIdState;
+  
+  if (!state || !storedState || state !== storedState) {
+    throw new Error('Invalid state parameter');
   }
-});
+  
+  // Clear session state
+  if (req.session) {
+    delete req.session.entraIdState;
+  }
+  
+  // Get authorization code and exchange for tokens
+  const tokenSet = await handleCallback(req, {
+    clientId: env.ENTRA_ID_CLIENT_ID!,
+    clientSecret: env.ENTRA_ID_CLIENT_SECRET!,
+    tenantId: env.ENTRA_ID_TENANT_ID!,
+    redirectUri: env.ENTRA_ID_REDIRECT_URI!,
+    scopes: env.ENTRA_ID_SCOPES.split(' ')
+  });
+  
+  // Get user info from tokens
+  const entraIdUser = await getUserInfo(tokenSet);
+  
+  // Find or create user in our database
+  const user = await findOrCreateUser(entraIdUser);
+  
+  // Generate JWT tokens for our application
+  const tokens = generateUserToken({
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role
+  });
+  
+  // Set authentication cookies
+  setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+  
+  if (user.isNewUser) {
+    logger.info('New user created from Microsoft Entra ID login', { 
+      userId: user.id, 
+      email: user.email 
+    });
+  } else {
+    logger.info('Existing user logged in with Microsoft Entra ID', { 
+      userId: user.id, 
+      email: user.email 
+    });
+  }
+  
+  // Redirect to success page - cookies are already set
+  const frontendUrl = new URL(env.API_URL || 'http://localhost:3000');
+  frontendUrl.pathname = '/auth/entra/complete';
+  
+  res.redirect(frontendUrl.toString());
+}));
+
+// Token exchange route for client-side handling
+// This is needed for compatibility with our previous token approach
+router.post('/exchange', requireEntraIdEnabled, wrapHandler(async (req: Request, res: Response) => {
+  const { accessToken, refreshToken } = req.body;
+  
+  if (!accessToken || !refreshToken) {
+    return res.status(400).json({
+      success: false,
+      message: 'Both access token and refresh token are required'
+    });
+  }
+  
+  try {
+    // Set the tokens as secure HttpOnly cookies
+    setAuthCookies(res, accessToken, refreshToken);
+    
+    // Return success message
+    return res.status(200).json({
+      success: true,
+      message: 'Authentication tokens exchanged successfully',
+    });
+  } catch (error) {
+    logger.error('Failed to exchange Entra ID tokens', { error });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to exchange tokens'
+    });
+  }
+}));
 
 // Route to check if Microsoft Entra ID is enabled and configured
 router.get('/status', (req: Request, res: Response) => {
