@@ -23,9 +23,11 @@ const envSchema = z.object({
   DATABASE_TIMEOUT: z.coerce.number().int().positive().default(5000), // 5 seconds
   
   // JWT configuration
-  JWT_SECRET: z.string().min(32, 'JWT secret should be at least 32 characters'),
+  JWT_SECRET: z.string().min(32, 'JWT secret should be at least 32 characters').default('default_jwt_secret_with_minimum_required_length_security'),
   JWT_EXPIRY: z.string().default('24h'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
+  JWT_ACCESS_TOKEN_EXPIRY_SECONDS: z.coerce.number().default(3600),
+  JWT_REFRESH_TOKEN_EXPIRY_SECONDS: z.coerce.number().default(604800),
   
   // Session configuration
   SESSION_SECRET: z.string().default('development-session-secret'),

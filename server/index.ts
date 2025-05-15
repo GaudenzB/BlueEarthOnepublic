@@ -1,3 +1,6 @@
+// Load environment variables before any other imports
+import './utils/env-loader.js';
+
 import express, { type Express } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
