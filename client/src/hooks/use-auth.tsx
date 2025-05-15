@@ -23,6 +23,7 @@ type AuthContextType = {
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
   microsoftAuthStatus: MicrosoftAuthStatus | null;
   isMicrosoftAuthStatusLoading: boolean;
+  refetchUser: () => Promise<any>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password"> & { rememberMe?: boolean };
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch: refetchUser,
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
@@ -124,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerMutation,
         microsoftAuthStatus: microsoftAuthStatus || null,
         isMicrosoftAuthStatusLoading,
+        refetchUser,
       }}
     >
       {children}
