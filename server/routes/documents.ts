@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../auth';
 import { tenantContext } from '../middleware/tenantContext';
 import { singleFileUpload, sanitizeFile } from '../middleware/upload';
@@ -8,12 +8,24 @@ import { documentProcessor } from '../services/documentProcessor';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
+import { apiResponse } from '../utils/apiResponse';
+import { userRepository } from '../repositories/userRepository';
 import { 
   documentTypeZod, 
   processingStatusZod,
   type InsertDocument,
   type DocumentType
 } from '../../shared/schema/documents/documents';
+
+// Function to get user by ID for session-based auth fallback
+const getUserById = async (id: number) => {
+  try {
+    return await userRepository.findById(id);
+  } catch (error) {
+    logger.error('Error in getUserById', { error, userId: id });
+    return null;
+  }
+};
 
 // Get the JWT secret key - use same approach as in server/auth.ts
 const JWT_SECRET = process.env.JWT_SECRET || (
@@ -55,6 +67,51 @@ const uploadDocumentSchema = z.object({
   retentionDate: z.string().datetime().optional(),
   customMetadata: z.record(z.string(), z.any()).optional(),
 });
+
+/**
+ * Custom middleware for document uploads that tries multiple auth approaches
+ * This is used as a fallback if standard authentication fails
+ */
+const documentUploadAuth = async (req: Request, res: Response, next: NextFunction) => {
+  // If request already has a user (from previous middleware), continue
+  if (req.user) {
+    return next();
+  }
+  
+  // Check for session authentication
+  if (req.session && req.session.userId) {
+    logger.info('Document upload: Using session authentication fallback', {
+      sessionUserId: req.session.userId
+    });
+    
+    try {
+      // Try to get user from database using session userId
+      const user = await getUserById(req.session.userId);
+      if (user) {
+        // Set user in request
+        req.user = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role
+        };
+        return next();
+      }
+    } catch (err) {
+      logger.error('Error getting user by ID from session', { error: err });
+    }
+  }
+  
+  // If we get here, both token and session auth failed
+  logger.error('Document upload authentication completely failed', {
+    hasSession: !!req.session,
+    hasSessionUserId: !!(req.session && req.session.userId),
+    path: req.path
+  });
+  
+  // Fall back to the standard auth middleware response
+  return apiResponse.unauthorized(res, "Authentication required");
+};
 
 // Schema for document search/filter
 const getDocumentsSchema = z.object({

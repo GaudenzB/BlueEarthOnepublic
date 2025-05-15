@@ -130,6 +130,18 @@ export const authenticate = (
   } catch (err) {
     const error = err as Error;
     
+    // Enhanced error logging for document uploads
+    if (isDocumentUpload) {
+      logger.error('Document upload authentication failed during token verification', {
+        path: req.path,
+        method: req.method,
+        errorName: error.name,
+        errorMessage: error.message,
+        hasAuthHeader: !!req.header("Authorization"),
+        hasCookies: !!req.cookies?.accessToken
+      });
+    }
+    
     // Provide specific error responses based on verification failure type
     if (error.name === 'TokenExpiredError') {
       apiResponse.unauthorized(res, "Authentication session expired");
