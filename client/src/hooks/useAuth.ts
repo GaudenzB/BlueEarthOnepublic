@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -51,16 +52,34 @@ export function useAuth() {
   // because we're using HttpOnly cookies that are automatically 
   // sent with requests
   
-  // Query to fetch the current user
+  // Check for existing tokens via a cookie before fetching
+  const [tokenExists, setTokenExists] = React.useState<boolean>(false);
+
+  // Initialize tokenExists by checking for the existence of the auth cookie on mount
+  React.useEffect(() => {
+    const detectExistingLogin = () => {
+      // Check documents.cookie for the presence of accessToken cookie
+      // The actual token value is not accessible via JS due to HttpOnly, but
+      // we can check if the name exists in the cookie string
+      const hasCookie = document.cookie.split(';').some(item => 
+        item.trim().startsWith('accessToken='));
+      setTokenExists(hasCookie);
+    };
+    
+    detectExistingLogin();
+  }, []);
+
+  // Query to fetch the current user, but only if we might be logged in
   const { data, isLoading, error, refetch } = useQuery<MeResponse | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    refetchInterval: 30 * 60 * 1000, // Increase from 5 minutes to 30 minutes to reduce polling
+    staleTime: Infinity, // Don't auto-refresh, we'll manually refresh when needed
+    gcTime: Infinity, // Don't garbage collect this query
+    refetchInterval: false, // No polling
     refetchOnWindowFocus: false, // Don't refetch on window focus
     refetchOnReconnect: false, // Don't refetch on reconnect
-    refetchOnMount: false, // Prevent refetching on component mount
-    // Only fetch if the component is visible, this will prevent background polling
+    refetchOnMount: false, // Don't refetch on component mount
+    enabled: tokenExists, // Only run the query if we might have a login
     networkMode: 'online', // Only fetch when online
   });
   

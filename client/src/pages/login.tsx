@@ -15,13 +15,18 @@ export default function Login() {
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const usernameInputRef = React.useRef<HTMLInputElement>(null);
+  const hasFocusedRef = React.useRef(false);
   
-  // Set focus once when component mounts
+  // Set focus once when component mounts and prevent refocus
   React.useEffect(() => {
-    if (usernameInputRef.current) {
+    // Only focus once per component lifecycle
+    if (!hasFocusedRef.current && usernameInputRef.current) {
       // Use a slight delay to ensure focus after any re-renders
       const timer = setTimeout(() => {
-        usernameInputRef.current?.focus();
+        if (usernameInputRef.current) {
+          usernameInputRef.current.focus();
+          hasFocusedRef.current = true; // Mark that we've focused
+        }
       }, 100);
       return () => clearTimeout(timer);
     }
