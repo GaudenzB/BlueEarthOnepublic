@@ -122,23 +122,35 @@ const documentUploadAuth = async (req: Request, res: Response, next: NextFunctio
   }
   
   // DEVELOPMENT ONLY - Auto-authenticate as admin user in development
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env['NODE_ENV'] !== 'production') {
     try {
       // Find admin user for dev environment
       const adminUser = await userRepository.findByUsername('admin');
       if (adminUser) {
         logger.warn('DEV MODE: Auto-authenticating as admin user', {
           userId: adminUser.id,
-          username: adminUser.username
+          username: adminUser.username,
+          method: 'Development auto-auth fallback'
         });
         
+        // Set user in request
         req.user = {
           id: adminUser.id,
           username: adminUser.username || '',
           email: adminUser.email || '',
           role: adminUser.role || 'user'
         };
+        
+        // Also set session for future requests
+        if (req.session) {
+          req.session.userId = adminUser.id;
+          req.session.userRole = adminUser.role;
+          logger.debug('DEV MODE: Set session userId for document uploads');
+        }
+        
         return next();
+      } else {
+        logger.error('DEV MODE: Admin user not found for auto-authentication');
       }
     } catch (err) {
       logger.error('Error in development auto-authentication', { error: err });

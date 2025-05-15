@@ -449,6 +449,19 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            
+            // Special handling for authentication errors
+            if (response.status === 401) {
+              console.error('Authentication error during document upload');
+              throw new Error('Authentication required. Please try logging in again.');
+            }
+            
+            // Special handling for server errors
+            if (response.status >= 500) {
+              console.error('Server error during document upload:', response.status);
+              throw new Error('Server error occurred. Please try again later.');
+            }
+            
             throw new Error(errorData.message || `Upload failed with status ${response.status}`);
           }
           
@@ -472,11 +485,28 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
     } catch (error: any) {
       // Set error state
       setUploadStage('error');
-      setErrorDetails(error.message || "An unknown error occurred");
+      const errorMessage = error.message || "An unknown error occurred";
+      setErrorDetails(errorMessage);
+      
+      // More specific error messages for common issues
+      let toastTitle = "Upload failed";
+      let toastDescription = errorMessage;
+      
+      // Check for specific types of errors
+      if (errorMessage.includes('Authentication required')) {
+        toastTitle = "Authentication error";
+        toastDescription = "Your session may have expired. Please try logging in again.";
+      } else if (errorMessage.includes('Network Error') || errorMessage.includes('fetch failed')) {
+        toastTitle = "Network error";
+        toastDescription = "Please check your internet connection and try again.";
+      } else if (errorMessage.includes('Server error')) {
+        toastTitle = "Server error";
+        toastDescription = "Our servers are experiencing issues. Please try again later.";
+      }
       
       toast({
-        title: "Upload failed",
-        description: error.message || "There was an error uploading your document",
+        title: toastTitle,
+        description: toastDescription,
         variant: "destructive",
       });
     } finally {
