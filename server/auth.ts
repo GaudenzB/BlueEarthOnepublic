@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { User, UserRole } from "@shared/schema";
 import { apiResponse } from "./utils/apiResponse";
 import { generateToken, verifyToken, revokeToken, TokenType } from "./utils/jwtConfig";
+import { roleHelpers } from './repositories/documentRepository';
 
 /**
  * Enhanced Authentication System
@@ -161,7 +162,8 @@ export const isSuperAdmin = (req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  if (req.user.role !== "superadmin") {
+  // Use roleHelpers for consistent role checking
+  if (!roleHelpers.isSuperAdmin(req.user.role as UserRole)) {
     apiResponse.forbidden(
       res, 
       "This operation requires superadmin privileges"
