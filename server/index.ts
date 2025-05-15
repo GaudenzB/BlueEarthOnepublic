@@ -37,8 +37,8 @@ async function bootstrap(): Promise<void> {
     
     // Apply essential middleware
     setupSecurityMiddleware(app);
-    setupSession(app);
-    setupAuth(app); // Initialize Passport authentication after session setup
+    // We're using our passport-auth.ts setup which includes session handling
+    setupAuth(app); // Initialize Passport with its own session setup
     app.use(requestLoggerMiddleware);
     
     // Database initialization
