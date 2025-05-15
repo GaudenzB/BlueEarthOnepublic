@@ -341,6 +341,35 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           usingCookieAuth: true
         });
         
+        // Development-only: Check if we need to auto-authenticate
+        if (process.env.NODE_ENV !== 'production' && 
+            !document.cookie.includes('accessToken') && 
+            !document.cookie.includes('connect.sid')) {
+          
+          console.log('No authentication detected, attempting dev auto-login...');
+          
+          try {
+            // Call the development login endpoint to get a valid session
+            const devLoginResponse = await fetch('/api/auth/dev-login', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (devLoginResponse.ok) {
+              const authData = await devLoginResponse.json();
+              console.log('Development auto-login successful', authData);
+              // No need to store token in localStorage as it's set in the cookie
+            } else {
+              console.error('Development auto-login failed', await devLoginResponse.text());
+            }
+          } catch (devLoginError) {
+            console.error('Error in development auto-login:', devLoginError);
+          }
+        }
+        
         // First try with XMLHttpRequest for better progress reporting
         try {
           // Await the upload to complete with a timeout

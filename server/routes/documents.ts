@@ -10,6 +10,7 @@ import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { apiResponse } from '../utils/apiResponse';
 import { userRepository } from '../repositories/userRepository';
+import { generateToken, TokenType } from '../utils/jwtConfig';
 import { 
   documentTypeZod, 
   processingStatusZod,
@@ -166,12 +167,14 @@ const getDocumentsSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
+// Move the dev-login route to separate authRoutes.ts file
+// We'll create this route there
+
 /**
  * @route POST /api/documents
  * @desc Upload a new document
  * @access Authenticated users
  */
-
 router.post('/', authenticate, documentUploadAuth, tenantContext, (req: Request, res: Response) => {
   singleFileUpload(req, res, async (err) => {
     try {
