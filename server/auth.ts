@@ -34,12 +34,34 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   try {
-    const [hashed, salt] = stored.split(".");
-    if (!hashed || !salt) return false;
+    // Check if the stored password is in the correct format
+    const parts = stored.split(".");
+    if (parts.length !== 2) {
+      console.error("Invalid stored password format");
+      return false;
+    }
     
-    const hashedBuf = Buffer.from(hashed, "hex");
-    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    return timingSafeEqual(hashedBuf, suppliedBuf);
+    const [hashed, salt] = parts;
+    if (!hashed || !salt) {
+      console.error("Missing hash or salt");
+      return false;
+    }
+    
+    try {
+      const hashedBuf = Buffer.from(hashed, "hex");
+      const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+      
+      // Make sure the buffers are of the same length to avoid the "Input buffers must have the same byte length" error
+      if (hashedBuf.length !== suppliedBuf.length) {
+        console.error(`Buffer length mismatch: ${hashedBuf.length} vs ${suppliedBuf.length}`);
+        return false;
+      }
+      
+      return timingSafeEqual(hashedBuf, suppliedBuf);
+    } catch (error) {
+      console.error("Error in password comparison:", error);
+      return false;
+    }
   } catch (error) {
     console.error("Error comparing passwords:", error);
     return false;
@@ -124,20 +146,53 @@ export function setupAuth(app: Express): void {
 
   // Login API endpoint
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error | null, user: SelectUser | false, _info: { message: string } | undefined) => {
-      if (err) {
-        return next(err);
+    try {
+      // Make sure we have username and password in the request
+      if (!req.body.username || !req.body.password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Username and password are required" 
+        });
       }
-      if (!user) {
-        return res.status(401).json({ error: "Invalid username or password" });
-      }
-      req.login(user, (err) => {
+      
+      passport.authenticate("local", (err: Error | null, user: SelectUser | false, info: { message: string } | undefined) => {
         if (err) {
-          return next(err);
+          console.error("Authentication error:", err);
+          return res.status(500).json({ 
+            success: false, 
+            message: "An error occurred during authentication" 
+          });
         }
-        return res.status(200).json(user);
+        
+        if (!user) {
+          return res.status(401).json({ 
+            success: false, 
+            message: info?.message || "Invalid username or password" 
+          });
+        }
+        
+        req.login(user, (loginErr) => {
+          if (loginErr) {
+            console.error("Login error:", loginErr);
+            return res.status(500).json({ 
+              success: false, 
+              message: "An error occurred during login" 
+            });
+          }
+          
+          return res.status(200).json({
+            success: true,
+            user
+          });
+        });
+      })(req, res, next);
+    } catch (error) {
+      console.error("Unexpected login error:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "An unexpected error occurred" 
       });
-    })(req, res, next);
+    }
   });
 
   // Logout API endpoint

@@ -65,12 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: "include"
       });
       
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(errorText || response.statusText || "Login failed");
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || response.statusText || "Login failed");
       }
       
-      return await response.json();
+      return data.user;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -99,12 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: "include"
       });
       
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(errorText || response.statusText || "Registration failed");
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || response.statusText || "Registration failed");
       }
       
-      return await response.json();
+      return data.user;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
