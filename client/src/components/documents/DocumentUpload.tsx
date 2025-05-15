@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { queryClient } from "@/lib/queryClient";
 import { Progress } from "antd";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DocumentUploadProps {
   isOpen: boolean;
@@ -40,6 +41,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+  
+  // Get authentication information to use for uploads
+  const { isAuthenticated, user } = useAuth();
 
   // Initialize form with react-hook-form and zod validation
   const form = useForm<DocumentUploadFormValues>({
@@ -397,10 +401,14 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         // First try with XMLHttpRequest for better progress reporting
         try {
           // Await the upload to complete with a timeout
+          // Increase timeout to 5 minutes for larger files
+          const timeoutDuration = 300000; // 5 minutes in milliseconds
+          console.log(`Setting upload timeout to ${timeoutDuration/60000} minutes`);
+          
           const uploadPromiseWithTimeout = Promise.race([
             uploadPromise,
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Upload timed out after 2 minutes')), 120000)
+              setTimeout(() => reject(new Error(`Upload timed out after ${timeoutDuration/60000} minutes`)), timeoutDuration)
             )
           ]);
           
