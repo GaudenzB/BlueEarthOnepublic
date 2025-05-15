@@ -40,9 +40,6 @@ interface AuthResponse {
 }
 
 export function useAuth() {
-  // Check if there's a token in localStorage
-  const token = localStorage.getItem("token");
-  
   // Define interface for me endpoint response
   interface MeResponse {
     success: boolean;
@@ -50,7 +47,11 @@ export function useAuth() {
     data: User;
   }
 
-  // Query to fetch the current user, but only if we have a token
+  // We don't need to check for a token in localStorage anymore
+  // because we're using HttpOnly cookies that are automatically 
+  // sent with requests
+  
+  // Query to fetch the current user
   const { data, isLoading, error, refetch } = useQuery<MeResponse | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
@@ -58,16 +59,14 @@ export function useAuth() {
     refetchInterval: 5 * 60 * 1000, // Reduced from 1 minute to 5 minutes to match staleTime
     refetchOnWindowFocus: false, // Don't refetch on window focus
     refetchOnReconnect: false, // Don't refetch on reconnect
-    enabled: !!token, // Only run the query if there's a token
+    // Always enabled, the API will return 401 if not authenticated
   });
   
   // Extract the user from the standardized API response
   const user = data?.data || null;
 
-  // Handle auth errors
-  if (error) {
-    localStorage.removeItem("token");
-  }
+  // No need to handle auth errors by removing tokens from localStorage
+  // since we're using HttpOnly cookies
 
   // Set user in local state
   const setUser = (userData: User) => {
@@ -88,6 +87,8 @@ export function useAuth() {
         const response = await apiRequest<any>("/api/auth/login", {
           method: "POST",
           body: JSON.stringify(credentials),
+          // Set credentials: 'include' to include cookies in the request
+          credentials: 'include',
         });
         
         // Log entire response for debugging
@@ -106,23 +107,18 @@ export function useAuth() {
           throw new Error("Response missing data property");
         }
         
-        // Extract token and user from the correct response structure
-        const { token, user } = response.data;
+        // Extract user from the response structure
+        // Token is now handled via HttpOnly cookies
+        const { user } = response.data;
         
-        // Log token and user for debugging
-        console.log("Token received:", !!token);
+        // Log user data for debugging
         console.log("User data received:", !!user);
-        
-        if (!token) {
-          throw new Error("Token missing from server response");
-        }
         
         if (!user) {
           throw new Error("User data missing from server response");
         }
         
-        // Store token in local storage
-        localStorage.setItem("token", token);
+        // No need to store token in localStorage anymore
         
         return user;
       } catch (error) {
@@ -139,20 +135,18 @@ export function useAuth() {
   // Logout function with server-side token revocation
   const logout = useMutation({
     mutationFn: async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          // Call the server logout endpoint to revoke the token
-          await apiRequest("/api/auth/logout", {
-            method: "POST"
-          });
-        } catch (error) {
-          console.error("Error during logout:", error);
-          // Continue with local logout even if server logout fails
-        }
+      try {
+        // Call the server logout endpoint to clear cookies and revoke the token server-side
+        await apiRequest("/api/auth/logout", {
+          method: "POST",
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error("Error during logout:", error);
+        // Continue with local logout even if server logout fails
       }
+      
       // Local cleanup
-      localStorage.removeItem("token");
       queryClient.setQueryData(["/api/auth/me"], null);
       queryClient.invalidateQueries();
     }
@@ -173,22 +167,19 @@ export function useAuth() {
     : '';
 
   // Function to set tokens directly (used for SSO flows)
-  const setTokens = async (tokens: AuthTokens) => {
+  // Note: This function is now primarily used to trigger a refetch
+  // after a successful authentication flow that sets cookies server-side
+  const setTokens = async () => {
     try {
-      // Store the access token
-      localStorage.setItem("token", tokens.accessToken);
-      
-      // Store refresh token if provided
-      if (tokens.refreshToken) {
-        localStorage.setItem("refreshToken", tokens.refreshToken);
-      }
+      // No need to store tokens in localStorage anymore
+      // Tokens are now handled via HttpOnly cookies
       
       // Manually trigger a user data fetch to update the UI
       await refetch();
       
       return true;
     } catch (error) {
-      console.error("Error setting tokens:", error);
+      console.error("Error refreshing user data:", error);
       return false;
     }
   };

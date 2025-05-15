@@ -13,6 +13,7 @@ import { errorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { apiResponse } from '../utils/apiResponse';
+import { setAuthCookies, clearAuthCookies } from '../utils/cookieManager';
 const { wrapHandler } = errorHandling;
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../email/sendgrid';
@@ -68,7 +69,10 @@ const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   }
   
   // Generate tokens
-  const { accessToken: token } = generateUserToken(user);
+  const { accessToken, refreshToken } = generateUserToken(user);
+  
+  // Set authentication cookies
+  setAuthCookies(res, accessToken, refreshToken);
   
   // Log successful login
   logger.info({ 
@@ -77,7 +81,7 @@ const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
     userId: user.id 
   });
   
-  // Return success with user info and token
+  // Return success with user info but no token in response body
   return apiResponse.success(res, { 
     user: {
       id: user.id,
@@ -86,8 +90,7 @@ const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-    },
-    token
+    }
   }, "Login successful");
 });
 
@@ -133,9 +136,12 @@ const register = errorHandling.wrapHandler(async (req: Request, res: Response) =
   });
   
   // Generate tokens for auto-login
-  const { accessToken: token } = generateUserToken(newUser);
+  const { accessToken, refreshToken } = generateUserToken(newUser);
   
-  // Return success with user info and token
+  // Set authentication cookies
+  setAuthCookies(res, accessToken, refreshToken);
+  
+  // Return success with user info but no token in response body
   return apiResponse.created(res, {
     user: {
       id: newUser.id,
@@ -144,14 +150,13 @@ const register = errorHandling.wrapHandler(async (req: Request, res: Response) =
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       role: newUser.role,
-    },
-    token
+    }
   }, "Registration successful");
 });
 
 /**
  * Logout endpoint handler
- * Revokes the current JWT token
+ * Revokes the current JWT token and clears authentication cookies
  */
 const logout = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   // Extract token from request
@@ -168,6 +173,9 @@ const logout = errorHandling.wrapHandler(async (req: Request, res: Response) => 
       userId: (req as any).user?.id 
     });
   }
+  
+  // Clear authentication cookies
+  clearAuthCookies(res);
   
   return apiResponse.success(res, null, "Logout successful");
 });
