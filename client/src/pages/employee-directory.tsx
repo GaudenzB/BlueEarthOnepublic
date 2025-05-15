@@ -1,24 +1,139 @@
-import React from "react"
-import { EmployeeDirectory } from "@/components/employee/EmployeeDirectory"
+import React, { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Button, Card, Row, Col, Avatar, Typography, Empty, Space } from "antd"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { LoadingState, Employee } from "@/components/ui"
-import { UserOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons'
-
-const { Title, Text } = Typography
+import { ApiResponse } from "@/lib/types"
+import { Search, Building, FilterX } from "lucide-react"
 
 export default function EmployeeDirectoryPage() {
-  const { data: employees, isLoading, error, refetch } = useQuery({
+  const { data: apiResponse, isLoading, error, refetch } = useQuery<ApiResponse<Employee[]>>({
     queryKey: ['/api/employees'],
     retry: 1,
   })
 
-  console.log("EmployeeDirectoryPage query results:", { 
-    employeesReceived: !!employees, 
-    isArray: Array.isArray(employees), 
-    count: Array.isArray(employees) ? employees.length : 0,
-    sample: Array.isArray(employees) && employees.length > 0 ? employees[0] : null 
-  })
+  // Extract employees from the response data structure safely
+  const employees = apiResponse && 'data' in apiResponse ? apiResponse.data : []
+
+  // State for filters
+  const [searchTerm, setSearchTerm] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sortBy, setSortBy] = useState<'name' | 'department' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  // Get unique departments from employee data
+  const departments = React.useMemo(() => {
+    if (!employees || !Array.isArray(employees)) return []
+    
+    const departmentSet = new Set<string>()
+    employees.forEach(employee => {
+      if (employee.department) {
+        departmentSet.add(employee.department)
+      }
+    })
+    
+    return Array.from(departmentSet).sort()
+  }, [employees])
+
+  // Get unique statuses from employee data
+  const statuses = React.useMemo(() => {
+    if (!employees || !Array.isArray(employees)) return []
+    
+    const statusSet = new Set<string>()
+    employees.forEach(employee => {
+      if (employee.status) {
+        statusSet.add(employee.status)
+      }
+    })
+    
+    return Array.from(statusSet).sort()
+  }, [employees])
+
+  // Filter and sort employees
+  const filteredEmployees = React.useMemo(() => {
+    if (!employees || !Array.isArray(employees)) return []
+    
+    let filtered = [...employees]
+    
+    // Filter by search term
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      filtered = filtered.filter(employee => 
+        (employee.name?.toLowerCase().includes(search)) ||
+        (employee.position?.toLowerCase().includes(search)) ||
+        (employee.department?.toLowerCase().includes(search)) ||
+        (employee.email?.toLowerCase().includes(search))
+      )
+    }
+    
+    // Filter by department
+    if (departmentFilter && departmentFilter !== 'all') {
+      filtered = filtered.filter(employee => employee.department === departmentFilter)
+    }
+    
+    // Filter by status
+    if (statusFilter && statusFilter !== 'all') {
+      filtered = filtered.filter(employee => 
+        employee.status?.toLowerCase() === statusFilter.toLowerCase()
+      )
+    }
+    
+    // Sort employees
+    if (sortBy) {
+      filtered.sort((a, b) => {
+        const aValue = sortBy === 'name' ? a.name || '' : a.department || '';
+        const bValue = sortBy === 'name' ? b.name || '' : b.department || '';
+        
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      })
+    }
+    
+    return filtered
+  }, [employees, searchTerm, departmentFilter, statusFilter, sortBy, sortDirection])
+
+  // Update URL with filter params
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (searchTerm) params.set('search', searchTerm)
+    if (departmentFilter !== 'all') params.set('department', departmentFilter)
+    if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (sortBy) params.set('sortBy', sortBy)
+    if (sortDirection !== 'asc') params.set('sortDirection', sortDirection)
+    
+    const queryString = params.toString()
+    const newUrl = window.location.pathname + (queryString ? `?${queryString}` : '')
+    
+    window.history.replaceState(null, '', newUrl)
+  }, [searchTerm, departmentFilter, statusFilter, sortBy, sortDirection])
+
+  // Handle sorting
+  const handleSortBy = (field: 'name' | 'department') => {
+    if (sortBy === field) {
+      // Toggle direction if already sorting by this field
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortDirection('asc')
+    }
+  }
+
+  // Handle clearing all filters
+  const clearFilters = () => {
+    setSearchTerm('')
+    setDepartmentFilter('all')
+    setStatusFilter('all')
+    setSortBy(null)
+    setSortDirection('asc')
+  }
+
+  // Count filtered employees
+  const filteredCount = filteredEmployees.length
+  const totalCount = employees.length
 
   if (isLoading) {
     return <LoadingState size="large" text="Loading employees..." />
@@ -29,73 +144,170 @@ export default function EmployeeDirectoryPage() {
       <div className="p-6 border rounded-md bg-red-50">
         <h2 className="text-xl font-semibold mb-4 text-red-600">Error Loading Employees</h2>
         <p className="mb-4">{String(error)}</p>
-        <Button type="primary" onClick={() => refetch()}>Try Again</Button>
+        <Button variant="default" onClick={() => refetch()}>Try Again</Button>
       </div>
     )
   }
 
-  // Simple direct rendering of employees for testing
   if (!Array.isArray(employees) || employees.length === 0) {
     return (
       <>
         <h1 className="text-2xl font-semibold mb-6">Employee Directory</h1>
-        <Empty description="No employees found" />
-        <div className="mt-4">
-          <Button type="primary" onClick={() => refetch()}>Refresh</Button>
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <p className="text-muted-foreground mb-4">No employees found</p>
+          <Button variant="default" onClick={() => refetch()}>Refresh</Button>
         </div>
       </>
     )
   }
 
   return (
-    <>
+    <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Employee Directory</h1>
-        <Button type="primary" onClick={() => refetch()}>Refresh</Button>
+        <Button variant="outline" onClick={() => refetch()} className="flex items-center gap-2">
+          <span className="hidden sm:inline">Refresh</span>
+        </Button>
       </div>
       
-      {/* Simple grid display of employees */}
-      <Row gutter={[16, 16]}>
-        {employees.map(employee => (
-          <Col xs={24} sm={12} md={8} lg={6} key={employee.id}>
-            <Card hoverable className="h-full">
-              <div className="flex flex-col items-center text-center">
-                <Avatar 
-                  size={80} 
-                  src={employee.avatarUrl} 
-                  icon={<UserOutlined />} 
-                  className="mb-4"
-                />
-                <Title level={5} className="mb-1">{employee.name}</Title>
-                <Text type="secondary" className="mb-3">{employee.position || 'No position'}</Text>
-                
-                <div className="w-full text-left">
-                  <Space direction="vertical" className="w-full">
-                    <div className="flex items-center">
-                      <MailOutlined className="mr-2 text-gray-400" />
-                      <Text ellipsis>{employee.email || 'No email'}</Text>
-                    </div>
-                    <div className="flex items-center">
-                      <PhoneOutlined className="mr-2 text-gray-400" />
-                      <Text>{employee.phone || 'No phone'}</Text>
-                    </div>
-                    <Text type="secondary">{employee.department || 'No department'}</Text>
-                  </Space>
-                </div>
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {/* Search and filters */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+            {/* Search input */}
+            <div className="relative md:col-span-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-10"
+                placeholder="Search by name, email, position..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* Department filter */}
+            <div>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept.replace('_', ' ').split('_').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                      ).join(' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {statuses.map(status => (
+                  <SelectItem key={status} value={status}>
+                    {status.replace('_', ' ').split('_').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join(' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Sort buttons */}
+            <Button 
+              variant={sortBy === 'name' ? 'default' : 'outline'} 
+              onClick={() => handleSortBy('name')}
+              className="text-xs"
+              size="sm"
+            >
+              Sort by Name {sortBy === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </Button>
+            
+            <Button 
+              variant={sortBy === 'department' ? 'default' : 'outline'} 
+              onClick={() => handleSortBy('department')}
+              className="text-xs"
+              size="sm"
+            >
+              <Building className="h-4 w-4 mr-1" /> Sort by Dept. {sortBy === 'department' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </Button>
+            
+            {/* Clear filters button - only show if any filters are active */}
+            {(searchTerm || departmentFilter !== 'all' || statusFilter !== 'all' || sortBy) && (
+              <Button 
+                variant="ghost" 
+                onClick={clearFilters}
+                className="ml-auto text-xs"
+                size="sm"
+              >
+                <FilterX className="h-4 w-4 mr-1" /> Clear Filters
+              </Button>
+            )}
+          </div>
+          
+          {/* Show filter count */}
+          {filteredCount < totalCount && (
+            <div className="mt-3 text-sm text-muted-foreground">
+              Showing {filteredCount} of {totalCount} employees
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Hidden but available for reference */}
-      <div className="hidden">
-        <EmployeeDirectory 
-          employees={employees} 
-          onRefresh={() => refetch()}
-          useVirtualization={false}
-        />
+      {/* Employee grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filteredEmployees.map(employee => (
+          <Card key={employee.id} className="overflow-hidden hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium">{employee.name}</h3>
+                  <p className="text-sm text-muted-foreground">{employee.position}</p>
+                </div>
+                <Badge variant="outline">{employee.status}</Badge>
+              </div>
+              
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex items-center text-muted-foreground">
+                  <Building className="h-4 w-4 mr-2" />
+                  <span>{employee.department}</span>
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2"><path d="M22 17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9.5C2 7 4 5 6.5 5H18c2.2 0 4 1.8 4 4v8Z"></path><polyline points="15,9 18,9 18,11"></polyline><path d="M6 10h4"></path><path d="M6 14h2"></path><rect x="6" y="17" width="12" height="5"></rect></svg>
+                  <span>{employee.email}</span>
+                </div>
+                {employee.location && (
+                  <div className="flex items-center text-muted-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span>{employee.location}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
-    </>
+      
+      {/* Empty state for filtered results */}
+      {filteredEmployees.length === 0 && (
+        <div className="bg-background rounded-lg shadow-sm p-8 text-center mt-4">
+          <h3 className="text-lg font-medium text-foreground mb-2">No employees found</h3>
+          <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+          <Button variant="outline" onClick={clearFilters} className="mt-4">
+            Clear All Filters
+          </Button>
+        </div>
+      )}
+    </div>
   )
 }
