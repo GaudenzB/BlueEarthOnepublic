@@ -1,105 +1,105 @@
 #!/bin/bash
-# Deployment rollback script
+# Rollback Script for Failed Deployments
+# This script restores the previous version of the application in case of deployment failure
 
-# Default values
-ENV=${1:-"staging"}
-VERSION=${2:-""}
-DEPLOYMENT_DIR=${3:-"/var/www/blueearth"}
-BACKUP_DIR=${DEPLOYMENT_DIR}/backups
+# Exit on any error
+set -e
 
-# Print usage information
-function usage() {
-  echo "Usage: $0 <environment> <version> [deployment_dir]"
-  echo "  environment: The environment to rollback (staging, production)"
-  echo "  version: The version to rollback to (in format YYYYMMDDHHMMSS-commit)"
-  echo "  deployment_dir: Directory where application is deployed (default: /var/www/blueearth)"
-  exit 1
+# Configuration variables
+DEPLOYMENT_DIR="/var/www/blueearth"
+BACKUP_DIR="/var/www/backups"
+LOG_FILE="/var/log/deployment/rollback.log"
+CURRENT_TAG=$(cat $DEPLOYMENT_DIR/CURRENT_VERSION 2>/dev/null || echo "unknown")
+
+# Create log directory if it doesn't exist
+mkdir -p $(dirname $LOG_FILE)
+
+# Log function
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a $LOG_FILE
 }
 
-# Check parameters
-if [ -z "$ENV" ] || [ -z "$VERSION" ]; then
-  echo "Error: Missing required parameters!"
-  usage
-fi
-
-# Validate environment
-if [ "$ENV" != "staging" ] && [ "$ENV" != "production" ]; then
-  echo "Error: Environment must be either 'staging' or 'production'"
-  usage
-fi
-
-# Find backup package for the requested version
-BACKUP_PACKAGE="${BACKUP_DIR}/${ENV}/blueearth-${VERSION}.zip"
-
-if [ ! -f "$BACKUP_PACKAGE" ]; then
-  echo "Error: Backup package for version ${VERSION} not found at ${BACKUP_PACKAGE}"
-  
-  # List available backups
-  echo "Available backup versions for ${ENV}:"
-  ls -la ${BACKUP_DIR}/${ENV}/ | grep "blueearth-" | awk '{print $9}' | sed 's/blueearth-//' | sed 's/.zip//'
-  
+# Check if we have a backup to restore
+if [ ! -d "$BACKUP_DIR/latest" ]; then
+  log "ERROR: No backup found at $BACKUP_DIR/latest. Cannot rollback."
   exit 1
 fi
 
-echo "Starting rollback to version ${VERSION} in ${ENV} environment"
-echo "------------------------------------------------------"
+# Begin rollback
+log "Starting rollback from version $CURRENT_TAG to previous version"
 
-# Create temporary directory for rollback
-TEMP_DIR=$(mktemp -d)
-echo "Created temporary directory: ${TEMP_DIR}"
-
-# Extract backup package
-echo "Extracting backup package to temporary directory..."
-unzip -q "$BACKUP_PACKAGE" -d "$TEMP_DIR"
-
-# Backup current deployment
-CURRENT_DATE=$(date +%Y%m%d%H%M%S)
-CURRENT_DIR="${DEPLOYMENT_DIR}/${ENV}/current"
-BACKUP_NAME="pre-rollback-${CURRENT_DATE}"
-BACKUP_PATH="${BACKUP_DIR}/${ENV}/${BACKUP_NAME}"
-
-echo "Backing up current deployment to ${BACKUP_PATH}..."
-mkdir -p "$BACKUP_PATH"
-cp -R "${CURRENT_DIR}/"* "$BACKUP_PATH/"
-
-# Stop the current application
-echo "Stopping the current application..."
-systemctl stop "blueearth-${ENV}" || echo "Warning: Failed to stop application service"
-
-# Deploy the rollback version
-echo "Deploying version ${VERSION}..."
-rm -rf "${CURRENT_DIR:?}/"*
-cp -R "${TEMP_DIR}/"* "$CURRENT_DIR/"
-
-# Run database migrations for rollback (if needed)
-echo "Running database migrations..."
-cd "$CURRENT_DIR" && npm run db:migrate || echo "Warning: Database migration failed"
-
-# Start the application with the rolled back version
-echo "Starting the application..."
-systemctl start "blueearth-${ENV}" || echo "Warning: Failed to start application service"
-
-# Clean up temporary directory
-echo "Cleaning up temporary directory..."
-rm -rf "$TEMP_DIR"
-
-# Run health checks
-echo "Running health checks..."
-if [ "$ENV" == "staging" ]; then
-  API_URL="https://staging.blueearth.example.com"
-else
-  API_URL="https://app.blueearth.example.com"
+# Check environment specific rollback needs
+if [ -f "$BACKUP_DIR/latest/pre-rollback.sh" ]; then
+  log "Executing pre-rollback script..."
+  bash "$BACKUP_DIR/latest/pre-rollback.sh" || log "WARNING: Pre-rollback script failed, continuing anyway"
 fi
 
-"${CURRENT_DIR}/scripts/health-check.sh" "$API_URL" 20 3
+# Restore application files
+log "Restoring application files..."
+rsync -a --delete $BACKUP_DIR/latest/app/ $DEPLOYMENT_DIR/
 
-if [ $? -eq 0 ]; then
-  echo "------------------------------------------------------"
-  echo "✅ Rollback to version ${VERSION} completed successfully!"
-  echo "Application is now running and passed all health checks."
-else
-  echo "------------------------------------------------------"
-  echo "❌ Rollback appeared to complete, but health checks failed."
-  echo "Manual intervention may be required."
-  exit 1
+# Restore database if backup exists
+if [ -f "$BACKUP_DIR/latest/db-backup.sql" ]; then
+  log "Restoring database from backup..."
+  export PGPASSWORD=${PGPASSWORD:-$DB_PASSWORD}
+  psql -h ${DB_HOST:-localhost} -U ${DB_USER:-postgres} -d ${DB_NAME:-blueearth} -f "$BACKUP_DIR/latest/db-backup.sql" || {
+    log "ERROR: Database restore failed. Application may be in an inconsistent state."
+    exit 1
+  }
 fi
+
+# Execute post-rollback script if it exists
+if [ -f "$BACKUP_DIR/latest/post-rollback.sh" ]; then
+  log "Executing post-rollback script..."
+  bash "$BACKUP_DIR/latest/post-rollback.sh" || log "WARNING: Post-rollback script failed"
+fi
+
+# Restart services
+log "Restarting application services..."
+if [ -f "$DEPLOYMENT_DIR/restart.sh" ]; then
+  bash "$DEPLOYMENT_DIR/restart.sh"
+else
+  # Default restart commands
+  systemctl restart blueearth-api || log "WARNING: Failed to restart API service"
+  systemctl restart nginx || log "WARNING: Failed to restart web server"
+fi
+
+# Check application health
+log "Performing health check..."
+HEALTH_CHECK_URL=${HEALTH_CHECK_URL:-"http://localhost:3000/api/health"}
+RETRY_COUNT=0
+MAX_RETRIES=5
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_CHECK_URL || echo "000")
+  
+  if [ "$HEALTH_STATUS" = "200" ]; then
+    log "Health check passed. Rollback successful."
+    echo "ROLLBACK_SUCCESS=true" > $DEPLOYMENT_DIR/rollback_status
+    
+    # Send notification about successful rollback if configured
+    if [ ! -z "$NOTIFICATION_WEBHOOK" ]; then
+      curl -s -X POST -H "Content-Type: application/json" \
+        -d "{\"text\":\"⚠️ Deployment rollback successful. Reverted to previous stable version.\"}" \
+        $NOTIFICATION_WEBHOOK
+    fi
+    
+    exit 0
+  fi
+  
+  log "Health check failed with status $HEALTH_STATUS. Retrying ($((RETRY_COUNT+1))/$MAX_RETRIES)..."
+  RETRY_COUNT=$((RETRY_COUNT+1))
+  sleep 10
+done
+
+log "ERROR: Health check failed after $MAX_RETRIES attempts. Manual intervention required."
+echo "ROLLBACK_SUCCESS=false" > $DEPLOYMENT_DIR/rollback_status
+
+# Send notification about failed rollback if configured
+if [ ! -z "$NOTIFICATION_WEBHOOK" ]; then
+  curl -s -X POST -H "Content-Type: application/json" \
+    -d "{\"text\":\"🚨 URGENT: Deployment rollback FAILED. System may be down. Manual intervention required.\"}" \
+    $NOTIFICATION_WEBHOOK
+fi
+
+exit 1

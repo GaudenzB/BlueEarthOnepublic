@@ -1,126 +1,167 @@
 # CI/CD Process Documentation
 
-This document outlines the continuous integration and continuous deployment (CI/CD) pipeline implemented for the BlueEarthOne application.
-
 ## Overview
+This document outlines the Continuous Integration and Continuous Deployment (CI/CD) process for the BlueEarthOne platform. The CI/CD pipeline automates building, testing, and deploying the application, ensuring consistent and reliable deployments while minimizing downtime.
 
-The CI/CD pipeline automates the building, testing, and deployment of the application to ensure consistent, reliable releases. The pipeline consists of several stages:
+## Pipeline Architecture
 
-1. Code Validation (Linting and Type Checking)
-2. Unit Testing
-3. End-to-End Testing
-4. Build and Package
-5. Deployment to Staging
-6. (Optional) Deployment to Production
-7. (Optional) Rollback Mechanism
+The CI/CD pipeline consists of the following stages:
 
-## Workflows
+1. **Build & Test**: Compiles the application and runs automated tests
+2. **Deployment**: Deploys the application to the target environment (staging or production)
+3. **Health Checks**: Verifies that the deployment was successful
+4. **Rollback**: Automatically reverts to the previous version if deployment fails
 
-### Main CI/CD Workflow
+```
+┌────────────┐     ┌────────────┐     ┌──────────────┐     ┌─────────────┐
+│ Build &    │────►│ Deployment │────►│ Health Check │────►│ Notification │
+│ Test       │     │            │     │              │     │             │
+└────────────┘     └─────┬──────┘     └───────┬──────┘     └─────────────┘
+                         │                     │
+                         │                     │ (failure)
+                         │                     ▼
+                         │             ┌──────────────┐
+                         └─────────────► Rollback     │
+                                       └──────────────┘
+```
 
-The main workflow is defined in `.github/workflows/ci-cd.yml` and is triggered:
-- Automatically on push to main/master branches
-- Automatically on pull requests to main/master branches
-- Manually via workflow_dispatch
+## Environments
 
-### Jobs
+The pipeline supports two deployment environments:
 
-#### 1. Lint and Type Check
+1. **Staging**: Used for testing new features and changes before they go to production
+   - URL: https://staging.blueearth.example.com
+   - Automatically deployed when changes are pushed to the main branch
 
-This job ensures code quality by running:
-- ESLint to enforce coding standards
-- TypeScript type checking to catch type-related errors
+2. **Production**: The live environment used by customers
+   - URL: https://blueearth.example.com
+   - Deployed manually via workflow dispatch
 
-#### 2. Unit Tests
+## GitHub Actions Workflow
 
-This job runs all unit tests with:
-- A dedicated test database
-- Test coverage reports
+The CI/CD pipeline is implemented using GitHub Actions and defined in `.github/workflows/ci-cd.yml`. The workflow is triggered in the following scenarios:
 
-#### 3. End-to-End Tests
+- **Push to main branch**: Automatically deploys to staging
+- **Pull request to main branch**: Runs build and tests only (no deployment)
+- **Manual trigger**: Deploys to staging or production based on user selection
 
-This job runs comprehensive end-to-end tests using Playwright:
-- Starts a test server
-- Runs browser-based automated tests
-- Captures test results and screenshots
+## Build and Test Process
 
-#### 4. Build
+The build and test process includes:
 
-This job builds the application for deployment:
-- Creates a versioned deployment package
-- Includes all necessary files and assets
-- Creates a version information file
+1. **Dependency Installation**: Install NPM dependencies
+2. **Linting**: Check code style
+3. **Type Checking**: Verify TypeScript types
+4. **Unit Tests**: Run Jest unit tests
+5. **E2E Tests**: Run Playwright end-to-end tests
+6. **Build**: Compile the application
 
-#### 5. Deploy to Staging
+A PostgreSQL database is provisioned as part of the test environment to enable database tests.
 
-This job deploys the application to the staging environment:
-- Handles the deployment process
-- Runs health checks to verify deployment
-- Records deployment information for potential rollback
+## Deployment Process
 
-#### 6. Deploy to Production
+The deployment process includes:
 
-This job deploys the application to the production environment:
-- Only runs when manually triggered for production deployment
-- Follows the same process as staging deployment
-- Includes additional verification steps
+1. **Environment Setup**: Configure AWS credentials and SSH access
+2. **Artifact Packaging**: Create a deployment package
+3. **Deployment**: Transfer and extract the package on the target server
+4. **Service Restart**: Restart the application services
+5. **Health Check**: Verify the application is running correctly
+6. **Rollback**: Automatically revert to the previous version if health checks fail
 
-#### 7. Rollback
+## Rollback Strategy
 
-This job handles rollbacks to previous versions:
-- Can be manually triggered
-- Reverts to a specified previous version
-- Includes health checks to verify successful rollback
+The rollback strategy ensures that if a deployment fails, the system automatically reverts to the previous working version:
 
-## Environment Configuration
+1. **Backup Creation**: Before each deployment, a backup of the current version is created
+2. **Health Verification**: After deployment, health checks verify the application is functioning
+3. **Automated Rollback**: If health checks fail, the rollback script automatically restores the previous version
+4. **Database Rollback**: For production deployments, database backups are created and can be restored if needed
 
-The pipeline uses environment-specific configuration:
+## Required Secrets
 
-- **Staging**: Used for testing before production
-- **Production**: The live environment
+The following secrets must be configured in the GitHub repository settings:
+
+### Common Secrets
+- `AWS_ACCESS_KEY_ID`: AWS access key for S3 access
+- `AWS_SECRET_ACCESS_KEY`: AWS secret key for S3 access
+- `AWS_REGION`: AWS region for S3 buckets
+- `SSH_PRIVATE_KEY`: SSH key for deployment server access
+- `SSH_USER`: SSH username for server access
+
+### Staging Environment Secrets
+- `STAGING_SERVER_IP`: IP address of the staging server
+- `STAGING_DOMAIN`: Domain name for the staging environment
+
+### Production Environment Secrets
+- `PRODUCTION_SERVER_IP`: IP address of the production server
+- `PRODUCTION_DOMAIN`: Domain name for the production environment
+- `SLACK_WEBHOOK_URL`: Webhook URL for deployment notifications
 
 ## Health Checks
 
-Health checks are critical to the deployment process:
+Health checks verify that the application is functioning correctly after deployment. The checks include:
 
-- Performed after each deployment or rollback
-- Check various system components and endpoints
-- Automatic retry with configurable threshold
-- Can trigger automatic rollback if checks fail
+1. **Basic Health Check**: Verifies the server is running
+2. **Database Health Check**: Verifies database connectivity
+3. **Storage Health Check**: Verifies S3 storage configuration
 
-## Rollback Process
+Health checks are implemented as API endpoints:
+- `/api/health`: Basic health check
+- `/api/health/detailed`: Detailed health check with database connection
+- `/api/health/deep`: Comprehensive health check of all system components
 
-The rollback process allows reverting to a previous working version:
+## Deployment Verification Tools
 
-1. Manually trigger the rollback workflow
-2. Specify the environment and version to roll back to
-3. The system retrieves the backup for that version
-4. The rollback is performed with a backup of the current version
-5. Health checks verify the rollback was successful
+The following scripts are available for manual deployment verification:
 
-## Scripts
+- `scripts/health-check.sh`: Checks the health of a deployed instance
+- `scripts/api-test.sh`: Tests critical API endpoints
+- `scripts/rollback.sh`: Manually triggers a rollback if needed
 
-Several scripts support the CI/CD process:
+## Notification System
 
-- **run-e2e-tests.sh**: Executes end-to-end tests
-- **start-test-server.sh**: Starts a server in test mode
-- **health-check.sh**: Performs health checks on deployed application
-- **rollback.sh**: Handles the rollback process
+Deployment status notifications are sent via Slack:
 
-## Best Practices
+- **Successful Deployments**: Notification with deployment details
+- **Failed Deployments**: Alert with failure information and rollback status
 
-- **Version Control**: Always work in feature branches and create pull requests
-- **Testing**: Add tests for new features and ensure existing tests pass
-- **Deployment**: Use the manual workflow trigger for production deployments
-- **Monitoring**: Monitor health checks and application logs after deployment
-- **Rollback**: Be prepared to rollback if issues arise after deployment
+## Disaster Recovery
+
+In case of catastrophic failure where automated rollback is insufficient:
+
+1. Use the manual rollback script: `scripts/rollback.sh`
+2. Restore the database from the latest backup
+3. Verify the system health using `scripts/health-check.sh`
+4. If issues persist, contact the development team
+
+## Maintenance Windows
+
+Recommended maintenance windows for deployments:
+
+- **Staging**: Any time
+- **Production**: Tuesday-Thursday, 1:00 AM - 3:00 AM ET
 
 ## Troubleshooting
 
-If you encounter issues with the CI/CD pipeline:
+Common deployment issues and solutions:
 
-1. Check the GitHub Actions logs for the specific job that failed
-2. Verify environment variables and secrets are properly configured
-3. Run tests locally to reproduce any issues
-4. Check for connectivity issues to external services
-5. Review the deployment and rollback scripts for environment-specific issues
+1. **Health Check Failures**:
+   - Check application logs: `/var/log/blueearth/application.log`
+   - Verify database connectivity
+   - Check environment variables
+
+2. **Rollback Failures**:
+   - Check rollback logs: `/var/log/deployment/rollback.log`
+   - Manually restore from backup if needed
+
+3. **Database Migration Issues**:
+   - Review migration logs
+   - Restore database from backup if needed
+
+## Contacts
+
+For assistance with deployment issues, contact:
+
+- DevOps Team: devops@blueearth.example.com
+- On-call Engineer: +1 (555) 123-4567
