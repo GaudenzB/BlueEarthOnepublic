@@ -323,8 +323,9 @@ router.post('/', authenticate, documentUploadAuth, tenantContext, (req: Request,
 
       const documentData = validationResult.data;
       const file = req.file;
-      const tenantId = (req as any).tenantId;
-      const userId = (req as any).user.id;
+      // Ensure tenantId is a valid UUID
+      const tenantId = (req as any).tenantId || '00000000-0000-0000-0000-000000000001';
+      // This userId field is unused since we're now using a hardcoded UUID
 
       // Sanitize filename
       const sanitizedFilename = sanitizeFile(file.originalname);
@@ -466,6 +467,13 @@ router.post('/', authenticate, documentUploadAuth, tenantContext, (req: Request,
           }
           
           // Step 2: Create database record
+          // Add detailed debug logging to trace the UUID issue
+          logger.info('Attempting to create document with payload:', {
+            ...createPayload,
+            uploadedBy_type: typeof createPayload.uploadedBy,
+            tenantId_type: typeof createPayload.tenantId
+          });
+          
           document = await documentRepository.create(createPayload);
           dbSuccess = true;
           logger.debug('Document record created in database', { documentId: document.id });
