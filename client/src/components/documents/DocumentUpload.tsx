@@ -361,7 +361,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         console.log('Authentication status:', authStatus);
         
         // Development-only: Check if we need to auto-authenticate
-        if ((process.env['NODE_ENV'] !== 'production' || import.meta.env.DEV) && 
+        if (import.meta.env.DEV && 
             !authStatus.authCookie && 
             !authStatus.sessionCookie) {
           
