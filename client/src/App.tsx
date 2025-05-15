@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -23,32 +23,116 @@ import ThemeShowcasePage from "@/pages/ThemeShowcasePage";
 import AuthPage from "@/pages/auth-page";
 import MainLayout from "@/components/layouts/MainLayout";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
 
-// Router with authentication controls
-function Router() {
+// Router configuration with separate auth and protected routes
+function AppRoutes() {
+  const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
+  
+  // Show loader while auth state is being determined
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  // Public routes - accessible without authentication
+  const isPublicRoute = (path: string) => {
+    return path === "/auth" || 
+      path === AUTH_ROUTES.FORGOT_PASSWORD || 
+      path.startsWith(`${AUTH_ROUTES.RESET_PASSWORD}/`) ||
+      path === AUTH_ROUTES.ENTRA_COMPLETE ||
+      path === AUTH_ROUTES.ENTRA_ERROR;
+  };
+  
+  const ProtectedPage = ({ children }: { children: React.ReactNode }) => {
+    const [location] = useLocation();
+    
+    React.useEffect(() => {
+      if (!user && !isPublicRoute(location)) {
+        navigate("/auth");
+      }
+    }, [location, user]);
+    
+    if (!user) return null;
+    
+    return <MainLayout>{children}</MainLayout>;
+  };
+
   return (
     <Switch>
-      {/* Public authentication routes */}
+      {/* Public authentication routes - available when logged out */}
       <Route path="/auth" component={AuthPage} />
       <Route path={AUTH_ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
       <Route path={`${AUTH_ROUTES.RESET_PASSWORD}/:token`} component={ResetPassword} />
       <Route path={AUTH_ROUTES.ENTRA_COMPLETE} component={EntraComplete} />
       <Route path={AUTH_ROUTES.ENTRA_ERROR} component={EntraError} />
       
-      {/* Protected main routes */}
-      <ProtectedRoute path={ROUTES.HOME} component={EmployeeDirectory} />
-      <ProtectedRoute path={ROUTES.EMPLOYEES.DETAIL(':id')} component={EmployeeDetail} />
-      <ProtectedRoute path={ROUTES.DASHBOARD} component={Dashboard} />
-      <ProtectedRoute path={ROUTES.DOCUMENTS.LIST} component={Documents} />
-      <ProtectedRoute path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={DocumentDetail} />
-      <ProtectedRoute path={ROUTES.DESIGN_TESTING} component={DesignTesting} />
-      <ProtectedRoute path={ROUTES.DESIGN_SYSTEM} component={DesignSystem} />
-      <ProtectedRoute path={ROUTES.THEME_SHOWCASE} component={ThemeShowcasePage} />
-      <ProtectedRoute path={ADMIN_ROUTES.USERS} component={UserManagement} />
-      <ProtectedRoute path={ADMIN_ROUTES.INTEGRATIONS} component={Integrations} />
+      {/* Protected routes - require authentication */}
+      <Route path={ROUTES.HOME}>
+        <ProtectedPage>
+          <EmployeeDirectory />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ROUTES.EMPLOYEES.DETAIL(':id')}>
+        <ProtectedPage>
+          <EmployeeDetail />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ROUTES.DASHBOARD}>
+        <ProtectedPage>
+          <Dashboard />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ROUTES.DOCUMENTS.LIST}>
+        <ProtectedPage>
+          <Documents />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`}>
+        <ProtectedPage>
+          <DocumentDetail />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ROUTES.DESIGN_TESTING}>
+        <ProtectedPage>
+          <DesignTesting />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ROUTES.DESIGN_SYSTEM}>
+        <ProtectedPage>
+          <DesignSystem />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ROUTES.THEME_SHOWCASE}>
+        <ProtectedPage>
+          <ThemeShowcasePage />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ADMIN_ROUTES.USERS}>
+        <ProtectedPage>
+          <UserManagement />
+        </ProtectedPage>
+      </Route>
+      
+      <Route path={ADMIN_ROUTES.INTEGRATIONS}>
+        <ProtectedPage>
+          <Integrations />
+        </ProtectedPage>
+      </Route>
       
       {/* Fallback route */}
       <Route component={NotFound} />
@@ -64,9 +148,7 @@ function App() {
           <AuthProvider>
             <PermissionsProvider>
               <Toaster />
-              <MainLayout>
-                <Router />
-              </MainLayout>
+              <AppRoutes />
             </PermissionsProvider>
           </AuthProvider>
         </HelmetProvider>
