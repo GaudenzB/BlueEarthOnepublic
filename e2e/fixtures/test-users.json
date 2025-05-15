@@ -1,57 +1,44 @@
-[
-  {
-    "username": "test_admin",
-    "password": "Test123!@#",
-    "email": "test_admin@blueearth.example.com",
-    "firstName": "Test",
-    "lastName": "Admin",
-    "role": "superadmin",
-    "active": true
-  },
-  {
-    "username": "test_manager",
-    "password": "Test123!@#",
-    "email": "test_manager@blueearth.example.com",
-    "firstName": "Test",
-    "lastName": "Manager",
-    "role": "manager",
-    "active": true
-  },
-  {
-    "username": "test_user",
-    "password": "Test123!@#",
-    "email": "test_user@blueearth.example.com",
-    "firstName": "Test",
-    "lastName": "User",
-    "role": "user",
-    "active": true
-  },
-  {
-    "username": "test_readonly",
-    "password": "Test123!@#",
-    "email": "test_readonly@blueearth.example.com",
-    "firstName": "Test",
-    "lastName": "ReadOnly",
-    "role": "readonly",
-    "active": true
-  },
-  {
-    "username": "test_inactive",
-    "password": "Test123!@#",
-    "email": "test_inactive@blueearth.example.com",
-    "firstName": "Test",
-    "lastName": "Inactive",
-    "role": "user",
-    "active": false
-  },
-  {
-    "username": "test_entra_user",
-    "password": "Test123!@#",
-    "email": "test_entra_user@blueearth.example.com",
-    "firstName": "Test",
-    "lastName": "EntraUser",
-    "role": "user",
-    "active": true,
-    "entra_id": "00000000-0000-0000-0000-000000000001"
-  }
-]
+{
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@blueearth.com",
+      "password": "password123",
+      "firstName": "Admin",
+      "lastName": "User",
+      "role": "admin",
+      "department": "IT",
+      "title": "System Administrator"
+    },
+    {
+      "username": "manager",
+      "email": "manager@blueearth.com",
+      "password": "password123",
+      "firstName": "Manager",
+      "lastName": "User",
+      "role": "manager",
+      "department": "Operations",
+      "title": "Operations Manager"
+    },
+    {
+      "username": "employee",
+      "email": "employee@blueearth.com",
+      "password": "password123",
+      "firstName": "Regular",
+      "lastName": "Employee",
+      "role": "employee",
+      "department": "Finance",
+      "title": "Financial Analyst"
+    },
+    {
+      "username": "guest",
+      "email": "guest@blueearth.com",
+      "password": "password123",
+      "firstName": "Guest",
+      "lastName": "User",
+      "role": "guest",
+      "department": "External",
+      "title": "Guest"
+    }
+  ]
+}

@@ -1,274 +1,189 @@
 #!/bin/bash
 
 # BlueEarthOne Health Check Script
-# Usage: ./health-check.sh <base_url> [--level basic|detailed|deep] [--output text|json]
+# This script checks the health of different components of the application
+# and reports their status.
 
-# Default values
-LEVEL="basic"
-OUTPUT_FORMAT="text"
-BASE_URL=""
+# Set default URL
+BASE_URL="${BASE_URL:-http://localhost:3000}"
+API_BASE="${BASE_URL}/api"
+CHECK_LEVEL="${1:-basic}" # basic, detailed, deep
+TIMEOUT=5
 
-# Process command-line arguments
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --level)
-      LEVEL="$2"
-      shift 2
-      ;;
-    --output)
-      OUTPUT_FORMAT="$2"
-      shift 2
-      ;;
-    --help)
-      echo "Usage: $0 <base_url> [--level basic|detailed|deep] [--output text|json]"
-      echo
-      echo "Options:"
-      echo "  --level LEVEL      Health check level (basic, detailed, deep). Default: basic"
-      echo "  --output FORMAT    Output format (text, json). Default: text"
-      echo "  --help             Show this help message"
-      exit 0
-      ;;
-    *)
-      BASE_URL="$1"
-      shift
-      ;;
-  esac
-done
+# Color codes for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-# Validate base URL
-if [[ -z "$BASE_URL" ]]; then
-  echo "Error: Base URL is required."
-  echo "Usage: $0 <base_url> [--level basic|detailed|deep] [--output text|json]"
-  exit 1
-fi
-
-# Validate level option
-if [[ "$LEVEL" != "basic" && "$LEVEL" != "detailed" && "$LEVEL" != "deep" ]]; then
-  echo "Error: Invalid level. Must be one of: basic, detailed, deep."
-  exit 1
-fi
-
-# Validate output format
-if [[ "$OUTPUT_FORMAT" != "text" && "$OUTPUT_FORMAT" != "json" ]]; then
-  echo "Error: Invalid output format. Must be one of: text, json."
-  exit 1
-fi
-
-# Initialize results
-declare -A results
-status="pass"
-started_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-# Function to perform HTTP request with timeout
-function do_request() {
-  local url=$1
-  local timeout=${2:-5}
-  local start_time=$(date +%s.%N)
-  local response=$(curl -s -o /dev/null -w "%{http_code}" -m "$timeout" "$url" 2>/dev/null)
-  local end_time=$(date +%s.%N)
-  local resp_time=$(echo "$end_time - $start_time" | bc)
+# Function to make API call and return response
+function callApi() {
+  local endpoint=$1
+  local timeout=${2:-$TIMEOUT}
   
-  echo "$response|$resp_time"
+  response=$(curl -s -m "$timeout" "${API_BASE}/${endpoint}" 2>&1)
+  exit_code=$?
+  
+  if [ $exit_code -ne 0 ]; then
+    echo "ERROR: Failed to connect to ${endpoint} (exit code: $exit_code)"
+    return 1
+  fi
+  
+  echo "$response"
+  return 0
 }
 
-# Basic health check - just verify the service is up
-function basic_health_check() {
-  local health_url="${BASE_URL}/api/health"
-  local result=$(do_request "$health_url" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
+# Function to check basic health
+function checkBasicHealth() {
+  echo -e "${YELLOW}Checking basic health...${NC}"
   
-  if [[ "$http_code" -eq 200 ]]; then
-    results["api"]="pass|API endpoint is responding correctly|$resp_time"
+  # Check if the server is running
+  response=$(callApi "health")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}✘ Basic health check failed: Server not responding${NC}"
+    exit 1
+  fi
+  
+  # Parse response
+  status=$(echo "$response" | grep -o '"status":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+  
+  if [ "$status" == "pass" ]; then
+    echo -e "${GREEN}✓ Basic health check passed${NC}"
+    return 0
   else
-    results["api"]="fail|API endpoint is not responding properly (HTTP $http_code)|$resp_time"
-    status="fail"
+    echo -e "${RED}✘ Basic health check failed: Status is $status${NC}"
+    return 1
   fi
 }
 
-# Detailed health check - validate API endpoints and basic functionality
-function detailed_health_check() {
-  # Run basic checks first
-  basic_health_check
+# Function to check detailed health
+function checkDetailedHealth() {
+  echo -e "${YELLOW}Checking detailed health...${NC}"
   
-  # Additional checks
-  
-  # Auth endpoint check
-  local auth_url="${BASE_URL}/api/auth/status"
-  local result=$(do_request "$auth_url" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  
-  if [[ "$http_code" -eq 200 || "$http_code" -eq 401 ]]; then
-    results["auth"]="pass|Auth endpoint is responding correctly|$resp_time"
-  else
-    results["auth"]="fail|Auth endpoint is not responding properly (HTTP $http_code)|$resp_time"
-    status="fail"
+  # Check detailed health endpoint
+  response=$(callApi "health/detailed")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}✘ Detailed health check failed: Cannot connect to endpoint${NC}"
+    return 1
   fi
   
-  # Employees endpoint check
-  local employees_url="${BASE_URL}/api/employees"
-  local result=$(do_request "$employees_url" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  # Parse response
+  status=$(echo "$response" | grep -o '"status":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
   
-  if [[ "$http_code" -eq 200 || "$http_code" -eq 401 ]]; then
-    results["employees"]="pass|Employees endpoint is responding correctly|$resp_time"
+  # Check database status
+  db_status=$(echo "$response" | grep -o '"database":{"status":"[^"]*"' | cut -d':' -f3 | tr -d '"')
+  if [ "$db_status" == "pass" ]; then
+    echo -e "${GREEN}✓ Database health check passed${NC}"
   else
-    results["employees"]="fail|Employees endpoint is not responding properly (HTTP $http_code)|$resp_time"
-    status="fail"
+    echo -e "${RED}✘ Database health check failed${NC}"
   fi
   
-  # Documents endpoint check
-  local documents_url="${BASE_URL}/api/documents"
-  local result=$(do_request "$documents_url" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  
-  if [[ "$http_code" -eq 200 || "$http_code" -eq 401 ]]; then
-    results["documents"]="pass|Documents endpoint is responding correctly|$resp_time"
+  # Check filesystem status
+  fs_status=$(echo "$response" | grep -o '"filesystem":{"status":"[^"]*"' | cut -d':' -f3 | tr -d '"')
+  if [ "$fs_status" == "pass" ]; then
+    echo -e "${GREEN}✓ Filesystem health check passed${NC}"
   else
-    results["documents"]="fail|Documents endpoint is not responding properly (HTTP $http_code)|$resp_time"
-    status="fail"
+    echo -e "${RED}✘ Filesystem health check failed${NC}"
+  fi
+  
+  if [ "$status" == "pass" ]; then
+    echo -e "${GREEN}✓ Detailed health check passed${NC}"
+    return 0
+  else
+    echo -e "${RED}✘ Detailed health check failed: Status is $status${NC}"
+    return 1
   fi
 }
 
-# Deep health check - validate database, storage, and external services
-function deep_health_check() {
-  # Run detailed checks first
-  detailed_health_check
+# Function to check deep health
+function checkDeepHealth() {
+  echo -e "${YELLOW}Performing deep health check...${NC}"
   
-  # Database health check
-  local db_url="${BASE_URL}/api/health/database"
-  local result=$(do_request "$db_url" 8)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  
-  if [[ "$http_code" -eq 200 ]]; then
-    results["database"]="pass|Database connection is healthy|$resp_time"
+  # Check database health
+  echo -e "${YELLOW}Checking database...${NC}"
+  response=$(callApi "health/database")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}✘ Database health check failed: Cannot connect to endpoint${NC}"
   else
-    results["database"]="fail|Database connection check failed (HTTP $http_code)|$resp_time"
-    status="fail"
-  fi
-  
-  # Storage health check
-  local storage_url="${BASE_URL}/api/health/storage"
-  local result=$(do_request "$storage_url" 10)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  
-  if [[ "$http_code" -eq 200 ]]; then
-    results["storage"]="pass|Storage system is functioning properly|$resp_time"
-  else
-    results["storage"]="fail|Storage system check failed (HTTP $http_code)|$resp_time"
-    status="fail"
-  fi
-  
-  # Entra ID / SSO health check (if configured)
-  local sso_url="${BASE_URL}/api/health/sso"
-  local result=$(do_request "$sso_url" 10)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  
-  if [[ "$http_code" -eq 200 ]]; then
-    results["sso"]="pass|SSO integration is functioning properly|$resp_time"
-  elif [[ "$http_code" -eq 204 ]]; then
-    results["sso"]="warn|SSO integration is not configured|$resp_time"
-  else
-    results["sso"]="fail|SSO integration check failed (HTTP $http_code)|$resp_time"
-    
-    # Only fail the entire check if SSO is required (which is signaled by a 500 response)
-    if [[ "$http_code" -eq 500 ]]; then
-      status="fail"
-    fi
-  fi
-}
-
-# Run health check based on specified level
-case "$LEVEL" in
-  "basic")
-    basic_health_check
-    ;;
-  "detailed")
-    detailed_health_check
-    ;;
-  "deep")
-    deep_health_check
-    ;;
-esac
-
-completed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-# Output results based on specified format
-if [[ "$OUTPUT_FORMAT" == "json" ]]; then
-  # Start JSON output
-  echo "{"
-  echo "  \"status\": \"$status\","
-  echo "  \"version\": \"1.0.0\","
-  echo "  \"timestamp\": \"$completed_at\","
-  echo "  \"duration\": \"$(date -u -d "@$(( $(date -d "$completed_at" +%s) - $(date -d "$started_at" +%s) ))" +"%H:%M:%S")\","
-  echo "  \"checks\": {"
-  
-  # Process each result
-  first=true
-  for key in "${!results[@]}"; do
-    if [[ "$first" == "true" ]]; then
-      first=false
+    db_status=$(echo "$response" | grep -o '"status":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
+    if [ "$db_status" == "pass" ]; then
+      echo -e "${GREEN}✓ Database health check passed${NC}"
     else
-      echo ","
+      echo -e "${RED}✘ Database health check failed${NC}"
     fi
-    
-    result_status=$(echo "${results[$key]}" | cut -d'|' -f1)
-    result_message=$(echo "${results[$key]}" | cut -d'|' -f2)
-    result_time=$(echo "${results[$key]}" | cut -d'|' -f3)
-    
-    echo -n "    \"$key\": {"
-    echo -n "\"status\": \"$result_status\", "
-    echo -n "\"message\": \"$result_message\", "
-    echo -n "\"responseTime\": $result_time"
-    echo -n "}"
-  done
+  fi
   
-  # Close JSON structure
-  echo ""
-  echo "  }"
-  echo "}"
-else
-  # Text output
-  echo "BlueEarthOne Health Check Report"
-  echo "================================"
-  echo "Status: $status"
-  echo "Time: $completed_at"
-  echo "Level: $LEVEL"
-  echo ""
-  echo "Results:"
-  
-  for key in "${!results[@]}"; do
-    result_status=$(echo "${results[$key]}" | cut -d'|' -f1)
-    result_message=$(echo "${results[$key]}" | cut -d'|' -f2)
-    result_time=$(echo "${results[$key]}" | cut -d'|' -f3)
+  # Check storage health
+  echo -e "${YELLOW}Checking storage...${NC}"
+  response=$(callApi "health/storage")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}✘ Storage health check failed: Cannot connect to endpoint${NC}"
+  else
+    storage_status=$(echo "$response" | grep -o '"status":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
+    storage_provider=$(echo "$response" | grep -o '"provider":"[^"]*"' | cut -d':' -f2 | tr -d '"')
     
-    # Format output
-    status_color=""
-    reset_color=""
-    if [[ -t 1 ]]; then  # Check if stdout is a terminal
-      reset_color="\033[0m"
-      if [[ "$result_status" == "pass" ]]; then
-        status_color="\033[32m"  # Green
-      elif [[ "$result_status" == "warn" ]]; then
-        status_color="\033[33m"  # Yellow
-      else
-        status_color="\033[31m"  # Red
-      fi
+    if [ "$storage_status" == "pass" ]; then
+      echo -e "${GREEN}✓ Storage health check passed (Provider: $storage_provider)${NC}"
+    else
+      echo -e "${RED}✘ Storage health check failed${NC}"
     fi
+  fi
+  
+  # Check SSO health (if configured)
+  echo -e "${YELLOW}Checking SSO integration...${NC}"
+  response=$(callApi "health/sso")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}✘ SSO health check failed: Cannot connect to endpoint${NC}"
+  else
+    sso_status=$(echo "$response" | grep -o '"status":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
     
-    printf "  %s[%s]%s %s (%.2fs)\n" "$status_color" "$result_status" "$reset_color" "$result_message" "$result_time"
-  done
-fi
+    if [ "$sso_status" == "pass" ]; then
+      echo -e "${GREEN}✓ SSO health check passed${NC}"
+    elif [ "$sso_status" == "warn" ]; then
+      echo -e "${YELLOW}⚠ SSO integration not configured or only partially tested${NC}"
+    else
+      echo -e "${RED}✘ SSO health check failed${NC}"
+    fi
+  fi
+  
+  echo -e "${GREEN}✓ Deep health check completed${NC}"
+  return 0
+}
 
-# Return appropriate exit code
-if [[ "$status" == "fail" ]]; then
-  exit 1
-else
-  exit 0
-fi
+# Main function
+function main() {
+  echo -e "${YELLOW}BlueEarthOne Health Check${NC}"
+  echo "Target: $API_BASE"
+  echo "Check level: $CHECK_LEVEL"
+  echo "----------------------------------------"
+  
+  # Always run basic health check
+  checkBasicHealth
+  basic_status=$?
+  
+  # Run detailed checks if requested or if running deep checks
+  if [ "$CHECK_LEVEL" == "detailed" ] || [ "$CHECK_LEVEL" == "deep" ]; then
+    if [ $basic_status -eq 0 ]; then
+      checkDetailedHealth
+      detailed_status=$?
+    else
+      echo -e "${RED}Skipping detailed health check due to basic check failure${NC}"
+      exit 1
+    fi
+  fi
+  
+  # Run deep checks if requested
+  if [ "$CHECK_LEVEL" == "deep" ]; then
+    if [ $detailed_status -eq 0 ]; then
+      checkDeepHealth
+    else
+      echo -e "${RED}Skipping deep health check due to detailed check failure${NC}"
+      exit 1
+    fi
+  fi
+  
+  echo "----------------------------------------"
+  echo -e "${GREEN}Health check completed!${NC}"
+}
+
+main

@@ -1,58 +1,14 @@
-BlueEarthOne Test Document
+This is a sample test document for E2E testing.
 
-This is a test document for automated E2E testing purposes. It contains sample text that can be used to test document upload, processing, and search functionality.
+It contains multiple paragraphs and demonstrates the document content structure used in the BlueEarthOne system.
 
-## Key Features
+The content of this document should be processed properly by the document management system and should be retrievable through the API.
 
-The BlueEarthOne platform provides the following key features:
+Some features that should be tested:
+- Proper storage and retrieval
+- Access control based on visibility settings
+- Search functionality 
+- Document versioning
+- Content previews
 
-1. Document Management
-   - Secure document storage
-   - Version control
-   - Document sharing with granular permissions
-   - Full-text search capabilities
-
-2. Employee Directory
-   - Comprehensive employee profiles
-   - Organizational chart visualization
-   - Advanced search and filtering
-   - Integration with HR systems
-
-3. Authentication & Security
-   - Microsoft Entra ID SSO integration
-   - Role-based access control
-   - Audit logging
-   - Data encryption
-
-## Sample Data
-
-Here is some sample tabular data that can be used for testing extraction capabilities:
-
-| Employee ID | Name             | Department    | Position       | Start Date  |
-|-------------|------------------|---------------|----------------|-------------|
-| E12345      | Jane Smith       | Engineering   | Lead Developer | 2020-06-15  |
-| E12346      | John Doe         | Marketing     | Director       | 2018-03-22  |
-| E12347      | Sarah Johnson    | Finance       | Controller     | 2021-01-10  |
-| E12348      | Michael Chen     | Operations    | Manager        | 2019-09-05  |
-| E12349      | Priya Patel      | HR            | Specialist     | 2022-02-28  |
-
-## Technical Requirements
-
-The system must meet the following technical requirements:
-
-- High availability (99.9% uptime)
-- Data backup and disaster recovery
-- Compliance with industry security standards
-- Support for modern web browsers
-- Mobile-responsive design
-- API access for third-party integrations
-
-## Contact Information
-
-For more information about this test document, please contact:
-
-- Email: test@example.com
-- Phone: +1 (555) 123-4567
-- Website: https://example.com/blueearth
-
-END OF TEST DOCUMENT
+This document is automatically created during E2E test setup and should be visible to users with appropriate permissions.

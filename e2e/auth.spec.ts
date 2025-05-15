@@ -1,39 +1,87 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Authentication', () => {
-  test('should show login page', async ({ page }) => {
+test.describe('Authentication tests', () => {
+  test.beforeEach(async ({ page }) => {
+    // Navigate to login page
     await page.goto('/login');
-    await expect(page).toHaveTitle(/Login/);
-    await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
   });
 
-  test('should show error for invalid login', async ({ page }) => {
-    await page.goto('/login');
+  test('should display login form', async ({ page }) => {
+    // Verify the form elements are present
+    await expect(page.locator('h1:has-text("Sign in")')).toBeVisible();
+    await expect(page.locator('input[name="username"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+    await expect(page.locator('button[type="submit"]')).toBeVisible();
+  });
+
+  test('should login with valid credentials', async ({ page }) => {
+    // Fill in the login form
+    await page.fill('input[name="username"]', 'admin');
+    await page.fill('input[name="password"]', 'password123');
     
+    // Click the login button
+    await page.click('button[type="submit"]');
+    
+    // Wait for navigation to complete and check redirect
+    await page.waitForURL('**/dashboard');
+    
+    // Verify the user is logged in
+    const userDropdown = page.locator('button:has-text("Admin")');
+    await expect(userDropdown).toBeVisible();
+  });
+
+  test('should show error with invalid credentials', async ({ page }) => {
     // Fill in the login form with invalid credentials
-    await page.getByLabel(/username/i).fill('invalid-user');
-    await page.getByLabel(/password/i).fill('invalid-password');
+    await page.fill('input[name="username"]', 'admin');
+    await page.fill('input[name="password"]', 'wrongpassword');
     
-    // Submit the form
-    await page.getByRole('button', { name: /sign in/i }).click();
+    // Click the login button
+    await page.click('button[type="submit"]');
     
     // Check for error message
-    await expect(page.getByText(/invalid credentials/i)).toBeVisible();
+    const errorMessage = page.locator('div[role="alert"]:has-text("Invalid username or password")');
+    await expect(errorMessage).toBeVisible();
+    
+    // Verify we're still on the login page
+    await expect(page.url()).toContain('/login');
   });
 
-  test('should redirect to dashboard after successful login', async ({ page }) => {
-    // This test will use test credentials set up in the test environment
-    await page.goto('/login');
+  test('should navigate to SSO login when clicking SSO button', async ({ page }) => {
+    // Check if SSO button exists
+    const ssoButton = page.locator('button:has-text("Sign in with Microsoft")');
     
-    // Fill in the login form with valid test credentials
-    await page.getByLabel(/username/i).fill('testuser');
-    await page.getByLabel(/password/i).fill('testpassword');
+    if (await ssoButton.isVisible()) {
+      // Click the SSO button
+      await ssoButton.click();
+      
+      // This would normally redirect to Microsoft login page
+      // For testing, we just verify it tries to navigate to the right route
+      await expect(page.url()).toContain('/api/auth/sso');
+    } else {
+      // If SSO is not configured, this test is skipped
+      test.skip(true, 'SSO button not available');
+    }
+  });
+
+  test('should logout successfully', async ({ page }) => {
+    // First login
+    await page.fill('input[name="username"]', 'admin');
+    await page.fill('input[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
     
-    // Submit the form
-    await page.getByRole('button', { name: /sign in/i }).click();
+    // Wait for navigation to complete
+    await page.waitForURL('**/dashboard');
     
-    // Check that we're redirected to the dashboard
-    await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText(/welcome/i)).toBeVisible();
+    // Click the user dropdown
+    await page.click('button:has-text("Admin")');
+    
+    // Click logout
+    await page.click('button:has-text("Logout")');
+    
+    // Verify we're redirected to login page
+    await expect(page.url()).toContain('/login');
+    
+    // Verify login form is visible again
+    await expect(page.locator('h1:has-text("Sign in")')).toBeVisible();
   });
 });
