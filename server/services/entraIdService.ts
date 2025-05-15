@@ -1,7 +1,7 @@
-import { Issuer, Client, TokenSet, generators } from 'openid-client';
+import * as openidClient from 'openid-client';
 import { NextFunction, Request, Response } from 'express';
 import { logger } from '../utils/logger';
-import { db } from '../database';
+import { db } from '../db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '../auth';
@@ -28,15 +28,15 @@ export interface EntraIdUser {
 // Store PKCE code verifiers in memory (for production, consider a session store like Redis)
 const codeVerifiers = new Map<string, string>();
 
-let entraIdClient: Client | null = null;
+let entraIdClient: openidClient.Client | null = null;
 
 /**
  * Initialize the Microsoft Entra ID OpenID Connect client
  */
-export async function initializeEntraId(config: EntraIdConfig): Promise<Client> {
+export async function initializeEntraId(config: EntraIdConfig): Promise<openidClient.Client> {
   try {
     // Create the Microsoft Entra ID issuer
-    const issuer = await Issuer.discover(
+    const issuer = await openidClient.Issuer.discover(
       `https://login.microsoftonline.com/${config.tenantId}/v2.0/.well-known/openid-configuration`
     );
     
@@ -63,7 +63,7 @@ export async function initializeEntraId(config: EntraIdConfig): Promise<Client> 
 /**
  * Get the Microsoft Entra ID client
  */
-export function getEntraIdClient(): Client {
+export function getEntraIdClient(): openidClient.Client {
   if (!entraIdClient) {
     throw new Error('Microsoft Entra ID client has not been initialized');
   }
@@ -77,11 +77,11 @@ export function createAuthorizationUrl(config: EntraIdConfig): { url: string, st
   const client = getEntraIdClient();
   
   // Generate PKCE code challenge
-  const codeVerifier = generators.codeVerifier();
-  const codeChallenge = generators.codeChallenge(codeVerifier);
+  const codeVerifier = openidClient.generators.codeVerifier();
+  const codeChallenge = openidClient.generators.codeChallenge(codeVerifier);
   
   // Generate state for CSRF protection
-  const state = generators.state();
+  const state = openidClient.generators.state();
   
   // Store the code verifier keyed by state
   codeVerifiers.set(state, codeVerifier);
@@ -170,9 +170,9 @@ export async function findOrCreateUser(entraIdUser: EntraIdUser): Promise<{
     
     if (existingUser) {
       // Update Entra ID if not already set
-      if (!existingUser.azureAdId) {
+      if (!existingUser.entraSsoId) {
         await db.update(users)
-          .set({ azureAdId: entraIdUser.id })
+          .set({ entraSsoId: entraIdUser.id })
           .where(eq(users.id, existingUser.id));
         
         logger.info('Updated existing user with Microsoft Entra ID', { 
@@ -208,7 +208,7 @@ export async function findOrCreateUser(entraIdUser: EntraIdUser): Promise<{
         email: entraIdUser.email,
         password: hashedPassword,
         role: defaultRole,
-        azureAdId: entraIdUser.id,
+        entraSsoId: entraIdUser.id,
         firstName: entraIdUser.givenName,
         lastName: entraIdUser.surname
       })
