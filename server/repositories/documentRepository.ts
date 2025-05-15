@@ -50,19 +50,20 @@ export const documentRepository = {
 
       // Add documentType filter if provided
       if (documentType) {
-        conditions.push(eq(documents.documentType, documentType));
+        // Type-safe string comparison using raw SQL to avoid type mismatches
+        conditions.push(sql`${documents.documentType} = ${documentType}`);
       }
 
       // Add text search if provided
-      if (search) {
+      if (search && search.trim() !== '') {
         const searchPattern = `%${search}%`;
-        conditions.push(
-          or(
-            like(documents.title, searchPattern),
-            like(documents.description, searchPattern),
-            like(documents.originalFilename, searchPattern)
-          )
-        );
+        // Use SQL template to ensure type safety
+        const searchCondition = sql`(
+          ${documents.title} ILIKE ${searchPattern}
+          OR ${documents.description} ILIKE ${searchPattern}
+          OR ${documents.originalFilename} ILIKE ${searchPattern}
+        )`;
+        conditions.push(searchCondition);
       }
 
       // Create the query with all conditions
@@ -209,16 +210,35 @@ export const documentRepository = {
    * 
    * @param document - Document data to insert
    * @returns The created document
+   * @throws Error if document creation fails
    */
   async create(document: InsertDocument): Promise<Document> {
     try {
+      // Validate document data
+      if (!document || !document.tenantId) {
+        throw new Error('Invalid document data: missing required fields');
+      }
+      
+      // Insert document with validation
       const [result] = await db.insert(documents)
         .values(document)
         .returning();
+        
+      // Check result
+      if (!result) {
+        throw new Error('Document created but no data returned');
+      }
+      
       return result;
     } catch (error) {
-      logger.error('Error creating document', { error, document });
-      throw new Error(`Failed to create document: ${error.message}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error creating document', { 
+        error: errorMsg, 
+        tenantId: document?.tenantId,
+        documentType: document?.documentType,
+        fileName: document?.originalFilename 
+      });
+      throw new Error(`Failed to create document: ${errorMsg}`);
     }
   },
 
@@ -349,7 +369,8 @@ export const documentRepository = {
     sortOrder?: 'asc' | 'desc';
     tags?: string[];
     isConfidential?: boolean;
-    userRole?: string;
+    // Adding role-based access control parameters
+    userRole?: 'ADMIN' | 'MANAGER' | 'USER' | 'SUPER_ADMIN';
     userAccessibleConfidentialDocs?: string[];
   } = {}): Promise<{ documents: Document[]; total: number }> {
     try {
