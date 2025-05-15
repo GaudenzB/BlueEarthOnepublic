@@ -336,9 +336,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       try {
         // Debug any authentication issues
         console.log('Authentication status:', { 
-          isAuthenticated: !!localStorage.getItem('authToken') || !!localStorage.getItem('token'),
-          tokenExists: !!token,
-          sessionCookies: document.cookie.includes('connect.sid')
+          authCookie: document.cookie.includes('accessToken'),
+          sessionCookie: document.cookie.includes('connect.sid'),
+          usingCookieAuth: true
         });
         
         // First try with XMLHttpRequest for better progress reporting
@@ -383,10 +383,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           
           // Try with fetch API
           console.log('Attempting fetch API upload...');
+          // No need to manually set auth headers when using credentials: 'include'
+          // Session cookies will be automatically sent with the request
           const headers: HeadersInit = {};
-          if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-          }
           
           const response = await fetch('/api/documents', {
             method: 'POST',
@@ -404,10 +403,11 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           console.log('Fetch API upload completed successfully');
           return handleSuccess(responseData);
         }
-      } catch (timeoutError) {
-        console.error('Upload timeout or race condition error:', timeoutError);
+      } catch (error) {
+        console.error('Upload timeout or race condition error:', error);
         setUploadStage('error');
-        setErrorDetails(timeoutError.message || "The upload process timed out");
+        const errorMessage = error instanceof Error ? error.message : "The upload process timed out"
+        setErrorDetails(errorMessage);
         
         toast({
           title: "Upload failed",
