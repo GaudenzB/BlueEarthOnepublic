@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql, or, like } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, or, like, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import { 
   documents, 
@@ -6,7 +6,11 @@ import {
   type InsertDocument,
   analysisVersions,
   type AnalysisVersion,
-  type InsertAnalysisVersion
+  type InsertAnalysisVersion,
+  documentEmbeddings,
+  type DocumentEmbedding,
+  type InsertDocumentEmbedding,
+  type SemanticSearch
 } from '../../shared/schema/index';
 import { logger } from '../utils/logger';
 
@@ -538,6 +542,134 @@ export const documentRepository = {
     }
   },
 
+  /**
+   * Store document embeddings for semantic search
+   * 
+   * @param embedding - Document embedding data
+   * @returns The stored document embedding
+   */
+  async storeEmbedding(embedding: InsertDocumentEmbedding & { embedding: number[] }): Promise<DocumentEmbedding | undefined> {
+    try {
+      // We need to use raw SQL for the vector type
+      const result = await db.execute(sql`
+        INSERT INTO document_embeddings (
+          document_id, chunk_index, text_chunk, embedding, embedding_model
+        ) VALUES (
+          ${embedding.documentId}, 
+          ${embedding.chunkIndex}, 
+          ${embedding.textChunk}, 
+          ${sql.raw(`'[${embedding.embedding.join(',')}]'`)}, 
+          ${embedding.embeddingModel}
+        )
+        RETURNING *
+      `);
+      
+      if (result.rows && result.rows.length > 0) {
+        return result.rows[0] as DocumentEmbedding;
+      }
+      return undefined;
+    } catch (error) {
+      logger.error('Error storing document embedding', { error, documentId: embedding.documentId });
+      throw new Error(`Failed to store document embedding: ${error.message}`);
+    }
+  },
+
+  /**
+   * Perform semantic search across document embeddings
+   * 
+   * @param tenantId - Tenant ID
+   * @param queryEmbedding - Vector embedding of the search query
+   * @param options - Search options
+   * @returns Documents matching the semantic search
+   */
+  async semanticSearch(
+    tenantId: string, 
+    queryEmbedding: number[], 
+    options: Omit<SemanticSearch, 'query'> & { documentIds?: string[] }
+  ): Promise<{ documents: Document[], scores: Record<string, number> }> {
+    try {
+      const { 
+        limit = 10, 
+        minSimilarity = 0.7, 
+        documentType,
+        documentIds
+      } = options;
+
+      logger.info('Performing semantic search', { 
+        tenantId, 
+        vectorLength: queryEmbedding.length,
+        limit,
+        minSimilarity,
+        documentType,
+        hasDocumentIds: !!documentIds
+      });
+
+      // Convert the query embedding to a vector
+      const embeddingVector = sql.raw(`'[${queryEmbedding.join(',')}]'`);
+      
+      // Build the base query using the search_similar_documents function
+      let query = sql`
+        WITH similarity_results AS (
+          SELECT 
+            document_id,
+            similarity
+          FROM 
+            search_similar_documents(${embeddingVector}, ${minSimilarity}, ${limit * 3})
+        )
+        SELECT DISTINCT ON (d.id)
+          d.*,
+          sr.similarity
+        FROM 
+          similarity_results sr
+        JOIN 
+          documents d ON sr.document_id = d.id
+        WHERE 
+          d.tenant_id = ${tenantId}
+          AND d.deleted = false
+      `;
+      
+      // Add optional filters
+      if (documentType) {
+        query = sql`${query} AND d.document_type = ${documentType}`;
+      }
+      
+      if (documentIds && documentIds.length > 0) {
+        const documentIdsPlaceholder = documentIds.map(id => `'${id}'`).join(',');
+        query = sql`${query} AND d.id IN (${sql.raw(documentIdsPlaceholder)})`;
+      }
+      
+      // Add order and limit
+      query = sql`${query} ORDER BY d.id, sr.similarity DESC LIMIT ${limit}`;
+      
+      // Execute the query
+      const result = await db.execute(query);
+      
+      if (!result.rows || result.rows.length === 0) {
+        return { documents: [], scores: {} };
+      }
+      
+      // Extract documents and similarity scores
+      const documents = result.rows as Document[];
+      const scores: Record<string, number> = {};
+      
+      for (const row of result.rows) {
+        // The 'similarity' column is added by our query
+        scores[row.id] = row.similarity;
+      }
+      
+      logger.info('Semantic search results', { 
+        resultCount: documents.length,
+        topScore: documents.length > 0 ? scores[documents[0].id] : 0,
+        sampleDocId: documents.length > 0 ? documents[0].id : null
+      });
+      
+      return { documents, scores };
+    } catch (error) {
+      logger.error('Error performing semantic search', { error, tenantId });
+      throw new Error(`Failed to perform semantic search: ${error.message}`);
+    }
+  },
+  
   /**
    * Create a new analysis version for a document
    * 
