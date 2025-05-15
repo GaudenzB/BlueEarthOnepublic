@@ -44,6 +44,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
   
   // Get authentication information to use for uploads
   const { isAuthenticated, user } = useAuth();
+  
+  // Store auth token for uploads if needed
+  const [authToken, setAuthToken] = useState<string>('');
 
   // Initialize form with react-hook-form and zod validation
   const form = useForm<DocumentUploadFormValues>({
@@ -360,7 +363,6 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
 
       try {
         // Debug any authentication issues
-        let authToken = '';
         const authStatus = { 
           authCookie: document.cookie.includes('accessToken'),
           sessionCookie: document.cookie.includes('connect.sid'),
@@ -391,7 +393,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               
               // Save the token for direct use in the upload
               if (authData.data?.token) {
-                authToken = authData.data.token;
+                setAuthToken(authData.data.token);
                 console.log('Obtained auth token for upload');
               }
               
