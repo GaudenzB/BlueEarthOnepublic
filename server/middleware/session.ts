@@ -5,7 +5,7 @@ import connectPg from 'connect-pg-simple';
 import { Express } from 'express';
 import { pool } from '../db';
 import { logger } from '../utils/logger';
-import config from '../utils/config';
+import { env, isProduction } from '../config/env';
 
 /**
  * Session Configuration
@@ -21,10 +21,12 @@ import config from '../utils/config';
  * Configure and initialize session middleware
  */
 export function setupSession(app: Express): void {
-  // Load session configuration from centralized config
-  const { sessionSecret, sessionTtl } = config.security;
-  const { url: redisUrl, enabled: redisEnabled, prefix: redisPrefix } = config.redis;
-  const isProduction = config.env.isProduction;
+  // Load session configuration from centralized env
+  const sessionSecret = env.SESSION_SECRET;
+  const sessionTtl = env.SESSION_TTL;
+  const redisUrl = env.REDIS_URL;
+  const redisEnabled = !!redisUrl;
+  const redisPrefix = 'blueearth:';
   
   // Validate session secret
   if (!sessionSecret) {
@@ -109,7 +111,7 @@ function setupPgSessionStore(app: Express, sessionOptions: session.SessionOption
   } catch (error: any) {
     logger.error('Failed to initialize PostgreSQL session store', { error: error.message });
     
-    if (config.env.isProduction) {
+    if (isProduction) {
       logger.error('Cannot run in production without a working session store');
       process.exit(1);
     } else {

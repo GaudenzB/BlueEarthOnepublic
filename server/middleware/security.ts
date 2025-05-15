@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { logger } from '../utils/logger';
-import config from '../utils/config';
+import { env, isProduction } from '../config/env';
 
 /**
  * Middleware to secure Express applications
@@ -10,42 +10,56 @@ import config from '../utils/config';
  * - HTTP security headers via Helmet
  */
 export function setupSecurityMiddleware(app: express.Application): void {
-  // Configure CORS settings from centralized config
+  // Configure CORS settings from centralized env
   const corsOptions = {
-    origin: config.cors.origin,
-    methods: config.cors.methods,
-    allowedHeaders: config.cors.allowedHeaders,
-    maxAge: config.cors.maxAge
+    origin: env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400 // 24 hours
   };
   app.use(cors(corsOptions));
   
   // Set up Helmet for HTTP security headers
   app.use(helmet({
-    contentSecurityPolicy: config.security.contentSecurityPolicy,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "https://*"],
+        connectSrc: ["'self'", "https://*"]
+      }
+    },
     crossOriginEmbedderPolicy: false, 
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     hidePoweredBy: true,
-    hsts: config.security.hsts,
+    hsts: {
+      maxAge: 15552000, // 180 days
+      includeSubDomains: true,
+      preload: true
+    },
     noSniff: true,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     xssFilter: true
   }));
   
   // Configure trust proxy settings for production environments behind load balancers
-  if (config.server.trustProxy) {
+  if (isProduction) {
     app.set('trust proxy', 1);
   }
   
   // Set body size limits to prevent DoS attacks
-  app.use(express.json({ limit: config.server.bodyLimit }));
-  app.use(express.urlencoded({ extended: false, limit: config.server.bodyLimit }));
+  const bodyLimit = '10mb'; // Default body limit
+  app.use(express.json({ limit: bodyLimit }));
+  app.use(express.urlencoded({ extended: false, limit: bodyLimit }));
   
   // Add a health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
-      environment: config.env.current
+      environment: env.NODE_ENV
     });
   });
 }

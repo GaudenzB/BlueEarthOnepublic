@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { logger } from '../utils/logger';
-import config from '../utils/config';
+import { env } from '../config/env';
 
 /**
  * Configure rate limiters for different API routes
@@ -13,8 +13,8 @@ import config from '../utils/config';
 
 // General API rate limiter - applies to all non-auth routes
 export const apiLimiter = rateLimit({
-  windowMs: config.rateLimit.window,
-  max: config.rateLimit.maxRequests,
+  windowMs: env.RATE_LIMIT_WINDOW_MS,
+  max: env.RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
@@ -33,15 +33,15 @@ export const apiLimiter = rateLimit({
     res.status(429).json({
       success: false,
       message: 'Too many requests, please try again later.',
-      retryAfter: Math.ceil(config.rateLimit.window / 1000 / 60),
+      retryAfter: Math.ceil(env.RATE_LIMIT_WINDOW_MS / 1000 / 60),
     });
   },
 });
 
 // Auth-specific rate limiter - stricter limits for auth routes
 export const authLimiter = rateLimit({
-  windowMs: config.rateLimit.auth.window,
-  max: config.rateLimit.auth.maxRequests,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 login attempts per window
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
@@ -56,15 +56,15 @@ export const authLimiter = rateLimit({
     res.status(429).json({
       success: false,
       message: 'Too many login attempts, please try again later.',
-      retryAfter: Math.ceil(config.rateLimit.auth.window / 1000 / 60),
+      retryAfter: 15,
     });
   },
 });
 
 // Password reset rate limiter - specific limits for password reset functionality
 export const passwordResetLimiter = rateLimit({
-  windowMs: config.rateLimit.passwordReset.window,
-  max: config.rateLimit.passwordReset.maxRequests,
+  windowMs: 60 * 60 * 1000, // 60 minutes
+  max: 3, // 3 password reset attempts per window
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
@@ -80,7 +80,7 @@ export const passwordResetLimiter = rateLimit({
     res.status(429).json({
       success: false,
       message: 'Too many password reset attempts, please try again later.',
-      retryAfter: Math.ceil(config.rateLimit.passwordReset.window / 1000 / 60),
+      retryAfter: 60,
     });
   },
 });

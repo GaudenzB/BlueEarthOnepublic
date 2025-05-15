@@ -2,16 +2,17 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
-import config from './utils/config';
+import { env } from './config/env';
 import { logger } from './utils/logger';
 
 // Configure Neon to use WebSockets
 neonConfig.webSocketConstructor = ws;
 
-// Get database configuration from centralized config
-const dbUrl = config.database.url;
+// Get database configuration from centralized env
+const dbUrl = env.DATABASE_URL;
 
-// Validate required environment variables
+// The env validation in env.ts already ensures DATABASE_URL is set
+// But we'll keep a check here for safety
 if (!dbUrl) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
@@ -23,7 +24,7 @@ export const pool = new Pool({
   connectionString: dbUrl,
   max: 10,                       // Maximum number of clients the pool should contain
   idleTimeoutMillis: 30000,      // How long a client is allowed to remain idle before being closed (30s)
-  connectionTimeoutMillis: 5000, // How long to wait before timing out when connecting a new client (5s)
+  connectionTimeoutMillis: env.DATABASE_TIMEOUT, // Use configured timeout from environment
   maxUses: 7500,                 // Close and replace a connection after it has been used this many times
 });
 
@@ -49,8 +50,15 @@ export async function checkDatabaseConnection(): Promise<boolean> {
       client.release();
     }
   } catch (error) {
+    // Enhanced error reporting with database connection details (sanitized)
     logger.error('Database connection check failed', { 
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
+      database: {
+        host: new URL(dbUrl).hostname,
+        port: new URL(dbUrl).port || 'default',
+        database: new URL(dbUrl).pathname.replace('/', ''),
+        // No credentials logged
+      }
     });
     return false;
   }

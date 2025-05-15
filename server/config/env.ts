@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { logger } from '../utils/logger';
+import { baseLogger } from '../utils/base-logger';
 
 // Define environment variable schema with validation
 const envSchema = z.object({
@@ -19,11 +19,19 @@ const envSchema = z.object({
   
   // Database configuration
   DATABASE_URL: z.string().min(1, 'Database URL is required'),
+  DATABASE_TIMEOUT: z.coerce.number().int().positive().default(5000), // 5 seconds
   
   // JWT configuration
   JWT_SECRET: z.string().min(32, 'JWT secret should be at least 32 characters'),
   JWT_EXPIRY: z.string().default('24h'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
+  
+  // Session configuration
+  SESSION_SECRET: z.string().default('development-session-secret'),
+  SESSION_TTL: z.coerce.number().default(7 * 24 * 60 * 60 * 1000), // 1 week in ms
+  
+  // Redis configuration
+  REDIS_URL: z.string().optional(),
   
   // Storage configuration
   STORAGE_TYPE: z.enum(['local', 's3']).default('local'),
@@ -53,13 +61,13 @@ const parseEnvResult = envSchema.safeParse(process.env);
 
 // Handle validation errors
 if (!parseEnvResult.success) {
-  logger.error('Environment validation failed', {
+  baseLogger.error('Environment validation failed', {
     errors: parseEnvResult.error.format(),
   });
   
   // Log specific missing critical variables
   parseEnvResult.error.errors.forEach(error => {
-    logger.error(`Environment variable issue: ${error.path} - ${error.message}`);
+    baseLogger.error(`Environment variable issue: ${error.path} - ${error.message}`);
   });
   
   // Only exit in production; allow development to continue with warnings
@@ -71,7 +79,7 @@ if (!parseEnvResult.success) {
 // Export validated environment variables
 export const env = parseEnvResult.success 
   ? parseEnvResult.data 
-  : process.env as z.infer<typeof envSchema>;
+  : process.env as unknown as z.infer<typeof envSchema>;
 
 // Helper functions
 
@@ -134,7 +142,7 @@ export const getRedactedConfig = () => {
 };
 
 // Log configuration on startup (redacted for security)
-logger.info('Environment configuration loaded', {
+baseLogger.info('Environment configuration loaded', {
   config: getRedactedConfig(),
   env: {
     current: env.NODE_ENV,

@@ -6,10 +6,11 @@
  */
 
 import pino from 'pino';
-import config from './config';
+import { env, isDevelopment } from '../config/env';
 
-// Get log configuration from centralized config
-const { level, prettyPrint } = config.logging;
+// Get log configuration from centralized environment
+const level = env.LOG_LEVEL || 'info'; // Ensure we have a default level
+const prettyPrint = isDevelopment;
 const APP_NAME = 'blueearth-portal';
 
 // Type-safe transport configuration
@@ -28,7 +29,17 @@ const transport = prettyPrint
 const logger = pino({
   level,
   name: APP_NAME,
-  base: { app: APP_NAME, env: config.env },
+  base: { 
+    app: APP_NAME, 
+    env: {
+      current: env.NODE_ENV,
+      isProd: env.NODE_ENV === 'production',
+      isDev: env.NODE_ENV === 'development',
+      isTest: env.NODE_ENV === 'test',
+      isDevelopment: env.NODE_ENV === 'development',
+      isProduction: env.NODE_ENV === 'production'
+    } 
+  },
   ...(transport ? { transport } : {}), // Only include transport if defined
   timestamp: () => `,"time":"${new Date().toISOString()}"`,
   formatters: {

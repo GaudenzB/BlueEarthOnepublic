@@ -11,7 +11,7 @@ import { setupSession } from "./middleware/session";
 import { logger } from "./utils/logger";
 import { setupDefaultTenant } from "./utils/setupDefaultTenant";
 import { env, isDevelopment } from "./config/env";
-import config from "./utils/config";
+// Centralized environment configuration is imported from ./config/env
 
 // Import the modular system
 import { initializeModules } from "../modules";
@@ -89,8 +89,9 @@ async function bootstrap(): Promise<void> {
     // Global error handler (must be registered last)
     app.use(errorHandler);
 
-    // Get server port and host from config
-    const { port, host } = config.server;
+    // Get server port and host from env
+    const port = env.PORT;
+    const host = env.HOST;
     
     // Start the server
     server.listen({
@@ -101,7 +102,7 @@ async function bootstrap(): Promise<void> {
       logger.info(`Server started successfully`, { 
         port, 
         host, 
-        environment: config.env.current,
+        environment: env.NODE_ENV,
         nodeVersion: process.version,
         moduleCount: app.locals['moduleManager'] ? app.locals['moduleManager']['modules'].length : 0
       });
