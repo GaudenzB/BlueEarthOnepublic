@@ -26,6 +26,11 @@ type ExtendedLoginFormValues = z.infer<typeof extendedLoginSchema>;
 
 const LoginForm = () => {
   const { loginMutation, microsoftAuthStatus, isMicrosoftAuthStatusLoading } = useAuth();
+  
+  // Debug logging for Microsoft auth status
+  console.log("Microsoft auth status:", microsoftAuthStatus);
+  console.log("Microsoft auth loading:", isMicrosoftAuthStatusLoading);
+  
   const form = useForm<ExtendedLoginFormValues>({
     resolver: zodResolver(extendedLoginSchema),
     defaultValues: {

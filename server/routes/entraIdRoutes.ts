@@ -165,9 +165,12 @@ router.post('/exchange', requireEntraIdEnabled, wrapHandler(async (req: Request,
 
 // Route to check if Microsoft Entra ID is enabled and configured
 router.get('/status', (req: Request, res: Response) => {
+  const isEnabled = isEntraIdConfigured();
   res.json({
-    success: true,
-    enabled: isEntraIdConfigured()
+    enabled: isEnabled,
+    message: isEnabled 
+      ? 'Microsoft Entra ID authentication is configured and ready to use' 
+      : 'Microsoft Entra ID authentication is not configured'
   });
 });
 

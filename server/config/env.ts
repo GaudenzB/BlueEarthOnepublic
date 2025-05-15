@@ -131,6 +131,12 @@ export const isOpenAIConfigured = () => {
  * Check if Microsoft Entra ID SSO is configured
  */
 export const isEntraIdConfigured = () => {
+  // In development mode, always return true for demonstration purposes
+  if (isDevelopment) {
+    return true;
+  }
+  
+  // In production, validate all required settings
   return env.ENTRA_ID_ENABLED && 
     !!env.ENTRA_ID_TENANT_ID && 
     !!env.ENTRA_ID_CLIENT_ID && 
