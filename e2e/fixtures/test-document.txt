@@ -1,29 +1,58 @@
 BlueEarthOne Test Document
 
-This is a test document for E2E testing purposes. It contains sample text that can be used to test document upload and processing features.
+This is a test document for automated E2E testing purposes. It contains sample text that can be used to test document upload, processing, and search functionality.
 
-DOCUMENT TYPE: Technical Report
-PROJECT: BlueEarthOne Platform
-CLASSIFICATION: Internal
-STATUS: Draft
+## Key Features
 
-OVERVIEW:
-The BlueEarthOne platform provides enterprise-level document management capabilities with robust security features. This document outlines the key components and their functionality.
+The BlueEarthOne platform provides the following key features:
 
-KEY FEATURES:
-1. Secure Authentication
-2. Document Versioning
-3. Role-Based Access Control
-4. Document Classification
-5. AI-Powered Search
+1. Document Management
+   - Secure document storage
+   - Version control
+   - Document sharing with granular permissions
+   - Full-text search capabilities
 
-IMPLEMENTATION DETAILS:
-The platform utilizes a modern stack including:
-- React 18+ for the frontend
-- Express for the backend API
-- PostgreSQL for data storage
-- S3-compatible storage for document files
-- Microsoft Entra ID for SSO authentication
+2. Employee Directory
+   - Comprehensive employee profiles
+   - Organizational chart visualization
+   - Advanced search and filtering
+   - Integration with HR systems
 
-CONCLUSION:
-This test document demonstrates the text processing capabilities of the BlueEarthOne platform. It should be appropriately indexed and searchable after processing.
+3. Authentication & Security
+   - Microsoft Entra ID SSO integration
+   - Role-based access control
+   - Audit logging
+   - Data encryption
+
+## Sample Data
+
+Here is some sample tabular data that can be used for testing extraction capabilities:
+
+| Employee ID | Name             | Department    | Position       | Start Date  |
+|-------------|------------------|---------------|----------------|-------------|
+| E12345      | Jane Smith       | Engineering   | Lead Developer | 2020-06-15  |
+| E12346      | John Doe         | Marketing     | Director       | 2018-03-22  |
+| E12347      | Sarah Johnson    | Finance       | Controller     | 2021-01-10  |
+| E12348      | Michael Chen     | Operations    | Manager        | 2019-09-05  |
+| E12349      | Priya Patel      | HR            | Specialist     | 2022-02-28  |
+
+## Technical Requirements
+
+The system must meet the following technical requirements:
+
+- High availability (99.9% uptime)
+- Data backup and disaster recovery
+- Compliance with industry security standards
+- Support for modern web browsers
+- Mobile-responsive design
+- API access for third-party integrations
+
+## Contact Information
+
+For more information about this test document, please contact:
+
+- Email: test@example.com
+- Phone: +1 (555) 123-4567
+- Website: https://example.com/blueearth
+
+END OF TEST DOCUMENT

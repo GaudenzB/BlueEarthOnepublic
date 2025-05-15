@@ -1,227 +1,196 @@
 /**
- * Test Setup Script
+ * E2E Test Data Setup
  * 
- * This script sets up the test environment with required test data.
- * It is designed to be run before E2E tests to ensure consistent test conditions.
+ * This script is used to set up data for end-to-end testing.
+ * It loads test users and documents from fixture files and creates them in the database.
  */
 
-import { pool } from '../../server/db';
-import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
-
-// Import test user data
-const testUsers = require('../fixtures/test-users.json');
+import bcrypt from 'bcryptjs';
+import { db } from '../../server/db';
+import { users, documents } from '../../shared/schema';
+import { eq } from 'drizzle-orm';
 
 /**
- * Creates test users if they don't already exist
+ * Load test users from fixtures and create them in the database
  */
-async function setupTestUsers() {
+export async function setupTestUsers() {
   try {
-    console.log('Setting up test users...');
-    const client = await pool.connect();
+    const usersData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '../fixtures/test-users.json'), 'utf-8')
+    );
+
+    console.log(`Loaded ${usersData.length} test users from fixtures`);
     
-    try {
-      // Create users with hashed passwords
-      for (const [key, userData] of Object.entries(testUsers)) {
-        const { username, password, email, firstName, lastName, role } = userData as any;
-        
-        // Check if user already exists
-        const userCheck = await client.query(
-          'SELECT * FROM users WHERE username = $1',
-          [username]
-        );
-        
-        if (userCheck.rows.length > 0) {
-          console.log(`User ${username} already exists, skipping...`);
-          continue;
-        }
-        
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        
-        // Insert user
-        await client.query(
-          `INSERT INTO users (username, password, email, "firstName", "lastName", role)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [username, hashedPassword, email, firstName, lastName, role]
-        );
-        
-        console.log(`Created test user: ${username}`);
+    let createdCount = 0;
+    let existingCount = 0;
+    
+    for (const userData of usersData) {
+      // Check if user already exists by username
+      const existingUsers = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, userData.username));
+      
+      if (existingUsers.length > 0) {
+        console.log(`User ${userData.username} already exists, skipping`);
+        existingCount++;
+        continue;
       }
       
-      console.log('Test users setup complete.');
-    } finally {
-      client.release();
+      // Hash password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      // Create user
+      await db.insert(users).values({
+        username: userData.username,
+        password: hashedPassword,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+        active: userData.active,
+        entra_id: userData.entra_id || null
+      });
+      
+      createdCount++;
+      console.log(`Created test user: ${userData.username}`);
     }
+    
+    console.log(`Test users setup complete: ${createdCount} created, ${existingCount} already existed`);
+    return { created: createdCount, existing: existingCount };
   } catch (error) {
-    console.error('Failed to setup test users:', error);
+    console.error('Error setting up test users:', error);
     throw error;
   }
 }
 
 /**
- * Creates test documents for document-related tests
+ * Load test document from fixture and create it in the database
  */
-async function setupTestDocuments() {
+export async function setupTestDocuments() {
   try {
-    console.log('Setting up test documents...');
-    const client = await pool.connect();
+    // Load test document content
+    const documentContent = fs.readFileSync(
+      path.join(__dirname, '../fixtures/test-document.txt'), 
+      'utf-8'
+    );
     
-    try {
-      // Get user ID for test user
-      const userResult = await client.query(
-        'SELECT id FROM users WHERE username = $1',
-        [testUsers.user.username]
-      );
-      
-      if (userResult.rows.length === 0) {
-        throw new Error('Test user not found. Run setupTestUsers first.');
-      }
-      
-      const userId = userResult.rows[0].id;
-      
-      // Create test document
-      const documentId = uuidv4();
-      const title = 'Test Document';
-      const description = 'This is a test document for E2E testing';
-      const filename = 'test-document.txt';
-      const contentType = 'text/plain';
-      
-      // Check if document already exists
-      const docCheck = await client.query(
-        'SELECT * FROM documents WHERE title = $1 AND "userId" = $2',
-        [title, userId]
-      );
-      
-      if (docCheck.rows.length > 0) {
-        console.log(`Document "${title}" already exists, skipping...`);
-        return;
-      }
-      
-      // Insert document metadata
-      await client.query(
-        `INSERT INTO documents (
-          id, title, description, "userId", "originalFilename", 
-          "contentType", "processingStatus", "createdAt", "updatedAt"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-        [documentId, title, description, userId, filename, contentType, 'PROCESSED']
-      );
-      
-      console.log(`Created test document: ${title}`);
-    } finally {
-      client.release();
+    // Get user IDs for document ownership
+    const adminUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, 'test_admin'))
+      .limit(1);
+    
+    const regularUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, 'test_user'))
+      .limit(1);
+    
+    if (!adminUser.length || !regularUser.length) {
+      throw new Error('Test users not found. Please run setupTestUsers first.');
     }
+    
+    // Check if test documents already exist
+    const existingDocs = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.title, 'Test Document'));
+    
+    if (existingDocs.length > 0) {
+      console.log(`Test documents already exist, skipping creation`);
+      return { created: 0, existing: existingDocs.length };
+    }
+    
+    // Create test documents with different permissions
+    const testDocuments = [
+      {
+        title: 'Test Document - Public',
+        content: documentContent,
+        status: 'published',
+        visibility: 'public',
+        createdById: adminUser[0].id,
+        updatedById: adminUser[0].id,
+        tenantId: 'default'
+      },
+      {
+        title: 'Test Document - Internal',
+        content: documentContent,
+        status: 'published',
+        visibility: 'internal',
+        createdById: adminUser[0].id,
+        updatedById: adminUser[0].id,
+        tenantId: 'default'
+      },
+      {
+        title: 'Test Document - Restricted',
+        content: documentContent,
+        status: 'published',
+        visibility: 'restricted',
+        createdById: regularUser[0].id,
+        updatedById: regularUser[0].id,
+        tenantId: 'default'
+      },
+      {
+        title: 'Test Document - Draft',
+        content: documentContent,
+        status: 'draft',
+        visibility: 'private',
+        createdById: regularUser[0].id,
+        updatedById: regularUser[0].id,
+        tenantId: 'default'
+      }
+    ];
+    
+    // Insert test documents
+    for (const doc of testDocuments) {
+      await db.insert(documents).values(doc);
+      console.log(`Created test document: ${doc.title}`);
+    }
+    
+    console.log(`Test documents setup complete: ${testDocuments.length} created`);
+    return { created: testDocuments.length, existing: 0 };
   } catch (error) {
-    console.error('Failed to setup test documents:', error);
+    console.error('Error setting up test documents:', error);
     throw error;
   }
 }
 
 /**
- * Creates test employees for employee-related tests
+ * Main setup function that runs all data setup
  */
-async function setupTestEmployees() {
+export async function setupAllTestData() {
   try {
-    console.log('Setting up test employees...');
-    const client = await pool.connect();
+    console.log('Starting test data setup...');
     
-    try {
-      // Create test employees with various departments
-      const testEmployees = [
-        {
-          name: 'Test Employee 1',
-          email: 'employee1@blueearth.example.com',
-          department: 'ENGINEERING',
-          position: 'Software Engineer',
-          status: 'ACTIVE',
-          hireDate: new Date('2023-01-15')
-        },
-        {
-          name: 'Test Employee 2',
-          email: 'employee2@blueearth.example.com',
-          department: 'MARKETING',
-          position: 'Marketing Specialist',
-          status: 'ACTIVE',
-          hireDate: new Date('2023-02-20')
-        },
-        {
-          name: 'Test Employee 3',
-          email: 'employee3@blueearth.example.com',
-          department: 'FINANCE',
-          position: 'Financial Analyst',
-          status: 'ON_LEAVE',
-          hireDate: new Date('2022-11-10')
-        }
-      ];
-      
-      for (const employee of testEmployees) {
-        // Check if employee already exists
-        const empCheck = await client.query(
-          'SELECT * FROM employees WHERE email = $1',
-          [employee.email]
-        );
-        
-        if (empCheck.rows.length > 0) {
-          console.log(`Employee ${employee.name} already exists, skipping...`);
-          continue;
-        }
-        
-        // Insert employee
-        await client.query(
-          `INSERT INTO employees (
-            name, email, department, position, status, "hireDate", "createdAt", "updatedAt"
-          ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
-          [
-            employee.name,
-            employee.email,
-            employee.department,
-            employee.position,
-            employee.status,
-            employee.hireDate
-          ]
-        );
-        
-        console.log(`Created test employee: ${employee.name}`);
-      }
-      
-      console.log('Test employees setup complete.');
-    } finally {
-      client.release();
-    }
+    const usersResult = await setupTestUsers();
+    const documentsResult = await setupTestDocuments();
+    
+    console.log('Test data setup complete.');
+    console.log(`Summary: Created ${usersResult.created} users and ${documentsResult.created} documents.`);
+    
+    return {
+      users: usersResult,
+      documents: documentsResult
+    };
   } catch (error) {
-    console.error('Failed to setup test employees:', error);
+    console.error('Error in test data setup:', error);
     throw error;
   }
 }
 
-/**
- * Main setup function that runs all setup steps
- */
-async function setupTestEnvironment() {
-  try {
-    console.log('Setting up test environment...');
-    
-    // Setup test data in sequence
-    await setupTestUsers();
-    await setupTestDocuments();
-    await setupTestEmployees();
-    
-    console.log('Test environment setup complete.');
-  } catch (error) {
-    console.error('Test environment setup failed:', error);
-    process.exit(1);
-  } finally {
-    // Close the database pool
-    await pool.end();
-  }
-}
-
-// Run the setup if this script is executed directly
+// Allow running directly from command line
 if (require.main === module) {
-  setupTestEnvironment();
+  setupAllTestData()
+    .then(() => {
+      console.log('Setup complete, exiting...');
+      process.exit(0);
+    })
+    .catch(err => {
+      console.error('Setup failed:', err);
+      process.exit(1);
+    });
 }
-
-export { setupTestUsers, setupTestDocuments, setupTestEmployees, setupTestEnvironment };
