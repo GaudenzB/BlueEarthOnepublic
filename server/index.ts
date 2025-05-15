@@ -10,6 +10,7 @@ import { setupSwaggerDocs } from "./middleware/swagger";
 import { setupSession } from "./middleware/session";
 import { logger } from "./utils/logger";
 import { setupDefaultTenant } from "./utils/setupDefaultTenant";
+import { env, isDevelopment } from "./config/env";
 import config from "./utils/config";
 
 // Import the modular system
@@ -76,7 +77,7 @@ async function bootstrap(): Promise<void> {
     logger.info('Main application routes registered successfully');
 
     // Set up Vite middleware for development or serve static files in production
-    if (config.env.isDevelopment) {
+    if (isDevelopment) {
       await setupVite(app, server);
     } else {
       serveStatic(app);
