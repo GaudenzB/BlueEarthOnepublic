@@ -47,6 +47,14 @@ const envSchema = z.object({
   // OpenAI configuration for document embedding generation
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-ada-002'),
+  
+  // Azure AD SSO Configuration
+  AZURE_AD_ENABLED: z.boolean().default(false),
+  AZURE_AD_TENANT_ID: z.string().optional(),
+  AZURE_AD_CLIENT_ID: z.string().optional(),
+  AZURE_AD_CLIENT_SECRET: z.string().optional(),
+  AZURE_AD_REDIRECT_URI: z.string().optional(),
+  AZURE_AD_SCOPES: z.string().default('openid profile email'),
 
   // Security settings
   CORS_ORIGIN: z.string().default('*'),
@@ -115,6 +123,17 @@ export const isS3Configured = () => {
  */
 export const isOpenAIConfigured = () => {
   return !!env.OPENAI_API_KEY;
+};
+
+/**
+ * Check if Azure AD SSO is configured
+ */
+export const isAzureAdConfigured = () => {
+  return env.AZURE_AD_ENABLED && 
+    !!env.AZURE_AD_TENANT_ID && 
+    !!env.AZURE_AD_CLIENT_ID && 
+    !!env.AZURE_AD_CLIENT_SECRET && 
+    !!env.AZURE_AD_REDIRECT_URI;
 };
 
 /**

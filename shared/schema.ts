@@ -14,6 +14,8 @@ export const users = pgTable("users", {
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
   resetToken: text("reset_token"),
   resetTokenExpires: text("reset_token_expires"),
+  // SSO integration fields
+  azureAdId: text("azure_ad_id").unique(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -23,6 +25,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   firstName: true,
   lastName: true,
   role: true,
+  azureAdId: true,
 });
 
 export const userRoleEnum = z.enum([
