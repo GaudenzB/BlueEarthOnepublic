@@ -516,134 +516,278 @@ export default function DocumentDetail() {
         <meta name="description" content={`View details and insights for ${document.title || "document"}`} />
       </Helmet>
       
-      <Container maxW="1200px" py={6} px={{base: 4, md: 6}}>
-        {/* Document Header */}
-        <Flex direction={{base: "column", md: "row"}} mb={6} alignItems={{base: "flex-start", md: "center"}} gap={4}>
-          <IconButton
-            aria-label="Back to documents"
-            as={Link}
-            href="/documents"
-            icon={<ArrowBackIcon />}
-            variant="outline"
-            size="sm"
-            borderRadius="md"
-          />
-          
-          <Box flex="1">
-            <Heading size="lg" fontWeight="bold" mb={1}>
-              {document.title}
-            </Heading>
-            <Flex alignItems="center" gap={2}>
-              <Badge colorScheme="gray" fontSize="xs">{document.documentType || "Other"}</Badge>
-              <Text fontSize="sm" color="gray.600">
-                Last updated {format(new Date(document.updatedAt), "MMMM d, yyyy")}
-              </Text>
-              {getStatusBadge(document.processingStatus)}
-            </Flex>
-          </Box>
-          
-          <HStack spacing={2}>
-            <Tooltip label="Download document">
-              <IconButton
-                as="a"
-                href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
-                download
-                icon={<DownloadIcon />}
-                aria-label="Download document"
-                colorScheme="blue"
-                variant="outline"
-                size="sm"
-              />
-            </Tooltip>
+      <Container maxW="1200px" py={8} px={{base: 5, md: 8}}>
+        {/* Document Header with improved spacing and structure */}
+        <Box 
+          mb={8} 
+          pb={6} 
+          borderBottom="1px" 
+          borderColor={borderColor}
+          as="section"
+          aria-label="Document header"
+        >
+          <Flex 
+            direction={{base: "column", md: "row"}} 
+            alignItems={{base: "flex-start", md: "center"}} 
+            gap={4}
+            mb={4}
+          >
+            <IconButton
+              aria-label="Back to documents"
+              as={Link}
+              href="/documents"
+              icon={<ArrowBackIcon />}
+              variant="outline"
+              size="sm"
+              borderRadius="md"
+              boxShadow="sm"
+              _hover={{ boxShadow: "md", transform: "translateY(-1px)" }}
+              transition="all 0.2s"
+            />
             
-            <Menu>
-              <MenuButton
-                as={IconButton}
-                aria-label="More options"
-                icon={<InfoOutlineIcon />}
-                variant="outline"
-                size="sm"
-              />
-              <MenuList>
-                <MenuItem icon={<RepeatIcon />} onClick={handleRefreshStatus}>
-                  Refresh Status
-                </MenuItem>
-                <MenuItem
-                  icon={<AttachmentIcon />} 
-                  onClick={handleProcessDocument} 
-                  isDisabled={processDocumentMutation.isPending}
+            <Box flex="1">
+              <Heading size="lg" fontWeight="bold" mb={2}>
+                {document.title}
+              </Heading>
+              <Flex 
+                alignItems="center" 
+                gap={3}
+                flexWrap="wrap"
+              >
+                <Badge 
+                  colorScheme="gray" 
+                  fontSize="xs" 
+                  py={1} 
+                  px={2} 
+                  borderRadius="md"
                 >
-                  Process with AI
-                </MenuItem>
-                <MenuItem icon={<EditIcon />}>
-                  Edit Properties
-                </MenuItem>
-                <MenuItem icon={<ViewIcon />}>
-                  View Version History
-                </MenuItem>
-                <MenuItem icon={<DeleteIcon />} onClick={handleDeleteDocument} color="red.500">
-                  Delete Document
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </HStack>
-        </Flex>
+                  {document.documentType || "Other"}
+                </Badge>
+                <Text fontSize="sm" color="gray.600">
+                  Last updated {format(new Date(document.updatedAt), "MMMM d, yyyy")}
+                </Text>
+                {getStatusBadge(document.processingStatus)}
+              </Flex>
+            </Box>
+            
+            <HStack spacing={3}>
+              <Tooltip label="Download document">
+                <IconButton
+                  as="a"
+                  href={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
+                  download
+                  icon={<DownloadIcon />}
+                  aria-label="Download document"
+                  colorScheme="blue"
+                  variant="outline"
+                  size="sm"
+                  boxShadow="sm"
+                  _hover={{ boxShadow: "md", transform: "translateY(-1px)" }}
+                  transition="all 0.2s"
+                />
+              </Tooltip>
+              
+              <Menu>
+                <MenuButton
+                  as={IconButton}
+                  aria-label="More options"
+                  icon={<InfoOutlineIcon />}
+                  variant="outline"
+                  size="sm"
+                  boxShadow="sm"
+                  _hover={{ boxShadow: "md", transform: "translateY(-1px)" }}
+                  transition="all 0.2s"
+                />
+                <MenuList>
+                  <MenuItem icon={<RepeatIcon />} onClick={handleRefreshStatus}>
+                    Refresh Status
+                  </MenuItem>
+                  <MenuItem
+                    icon={<AttachmentIcon />} 
+                    onClick={handleProcessDocument} 
+                    isDisabled={processDocumentMutation.isPending}
+                  >
+                    Process with AI
+                  </MenuItem>
+                  <MenuItem icon={<EditIcon />}>
+                    Edit Properties
+                  </MenuItem>
+                  <MenuItem icon={<ViewIcon />}>
+                    View Version History
+                  </MenuItem>
+                  <MenuItem icon={<DeleteIcon />} onClick={handleDeleteDocument} color="red.500">
+                    Delete Document
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            </HStack>
+          </Flex>
+        </Box>
         
-        {/* Processing Alert if needed */}
+        {/* Processing Alert if needed - Improved with better spacing and animation */}
         {['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus) && (
-          <Alert status="info" variant="left-accent" mb={6} borderRadius="md">
+          <Alert 
+            status="info" 
+            variant="left-accent" 
+            mb={8} 
+            borderRadius="md"
+            boxShadow="sm"
+            animation="pulse 2s infinite"
+            sx={{
+              "@keyframes pulse": {
+                "0%": { boxShadow: "0 0 0 0 rgba(66, 153, 225, 0.4)" },
+                "70%": { boxShadow: "0 0 0 6px rgba(66, 153, 225, 0)" },
+                "100%": { boxShadow: "0 0 0 0 rgba(66, 153, 225, 0)" }
+              }
+            }}
+          >
             <AlertIcon />
             <Box flex="1">
-              <AlertTitle fontSize="sm">Document Processing</AlertTitle>
-              <AlertDescription fontSize="xs">
+              <AlertTitle fontSize="sm" fontWeight="medium">Document Processing</AlertTitle>
+              <AlertDescription fontSize="sm">
                 {getProcessingStatusText(document.processingStatus)}
                 <Progress 
                   size="xs" 
-                  isIndeterminate 
+                  isIndeterminate={document.processingStatus === "PROCESSING"}
                   colorScheme="blue" 
-                  mt={2} 
+                  mt={3} 
+                  mb={1}
                   borderRadius="full"
                   value={getProcessingProgress(document.processingStatus)}
                 />
               </AlertDescription>
             </Box>
             <Button
-              size="xs"
+              size="sm"
               variant="outline"
               leftIcon={<RepeatIcon />}
               onClick={handleRefreshStatus}
+              ml={2}
+              _hover={{ bg: "blue.50" }}
             >
               Refresh
             </Button>
           </Alert>
         )}
         
-        {/* Main Content */}
-        <Tabs variant="enclosed" index={selectedTab} onChange={handleTabChange} colorScheme="blue">
-          <TabList>
-            <Tab fontWeight="medium">Details</Tab>
-            <Tab fontWeight="medium">Preview</Tab>
-            <Tab fontWeight="medium" isDisabled={!hasInsights}>AI Insights</Tab>
-            <Tab fontWeight="medium">Timeline</Tab>
-          </TabList>
+        {/* Main Content - Improved with box shadow and spacing */}
+        <Box 
+          borderRadius="md" 
+          boxShadow="md" 
+          bg={bgColor} 
+          overflow="hidden"
+        >
+          <Tabs 
+            variant="enclosed" 
+            index={selectedTab} 
+            onChange={handleTabChange} 
+            colorScheme="blue"
+            isLazy
+          >
+            <TabList 
+              bg={headerBg} 
+              px={4}
+              pt={2}
+              borderBottomWidth="1px"
+              borderBottomColor={borderColor}
+            >
+              <Tab 
+                fontWeight="medium" 
+                _selected={{ 
+                  bg: bgColor, 
+                  borderColor: borderColor, 
+                  borderBottomColor: bgColor,
+                  fontWeight: "semibold" 
+                }}
+              >
+                Details
+              </Tab>
+              <Tab 
+                fontWeight="medium"
+                _selected={{ 
+                  bg: bgColor, 
+                  borderColor: borderColor, 
+                  borderBottomColor: bgColor,
+                  fontWeight: "semibold" 
+                }}
+              >
+                Preview
+              </Tab>
+              <Tab 
+                fontWeight="medium" 
+                isDisabled={!hasInsights}
+                _selected={{ 
+                  bg: bgColor, 
+                  borderColor: borderColor, 
+                  borderBottomColor: bgColor,
+                  fontWeight: "semibold" 
+                }}
+              >
+                AI Insights
+              </Tab>
+              <Tab 
+                fontWeight="medium"
+                _selected={{ 
+                  bg: bgColor, 
+                  borderColor: borderColor, 
+                  borderBottomColor: bgColor,
+                  fontWeight: "semibold" 
+                }}
+              >
+                Timeline
+              </Tab>
+            </TabList>
           
           <TabPanels>
-            {/* Details Tab */}
-            <TabPanel px={0} py={4}>
-              <Grid templateColumns={{base: "1fr", md: "2fr 1fr"}} gap={6}>
+            {/* Details Tab with improved layout */}
+            <TabPanel px={6} py={6}>
+              <Grid 
+                templateColumns={{base: "1fr", md: "2fr 1fr"}} 
+                gap={8}
+                sx={{
+                  "& > div": {
+                    animation: "fadeIn 0.5s ease-in-out",
+                  },
+                  "@keyframes fadeIn": {
+                    "0%": { opacity: 0, transform: "translateY(10px)" },
+                    "100%": { opacity: 1, transform: "translateY(0)" }
+                  }
+                }}
+              >
                 {/* Left Column */}
                 <GridItem>
-                  <Card variant="outline" mb={6}>
-                    <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                  <Card 
+                    variant="outline" 
+                    mb={8} 
+                    borderRadius="md"
+                    boxShadow="sm"
+                    transition="box-shadow 0.2s"
+                    _hover={{ boxShadow: "md" }}
+                  >
+                    <CardHeader 
+                      bg={headerBg} 
+                      py={4} 
+                      px={6} 
+                      borderBottomWidth="1px" 
+                      borderColor={borderColor}
+                      borderTopRadius="md"
+                    >
                       <Heading size="sm">Document Information</Heading>
                     </CardHeader>
-                    <CardBody p={4}>
-                      <Stack spacing={5}>
+                    <CardBody p={6}>
+                      <Stack spacing={6}>
                         <Box>
-                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                          <Text 
+                            fontSize="sm" 
+                            fontWeight="semibold" 
+                            color="gray.500" 
+                            mb={2}
+                            textTransform="uppercase"
+                            letterSpacing="wider"
+                          >
                             Description
                           </Text>
-                          <Text>{document.description || "No description provided."}</Text>
+                          <Text lineHeight="tall">{document.description || "No description provided."}</Text>
                         </Box>
 
                         <Box>
