@@ -230,7 +230,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         console.log('Authentication status:', {
           authCookie,
           sessionCookie,
-          hasToken: !!authToken,
+          hasToken: authToken !== '',
           usingCookieAuth: true
         });
         
@@ -404,7 +404,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               const postLoginAuthStatus = {
                 authCookie: document.cookie.includes('accessToken'),
                 sessionCookie: document.cookie.includes('connect.sid'),
-                hasToken: !!authToken
+                hasToken: authToken !== ''
               };
               console.log('Post-login auth status:', postLoginAuthStatus);
               
