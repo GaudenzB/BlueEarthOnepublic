@@ -1,33 +1,40 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
+import { Route, useLocation } from "wouter";
 
 export function ProtectedRoute({
   path,
   component: Component,
 }: {
   path: string;
-  component: () => React.JSX.Element;
+  component: () => React.ReactElement;
 }) {
   const { user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
-  if (isLoading) {
-    return (
-      <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-border" />
-        </div>
-      </Route>
-    );
-  }
+  // Render the route element with additional logic
+  return (
+    <Route path={path} render={() => {
+      // Show loading indicator while authentication state is being determined
+      if (isLoading) {
+        return (
+          <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        );
+      }
 
-  if (!user) {
-    return (
-      <Route path={path}>
-        <Redirect to="/auth" />
-      </Route>
-    );
-  }
+      // Redirect to auth page if not authenticated
+      if (!user) {
+        // Use a timeout to avoid immediate redirect which can cause issues
+        setTimeout(() => {
+          setLocation("/auth");
+        }, 100);
+        return null;
+      }
 
-  return <Route path={path} component={Component} />;
+      // Render the component if authenticated
+      return <Component />;
+    }} />
+  );
 }
