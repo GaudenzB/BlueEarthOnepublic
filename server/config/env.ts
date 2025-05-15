@@ -16,6 +16,7 @@ const envSchema = z.object({
   // Server configuration
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default('0.0.0.0'),
+  API_URL: z.string().optional(),
   
   // Database configuration
   DATABASE_URL: z.string().min(1, 'Database URL is required'),
@@ -71,7 +72,7 @@ if (!parseEnvResult.success) {
   });
   
   // Only exit in production; allow development to continue with warnings
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env['NODE_ENV'] === 'production') {
     throw new Error('Invalid environment configuration');
   }
 }
@@ -120,8 +121,8 @@ export const isOpenAIConfigured = () => {
  * Get redacted config for safe logging
  * Removes sensitive values before logging configuration
  */
-export const getRedactedConfig = () => {
-  const redacted = { ...env };
+export const getRedactedConfig = (): Record<string, string | number | boolean | undefined> => {
+  const redacted = { ...env } as Record<string, string | number | boolean | undefined>;
   
   // Redact sensitive values
   const sensitiveKeys = [
@@ -134,7 +135,7 @@ export const getRedactedConfig = () => {
   
   sensitiveKeys.forEach(key => {
     if (redacted[key as keyof typeof redacted]) {
-      redacted[key as keyof typeof redacted] = '***REDACTED***' as any;
+      redacted[key as keyof typeof redacted] = '***REDACTED***' as string;
     }
   });
   
