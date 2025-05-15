@@ -41,6 +41,7 @@ import healthRoutes from "./routes/health";
 import monitoringRoutes from "./routes/monitoring";
 import testPdfRoutes from "./routes/test-pdf"; // Added for debugging PDF processing
 import entraSsoRoutes from "./routes/entraIdRoutes"; // Microsoft Entra ID SSO integration
+import authRoutes from "./routes/authRoutes"; // Custom auth routes for development
 import { authController } from "./controllers/authController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -74,6 +75,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Microsoft Entra ID SSO routes
   app.use('/api/auth/entra', entraSsoRoutes);
+  
+  // Register development auth routes
+  app.use('/api/auth', authRoutes);
   
   // Register PDF testing route for debugging
   app.use('/api/test-pdf', testPdfRoutes);
