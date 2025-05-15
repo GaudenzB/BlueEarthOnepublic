@@ -207,6 +207,16 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
         let dbSuccess = false;
         
         try {
+          // Enhanced logging before upload attempt
+          logger.info('Attempting to upload file to storage', {
+            storageKey,
+            mimeType: file.mimetype,
+            fileSize: file.size,
+            storage: process.env.FORCE_LOCAL_STORAGE === 'true' ? 'local' : 'S3',
+            hasBuffer: !!file.buffer,
+            bufferSize: file.buffer ? file.buffer.length : 0
+          });
+          
           // Upload file to storage
           uploadResult = await uploadFile(
             file.buffer,
@@ -214,10 +224,12 @@ router.post('/', authenticate, tenantContext, (req: Request, res: Response) => {
             file.mimetype
           );
           uploadSuccess = true;
-          logger.debug('File uploaded to storage successfully', { 
+          logger.info('File uploaded to storage successfully', { 
             storageKey, 
             checksum: uploadResult.checksum,
-            mimeType: file.mimetype
+            mimeType: file.mimetype,
+            storageType: uploadResult.storageType,
+            fileSize: file.size
           });
           
           // Build a payload object with correct typing

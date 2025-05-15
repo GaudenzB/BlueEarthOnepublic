@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileOutlined, UploadOutlined, CloseOutlined, LoadingOutlined, CheckCircleOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -257,12 +255,25 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         
         // Handle network errors
         xhr.onerror = function() {
+          console.error("Network error during upload");
           reject(new Error('Network error occurred during upload'));
         };
         
         // Handle abort
         xhr.upload.onabort = function() {
+          console.log("Upload was aborted");
           reject(new Error('Upload was cancelled'));
+        };
+        
+        // Add additional handlers to help debug
+        xhr.upload.onerror = function(e) {
+          console.error("Error during upload process:", e);
+        };
+        
+        xhr.timeout = 120000; // 2 minute timeout
+        xhr.ontimeout = function() {
+          console.error("Upload timed out");
+          reject(new Error('Upload timed out after 2 minutes'));
         };
         
         // Connect abort controller to XHR
@@ -272,38 +283,64 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           });
         }
         
+        // Log right before sending
+        console.log("About to send FormData", {
+          formDataHasFile: formData.has('file'),
+          token: token ? "Present" : "Missing"
+        });
+        
         // Send the request with FormData
         xhr.send(formData);
       });
       
-      // Await the upload to complete
-      const responseData = await uploadPromise;
-      
-      // Set success state
-      setUploadStage('complete');
-      setUploadProgress(100);
-      
-      // Show success message
-      toast({
-        title: "Upload successful",
-        description: "Your document was uploaded successfully and is now being processed with AI.",
-        variant: "default",
-      });
-      
-      // Invalidate documents query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      
-      // Call success callback after a short delay to show the success state
-      setTimeout(() => {
-        onSuccess();
+      try {
+        // Await the upload to complete with a timeout
+        const uploadPromiseWithTimeout = Promise.race([
+          uploadPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Upload timed out after 2 minutes')), 120000)
+          )
+        ]);
         
-        // Reset form
-        form.reset();
-        setSelectedFile(null);
-        if (fileRef.current) {
-          fileRef.current.value = "";
-        }
-      }, 1000);
+        const responseData = await uploadPromiseWithTimeout;
+        console.log('Upload completed successfully:', responseData);
+        
+        // Set success state
+        setUploadStage('complete');
+        setUploadProgress(100);
+        
+        // Show success message
+        toast({
+          title: "Upload successful",
+          description: "Your document was uploaded successfully and is now being processed with AI.",
+          variant: "default",
+        });
+        
+        // Invalidate documents query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+        
+        // Call success callback after a short delay to show the success state
+        setTimeout(() => {
+          onSuccess();
+          
+          // Reset form
+          form.reset();
+          setSelectedFile(null);
+          if (fileRef.current) {
+            fileRef.current.value = "";
+          }
+        }, 1000);
+      } catch (timeoutError) {
+        console.error('Upload timeout or race condition error:', timeoutError);
+        setUploadStage('error');
+        setErrorDetails(timeoutError.message || "The upload process timed out");
+        
+        toast({
+          title: "Upload failed",
+          description: "The upload process timed out or was interrupted.",
+          variant: "destructive",
+        });
+      }
       
     } catch (error: any) {
       // Set error state
@@ -365,7 +402,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                       <FormLabel>Document Type</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        defaultValue={field.value || "OTHER"}
                       >
                         <FormControl>
                           <SelectTrigger>
