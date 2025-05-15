@@ -20,32 +20,35 @@ import DocumentDetail from "@/pages/document-detail-consolidated";
 import DesignTesting from "@/pages/design-testing";
 import DesignSystem from "@/pages/DesignSystem";
 import ThemeShowcasePage from "@/pages/ThemeShowcasePage";
+import AuthPage from "@/pages/auth-page";
 import MainLayout from "@/components/layouts/MainLayout";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
 
-// Simplified router function until we fix our auth components
+// Router with authentication controls
 function Router() {
   return (
     <Switch>
-      {/* All routes temporarily public */}
-      <Route path="/auth/login" component={() => <div>Login Page (temp)</div>} />
+      {/* Public authentication routes */}
+      <Route path="/auth" component={AuthPage} />
       <Route path={AUTH_ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
       <Route path={`${AUTH_ROUTES.RESET_PASSWORD}/:token`} component={ResetPassword} />
       <Route path={AUTH_ROUTES.ENTRA_COMPLETE} component={EntraComplete} />
       <Route path={AUTH_ROUTES.ENTRA_ERROR} component={EntraError} />
       
-      {/* Main routes */}
-      <Route path={ROUTES.HOME} component={EmployeeDirectory} />
-      <Route path={ROUTES.EMPLOYEES.DETAIL(':id')} component={EmployeeDetail} />
-      <Route path={ROUTES.DASHBOARD} component={Dashboard} />
-      <Route path={ROUTES.DOCUMENTS.LIST} component={Documents} />
-      <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={DocumentDetail} />
-      <Route path={ROUTES.DESIGN_TESTING} component={DesignTesting} />
-      <Route path={ROUTES.DESIGN_SYSTEM} component={DesignSystem} />
-      <Route path={ROUTES.THEME_SHOWCASE} component={ThemeShowcasePage} />
-      <Route path={ADMIN_ROUTES.USERS} component={UserManagement} />
-      <Route path={ADMIN_ROUTES.INTEGRATIONS} component={Integrations} />
+      {/* Protected main routes */}
+      <ProtectedRoute path={ROUTES.HOME} component={EmployeeDirectory} />
+      <ProtectedRoute path={ROUTES.EMPLOYEES.DETAIL(':id')} component={EmployeeDetail} />
+      <ProtectedRoute path={ROUTES.DASHBOARD} component={Dashboard} />
+      <ProtectedRoute path={ROUTES.DOCUMENTS.LIST} component={Documents} />
+      <ProtectedRoute path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={DocumentDetail} />
+      <ProtectedRoute path={ROUTES.DESIGN_TESTING} component={DesignTesting} />
+      <ProtectedRoute path={ROUTES.DESIGN_SYSTEM} component={DesignSystem} />
+      <ProtectedRoute path={ROUTES.THEME_SHOWCASE} component={ThemeShowcasePage} />
+      <ProtectedRoute path={ADMIN_ROUTES.USERS} component={UserManagement} />
+      <ProtectedRoute path={ADMIN_ROUTES.INTEGRATIONS} component={Integrations} />
       
       {/* Fallback route */}
       <Route component={NotFound} />
@@ -58,12 +61,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <HelmetProvider>
-          <PermissionsProvider>
-            <Toaster />
-            <MainLayout>
-              <Router />
-            </MainLayout>
-          </PermissionsProvider>
+          <AuthProvider>
+            <PermissionsProvider>
+              <Toaster />
+              <MainLayout>
+                <Router />
+              </MainLayout>
+            </PermissionsProvider>
+          </AuthProvider>
         </HelmetProvider>
       </TooltipProvider>
     </QueryClientProvider>

@@ -4,6 +4,7 @@ import { json, urlencoded } from "express";
 import cors from "cors";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { registerRoutes as registerOriginalRoutes } from "./routes";
+import { setupAuth } from "./passport-auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply common middleware
@@ -14,10 +15,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up API documentation
   setupSwaggerDocs(app);
   
-  // For now, we'll use the original routes setup but with our new auth system
-  // This will let us keep existing functionality while transitioning to the new auth
-  // We'll update route modules gradually as we get the auth system working
+  // Set up authentication (this will register the auth routes)
+  const { requireAuth } = setupAuth(app);
+  
+  // Register existing routes
   const httpServer = await registerOriginalRoutes(app);
+  
+  // Define a simple test endpoint to verify our auth is working
+  app.get('/api/protected', requireAuth, (req, res) => {
+    res.json({ 
+      message: 'This is a protected endpoint',
+      user: req.user,
+      authenticated: req.isAuthenticated()
+    });
+  });
+  
+  // Test API endpoint to verify our API is available
+  app.get('/api/health', (req, res) => {
+    res.json({ 
+      status: 'ok',
+      message: 'API is running',
+      authenticated: req.isAuthenticated()
+    });
+  });
   
   return httpServer;
 }
