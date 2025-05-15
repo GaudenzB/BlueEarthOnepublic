@@ -169,8 +169,15 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       formData.append("isConfidential", String(data.isConfidential));
       
-      // Get the auth token from localStorage (check both possible storage keys)
+      // Get the auth data - session cookies should handle authentication automatically
+      // but we also get the token for completeness
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      
+      // Add CSRF token if available (often stored in meta tag)
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      if (csrfToken) {
+        formData.append("_csrf", csrfToken);
+      }
       
       // Create new XMLHttpRequest for progress tracking
       const xhr = new XMLHttpRequest();
@@ -293,18 +300,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         xhr.send(formData);
       });
       
-      try {
-        // Await the upload to complete with a timeout
-        const uploadPromiseWithTimeout = Promise.race([
-          uploadPromise,
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Upload timed out after 2 minutes')), 120000)
-          )
-        ]);
-        
-        const responseData = await uploadPromiseWithTimeout;
-        console.log('Upload completed successfully:', responseData);
-        
+      // Define the success handler function
+      const handleSuccess = (responseData: any) => {
         // Set success state
         setUploadStage('complete');
         setUploadProgress(100);
@@ -312,7 +309,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         // Show success message
         toast({
           title: "Upload successful",
-          description: "Your document was uploaded successfully and is now being processed with AI.",
+          description: "Your document was uploaded successfully.",
           variant: "default",
         });
         
@@ -330,6 +327,81 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             fileRef.current.value = "";
           }
         }, 1000);
+        
+        return responseData;
+      };
+
+      try {
+        // Debug any authentication issues
+        console.log('Authentication status:', { 
+          isAuthenticated: !!localStorage.getItem('authToken') || !!localStorage.getItem('token'),
+          tokenExists: !!token,
+          sessionCookies: document.cookie.includes('connect.sid')
+        });
+        
+        // First try with XMLHttpRequest for better progress reporting
+        try {
+          // Await the upload to complete with a timeout
+          const uploadPromiseWithTimeout = Promise.race([
+            uploadPromise,
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Upload timed out after 2 minutes')), 120000)
+            )
+          ]);
+          
+          // Wait for the upload to complete
+          const responseData = await uploadPromiseWithTimeout;
+          console.log('XMLHttpRequest upload completed successfully');
+          return handleSuccess(responseData);
+        } catch (xhrError) {
+          // If XHR upload fails, try with fetch API as fallback
+          console.log('XMLHttpRequest upload failed, trying with fetch API instead:', xhrError);
+          
+          setUploadProgress(0);
+          
+          // Create a new FormData object for fetch
+          const fetchFormData = new FormData();
+          fetchFormData.append("file", data.file);
+          fetchFormData.append("title", data.title);
+          
+          if (data.documentType) {
+            fetchFormData.append("documentType", data.documentType);
+          }
+          
+          if (data.description) {
+            fetchFormData.append("description", data.description);
+          }
+          
+          if (data.tags) {
+            const tagsArray = data.tags.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0);
+            fetchFormData.append("tags", JSON.stringify(tagsArray));
+          }
+          
+          fetchFormData.append("isConfidential", String(data.isConfidential));
+          
+          // Try with fetch API
+          console.log('Attempting fetch API upload...');
+          const headers: HeadersInit = {};
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          const response = await fetch('/api/documents', {
+            method: 'POST',
+            body: fetchFormData,
+            credentials: 'include',
+            headers
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Upload failed with status ${response.status}`);
+          }
+          
+          const responseData = await response.json();
+          console.log('Fetch API upload completed successfully');
+          return handleSuccess(responseData);
+        }
       } catch (timeoutError) {
         console.error('Upload timeout or race condition error:', timeoutError);
         setUploadStage('error');
