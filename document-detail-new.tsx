@@ -828,13 +828,61 @@ export default function DocumentDetail() {
 
                   {/* AI Summary (if available) */}
                   {hasInsights && document.aiMetadata && document.aiMetadata.summary && (
-                    <Card variant="outline" mb={6}>
-                      <CardHeader bg={headerBg} py={3} px={4} display="flex" alignItems="center" justifyContent="space-between" borderBottomWidth="1px" borderColor={borderColor}>
-                        <Heading size="sm">Document Summary</Heading>
-                        <Badge colorScheme="purple" variant="subtle">AI Generated</Badge>
+                    <Card 
+                      variant="outline" 
+                      mb={8}
+                      borderRadius="md"
+                      boxShadow="sm"
+                      transition="box-shadow 0.2s"
+                      _hover={{ boxShadow: "md" }}
+                      sx={{
+                        animation: "fadeIn 0.6s ease-in-out",
+                        "@keyframes fadeIn": {
+                          "0%": { opacity: 0, transform: "translateY(15px)" },
+                          "100%": { opacity: 1, transform: "translateY(0)" }
+                        }
+                      }}
+                    >
+                      <CardHeader 
+                        bg={headerBg} 
+                        py={4} 
+                        px={6} 
+                        display="flex" 
+                        alignItems="center" 
+                        justifyContent="space-between" 
+                        borderBottomWidth="1px" 
+                        borderColor={borderColor}
+                        borderTopRadius="md"
+                      >
+                        <Flex alignItems="center" gap={2}>
+                          <Icon as={InfoOutlineIcon} color="blue.500" />
+                          <Heading size="sm">Document Summary</Heading>
+                        </Flex>
+                        <Badge 
+                          colorScheme="purple" 
+                          variant="subtle"
+                          px={2}
+                          py={1}
+                          borderRadius="full"
+                          fontSize="xs"
+                        >
+                          AI Generated
+                        </Badge>
                       </CardHeader>
-                      <CardBody p={4}>
-                        <Text fontSize="sm">{document.aiMetadata.summary}</Text>
+                      <CardBody p={6}>
+                        <Text 
+                          fontSize="sm" 
+                          lineHeight="1.7"
+                          color="gray.700"
+                          _dark={{ color: "gray.300" }}
+                          sx={{
+                            "p:not(:last-of-type)": {
+                              marginBottom: "1rem"
+                            }
+                          }}
+                        >
+                          {document.aiMetadata.summary}
+                        </Text>
                       </CardBody>
                     </Card>
                   )}
@@ -1029,12 +1077,20 @@ export default function DocumentDetail() {
                                 {document.processingStatus === "PENDING" ? "Processing" : document.processingStatus}
                               </Badge>
                               <Button
-                                mt={2}
-                                size="xs"
+                                mt={3}
+                                size="sm"
                                 leftIcon={<RepeatIcon />}
                                 onClick={handleProcessDocument}
                                 isLoading={processDocumentMutation.isPending}
                                 isDisabled={processDocumentMutation.isPending || ['PROCESSING', 'PENDING', 'QUEUED'].includes(document.processingStatus)}
+                                colorScheme="blue"
+                                borderRadius="md"
+                                boxShadow="sm"
+                                _hover={{ 
+                                  transform: "translateY(-1px)",
+                                  boxShadow: "md" 
+                                }}
+                                transition="all 0.2s"
                               >
                                 Process Document
                               </Button>
@@ -1047,11 +1103,35 @@ export default function DocumentDetail() {
                   
                   {/* AI Insights Preview */}
                   {hasInsights && document.aiMetadata && (
-                    <Card variant="outline">
-                      <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
-                        <Heading size="sm">AI Insights</Heading>
+                    <Card 
+                      variant="outline" 
+                      borderRadius="md"
+                      boxShadow="sm"
+                      transition="box-shadow 0.2s"
+                      _hover={{ boxShadow: "md" }}
+                      sx={{
+                        animation: "fadeIn 0.6s ease-in-out",
+                        animationDelay: "0.1s",
+                        "@keyframes fadeIn": {
+                          "0%": { opacity: 0, transform: "translateY(15px)" },
+                          "100%": { opacity: 1, transform: "translateY(0)" }
+                        }
+                      }}
+                    >
+                      <CardHeader 
+                        bg={headerBg} 
+                        py={4} 
+                        px={6} 
+                        borderBottomWidth="1px" 
+                        borderColor={borderColor}
+                        borderTopRadius="md"
+                      >
+                        <Flex alignItems="center" gap={2}>
+                          <Icon as={InfoOutlineIcon} color="purple.500" />
+                          <Heading size="sm">AI Insights</Heading>
+                        </Flex>
                       </CardHeader>
-                      <CardBody p={4}>
+                      <CardBody p={6}>
                         <Stack spacing={4}>
                           {/* Keywords */}
                           {document.aiMetadata.keywords && Array.isArray(document.aiMetadata.keywords) && (
