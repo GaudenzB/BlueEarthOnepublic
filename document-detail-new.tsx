@@ -840,25 +840,72 @@ export default function DocumentDetail() {
                   )}
                 </GridItem>
                 
-                {/* Right Column */}
+                {/* Right Column with enhanced styling and animations */}
                 <GridItem>
                   {/* Document Properties */}
-                  <Card variant="outline" mb={6}>
-                    <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
+                  <Card 
+                    variant="outline" 
+                    mb={8} 
+                    borderRadius="md"
+                    boxShadow="sm"
+                    transition="box-shadow 0.2s"
+                    _hover={{ boxShadow: "md" }}
+                    sx={{
+                      animation: "fadeIn 0.6s ease-in-out",
+                      "@keyframes fadeIn": {
+                        "0%": { opacity: 0, transform: "translateY(15px)" },
+                        "100%": { opacity: 1, transform: "translateY(0)" }
+                      }
+                    }}
+                  >
+                    <CardHeader 
+                      bg={headerBg} 
+                      py={4} 
+                      px={6} 
+                      borderBottomWidth="1px" 
+                      borderColor={borderColor}
+                      borderTopRadius="md"
+                      display="flex"
+                      alignItems="center"
+                      gap={2}
+                    >
+                      <Icon as={InfoOutlineIcon} color="blue.500" />
                       <Heading size="sm">Properties</Heading>
                     </CardHeader>
-                    <CardBody p={4}>
-                      <Stack spacing={4}>
-                        {/* Tags */}
+                    <CardBody p={6}>
+                      <Stack spacing={5}>
+                        {/* Tags - improved styling */}
                         <Box>
-                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                          <Text 
+                            fontSize="sm" 
+                            fontWeight="semibold" 
+                            color="gray.500" 
+                            mb={2}
+                            textTransform="uppercase"
+                            letterSpacing="wider"
+                          >
                             Tags
                           </Text>
                           {document.tags && Array.isArray(document.tags) && document.tags.length > 0 ? (
-                            <Wrap>
+                            <Wrap spacing={2} mt={1}>
                               {document.tags.map((tag: string, index: number) => (
                                 <WrapItem key={index}>
-                                  <Tag size="sm" bg={tagBg}>{tag}</Tag>
+                                  <Tag 
+                                    size="md" 
+                                    colorScheme="blue" 
+                                    variant="subtle" 
+                                    borderRadius="full"
+                                    py={1}
+                                    px={3}
+                                    _hover={{ 
+                                      transform: "translateY(-1px)",
+                                      boxShadow: "sm",
+                                      bg: "blue.100"
+                                    }}
+                                    transition="all 0.2s"
+                                  >
+                                    {tag}
+                                  </Tag>
                                 </WrapItem>
                               ))}
                             </Wrap>
@@ -1372,6 +1419,7 @@ export default function DocumentDetail() {
             </TabPanel>
           </TabPanels>
         </Tabs>
+        </Box>
       </Container>
       
       {/* Delete Confirmation Dialog */}
