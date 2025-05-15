@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql, or, like, inArray, SQL } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, or, like, isNull, not, gt } from 'drizzle-orm';
 import { db } from '../db';
 import { 
   documents, 
@@ -7,7 +7,6 @@ import {
   analysisVersions,
   type AnalysisVersion,
   type InsertAnalysisVersion,
-  documentEmbeddings,
   type DocumentEmbedding,
   type InsertDocumentEmbedding
 } from '../../shared/schema/index';
@@ -229,9 +228,15 @@ export const documentRepository = {
    * 
    * @param id - Document ID
    * @param tenantId - Tenant ID for multi-tenancy
-   * @returns The document or undefined if not found
+   * @returns The document with optional user info, or undefined if not found
    */
-  async getById(id: string, tenantId: string): Promise<Document & { uploadedByUser?: { id: number, username: string, name?: string } } | undefined> {
+  async getById(id: string, tenantId: string): Promise<(Document & { 
+    uploadedByUser?: { 
+      id: number; 
+      username: string; 
+      name?: string 
+    } 
+  }) | undefined> {
     try {
       // Validate inputs
       if (!id) {
@@ -263,11 +268,12 @@ export const documentRepository = {
           return undefined;
         }
 
+        // We know docResult exists from the check above
         const docResult = docResults[0];
         
         // Now get the user info separately if uploadedBy exists
         let userInfo = undefined;
-        if (docResult.uploadedBy) {
+        if (docResult && docResult.uploadedBy) {
           // Import the users table from the schema
           const { users } = await import('@shared/schema');
 
@@ -284,11 +290,15 @@ export const documentRepository = {
           }
         }
 
-        // Combine the results
+        // Create a document with user information
+        // Type assertion to Document to satisfy TypeScript's strict checking
+        const document = docResult as Document;
+
+        // Combine the results using type assertion
         const result = {
-          ...docResult,
+          ...document,
           uploadedByUser: userInfo
-        };
+        } as Document & { uploadedByUser?: { id: number; username: string; name?: string } };
 
         logger.info('Document found successfully', { 
           id: result.id,
@@ -299,22 +309,28 @@ export const documentRepository = {
         
         return result;
       } catch (innerError) {
+        const errorMessage = innerError instanceof Error ? innerError.message : 'Unknown error';
+        const errorStack = innerError instanceof Error ? innerError.stack : undefined;
+        
         logger.error('Error in document query', { 
-          error: innerError instanceof Error ? innerError.message : 'Unknown error',
-          stack: innerError instanceof Error ? innerError.stack : undefined,
+          error: errorMessage,
+          stack: errorStack,
           id, 
           tenantId 
         });
         throw innerError;
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
       logger.error('Error getting document by ID', { 
-        error: error instanceof Error ? error.message : 'Unknown error', 
-        stack: error instanceof Error ? error.stack : undefined,
+        error: errorMessage, 
+        stack: errorStack,
         id, 
         tenantId 
       });
-      throw new Error(`Failed to get document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to get document: ${errorMessage}`);
     }
   },
 
@@ -323,7 +339,7 @@ export const documentRepository = {
    * 
    * @param tenantId - Tenant ID
    * @param options - Query options for filtering and pagination
-   * @returns Array of documents
+   * @returns Object containing documents array and total count
    */
   async getAll(tenantId: string, options: {
     limit?: number;
@@ -333,6 +349,9 @@ export const documentRepository = {
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     tags?: string[];
+    isConfidential?: boolean;
+    userRole?: string;
+    userAccessibleConfidentialDocs?: string[];
   } = {}): Promise<{ documents: Document[]; total: number }> {
     try {
       const { 
@@ -342,7 +361,10 @@ export const documentRepository = {
         search,
         sortBy = 'createdAt',
         sortOrder = 'desc',
-        tags 
+        tags,
+        isConfidential,
+        userRole,
+        userAccessibleConfidentialDocs = []
       } = options;
       
       logger.info('🔍 Getting documents with options', { 
@@ -353,7 +375,9 @@ export const documentRepository = {
         search,
         sortBy,
         sortOrder,
-        tags 
+        tagCount: tags?.length || 0,
+        isConfidential,
+        userRole
       });
 
       // Build query conditions
@@ -362,10 +386,12 @@ export const documentRepository = {
         eq(documents.deleted, false) // Only retrieve non-deleted documents
       ];
 
+      // Add document type filter
       if (documentType) {
         conditions.push(eq(documents.documentType, documentType));
       }
 
+      // Add search filter
       if (search) {
         conditions.push(
           or(
@@ -376,10 +402,34 @@ export const documentRepository = {
         );
       }
 
+      // Add tag filters
       if (tags && tags.length > 0) {
         // This is a simplified approach; for production, consider using a more robust tag filtering mechanism
         for (const tag of tags) {
           conditions.push(sql`${documents.tags} @> array[${tag}]::text[]`);
+        }
+      }
+
+      // Add confidentiality filter
+      if (isConfidential !== undefined) {
+        conditions.push(eq(documents.isConfidential, isConfidential));
+      }
+
+      // Apply permissions filters based on user role
+      if (userRole && userRole !== 'superadmin') {
+        if (userRole === 'admin') {
+          // Admins can see all documents in their tenant
+        } else if (userAccessibleConfidentialDocs.length > 0) {
+          // Users with specific confidential document access
+          conditions.push(
+            or(
+              eq(documents.isConfidential, false),
+              sql`${documents.id}::text IN (${sql.join(userAccessibleConfidentialDocs.map(id => sql`${id}`))})`
+            )
+          );
+        } else {
+          // Regular users can't see confidential documents
+          conditions.push(eq(documents.isConfidential, false));
         }
       }
 
@@ -393,28 +443,56 @@ export const documentRepository = {
       }
 
       // Count total records for pagination
-      const [{ count }] = await db
+      const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(documents)
         .where(and(...conditions));
 
-      // Get documents with pagination
-      const results = await db
+      const total = countResult?.[0]?.count ? Number(countResult[0].count) : 0;
+
+      // Build the query
+      let query = db
         .select()
         .from(documents)
         .where(and(...conditions))
-        .orderBy(
-          sortOrder === 'desc' 
-            ? desc(documents[sortBy as keyof typeof documents]) 
-            : documents[sortBy as keyof typeof documents]
-        )
         .limit(limit)
         .offset(offset);
+
+      // Add sorting based on sortBy parameter
+      if (sortBy === 'createdAt') {
+        query = sortOrder === 'asc' 
+          ? query.orderBy(asc(documents.createdAt))
+          : query.orderBy(desc(documents.createdAt));
+      } else if (sortBy === 'updatedAt') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.updatedAt))
+          : query.orderBy(desc(documents.updatedAt));
+      } else if (sortBy === 'title') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.title))
+          : query.orderBy(desc(documents.title));
+      } else if (sortBy === 'documentType') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.documentType))
+          : query.orderBy(desc(documents.documentType));
+      } else if (sortBy === 'fileSize') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.fileSize))
+          : query.orderBy(desc(documents.fileSize));
+      } else {
+        // Default to createdAt if an invalid sortBy is provided
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.createdAt))
+          : query.orderBy(desc(documents.createdAt));
+      }
+
+      // Execute query
+      const results = await query;
 
       // Enhanced logging for document results
       logger.info('📄 Document query results', { 
         resultCount: results.length,
-        totalCount: Number(count),
+        totalCount: total,
         sampleDocument: results.length > 0 ? {
           id: results[0].id,
           title: results[0].title,
@@ -437,11 +515,21 @@ export const documentRepository = {
       
       return {
         documents: results,
-        total: Number(count)
+        total
       };
     } catch (error) {
-      logger.error('Error getting documents', { error, tenantId, options });
-      throw new Error(`Failed to get documents: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting documents', { 
+        error: errorMessage, 
+        tenantId, 
+        options: {
+          ...options,
+          userAccessibleConfidentialDocs: options.userAccessibleConfidentialDocs 
+            ? `[${options.userAccessibleConfidentialDocs.length} items]` 
+            : undefined
+        }
+      });
+      throw new Error(`Failed to get documents: ${errorMessage}`);
     }
   },
 
@@ -577,27 +665,47 @@ export const documentRepository = {
    */
   async storeEmbedding(embedding: InsertDocumentEmbedding & { embedding: number[] }): Promise<DocumentEmbedding | undefined> {
     try {
+      // Validate input
+      if (!embedding || !embedding.documentId || !embedding.embedding || !Array.isArray(embedding.embedding)) {
+        logger.error('Invalid embedding data provided', { 
+          hasDocumentId: !!embedding?.documentId,
+          hasEmbedding: !!embedding?.embedding,
+          isArray: Array.isArray(embedding?.embedding)
+        });
+        throw new Error('Invalid embedding data provided');
+      }
+
       // We need to use raw SQL for the vector type
+      const embeddingVector = embedding.embedding.join(',');
+      
       const result = await db.execute(sql`
         INSERT INTO document_embeddings (
           document_id, chunk_index, text_chunk, embedding, embedding_model
         ) VALUES (
           ${embedding.documentId}, 
           ${embedding.chunkIndex}, 
-          ${embedding.textChunk}, 
-          ${sql.raw(`'[${embedding.embedding.join(',')}]'`)}, 
-          ${embedding.embeddingModel}
+          ${embedding.textChunk || ''}, 
+          ${sql.raw(`'[${embeddingVector}]'`)}, 
+          ${embedding.embeddingModel || 'text-embedding-ada-002'}
         )
         RETURNING *
       `);
       
-      if (result.rows && result.rows.length > 0) {
+      // Return the document embedding result
+      if (result && result.rows && result.rows.length > 0) {
         return result.rows[0] as DocumentEmbedding;
       }
+      
+      logger.warn('No document embedding returned after insertion', { documentId: embedding.documentId });
       return undefined;
     } catch (error) {
-      logger.error('Error storing document embedding', { error, documentId: embedding.documentId });
-      throw new Error(`Failed to store document embedding: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error storing document embedding', { 
+        error: errorMessage, 
+        documentId: embedding.documentId,
+        chunkIndex: embedding.chunkIndex
+      });
+      throw new Error(`Failed to store document embedding: ${errorMessage}`);
     }
   },
 
@@ -629,6 +737,11 @@ export const documentRepository = {
         userAccessibleConfidentialDocs = []
       } = params;
 
+      // Validate inputs
+      if (!tenantId) {
+        throw new Error('Tenant ID is required for semantic search');
+      }
+      
       logger.info('Performing semantic search', { 
         tenantId, 
         vectorLength: queryEmbedding?.length || 0,
@@ -636,11 +749,17 @@ export const documentRepository = {
         minSimilarity,
         documentType,
         hasDocumentIds: !!documentIds && documentIds.length > 0,
-        userRole
+        userRole,
+        hasConfidentialAccess: userAccessibleConfidentialDocs.length > 0
       });
 
+      // Validate query embedding
       if (!queryEmbedding || !Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
-        logger.error('Invalid query embedding provided for semantic search');
+        logger.error('Invalid query embedding provided for semantic search', {
+          isEmpty: !queryEmbedding,
+          isArray: Array.isArray(queryEmbedding),
+          length: queryEmbedding?.length || 0
+        });
         return { documents: [], scores: {} };
       }
 
@@ -665,7 +784,7 @@ export const documentRepository = {
           documents d ON sr.document_id = d.id
         WHERE 
           d.tenant_id = ${tenantId}
-          AND d.deleted IS NOT TRUE
+          AND d.deleted = false
       `;
       
       // Add optional filters
@@ -673,9 +792,10 @@ export const documentRepository = {
         query = sql`${query} AND d.document_type = ${documentType}`;
       }
       
+      // Add document ID filter with proper SQL parameters for safety
       if (documentIds && documentIds.length > 0) {
-        const documentIdsStr = documentIds.map(id => `'${id}'`).join(',');
-        query = sql`${query} AND d.id IN (${sql.raw(documentIdsStr)})`;
+        const idParams = documentIds.map(id => sql`${id}`);
+        query = sql`${query} AND d.id IN (${sql.join(idParams)})`;
       }
       
       // Apply permissions filters based on user role
@@ -684,38 +804,51 @@ export const documentRepository = {
           // Admins can see all documents in their tenant
         } else if (userAccessibleConfidentialDocs.length > 0) {
           // Users with specific confidential document access
-          const accessibleDocsStr = userAccessibleConfidentialDocs.map(id => `'${id}'`).join(',');
+          const accessParams = userAccessibleConfidentialDocs.map(id => sql`${id}`);
           query = sql`${query} AND (
-            d.is_confidential IS NOT TRUE 
-            OR d.id IN (${sql.raw(accessibleDocsStr)})
+            d.is_confidential = false 
+            OR d.id IN (${sql.join(accessParams)})
           )`;
         } else {
           // Regular users can't see confidential documents
-          query = sql`${query} AND d.is_confidential IS NOT TRUE`;
+          query = sql`${query} AND d.is_confidential = false`;
         }
       }
       
       // Add order and limit
       query = sql`${query} ORDER BY sr.similarity DESC LIMIT ${limit}`;
       
-      // Execute the query
+      // Execute the query with proper error handling
       const result = await db.execute(query);
 
-      // Convert result to appropriate format
+      // Convert result to appropriate format with proper type handling
       const documents: Document[] = [];
       const scores: Record<string, number> = {};
       
       if (result && result.rows && result.rows.length > 0) {
         for (const row of result.rows) {
+          // Extract similarity score and convert from string to number
+          const similarity = typeof row.similarity === 'string' 
+            ? parseFloat(row.similarity) 
+            : (typeof row.similarity === 'number' ? row.similarity : 0);
+          
+          // Store the document with proper typing
           documents.push(row as Document);
-          scores[row.id] = row.similarity;
+          
+          // Store the score with proper ID type handling
+          scores[row.id as string] = similarity;
         }
       }
       
+      // Enhanced logging
       logger.info('Semantic search results', { 
         resultCount: documents.length,
         topScore: documents.length > 0 ? scores[documents[0].id] : 0,
-        sampleDocId: documents.length > 0 ? documents[0].id : null
+        sampleDocId: documents.length > 0 ? documents[0].id : null,
+        sampleDocTitle: documents.length > 0 ? documents[0].title : null,
+        relevanceScore: documents.length > 0 
+          ? formatRelevanceScore(scores[documents[0].id])
+          : null
       });
       
       return { documents, scores };
@@ -723,7 +856,8 @@ export const documentRepository = {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Error performing semantic search', { 
         error: errorMessage,
-        tenantId: params.tenantId
+        tenantId: params.tenantId,
+        embeddingLength: params.queryEmbedding?.length || 0
       });
       throw new Error(`Failed to perform semantic search: ${errorMessage}`);
     }
@@ -737,13 +871,32 @@ export const documentRepository = {
    */
   async createAnalysisVersion(version: InsertAnalysisVersion): Promise<AnalysisVersion> {
     try {
+      // Validate input
+      if (!version || !version.documentId || !version.tenantId) {
+        throw new Error('Invalid analysis version data: missing required fields');
+      }
+      
+      // Insert the new version record
       const [result] = await db.insert(analysisVersions)
         .values(version)
         .returning();
+        
+      logger.info('Created analysis version', { 
+        documentId: version.documentId,
+        tenantId: version.tenantId,
+        versionId: result.id,
+        analysisType: version.analysisType
+      });
+      
       return result;
     } catch (error) {
-      logger.error('Error creating analysis version', { error, version });
-      throw new Error(`Failed to create analysis version: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error creating analysis version', { 
+        error: errorMessage, 
+        documentId: version.documentId,
+        tenantId: version.tenantId
+      });
+      throw new Error(`Failed to create analysis version: ${errorMessage}`);
     }
   },
 
@@ -756,6 +909,16 @@ export const documentRepository = {
    */
   async getAnalysisVersions(documentId: string, tenantId: string): Promise<AnalysisVersion[]> {
     try {
+      // Validate inputs
+      if (!documentId || !tenantId) {
+        logger.warn('Invalid parameters for getAnalysisVersions', { 
+          hasDocumentId: !!documentId, 
+          hasTenantId: !!tenantId 
+        });
+        return [];
+      }
+      
+      // Query for analysis versions
       const results = await db
         .select()
         .from(analysisVersions)
@@ -766,10 +929,28 @@ export const documentRepository = {
           )
         )
         .orderBy(desc(analysisVersions.createdAt));
+      
+      logger.info('Retrieved analysis versions', { 
+        documentId, 
+        tenantId, 
+        count: results.length,
+        latestVersion: results.length > 0 ? {
+          id: results[0].id,
+          analysisType: results[0].analysisType,
+          status: results[0].status,
+          createdAt: results[0].createdAt
+        } : null
+      });
+      
       return results;
     } catch (error) {
-      logger.error('Error getting analysis versions', { error, documentId, tenantId });
-      throw new Error(`Failed to get analysis versions: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting analysis versions', { 
+        error: errorMessage, 
+        documentId, 
+        tenantId 
+      });
+      throw new Error(`Failed to get analysis versions: ${errorMessage}`);
     }
   }
 };
