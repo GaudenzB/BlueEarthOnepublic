@@ -1,546 +1,379 @@
 #!/bin/bash
 
 # BlueEarthOne API Testing Script
-# Usage: ./api-test.sh [--mode basic|detailed|e2e] [--output text|json] [--endpoint API_ENDPOINT]
+# This script performs automated API tests against the application
 
-# Default values
-MODE="basic"
-OUTPUT_FORMAT="text"
-API_ENDPOINT="http://localhost:3000"
+# Set default URL
+BASE_URL="${BASE_URL:-http://localhost:3000}"
+API_BASE="${BASE_URL}/api"
+TEST_MODE="${1:-basic}" # basic, detailed, end-to-end
+OUTPUT_DIR="./test-results"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+OUTPUT_FILE="${OUTPUT_DIR}/api-test-${TEST_MODE}-${TIMESTAMP}.log"
+
+# Color codes for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Test credentials
+USERNAME="admin"
+PASSWORD="password123"
 AUTH_TOKEN=""
-TOKEN_FILE=".auth_token"
-TEST_ENV="test"
 
-# Process command-line arguments
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --mode)
-      MODE="$2"
-      shift 2
-      ;;
-    --output)
-      OUTPUT_FORMAT="$2"
-      shift 2
-      ;;
-    --endpoint)
-      API_ENDPOINT="$2"
-      shift 2
-      ;;
-    --env)
-      TEST_ENV="$2"
-      shift 2
-      ;;
-    --token)
-      AUTH_TOKEN="$2"
-      shift 2
-      ;;
-    --help)
-      echo "Usage: $0 [--mode basic|detailed|e2e] [--output text|json] [--endpoint API_ENDPOINT] [--env test|dev|staging|prod] [--token AUTH_TOKEN]"
-      echo
-      echo "Options:"
-      echo "  --mode MODE         Test mode (basic, detailed, e2e). Default: basic"
-      echo "  --output FORMAT     Output format (text, json). Default: text"
-      echo "  --endpoint URL      API endpoint base URL. Default: http://localhost:3000"
-      echo "  --env ENV           Test environment (test, dev, staging, prod). Default: test"
-      echo "  --token TOKEN       Authentication token to use for API calls"
-      echo "  --help              Show this help message"
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1"
-      echo "Run '$0 --help' for usage information."
-      exit 1
-      ;;
-  esac
-done
+# Create output directory
+mkdir -p "$OUTPUT_DIR"
 
-# Validate mode option
-if [[ "$MODE" != "basic" && "$MODE" != "detailed" && "$MODE" != "e2e" ]]; then
-  echo "Error: Invalid mode. Must be one of: basic, detailed, e2e."
-  exit 1
-fi
-
-# Validate output format
-if [[ "$OUTPUT_FORMAT" != "text" && "$OUTPUT_FORMAT" != "json" ]]; then
-  echo "Error: Invalid output format. Must be one of: text, json."
-  exit 1
-fi
-
-# Validate test environment
-if [[ "$TEST_ENV" != "test" && "$TEST_ENV" != "dev" && "$TEST_ENV" != "staging" && "$TEST_ENV" != "prod" ]]; then
-  echo "Error: Invalid test environment. Must be one of: test, dev, staging, prod."
-  exit 1
-fi
-
-# Initialize results
-declare -A results
-status="pass"
-started_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-test_count=0
-pass_count=0
-fail_count=0
-
-# Function to perform HTTP request with timeout
-function do_request() {
-  local method=$1
-  local url=$2
-  local data=$3
-  local timeout=${4:-5}
-  local headers=()
+# Function to make API call and return response
+function callApi() {
+  local endpoint=$1
+  local method=${2:-"GET"}
+  local data=${3:-""}
+  local auth=${4:-""}
   
-  # Add authorization header if token is available
-  if [[ -n "$AUTH_TOKEN" ]]; then
-    headers+=("-H" "Authorization: Bearer $AUTH_TOKEN")
+  local auth_header=""
+  if [ -n "$auth" ]; then
+    auth_header="-H 'Authorization: Bearer $auth'"
   fi
   
-  local start_time=$(date +%s.%N)
-  
-  # Execute the appropriate curl command based on the HTTP method
-  local response=""
-  local http_code=""
-  
-  case "$method" in
-    "GET")
-      response=$(curl -s -w "\n%{http_code}" -m "$timeout" -X GET "${headers[@]}" "$url" 2>/dev/null)
-      ;;
-    "POST")
-      headers+=("-H" "Content-Type: application/json")
-      response=$(curl -s -w "\n%{http_code}" -m "$timeout" -X POST "${headers[@]}" -d "$data" "$url" 2>/dev/null)
-      ;;
-    "PUT")
-      headers+=("-H" "Content-Type: application/json")
-      response=$(curl -s -w "\n%{http_code}" -m "$timeout" -X PUT "${headers[@]}" -d "$data" "$url" 2>/dev/null)
-      ;;
-    "DELETE")
-      response=$(curl -s -w "\n%{http_code}" -m "$timeout" -X DELETE "${headers[@]}" "$url" 2>/dev/null)
-      ;;
-    *)
-      echo "Error: Unsupported HTTP method '$method'"
-      return 1
-      ;;
-  esac
-  
-  # Extract HTTP status code from the response
-  http_code=$(echo "$response" | tail -n1)
-  # Extract the response body by removing the status code line
-  body=$(echo "$response" | sed '$d')
-  
-  local end_time=$(date +%s.%N)
-  local resp_time=$(echo "$end_time - $start_time" | bc)
-  
-  echo "$http_code|$resp_time|$body"
-}
-
-# Function to handle test result reporting
-function record_test_result() {
-  local test_name=$1
-  local result=$2
-  local message=$3
-  local resp_time=$4
-  local status_code=$5
-  local response_body=$6
-  
-  ((test_count++))
-  
-  if [[ "$result" == "pass" ]]; then
-    ((pass_count++))
-    results["$test_name"]="pass|$message|$resp_time|$status_code|$response_body"
-  else
-    ((fail_count++))
-    results["$test_name"]="fail|$message|$resp_time|$status_code|$response_body"
-    status="fail"
+  local content_type=""
+  if [ -n "$data" ]; then
+    content_type="-H 'Content-Type: application/json'"
   fi
-}
-
-# Function to authenticate and get token
-function authenticate() {
-  local auth_url="${API_ENDPOINT}/api/auth/login"
-  local credentials='{"username":"admin","password":"password123"}'
   
-  echo "Authenticating with the API..."
+  local data_arg=""
+  if [ -n "$data" ]; then
+    data_arg="-d '$data'"
+  fi
   
-  local result=$(do_request "POST" "$auth_url" "$credentials" 10)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  local response_body=$(echo "$result" | cut -d'|' -f3-)
+  local cmd="curl -s -X $method $auth_header $content_type $data_arg '${API_BASE}/${endpoint}'"
   
-  if [[ "$http_code" -eq 200 || "$http_code" -eq 201 ]]; then
-    # Extract token from response body
-    if [[ "$response_body" == *"token"* ]]; then
-      # Using grep to extract the token value
-      AUTH_TOKEN=$(echo "$response_body" | grep -o '"token":"[^"]*"' | cut -d':' -f2 | tr -d '"')
-      
-      if [[ -n "$AUTH_TOKEN" ]]; then
-        echo "$AUTH_TOKEN" > "$TOKEN_FILE"
-        record_test_result "authentication" "pass" "Successfully authenticated with the API" "$resp_time" "$http_code" "$response_body"
-        return 0
-      else
-        record_test_result "authentication" "fail" "Failed to extract authentication token from response" "$resp_time" "$http_code" "$response_body"
-        return 1
-      fi
-    else
-      record_test_result "authentication" "fail" "Authentication response doesn't contain a token" "$resp_time" "$http_code" "$response_body"
-      return 1
-    fi
-  else
-    record_test_result "authentication" "fail" "Authentication failed with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+  # Log the command but hide the auth token
+  local log_cmd="curl -s -X $method"
+  if [ -n "$auth" ]; then
+    log_cmd="$log_cmd -H 'Authorization: Bearer [REDACTED]'"
+  fi
+  if [ -n "$content_type" ]; then
+    log_cmd="$log_cmd $content_type"
+  fi
+  if [ -n "$data" ]; then
+    log_cmd="$log_cmd -d '$data'"
+  fi
+  log_cmd="$log_cmd '${API_BASE}/${endpoint}'"
+  
+  echo -e "${YELLOW}Request:${NC} $log_cmd" | tee -a "$OUTPUT_FILE"
+  
+  # Execute the API call
+  local response=$(eval "$cmd")
+  local status=$?
+  
+  echo -e "${YELLOW}Response:${NC} $response" | tee -a "$OUTPUT_FILE"
+  echo "" | tee -a "$OUTPUT_FILE"
+  
+  if [ $status -ne 0 ]; then
+    echo -e "${RED}Error executing API call (status: $status)${NC}" | tee -a "$OUTPUT_FILE"
     return 1
   fi
+  
+  echo "$response"
+  return 0
 }
 
-# Function to run basic API tests
-function run_basic_tests() {
-  # Health check
-  local health_url="${API_ENDPOINT}/api/health"
-  local result=$(do_request "GET" "$health_url" "" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  local response_body=$(echo "$result" | cut -d'|' -f3-)
+# Function to authenticate
+function authenticate() {
+  echo -e "${YELLOW}Authenticating as $USERNAME...${NC}" | tee -a "$OUTPUT_FILE"
   
-  if [[ "$http_code" -eq 200 ]]; then
-    record_test_result "health_check" "pass" "Health check passed" "$resp_time" "$http_code" "$response_body"
-  else
-    record_test_result "health_check" "fail" "Health check failed with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+  local payload="{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}"
+  local response=$(callApi "auth/login" "POST" "$payload")
+  
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Authentication failed${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
   fi
   
-  # Authentication test (if no token provided)
-  if [[ -z "$AUTH_TOKEN" ]]; then
-    if [[ -f "$TOKEN_FILE" ]]; then
-      AUTH_TOKEN=$(cat "$TOKEN_FILE")
-      record_test_result "token_read" "pass" "Read authentication token from file" "0.001" "N/A" "N/A"
-    else
-      authenticate
-    fi
-  else
-    record_test_result "token_provided" "pass" "Using provided authentication token" "0.001" "N/A" "N/A"
+  # Extract token from response
+  AUTH_TOKEN=$(echo "$response" | grep -o '"token":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+  
+  if [ -z "$AUTH_TOKEN" ]; then
+    echo -e "${RED}Failed to extract authentication token${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
   fi
   
-  # Test auth status endpoint
-  if [[ -n "$AUTH_TOKEN" ]]; then
-    local auth_status_url="${API_ENDPOINT}/api/auth/status"
-    local result=$(do_request "GET" "$auth_status_url" "" 5)
-    local http_code=$(echo "$result" | cut -d'|' -f1)
-    local resp_time=$(echo "$result" | cut -d'|' -f2)
-    local response_body=$(echo "$result" | cut -d'|' -f3-)
-    
-    if [[ "$http_code" -eq 200 ]]; then
-      record_test_result "auth_status" "pass" "Auth status check passed" "$resp_time" "$http_code" "$response_body"
-    else
-      record_test_result "auth_status" "fail" "Auth status check failed with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
-    fi
-  fi
+  echo -e "${GREEN}Successfully authenticated${NC}" | tee -a "$OUTPUT_FILE"
+  return 0
 }
 
-# Function to run detailed API tests
-function run_detailed_tests() {
-  # Run basic tests first
-  run_basic_tests
+# Function to check health endpoints
+function testHealthEndpoints() {
+  echo -e "${YELLOW}Testing health endpoints...${NC}" | tee -a "$OUTPUT_FILE"
   
-  # Employees endpoint test
-  local employees_url="${API_ENDPOINT}/api/employees"
-  local result=$(do_request "GET" "$employees_url" "" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  local response_body=$(echo "$result" | cut -d'|' -f3-)
-  
-  if [[ "$http_code" -eq 200 ]]; then
-    record_test_result "get_employees" "pass" "Successfully retrieved employees" "$resp_time" "$http_code" "$response_body"
-  else
-    record_test_result "get_employees" "fail" "Failed to retrieve employees with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+  # Basic health check
+  local response=$(callApi "health")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Basic health check failed${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
   fi
   
-  # Documents endpoint test
-  local documents_url="${API_ENDPOINT}/api/documents"
-  local result=$(do_request "GET" "$documents_url" "" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  local response_body=$(echo "$result" | cut -d'|' -f3-)
-  
-  if [[ "$http_code" -eq 200 ]]; then
-    record_test_result "get_documents" "pass" "Successfully retrieved documents" "$resp_time" "$http_code" "$response_body"
-  else
-    record_test_result "get_documents" "fail" "Failed to retrieve documents with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+  local status=$(echo "$response" | grep -o '"status":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+  if [ "$status" != "pass" ]; then
+    echo -e "${RED}Health check returned status: $status${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
   fi
   
-  # Create test document
-  local create_document_url="${API_ENDPOINT}/api/documents"
-  local document_data='{"title":"Test Document","content":"This is a test document created by the API test script.","status":"draft","visibility":"private"}'
-  local result=$(do_request "POST" "$create_document_url" "$document_data" 10)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  local response_body=$(echo "$result" | cut -d'|' -f3-)
+  echo -e "${GREEN}Basic health check passed${NC}" | tee -a "$OUTPUT_FILE"
   
-  if [[ "$http_code" -eq 201 || "$http_code" -eq 200 ]]; then
-    # Extract document ID for later use
-    local document_id=$(echo "$response_body" | grep -o '"id":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+  if [ "$TEST_MODE" != "basic" ]; then
+    # Detailed health check
+    local response=$(callApi "health/detailed")
+    if [ $? -ne 0 ]; then
+      echo -e "${RED}Detailed health check failed${NC}" | tee -a "$OUTPUT_FILE"
+      return 1
+    }
     
-    record_test_result "create_document" "pass" "Successfully created test document" "$resp_time" "$http_code" "$response_body"
-    
-    # Get document by ID
-    if [[ -n "$document_id" ]]; then
-      local get_document_url="${API_ENDPOINT}/api/documents/${document_id}"
-      local result=$(do_request "GET" "$get_document_url" "" 5)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
-      
-      if [[ "$http_code" -eq 200 ]]; then
-        record_test_result "get_document_by_id" "pass" "Successfully retrieved document by ID" "$resp_time" "$http_code" "$response_body"
-      else
-        record_test_result "get_document_by_id" "fail" "Failed to retrieve document by ID with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
-      fi
-      
-      # Update document
-      local update_document_url="${API_ENDPOINT}/api/documents/${document_id}"
-      local updated_data='{"title":"Updated Test Document","content":"This document has been updated by the API test script.","status":"published","visibility":"public"}'
-      local result=$(do_request "PUT" "$update_document_url" "$updated_data" 10)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
-      
-      if [[ "$http_code" -eq 200 ]]; then
-        record_test_result "update_document" "pass" "Successfully updated test document" "$resp_time" "$http_code" "$response_body"
-      else
-        record_test_result "update_document" "fail" "Failed to update document with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
-      fi
-      
-      # Delete document
-      local delete_document_url="${API_ENDPOINT}/api/documents/${document_id}"
-      local result=$(do_request "DELETE" "$delete_document_url" "" 5)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
-      
-      if [[ "$http_code" -eq 200 || "$http_code" -eq 204 ]]; then
-        record_test_result "delete_document" "pass" "Successfully deleted test document" "$resp_time" "$http_code" "$response_body"
-      else
-        record_test_result "delete_document" "fail" "Failed to delete document with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
-      fi
-    else
-      record_test_result "extract_document_id" "fail" "Failed to extract document ID from create response" "$resp_time" "$http_code" "$response_body"
+    local status=$(echo "$response" | grep -o '"status":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
+    if [ "$status" != "pass" ]; then
+      echo -e "${RED}Detailed health check returned status: $status${NC}" | tee -a "$OUTPUT_FILE"
+      return 1
     fi
-  else
-    record_test_result "create_document" "fail" "Failed to create test document with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+    
+    echo -e "${GREEN}Detailed health check passed${NC}" | tee -a "$OUTPUT_FILE"
   fi
+  
+  return 0
 }
 
-# Function to run end-to-end API tests
-function run_e2e_tests() {
-  # Run detailed tests first
-  run_detailed_tests
+# Function to test authentication endpoints
+function testAuthEndpoints() {
+  echo -e "${YELLOW}Testing authentication endpoints...${NC}" | tee -a "$OUTPUT_FILE"
   
-  # Employee creation and management flow
-  local create_employee_url="${API_ENDPOINT}/api/employees"
-  local employee_data='{"firstName":"John","lastName":"Doe","email":"john.doe.test@example.com","department":"Engineering","title":"Software Engineer","phoneNumber":"555-123-4567"}'
-  local result=$(do_request "POST" "$create_employee_url" "$employee_data" 10)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  local response_body=$(echo "$result" | cut -d'|' -f3-)
+  # Login
+  local payload="{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}"
+  local response=$(callApi "auth/login" "POST" "$payload")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Login endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
+  fi
   
-  if [[ "$http_code" -eq 201 || "$http_code" -eq 200 ]]; then
-    # Extract employee ID for later use
-    local employee_id=$(echo "$response_body" | grep -o '"id":[0-9]*' | cut -d':' -f2 | tr -d '"')
+  # Extract token
+  local token=$(echo "$response" | grep -o '"token":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+  if [ -z "$token" ]; then
+    echo -e "${RED}Failed to extract token from login response${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
+  fi
+  
+  echo -e "${GREEN}Login endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+  
+  # Test invalid login
+  local payload="{\"username\":\"$USERNAME\",\"password\":\"wrongpassword\"}"
+  local response=$(callApi "auth/login" "POST" "$payload")
+  local http_code=$(echo "$response" | grep -o '"statusCode":[0-9]*' | cut -d':' -f2)
+  
+  if [ "$http_code" != "401" ] && [ "$http_code" != "400" ]; then
+    echo -e "${RED}Invalid login test failed - expected 401 or 400, got $http_code${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
+  fi
+  
+  echo -e "${GREEN}Invalid login endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+  
+  # Test current user endpoint (if not in basic mode)
+  if [ "$TEST_MODE" != "basic" ]; then
+    local response=$(callApi "auth/me" "GET" "" "$AUTH_TOKEN")
+    if [ $? -ne 0 ]; then
+      echo -e "${RED}Current user endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+      return 1
+    fi
     
-    record_test_result "create_employee" "pass" "Successfully created test employee" "$resp_time" "$http_code" "$response_body"
+    local username=$(echo "$response" | grep -o '"username":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+    if [ "$username" != "$USERNAME" ]; then
+      echo -e "${RED}Current user endpoint returned wrong username: $username${NC}" | tee -a "$OUTPUT_FILE"
+      return 1
+    }
     
-    # Get employee by ID
-    if [[ -n "$employee_id" ]]; then
-      local get_employee_url="${API_ENDPOINT}/api/employees/${employee_id}"
-      local result=$(do_request "GET" "$get_employee_url" "" 5)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
-      
-      if [[ "$http_code" -eq 200 ]]; then
-        record_test_result "get_employee_by_id" "pass" "Successfully retrieved employee by ID" "$resp_time" "$http_code" "$response_body"
-      else
-        record_test_result "get_employee_by_id" "fail" "Failed to retrieve employee by ID with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+    echo -e "${GREEN}Current user endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+  fi
+  
+  return 0
+}
+
+# Function to test document endpoints
+function testDocumentEndpoints() {
+  echo -e "${YELLOW}Testing document endpoints...${NC}" | tee -a "$OUTPUT_FILE"
+  
+  # List documents
+  local response=$(callApi "documents" "GET" "" "$AUTH_TOKEN")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}List documents endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
+  fi
+  
+  # Check if response contains documents array
+  if ! echo "$response" | grep -q "documents"; then
+    echo -e "${RED}List documents response doesn't contain documents array${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
+  fi
+  
+  echo -e "${GREEN}List documents endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+  
+  # If not in basic mode, test more document endpoints
+  if [ "$TEST_MODE" != "basic" ]; then
+    # Get document by ID (extract first document ID from list)
+    local doc_id=$(echo "$response" | grep -o '"id":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
+    
+    if [ -n "$doc_id" ]; then
+      local response=$(callApi "documents/$doc_id" "GET" "" "$AUTH_TOKEN")
+      if [ $? -ne 0 ]; then
+        echo -e "${RED}Get document by ID endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+        return 1
       fi
       
-      # Update employee
-      local update_employee_url="${API_ENDPOINT}/api/employees/${employee_id}"
-      local updated_employee_data='{"firstName":"John","lastName":"Doe","email":"john.doe.updated@example.com","department":"Product","title":"Senior Software Engineer","phoneNumber":"555-987-6543"}'
-      local result=$(do_request "PUT" "$update_employee_url" "$updated_employee_data" 10)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
-      
-      if [[ "$http_code" -eq 200 ]]; then
-        record_test_result "update_employee" "pass" "Successfully updated test employee" "$resp_time" "$http_code" "$response_body"
-      else
-        record_test_result "update_employee" "fail" "Failed to update employee with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+      # Check if response contains the document ID
+      if ! echo "$response" | grep -q "\"id\":\"$doc_id\""; then
+        echo -e "${RED}Get document by ID response doesn't contain the requested document${NC}" | tee -a "$OUTPUT_FILE"
+        return 1
       fi
       
-      # Search for employee
-      local search_url="${API_ENDPOINT}/api/employees/search?q=john.doe"
-      local result=$(do_request "GET" "$search_url" "" 5)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
+      echo -e "${GREEN}Get document by ID endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+    else
+      echo -e "${YELLOW}Skipping document detail tests - no documents found${NC}" | tee -a "$OUTPUT_FILE"
+    fi
+    
+    # Test document search if in end-to-end mode
+    if [ "$TEST_MODE" == "end-to-end" ] && [ -n "$doc_id" ]; then
+      # Extract a word from the document title to search for
+      local search_term=$(echo "$response" | grep -o '"title":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"' | cut -d' ' -f1)
       
-      if [[ "$http_code" -eq 200 ]]; then
-        if [[ "$response_body" == *"john.doe"* ]]; then
-          record_test_result "search_employee" "pass" "Successfully searched for and found employee" "$resp_time" "$http_code" "$response_body"
-        else
-          record_test_result "search_employee" "fail" "Search completed but employee not found in results" "$resp_time" "$http_code" "$response_body"
+      if [ -n "$search_term" ]; then
+        local response=$(callApi "documents/search?q=$search_term" "GET" "" "$AUTH_TOKEN")
+        if [ $? -ne 0 ]; then
+          echo -e "${RED}Document search endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+          return 1
         fi
-      else
-        record_test_result "search_employee" "fail" "Failed to search for employee with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
-      fi
-      
-      # Filter employees by department
-      local filter_url="${API_ENDPOINT}/api/employees?department=Product"
-      local result=$(do_request "GET" "$filter_url" "" 5)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
-      
-      if [[ "$http_code" -eq 200 ]]; then
-        if [[ "$response_body" == *"john.doe"* ]]; then
-          record_test_result "filter_employees" "pass" "Successfully filtered employees by department" "$resp_time" "$http_code" "$response_body"
-        else
-          record_test_result "filter_employees" "fail" "Filter completed but employee not found in results" "$resp_time" "$http_code" "$response_body"
+        
+        # Check if response contains documents
+        if ! echo "$response" | grep -q "documents"; then
+          echo -e "${RED}Document search response doesn't contain results${NC}" | tee -a "$OUTPUT_FILE"
+          return 1
         fi
+        
+        echo -e "${GREEN}Document search endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
       else
-        record_test_result "filter_employees" "fail" "Failed to filter employees with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
+        echo -e "${YELLOW}Skipping document search test - couldn't extract search term${NC}" | tee -a "$OUTPUT_FILE"
       fi
-      
-      # Delete employee
-      local delete_employee_url="${API_ENDPOINT}/api/employees/${employee_id}"
-      local result=$(do_request "DELETE" "$delete_employee_url" "" 5)
-      local http_code=$(echo "$result" | cut -d'|' -f1)
-      local resp_time=$(echo "$result" | cut -d'|' -f2)
-      local response_body=$(echo "$result" | cut -d'|' -f3-)
-      
-      if [[ "$http_code" -eq 200 || "$http_code" -eq 204 ]]; then
-        record_test_result "delete_employee" "pass" "Successfully deleted test employee" "$resp_time" "$http_code" "$response_body"
-      else
-        record_test_result "delete_employee" "fail" "Failed to delete employee with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
-      fi
-    else
-      record_test_result "extract_employee_id" "fail" "Failed to extract employee ID from create response" "$resp_time" "$http_code" "$response_body"
     fi
-  else
-    record_test_result "create_employee" "fail" "Failed to create test employee with HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
   fi
   
-  # Test SSO integration if configured
-  local sso_url="${API_ENDPOINT}/api/auth/sso/status"
-  local result=$(do_request "GET" "$sso_url" "" 5)
-  local http_code=$(echo "$result" | cut -d'|' -f1)
-  local resp_time=$(echo "$result" | cut -d'|' -f2)
-  local response_body=$(echo "$result" | cut -d'|' -f3-)
-  
-  if [[ "$http_code" -eq 200 ]]; then
-    record_test_result "sso_status" "pass" "SSO integration status check passed" "$resp_time" "$http_code" "$response_body"
-  else
-    # Not failing the entire test suite for SSO issues, just logging
-    record_test_result "sso_status" "warn" "SSO integration status check returned HTTP code $http_code" "$resp_time" "$http_code" "$response_body"
-  fi
+  return 0
 }
 
-# Run the appropriate test suite based on the specified mode
-case "$MODE" in
-  "basic")
-    run_basic_tests
-    ;;
-  "detailed")
-    run_detailed_tests
-    ;;
-  "e2e")
-    run_e2e_tests
-    ;;
-esac
-
-completed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-duration=$(echo "$(date -d "$completed_at" +%s) - $(date -d "$started_at" +%s)" | bc)
-
-# Output results based on specified format
-if [[ "$OUTPUT_FORMAT" == "json" ]]; then
-  # Start JSON output
-  echo "{"
-  echo "  \"status\": \"$status\","
-  echo "  \"summary\": {"
-  echo "    \"total\": $test_count,"
-  echo "    \"passed\": $pass_count,"
-  echo "    \"failed\": $fail_count,"
-  echo "    \"duration\": $duration"
-  echo "  },"
-  echo "  \"timestamp\": \"$completed_at\","
-  echo "  \"mode\": \"$MODE\","
-  echo "  \"endpoint\": \"$API_ENDPOINT\","
-  echo "  \"environment\": \"$TEST_ENV\","
-  echo "  \"tests\": {"
+# Function to test employee endpoints
+function testEmployeeEndpoints() {
+  echo -e "${YELLOW}Testing employee endpoints...${NC}" | tee -a "$OUTPUT_FILE"
   
-  # Process each result
-  first=true
-  for key in "${!results[@]}"; do
-    if [[ "$first" == "true" ]]; then
-      first=false
-    else
-      echo ","
-    fi
-    
-    result_fields=(${results[$key]//|/ })
-    result_status=${result_fields[0]}
-    result_message=${result_fields[1]}
-    result_time=${result_fields[2]}
-    result_code=${result_fields[3]}
-    
-    # Escape quotes in the message
-    result_message=$(echo "$result_message" | sed 's/"/\\"/g')
-    
-    echo -n "    \"$key\": {"
-    echo -n "\"status\": \"$result_status\", "
-    echo -n "\"message\": \"$result_message\", "
-    echo -n "\"responseTime\": $result_time, "
-    echo -n "\"statusCode\": \"$result_code\""
-    echo -n "}"
-  done
+  # List employees
+  local response=$(callApi "employees" "GET" "" "$AUTH_TOKEN")
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}List employees endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
+  fi
   
-  # Close JSON structure
-  echo ""
-  echo "  }"
-  echo "}"
-else
-  # Text output
-  echo "BlueEarthOne API Test Report"
-  echo "============================"
-  echo "Status: $status"
-  echo "Environment: $TEST_ENV"
-  echo "Mode: $MODE"
-  echo "API Endpoint: $API_ENDPOINT"
-  echo "Time: $completed_at"
-  echo "Duration: $duration seconds"
-  echo "Summary: $pass_count/$test_count tests passed, $fail_count failed"
-  echo ""
-  echo "Results:"
+  # Check if response contains employees array
+  if ! echo "$response" | grep -q "employees"; then
+    echo -e "${RED}List employees response doesn't contain employees array${NC}" | tee -a "$OUTPUT_FILE"
+    return 1
+  fi
   
-  # Sort keys for consistent output
-  for key in $(echo ${!results[@]} | tr ' ' '\n' | sort); do
-    IFS='|' read -r result_status result_message result_time result_code result_body <<< "${results[$key]}"
+  echo -e "${GREEN}List employees endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+  
+  # If not in basic mode, test more employee endpoints
+  if [ "$TEST_MODE" != "basic" ]; then
+    # Get employee by ID (extract first employee ID from list)
+    local emp_id=$(echo "$response" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
     
-    # Format output with appropriate colors if outputting to a terminal
-    status_color=""
-    reset_color=""
-    if [[ -t 1 ]]; then  # Check if stdout is a terminal
-      reset_color="\033[0m"
-      if [[ "$result_status" == "pass" ]]; then
-        status_color="\033[32m"  # Green
-      elif [[ "$result_status" == "warn" ]]; then
-        status_color="\033[33m"  # Yellow
-      else
-        status_color="\033[31m"  # Red
+    if [ -n "$emp_id" ]; then
+      local response=$(callApi "employees/$emp_id" "GET" "" "$AUTH_TOKEN")
+      if [ $? -ne 0 ]; then
+        echo -e "${RED}Get employee by ID endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+        return 1
       fi
+      
+      # Check if response contains the employee ID
+      if ! echo "$response" | grep -q "\"id\":$emp_id"; then
+        echo -e "${RED}Get employee by ID response doesn't contain the requested employee${NC}" | tee -a "$OUTPUT_FILE"
+        return 1
+      fi
+      
+      echo -e "${GREEN}Get employee by ID endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+      
+      # Test employee search if in end-to-end mode
+      if [ "$TEST_MODE" == "end-to-end" ]; then
+        # Extract employee first name to search for
+        local search_term=$(echo "$response" | grep -o '"firstName":"[^"]*"' | head -1 | cut -d':' -f2 | tr -d '"')
+        
+        if [ -n "$search_term" ]; then
+          local response=$(callApi "employees/search?q=$search_term" "GET" "" "$AUTH_TOKEN")
+          if [ $? -ne 0 ]; then
+            echo -e "${RED}Employee search endpoint test failed${NC}" | tee -a "$OUTPUT_FILE"
+            return 1
+          fi
+          
+          # Check if response contains employees
+          if ! echo "$response" | grep -q "employees"; then
+            echo -e "${RED}Employee search response doesn't contain results${NC}" | tee -a "$OUTPUT_FILE"
+            return 1
+          fi
+          
+          echo -e "${GREEN}Employee search endpoint test passed${NC}" | tee -a "$OUTPUT_FILE"
+        else
+          echo -e "${YELLOW}Skipping employee search test - couldn't extract search term${NC}" | tee -a "$OUTPUT_FILE"
+        fi
+      fi
+    else
+      echo -e "${YELLOW}Skipping employee detail tests - no employees found${NC}" | tee -a "$OUTPUT_FILE"
     fi
-    
-    printf "  %s[%s]%s %s - %s (%.2fs, HTTP %s)\n" "$status_color" "$result_status" "$reset_color" "$key" "$result_message" "$result_time" "$result_code"
-  done
-fi
+  fi
+  
+  return 0
+}
 
-# Return appropriate exit code
-if [[ "$status" == "fail" ]]; then
-  exit 1
-else
-  exit 0
-fi
+# Main function
+function main() {
+  echo -e "${YELLOW}BlueEarthOne API Test Tool${NC}" | tee -a "$OUTPUT_FILE"
+  echo "Target API: $API_BASE" | tee -a "$OUTPUT_FILE"
+  echo "Test mode: $TEST_MODE" | tee -a "$OUTPUT_FILE"
+  echo "Output file: $OUTPUT_FILE" | tee -a "$OUTPUT_FILE"
+  echo "----------------------------------------" | tee -a "$OUTPUT_FILE"
+  echo "Starting tests at $(date)" | tee -a "$OUTPUT_FILE"
+  echo "" | tee -a "$OUTPUT_FILE"
+  
+  # Test health endpoints first (these should work without auth)
+  testHealthEndpoints
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Health endpoint tests failed, aborting further tests${NC}" | tee -a "$OUTPUT_FILE"
+    exit 1
+  fi
+  
+  # Authenticate for further tests
+  authenticate
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Authentication failed, aborting further tests${NC}" | tee -a "$OUTPUT_FILE"
+    exit 1
+  fi
+  
+  # Run authentication endpoint tests
+  testAuthEndpoints
+  
+  # Run document endpoint tests
+  testDocumentEndpoints
+  
+  # Run employee endpoint tests
+  testEmployeeEndpoints
+  
+  echo "" | tee -a "$OUTPUT_FILE"
+  echo "----------------------------------------" | tee -a "$OUTPUT_FILE"
+  echo -e "${GREEN}API tests completed successfully!${NC}" | tee -a "$OUTPUT_FILE"
+  echo "See $OUTPUT_FILE for full test results" | tee -a "$OUTPUT_FILE"
+}
+
+# Execute main function
+main "$@"

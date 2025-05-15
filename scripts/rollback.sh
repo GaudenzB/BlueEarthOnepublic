@@ -1,326 +1,271 @@
 #!/bin/bash
 
-# BlueEarthOne Rollback Script
-# Usage: ./rollback.sh [--version VERSION] [--backup BACKUP_FILE] [--env ENVIRONMENT] [--force]
+# BlueEarthOne Database Rollback Script
+# This script supports rolling back the database to a previous state
+# by restoring from backups.
 
-# Default values
-VERSION=""
-BACKUP_FILE=""
-ENVIRONMENT="staging"
-FORCE=false
-TIMESTAMP=$(date +%Y%m%d%H%M%S)
+# Set default variables
 BACKUP_DIR="./backups"
+ENVIRONMENT=${1:-"development"}
+BACKUP_FILE=${2:-""}
+DATABASE_URL=${DATABASE_URL:-""}
+CONFIRM=${3:-""}
 
-# Process command-line arguments
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --version)
-      VERSION="$2"
-      shift 2
-      ;;
-    --backup)
-      BACKUP_FILE="$2"
-      shift 2
-      ;;
-    --env)
-      ENVIRONMENT="$2"
-      shift 2
-      ;;
-    --force)
-      FORCE=true
-      shift
-      ;;
-    --help)
-      echo "Usage: $0 [--version VERSION] [--backup BACKUP_FILE] [--env ENVIRONMENT] [--force]"
-      echo
-      echo "Options:"
-      echo "  --version VERSION    Specific version to rollback to (git tag or commit hash)"
-      echo "  --backup BACKUP_FILE Database backup file to restore"
-      echo "  --env ENVIRONMENT    Target environment (staging, production). Default: staging"
-      echo "  --force              Skip confirmation prompt"
-      echo "  --help               Show this help message"
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1"
-      echo "Run '$0 --help' for usage information."
+# Color codes for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Function to print usage
+function printUsage() {
+  echo "Usage: $0 [environment] [backup_file] [confirm]"
+  echo ""
+  echo "Arguments:"
+  echo "  environment    The environment to rollback (development, staging, production)"
+  echo "  backup_file    (Optional) Specific backup file to restore"
+  echo "  confirm        Pass 'yes' to bypass confirmation prompts (for automated scripts)"
+  echo ""
+  echo "Examples:"
+  echo "  $0 development                   # Lists available backups for development"
+  echo "  $0 production backup_20250515.sql  # Restores specific backup to production"
+  echo "  $0 staging latest yes            # Restores latest staging backup without confirmation"
+  echo ""
+}
+
+# Function to check if PostgreSQL tools are available
+function checkPgTools() {
+  if ! command -v pg_dump &> /dev/null || ! command -v psql &> /dev/null; then
+    echo -e "${RED}Error: PostgreSQL client tools (pg_dump, psql) are not installed${NC}"
+    echo "Please install the PostgreSQL client tools and try again."
+    exit 1
+  fi
+}
+
+# Function to check database connection
+function checkDatabaseConnection() {
+  if [ -z "$DATABASE_URL" ]; then
+    echo -e "${RED}Error: DATABASE_URL environment variable is not set${NC}"
+    echo "Please set the DATABASE_URL environment variable and try again."
+    exit 1
+  fi
+  
+  # Test connection
+  if ! psql "$DATABASE_URL" -c '\q' 2>/dev/null; then
+    echo -e "${RED}Error: Could not connect to database${NC}"
+    echo "Please check your database credentials and try again."
+    exit 1
+  fi
+}
+
+# Function to create a backup of the current database state
+function createBackup() {
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local backup_file="${BACKUP_DIR}/${ENVIRONMENT}_backup_${timestamp}.sql"
+  
+  echo -e "${YELLOW}Creating backup of current database state...${NC}"
+  
+  # Create backup directory if it doesn't exist
+  mkdir -p "$BACKUP_DIR"
+  
+  # Dump database to backup file
+  if pg_dump "$DATABASE_URL" > "$backup_file"; then
+    echo -e "${GREEN}Backup created successfully: ${backup_file}${NC}"
+    echo "$backup_file"
+  else
+    echo -e "${RED}Error: Failed to create backup${NC}"
+    exit 1
+  fi
+}
+
+# Function to list available backups
+function listBackups() {
+  # Create backup directory if it doesn't exist
+  mkdir -p "$BACKUP_DIR"
+  
+  echo -e "${YELLOW}Available backups for ${ENVIRONMENT} environment:${NC}"
+  
+  # List backups for the specified environment
+  local backups=$(find "$BACKUP_DIR" -name "${ENVIRONMENT}_backup_*.sql" -type f | sort -r)
+  
+  if [ -z "$backups" ]; then
+    echo "No backups found for ${ENVIRONMENT} environment."
+    return 1
+  fi
+  
+  # Print backup files with index
+  local i=1
+  while read -r backup; do
+    local size=$(du -h "$backup" | cut -f1)
+    local date=$(stat -c %y "$backup" | cut -d. -f1)
+    echo "$i) $(basename "$backup") (${size}, ${date})"
+    i=$((i+1))
+  done <<< "$backups"
+  
+  return 0
+}
+
+# Function to get a specific backup file
+function getBackupFile() {
+  # Handle 'latest' keyword
+  if [ "$BACKUP_FILE" == "latest" ]; then
+    BACKUP_FILE=$(find "$BACKUP_DIR" -name "${ENVIRONMENT}_backup_*.sql" -type f | sort -r | head -n1)
+    if [ -z "$BACKUP_FILE" ]; then
+      echo -e "${RED}Error: No backups found for ${ENVIRONMENT} environment${NC}"
       exit 1
-      ;;
-  esac
-done
-
-# Validate environment
-if [[ "$ENVIRONMENT" != "staging" && "$ENVIRONMENT" != "production" ]]; then
-  echo "Error: Invalid environment. Must be one of: staging, production."
-  exit 1
-fi
-
-# Load environment-specific configuration
-if [[ "$ENVIRONMENT" == "production" ]]; then
-  DB_URL="${PRODUCTION_DATABASE_URL:-}"
-  APP_URL="https://app.blueearth.example.com"
-  SERVICE_NAME="blueearth-app-prod"
-else
-  DB_URL="${STAGING_DATABASE_URL:-}"
-  APP_URL="https://staging.blueearth.example.com"
-  SERVICE_NAME="blueearth-app-staging"
-fi
-
-# Create backup directory if it doesn't exist
-mkdir -p "$BACKUP_DIR"
-
-# Function to create a backup of the current state
-function create_backup() {
-  echo "Creating backup of current database state..."
-  
-  # Exit if pg_dump is not available
-  if ! command -v pg_dump &> /dev/null; then
-    echo "Error: pg_dump command not found. Cannot create backup."
-    return 1
-  fi
-  
-  # Create backup filename
-  local backup_file="${BACKUP_DIR}/backup-${ENVIRONMENT}-${TIMESTAMP}.sql"
-  
-  # Perform backup
-  if [[ -n "$DB_URL" ]]; then
-    if pg_dump "$DB_URL" > "$backup_file"; then
-      echo "Backup created successfully: $backup_file"
-      return 0
-    else
-      echo "Error: Failed to create backup."
-      return 1
     fi
-  else
-    echo "Error: Database URL not set. Cannot create backup."
-    return 1
-  fi
-}
-
-# Function to restore a database backup
-function restore_backup() {
-  local backup_file="$1"
-  
-  echo "Restoring database from backup: $backup_file"
-  
-  # Exit if psql is not available
-  if ! command -v psql &> /dev/null; then
-    echo "Error: psql command not found. Cannot restore backup."
-    return 1
+    echo -e "${YELLOW}Using latest backup: $(basename "$BACKUP_FILE")${NC}"
+    return 0
   fi
   
-  # Check if backup file exists
-  if [[ ! -f "$backup_file" ]]; then
-    echo "Error: Backup file not found: $backup_file"
-    return 1
-  fi
-  
-  # Perform restore
-  if [[ -n "$DB_URL" ]]; then
-    # First, drop all tables to avoid conflicts
-    echo "Dropping existing tables..."
-    psql "$DB_URL" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+  # Handle specific backup file
+  if [ -n "$BACKUP_FILE" ]; then
+    # Check if the file exists directly
+    if [ -f "$BACKUP_DIR/$BACKUP_FILE" ]; then
+      BACKUP_FILE="$BACKUP_DIR/$BACKUP_FILE"
+      return 0
+    fi
     
-    if psql "$DB_URL" < "$backup_file"; then
-      echo "Database restored successfully from: $backup_file"
+    # Check if the file exists with environment prefix
+    if [ -f "$BACKUP_DIR/${ENVIRONMENT}_${BACKUP_FILE}" ]; then
+      BACKUP_FILE="$BACKUP_DIR/${ENVIRONMENT}_${BACKUP_FILE}"
       return 0
-    else
-      echo "Error: Failed to restore database from backup."
-      return 1
     fi
-  else
-    echo "Error: Database URL not set. Cannot restore backup."
-    return 1
+    
+    # Check if the file exists as is
+    if [ -f "$BACKUP_FILE" ]; then
+      return 0
+    fi
+    
+    echo -e "${RED}Error: Backup file '${BACKUP_FILE}' not found${NC}"
+    exit 1
   fi
-}
-
-# Function to find the latest backup file
-function find_latest_backup() {
-  local pattern="${BACKUP_DIR}/backup-${ENVIRONMENT}-*.sql"
-  local latest_backup=$(ls -t $pattern 2>/dev/null | head -n 1)
   
-  if [[ -n "$latest_backup" && -f "$latest_backup" ]]; then
-    echo "$latest_backup"
-    return 0
-  else
+  # If no backup file is specified, list available backups and prompt user to select one
+  if ! listBackups; then
+    echo -e "${RED}Error: No backups available for rollback${NC}"
+    exit 1
+  fi
+  
+  if [ "$CONFIRM" != "yes" ]; then
     echo ""
-    return 1
-  fi
-}
-
-# Function to roll back code to a specific version
-function rollback_code() {
-  local target_version="$1"
-  
-  echo "Rolling back code to version: $target_version"
-  
-  # Stash any changes
-  git stash -m "Automatic stash before rollback" || true
-  
-  # Fetch latest from remote
-  git fetch --all
-  
-  # Check if version exists
-  if git rev-parse --verify "$target_version" >/dev/null 2>&1; then
-    # Checkout the specified version
-    if git checkout "$target_version"; then
-      echo "Code rolled back successfully to: $target_version"
-      return 0
-    else
-      echo "Error: Failed to checkout version: $target_version"
-      return 1
+    echo -e "${YELLOW}Please enter the number of the backup to restore, or 'q' to quit:${NC}"
+    read -r selection
+    
+    if [[ "$selection" == "q" ]]; then
+      echo "Rollback cancelled."
+      exit 0
+    fi
+    
+    if ! [[ "$selection" =~ ^[0-9]+$ ]]; then
+      echo -e "${RED}Error: Invalid selection${NC}"
+      exit 1
+    fi
+    
+    BACKUP_FILE=$(find "$BACKUP_DIR" -name "${ENVIRONMENT}_backup_*.sql" -type f | sort -r | sed -n "${selection}p")
+    
+    if [ -z "$BACKUP_FILE" ]; then
+      echo -e "${RED}Error: Invalid selection${NC}"
+      exit 1
     fi
   else
-    echo "Error: Version not found: $target_version"
-    return 1
+    # In automatic mode, use the latest backup
+    BACKUP_FILE=$(find "$BACKUP_DIR" -name "${ENVIRONMENT}_backup_*.sql" -type f | sort -r | head -n1)
+    if [ -z "$BACKUP_FILE" ]; then
+      echo -e "${RED}Error: No backups found for ${ENVIRONMENT} environment${NC}"
+      exit 1
+    fi
+    echo -e "${YELLOW}Using latest backup in automatic mode: $(basename "$BACKUP_FILE")${NC}"
   fi
+  
+  return 0
 }
 
-# Function to restart services
-function restart_services() {
-  echo "Restarting services..."
+# Function to restore from a backup file
+function restoreBackup() {
+  echo -e "${YELLOW}Preparing to restore from backup: $(basename "$BACKUP_FILE")${NC}"
   
-  # This is a placeholder that should be replaced with actual service restart commands
-  # For example, this might use AWS CLI, systemctl, or other service management tools
+  # Confirm restore
+  if [ "$CONFIRM" != "yes" ]; then
+    echo -e "${RED}WARNING: This will overwrite the current database state for the ${ENVIRONMENT} environment.${NC}"
+    echo "All data changes since the backup was created will be lost."
+    echo ""
+    echo -e "${YELLOW}Are you sure you want to proceed? (yes/no)${NC}"
+    read -r confirmation
+    
+    if [ "$confirmation" != "yes" ]; then
+      echo "Rollback cancelled."
+      exit 0
+    fi
+  fi
   
-  echo "Rebuilding application..."
-  npm run build
+  # Create a backup of the current state before restoring
+  local pre_restore_backup=$(createBackup)
   
-  echo "Restarting application service..."
-  # Example: systemctl restart $SERVICE_NAME
-  # or: aws ecs update-service --force-new-deployment --service $SERVICE_NAME
+  echo -e "${YELLOW}Restoring database from backup...${NC}"
   
-  echo "Services restarted."
-}
-
-# Function to verify rollback success
-function verify_rollback() {
-  echo "Verifying rollback..."
-  
-  # Wait for services to fully start
-  echo "Waiting for services to start..."
-  sleep 10
-  
-  # Perform health check
-  echo "Performing health check..."
-  if ./scripts/health-check.sh "$APP_URL" --level detailed --output text; then
-    echo "Health check passed. Rollback successful."
-    return 0
+  # Restore from backup
+  if psql "$DATABASE_URL" < "$BACKUP_FILE"; then
+    echo -e "${GREEN}Database successfully restored from: $(basename "$BACKUP_FILE")${NC}"
+    echo "A backup of the previous state was created: $(basename "$pre_restore_backup")"
   else
-    echo "Warning: Health check failed after rollback."
-    return 1
+    echo -e "${RED}Error: Failed to restore database${NC}"
+    echo "You can find a backup of the database state before the failed restore attempt here: $(basename "$pre_restore_backup")"
+    exit 1
   fi
 }
 
-# Main rollback procedure
-echo "======================================="
-echo "BlueEarthOne Rollback - $ENVIRONMENT"
-echo "======================================="
-
-# Confirm rollback unless --force is specified
-if [[ "$FORCE" != "true" ]]; then
-  read -p "Are you sure you want to proceed with rollback? [y/N] " confirm
-  if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    echo "Rollback cancelled."
+# Main function
+function main() {
+  echo -e "${YELLOW}BlueEarthOne Database Rollback Tool${NC}"
+  echo "Environment: $ENVIRONMENT"
+  
+  # Check for help flag
+  if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    printUsage
     exit 0
   fi
-fi
-
-# Create backup of current state
-create_backup
-
-# Handle database rollback
-if [[ -n "$BACKUP_FILE" ]]; then
-  # Use specified backup file
-  if ! restore_backup "$BACKUP_FILE"; then
-    echo "Error: Database rollback failed."
-    exit 1
-  fi
-elif [[ -z "$VERSION" ]]; then
-  # If no version is specified and no backup file, use latest backup
-  latest_backup=$(find_latest_backup)
-  if [[ -n "$latest_backup" ]]; then
-    echo "No backup file specified. Using latest backup: $latest_backup"
-    if ! restore_backup "$latest_backup"; then
-      echo "Error: Database rollback failed."
-      exit 1
-    fi
-  else
-    echo "Warning: No backup file specified and no recent backups found."
-    
-    # Only proceed with code rollback if desired
-    if [[ "$FORCE" != "true" ]]; then
-      read -p "Continue with code rollback only? [y/N] " confirm
-      if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        echo "Rollback cancelled."
-        exit 0
-      fi
-    fi
-  fi
-fi
-
-# Handle code rollback
-if [[ -n "$VERSION" ]]; then
-  if ! rollback_code "$VERSION"; then
-    echo "Error: Code rollback failed."
-    exit 1
-  fi
-elif [[ -z "$BACKUP_FILE" ]]; then
-  # If neither version nor backup file specified, use previous release
-  echo "No version specified. Rolling back to previous release..."
   
-  # Get list of tags in reverse chronological order
-  tags=$(git tag --sort=-creatordate)
-  
-  if [[ -n "$tags" ]]; then
-    # Get current tag or commit
-    current_version=$(git describe --tags --always)
-    
-    # Find the previous tag
-    previous_tag=""
-    for tag in $tags; do
-      if [[ "$tag" != "$current_version" ]]; then
-        previous_tag=$tag
-        break
-      fi
-    done
-    
-    if [[ -n "$previous_tag" ]]; then
-      echo "Rolling back to previous release: $previous_tag"
-      if ! rollback_code "$previous_tag"; then
-        echo "Error: Code rollback failed."
-        exit 1
-      fi
-    else
-      echo "Error: Could not determine previous release."
-      exit 1
-    fi
-  else
-    echo "Error: No tags found in the repository."
+  # Validate environment
+  if [[ ! "$ENVIRONMENT" =~ ^(development|staging|production)$ ]]; then
+    echo -e "${RED}Error: Invalid environment '${ENVIRONMENT}'${NC}"
+    echo "Valid environments are: development, staging, production"
+    printUsage
     exit 1
   fi
-fi
-
-# Restart services
-restart_services
-
-# Verify rollback success
-if verify_rollback; then
-  echo "======================================="
-  echo "Rollback completed successfully!"
-  echo "Environment: $ENVIRONMENT"
-  if [[ -n "$VERSION" ]]; then
-    echo "Code version: $VERSION"
+  
+  # Check for required tools
+  checkPgTools
+  
+  # Check database connection
+  checkDatabaseConnection
+  
+  # If running in production, display additional warning
+  if [ "$ENVIRONMENT" == "production" ] && [ "$CONFIRM" != "yes" ]; then
+    echo -e "${RED}CAUTION: You are about to rollback the PRODUCTION database!${NC}"
+    echo "This is a potentially destructive operation that will affect live data."
+    echo ""
+    echo -e "${YELLOW}Please type 'I UNDERSTAND' to confirm:${NC}"
+    read -r prod_confirmation
+    
+    if [ "$prod_confirmation" != "I UNDERSTAND" ]; then
+      echo "Rollback cancelled."
+      exit 0
+    fi
   fi
-  if [[ -n "$BACKUP_FILE" ]]; then
-    echo "Database restored from: $BACKUP_FILE"
+  
+  # If no backup file specified, list available backups for selection
+  if [ -z "$BACKUP_FILE" ]; then
+    getBackupFile
+  else
+    getBackupFile
   fi
-  echo "======================================="
-  exit 0
-else
-  echo "======================================="
-  echo "Warning: Rollback completed, but verification failed."
-  echo "Please check system status manually."
-  echo "======================================="
-  exit 1
-fi
+  
+  # Restore the database
+  restoreBackup
+  
+  echo -e "${GREEN}Rollback completed successfully!${NC}"
+}
+
+# Execute main function
+main "$@"
