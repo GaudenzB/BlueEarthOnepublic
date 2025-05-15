@@ -910,47 +910,123 @@ export default function DocumentDetail() {
                               ))}
                             </Wrap>
                           ) : (
-                            <Text fontSize="sm" color="gray.500">No tags</Text>
+                            <Text fontSize="sm" color="gray.500" fontStyle="italic">No tags assigned to this document</Text>
                           )}
                         </Box>
                         
-                        {/* Confidentiality */}
+                        {/* Confidentiality - Enhanced styling */}
                         <Box>
-                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                          <Text 
+                            fontSize="sm" 
+                            fontWeight="semibold" 
+                            color="gray.500" 
+                            mb={2}
+                            textTransform="uppercase"
+                            letterSpacing="wider"
+                          >
                             Confidentiality
                           </Text>
-                          <Badge colorScheme={document.isConfidential ? "red" : "green"}>
+                          <Badge 
+                            colorScheme={document.isConfidential ? "red" : "green"}
+                            px={3}
+                            py={1}
+                            borderRadius="full"
+                            textTransform="capitalize"
+                            fontWeight="medium"
+                            boxShadow="sm"
+                            fontSize="sm"
+                          >
                             {document.isConfidential ? "Confidential" : "Not Confidential"}
                           </Badge>
                         </Box>
                         
-                        {/* AI Processing */}
+                        {/* AI Processing - Enhanced styling */}
                         <Box>
-                          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+                          <Text 
+                            fontSize="sm" 
+                            fontWeight="semibold" 
+                            color="gray.500" 
+                            mb={2}
+                            textTransform="uppercase"
+                            letterSpacing="wider"
+                          >
                             AI Processing
                           </Text>
                           {document.processingStatus === "COMPLETED" ? (
-                            <Badge colorScheme="green" display="flex" alignItems="center" width="fit-content">
-                              <Icon as={CheckIcon} mr={1} boxSize={3} />
+                            <Badge 
+                              colorScheme="green" 
+                              display="flex" 
+                              alignItems="center" 
+                              width="fit-content"
+                              px={3}
+                              py={1}
+                              borderRadius="full"
+                              textTransform="capitalize"
+                              fontWeight="medium"
+                              boxShadow="sm"
+                              fontSize="sm"
+                              transition="all 0.2s"
+                              _hover={{ 
+                                transform: "translateY(-1px)",
+                                boxShadow: "md"
+                              }}
+                            >
+                              <Icon as={CheckIcon} mr={2} boxSize={3} />
                               Processed
                             </Badge>
                           ) : document.processingStatus === "FAILED" || document.processingStatus === "ERROR" ? (
                             <Box>
-                              <Badge colorScheme="red" display="flex" alignItems="center" width="fit-content" mb={1}>
-                                <Icon as={WarningIcon} mr={1} boxSize={3} />
+                              <Badge 
+                                colorScheme="red" 
+                                display="flex" 
+                                alignItems="center" 
+                                width="fit-content" 
+                                mb={2}
+                                px={3}
+                                py={1}
+                                borderRadius="full"
+                                textTransform="capitalize"
+                                fontWeight="medium"
+                                boxShadow="sm"
+                                fontSize="sm"
+                              >
+                                <Icon as={WarningIcon} mr={2} boxSize={3} />
                                 Failed
                               </Badge>
                               {document.processingError && (
-                                <Text fontSize="xs" color="red.500" mt={1}>
+                                <Text 
+                                  fontSize="xs" 
+                                  color="red.500" 
+                                  mt={2}
+                                  p={3}
+                                  bg="red.50"
+                                  borderRadius="md"
+                                  borderLeft="3px solid"
+                                  borderColor="red.500"
+                                  fontStyle="italic"
+                                >
+                                  <Icon as={InfoOutlineIcon} mr={1} color="red.500" />
                                   {document.processingError}
                                 </Text>
                               )}
                             </Box>
                           ) : (
                             <Box>
-                              <Badge colorScheme="blue" display="flex" alignItems="center" width="fit-content">
-                                <Icon as={TimeIcon} mr={1} boxSize={3} />
-                                {document.processingStatus}
+                              <Badge 
+                                colorScheme="blue" 
+                                display="flex" 
+                                alignItems="center" 
+                                width="fit-content"
+                                px={3}
+                                py={1}
+                                borderRadius="full"
+                                textTransform="capitalize"
+                                fontWeight="medium"
+                                boxShadow="sm"
+                                fontSize="sm"
+                              >
+                                <Icon as={TimeIcon} mr={2} boxSize={3} />
+                                {document.processingStatus === "PENDING" ? "Processing" : document.processingStatus}
                               </Badge>
                               <Button
                                 mt={2}
