@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from 'antd';
+import { FileTextOutlined, InboxOutlined } from '@ant-design/icons';
 
 /**
  * Props for loading, error, and not found states in document detail
@@ -7,6 +8,61 @@ import { Button } from 'antd';
 export interface DocumentDetailStateProps {
   onReturn: () => void;
   error?: Error;
+}
+
+/**
+ * Empty state component with icon and message for document detail
+ * 
+ * @param message - The message to display
+ * @param subMessage - Optional secondary message
+ * @param onAction - Optional action callback
+ * @param actionText - Optional action button text
+ */
+export function EmptyState({ 
+  message = "No Document Selected", 
+  subMessage,
+  onAction,
+  actionText
+}: {
+  message: string;
+  subMessage?: string;
+  onAction?: () => void;
+  actionText?: string;
+}) {
+  return (
+    <div 
+      className="flex flex-col items-center justify-center p-8 bg-white rounded-lg border border-gray-100 shadow-sm"
+      style={{ 
+        minHeight: '300px',
+        maxWidth: '800px',
+        margin: '48px auto'
+      }}
+    >
+      <div className="text-slate-300 mb-4">
+        <InboxOutlined style={{ fontSize: '64px' }} />
+      </div>
+      
+      <h2 className="text-xl font-semibold text-slate-800 mb-2">
+        {message}
+      </h2>
+      
+      {subMessage && (
+        <p className="text-slate-500 text-center max-w-md mb-6">
+          {subMessage}
+        </p>
+      )}
+      
+      {onAction && actionText && (
+        <Button 
+          type="primary"
+          onClick={onAction}
+          icon={<FileTextOutlined />}
+        >
+          {actionText}
+        </Button>
+      )}
+    </div>
+  );
 }
 
 /**

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Typography, Card, Space, Spin, Result, Button, Progress, Skeleton, Image } from 'antd';
 import { 
   FilePdfOutlined, 
@@ -15,6 +15,29 @@ import {
 } from '@ant-design/icons';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Document } from '@/types/document';
+
+// CSS for animations
+const fadeInAnimation = `
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  
+  .stagger-item-1 { animation-delay: 0.1s; }
+  .stagger-item-2 { animation-delay: 0.2s; }
+  .stagger-item-3 { animation-delay: 0.3s; }
+  .stagger-item-4 { animation-delay: 0.4s; }
+`;
 
 const { Text } = Typography;
 
@@ -34,6 +57,7 @@ interface DocumentPreviewProps {
 /**
  * Component for previewing document content
  * Handles different file types with appropriate previews
+ * Enhanced with fade-in animations for better user experience
  */
 export function DocumentPreview({ 
   document, 
@@ -47,6 +71,22 @@ export function DocumentPreview({
   canPreview = false,
   estimatedProcessingTime
 }: DocumentPreviewProps) {
+  // Reference to component for animation
+  const previewRef = useRef<HTMLDivElement>(null);
+  
+  // Apply animations when component mounts
+  useEffect(() => {
+    // Allow animations to trigger on component mount
+    const timer = setTimeout(() => {
+      if (previewRef.current) {
+        previewRef.current.style.opacity = '1';
+        previewRef.current.classList.add('fade-in');
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // We're using props for loading and error states instead of internal state
   // This is a comment to document the design decision
   
@@ -159,9 +199,11 @@ export function DocumentPreview({
     // Default case - show placeholder with document info
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 24px' }}>
-        {getFileIcon(document.filename)}
+        <div className="fade-in stagger-item-1">
+          {getFileIcon(document.filename)}
+        </div>
         
-        <Space direction="vertical" align="center" style={{ marginTop: 24 }}>
+        <Space direction="vertical" align="center" style={{ marginTop: 24 }} className="fade-in stagger-item-2">
           <Text strong>{document.filename || document.originalFilename || document.title}</Text>
           
           {document.fileSize && (
@@ -175,7 +217,7 @@ export function DocumentPreview({
           </Text>
         </Space>
         
-        <div style={{ marginTop: 32 }}>
+        <div style={{ marginTop: 32 }} className="fade-in stagger-item-3">
           {canPreview ? (
             <Button 
               type="primary" 
@@ -330,7 +372,10 @@ export function DocumentPreview({
   // Normal preview
   return (
     <Card>
-      {renderPreviewContent()}
+      <style>{fadeInAnimation}</style>
+      <div ref={previewRef} className="opacity-0" style={{ transition: 'opacity 0.4s ease-out' }}>
+        {renderPreviewContent()}
+      </div>
     </Card>
   );
 }
