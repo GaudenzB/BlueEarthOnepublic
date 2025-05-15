@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql, or, like, isNull, not, gt } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, or, like } from 'drizzle-orm';
 import { db } from '../db';
 import { 
   documents, 
@@ -12,7 +12,6 @@ import {
 } from '../../shared/schema/index';
 import { logger } from '../utils/logger';
 import { formatRelevanceScore } from '../utils/formatting';
-import { isEmpty } from '../lib/utils';
 
 /**
  * Repository for Document-related database operations
@@ -388,7 +387,8 @@ export const documentRepository = {
 
       // Add document type filter
       if (documentType) {
-        conditions.push(eq(documents.documentType, documentType));
+        // Use sql template for type-safe comparison
+        conditions.push(sql`${documents.documentType} = ${documentType}`);
       }
 
       // Add search filter
@@ -601,7 +601,12 @@ export const documentRepository = {
    * @param errorMessage - The error message to store
    * @returns The updated document
    */
-  async updateProcessingStatusWithError(id: string, tenantId: string, status: string, errorMessage: string): Promise<Document | undefined> {
+  async updateProcessingStatusWithError(
+    id: string, 
+    tenantId: string, 
+    status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'ERROR', 
+    errorMessage: string
+  ): Promise<Document | undefined> {
     try {
       logger.info('Updating document with error message', { id, tenantId, status, errorMessage });
       const [result] = await db
@@ -620,8 +625,15 @@ export const documentRepository = {
         .returning();
       return result;
     } catch (error) {
-      logger.error('Error updating document with error message', { error, id, tenantId, status, errorMessage });
-      throw new Error(`Failed to update document with error message: ${error.message}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error updating document with error message', { 
+        error: errorMsg, 
+        id, 
+        tenantId, 
+        status, 
+        errorLength: errorMessage?.length || 0 
+      });
+      throw new Error(`Failed to update document with error message: ${errorMsg}`);
     }
   },
 
@@ -630,17 +642,44 @@ export const documentRepository = {
    * 
    * @param id - Document ID
    * @param tenantId - Tenant ID
-   * @param metadata - AI metadata
+   * @param metadata - AI metadata (JSON object with analysis data)
    * @returns The updated document
    */
-  async updateAIMetadata(id: string, tenantId: string, metadata: any): Promise<Document | undefined> {
+  async updateAIMetadata(id: string, tenantId: string, metadata: Record<string, any>): Promise<Document | undefined> {
     try {
+      // Validate inputs
+      if (!id || !tenantId) {
+        logger.warn('Missing required parameters in updateAIMetadata', { 
+          hasId: !!id, 
+          hasTenantId: !!tenantId 
+        });
+        throw new Error('Missing required parameters');
+      }
+      
+      if (!metadata || typeof metadata !== 'object') {
+        logger.warn('Invalid metadata in updateAIMetadata', { 
+          id, 
+          tenantId, 
+          metadataType: typeof metadata 
+        });
+        throw new Error('Invalid metadata format');
+      }
+      
+      // Log analysis metadata being stored
+      logger.info('Updating document with AI metadata', { 
+        id, 
+        tenantId, 
+        metadataKeys: Object.keys(metadata),
+        metadataSize: JSON.stringify(metadata).length
+      });
+      
+      // Update document record
       const [result] = await db
         .update(documents)
         .set({
           aiProcessed: true,
           aiMetadata: metadata,
-          processingStatus: 'COMPLETED',
+          processingStatus: 'COMPLETED' as const,
           updatedAt: new Date()
         })
         .where(
@@ -650,10 +689,17 @@ export const documentRepository = {
           )
         )
         .returning();
+        
       return result;
     } catch (error) {
-      logger.error('Error updating document AI metadata', { error, id, tenantId });
-      throw new Error(`Failed to update document AI metadata: ${error.message}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error updating document AI metadata', { 
+        error: errorMsg, 
+        id, 
+        tenantId,
+        metadataKeys: metadata ? Object.keys(metadata) : null
+      });
+      throw new Error(`Failed to update document AI metadata: ${errorMsg}`);
     }
   },
 
@@ -789,6 +835,7 @@ export const documentRepository = {
       
       // Add optional filters
       if (documentType) {
+        // Use SQL template for type-safe comparison
         query = sql`${query} AND d.document_type = ${documentType}`;
       }
       
