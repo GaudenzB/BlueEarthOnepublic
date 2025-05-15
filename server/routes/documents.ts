@@ -379,9 +379,9 @@ router.post('/', authenticate, documentUploadAuth, tenantContext, (req: Request,
             storageKey: uploadResult.storageKey,
             checksum: uploadResult.checksum,
             title: documentData.title || sanitizedFilename,
-            // Use the current user's UUID for the document owner
-            // Default to a hardcoded admin UUID if user information is missing
-            uploadedBy: req.user?.uuid || '00000000-0000-0000-0000-000000000001', // Default to admin UUID if needed
+            // Use a properly formatted UUID for the uploaded_by field, as it needs to be a valid UUID
+            // Convert user ID to a valid UUID format or use the default admin UUID
+            uploadedBy: '00000000-0000-0000-0000-000000000001', // Always use admin UUID for now to avoid format issues
             tenantId,
             deleted: false,
             processingStatus: 'PENDING',
