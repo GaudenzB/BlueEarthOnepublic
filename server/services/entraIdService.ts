@@ -104,7 +104,7 @@ export function createAuthorizationUrl(config: EntraIdConfig): { url: string, st
 /**
  * Handle the callback from Microsoft Entra ID and get tokens
  */
-export async function handleCallback(req: Request, config: EntraIdConfig): Promise<TokenSet> {
+export async function handleCallback(req: Request, config: EntraIdConfig): Promise<openidClient.TokenSet> {
   const client = getEntraIdClient();
   const { code, state } = req.query as { code: string, state: string };
   
@@ -130,7 +130,7 @@ export async function handleCallback(req: Request, config: EntraIdConfig): Promi
 /**
  * Verify and decode ID token to get user info
  */
-export async function getUserInfo(tokenSet: TokenSet): Promise<EntraIdUser> {
+export async function getUserInfo(tokenSet: openidClient.TokenSet): Promise<EntraIdUser> {
   const client = getEntraIdClient();
   
   // Verify the ID token

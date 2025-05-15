@@ -103,6 +103,35 @@ export default function Login() {
             >
               {login.isPending ? "Logging in..." : "Sign In"}
             </Button>
+            
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" style={{ borderColor: colors.border.muted }}></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="px-2" style={{ backgroundColor: colors.background.card, color: colors.text.muted }}>
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            
+            <Button 
+              type="button"
+              variant="outline"
+              className="w-full flex items-center justify-center space-x-2"
+              onClick={() => window.location.href = '/api/auth/entra/login'}
+              style={{ borderColor: colors.border.default }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23">
+                <path fill="#f3f3f3" d="M0 0h23v23H0z"/>
+                <path fill="#f35325" d="M1 1h10v10H1z"/>
+                <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                <path fill="#ffba08" d="M12 12h10v10H12z"/>
+              </svg>
+              <span>Microsoft Account</span>
+            </Button>
+            
             <div className="text-sm text-center mt-4">
               <Button 
                 variant="link" 
