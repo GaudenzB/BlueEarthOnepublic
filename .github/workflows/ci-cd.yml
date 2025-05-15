@@ -1,0 +1,297 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  # Manual trigger for emergency deployments or rollbacks
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - rollback
+      version:
+        description: 'Version to rollback to (for rollback action)'
+        required: false
+
+jobs:
+  lint-and-typecheck:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: ESLint
+        run: npx eslint --ext .js,.jsx,.ts,.tsx .
+        
+      - name: TypeScript type checking
+        run: npx tsc --noEmit
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup test database
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '16'
+          postgresql db: test_db
+          postgresql user: test_user
+          postgresql password: test_password
+      
+      - name: Run unit tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret
+          SESSION_SECRET: test_session_secret
+      
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: coverage/
+          
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+      
+      - name: Setup test database
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '16'
+          postgresql db: test_db
+          postgresql user: test_user
+          postgresql password: test_password
+      
+      - name: Build application
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          NODE_ENV: test
+      
+      - name: Start test server
+        run: |
+          chmod +x ./scripts/start-test-server.sh
+          ./scripts/start-test-server.sh &
+          sleep 5 # Give the server time to start
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret
+          SESSION_SECRET: test_session_secret
+      
+      - name: Run E2E tests
+        run: |
+          chmod +x ./scripts/run-e2e-tests.sh
+          ./scripts/run-e2e-tests.sh
+        env:
+          E2E_BASE_URL: http://localhost:5000
+          NODE_ENV: test
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+          
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build
+        run: npm run build
+        
+      - name: Generate deployment package
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          COMMIT_SHA=${GITHUB_SHA::8}
+          VERSION="${TIMESTAMP}-${COMMIT_SHA}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          
+          # Create deployment package
+          mkdir -p deployment
+          cp -r dist deployment/
+          cp package.json package-lock.json deployment/
+          cp -r migrations deployment/
+          cp -r e2e deployment/
+          cp -r scripts deployment/
+          
+          # Create version info file
+          echo "{\"version\": \"${VERSION}\", \"commit\": \"${GITHUB_SHA}\", \"buildTime\": \"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}" > deployment/version.json
+          
+          # Create deployment archive
+          cd deployment
+          zip -r "../blueearth-${VERSION}.zip" .
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-package
+          path: blueearth-${{ env.VERSION }}.zip
+          retention-days: 30
+          
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging' && github.event.inputs.action == 'deploy')
+    environment: staging
+    steps:
+      - name: Download deployment package
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+          
+      - name: Deploy to staging server
+        run: |
+          echo "Deploying to staging server..."
+          # Here would be your actual deployment commands
+          # For example:
+          # - SSH into staging server
+          # - Unzip the deployment package
+          # - Run database migrations
+          # - Restart the application
+          
+      - name: Run health checks
+        run: |
+          echo "Running health checks..."
+          # Here would be your health check commands
+          # For example:
+          # - Wait for the server to start
+          # - Check if the API is responding
+          # - Check if the database connection is working
+          # - If health checks fail, trigger a rollback
+          
+      - name: Record deployment
+        run: |
+          echo "Recording deployment details for potential rollback..."
+          # Here would be commands to record deployment details
+          # For example:
+          # - Store the version number in a database or file
+          # - Store the deployment time
+          # - Store the commit hash
+          
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production' && github.event.inputs.action == 'deploy'
+    environment: production
+    steps:
+      - name: Download deployment package
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+          
+      - name: Deploy to production server
+        run: |
+          echo "Deploying to production server..."
+          # Here would be your actual deployment commands
+          # For example:
+          # - SSH into production server
+          # - Unzip the deployment package
+          # - Run database migrations
+          # - Restart the application
+          
+      - name: Run health checks
+        run: |
+          echo "Running health checks..."
+          # Here would be your health check commands
+          # For example:
+          # - Wait for the server to start
+          # - Check if the API is responding
+          # - Check if the database connection is working
+          # - If health checks fail, trigger a rollback
+          
+      - name: Record deployment
+        run: |
+          echo "Recording deployment details for potential rollback..."
+          # Here would be commands to record deployment details
+          # For example:
+          # - Store the version number in a database or file
+          # - Store the deployment time
+          # - Store the commit hash
+          
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'rollback'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Rollback deployment
+        run: |
+          echo "Rolling back deployment in ${{ github.event.inputs.environment }} to version ${{ github.event.inputs.version }}..."
+          # Here would be your actual rollback commands
+          # For example:
+          # - SSH into server
+          # - Retrieve previous deployment package
+          # - Deploy previous version
+          # - Run health checks
