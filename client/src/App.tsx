@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -30,7 +30,6 @@ import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
 // Router configuration with separate auth and protected routes
 function AppRoutes() {
   const { user, isLoading } = useAuth();
-  const [, navigate] = useLocation();
   
   // Show loader while auth state is being determined
   if (isLoading) {
@@ -40,29 +39,6 @@ function AppRoutes() {
       </div>
     );
   }
-
-  // Public routes - accessible without authentication
-  const isPublicRoute = (path: string) => {
-    return path === "/auth" || 
-      path === AUTH_ROUTES.FORGOT_PASSWORD || 
-      path.startsWith(`${AUTH_ROUTES.RESET_PASSWORD}/`) ||
-      path === AUTH_ROUTES.ENTRA_COMPLETE ||
-      path === AUTH_ROUTES.ENTRA_ERROR;
-  };
-  
-  const ProtectedPage = ({ children }: { children: React.ReactNode }) => {
-    const [location] = useLocation();
-    
-    React.useEffect(() => {
-      if (!user && !isPublicRoute(location)) {
-        navigate("/auth");
-      }
-    }, [location, user]);
-    
-    if (!user) return null;
-    
-    return <MainLayout>{children}</MainLayout>;
-  };
 
   return (
     <Switch>
@@ -74,65 +50,65 @@ function AppRoutes() {
       <Route path={AUTH_ROUTES.ENTRA_ERROR} component={EntraError} />
       
       {/* Protected routes - require authentication */}
-      <Route path={ROUTES.HOME}>
-        <ProtectedPage>
+      <ProtectedRoute path={ROUTES.HOME} component={() => (
+        <MainLayout>
           <EmployeeDirectory />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ROUTES.EMPLOYEES.DETAIL(':id')}>
-        <ProtectedPage>
+      <ProtectedRoute path={ROUTES.EMPLOYEES.DETAIL(':id')} component={() => (
+        <MainLayout>
           <EmployeeDetail />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ROUTES.DASHBOARD}>
-        <ProtectedPage>
+      <ProtectedRoute path={ROUTES.DASHBOARD} component={() => (
+        <MainLayout>
           <Dashboard />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ROUTES.DOCUMENTS.LIST}>
-        <ProtectedPage>
+      <ProtectedRoute path={ROUTES.DOCUMENTS.LIST} component={() => (
+        <MainLayout>
           <Documents />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={`${ROUTES.DOCUMENTS.LIST}/:id`}>
-        <ProtectedPage>
+      <ProtectedRoute path={`${ROUTES.DOCUMENTS.LIST}/:id`} component={() => (
+        <MainLayout>
           <DocumentDetail />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ROUTES.DESIGN_TESTING}>
-        <ProtectedPage>
+      <ProtectedRoute path={ROUTES.DESIGN_TESTING} component={() => (
+        <MainLayout>
           <DesignTesting />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ROUTES.DESIGN_SYSTEM}>
-        <ProtectedPage>
+      <ProtectedRoute path={ROUTES.DESIGN_SYSTEM} component={() => (
+        <MainLayout>
           <DesignSystem />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ROUTES.THEME_SHOWCASE}>
-        <ProtectedPage>
+      <ProtectedRoute path={ROUTES.THEME_SHOWCASE} component={() => (
+        <MainLayout>
           <ThemeShowcasePage />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ADMIN_ROUTES.USERS}>
-        <ProtectedPage>
+      <ProtectedRoute path={ADMIN_ROUTES.USERS} component={() => (
+        <MainLayout>
           <UserManagement />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
-      <Route path={ADMIN_ROUTES.INTEGRATIONS}>
-        <ProtectedPage>
+      <ProtectedRoute path={ADMIN_ROUTES.INTEGRATIONS} component={() => (
+        <MainLayout>
           <Integrations />
-        </ProtectedPage>
-      </Route>
+        </MainLayout>
+      )} />
       
       {/* Fallback route */}
       <Route component={NotFound} />
