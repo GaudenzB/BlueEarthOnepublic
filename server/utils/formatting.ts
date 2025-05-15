@@ -1,25 +1,29 @@
 /**
- * Formatting utilities for consistent data presentation
+ * Formatting utility functions for server-side code
  */
 
 /**
- * Format a date to a standard string representation
+ * Format a date to ISO string or custom format
  * @param date Date to format
- * @returns formatted date string
+ * @param options Intl.DateTimeFormat options
+ * @returns Formatted date string
  */
-export function formatDate(date: Date | string | null | undefined): string {
+export function formatDate(
+  date: Date | string | null | undefined,
+  options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }
+): string {
   if (!date) return '';
   
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
   try {
-    return dateObj.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return dateObj.toLocaleString('en-US', options);
   } catch (error) {
     return 'Invalid date';
   }
@@ -72,9 +76,9 @@ export function formatDocumentType(type: string | null | undefined): string {
 }
 
 /**
- * Format a processing status to a readable form
+ * Format a processing status to a readable form 
  * @param status Status string
- * @returns Formatted status string
+ * @returns Formatted status text
  */
 export function formatProcessingStatus(status: string | null | undefined): string {
   if (!status) return 'Unknown';
@@ -84,8 +88,45 @@ export function formatProcessingStatus(status: string | null | undefined): strin
     'PROCESSING': 'Processing',
     'COMPLETED': 'Completed',
     'FAILED': 'Failed',
+    'ERROR': 'Error',
     'QUEUED': 'Queued'
   };
   
   return statusMap[status] || status;
+}
+
+/**
+ * Format a relevance score (0-1) as a percentage
+ * @param score Relevance score between 0-1
+ * @returns Formatted percentage
+ */
+export function formatRelevanceScore(score: number): string {
+  return `${Math.round(score * 100)}%`;
+}
+
+/**
+ * Sanitize a string for use in SQL queries
+ * @param str String to sanitize
+ * @returns Sanitized string
+ */
+export function sanitizeForSql(str: string): string {
+  return str.replace(/'/g, "''");
+}
+
+/**
+ * Format a number with commas for thousands
+ * @param num Number to format
+ * @returns Formatted number string
+ */
+export function formatNumber(num: number): string {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/**
+ * Format bytes for vector database display
+ * @param bytes Size in bytes
+ * @returns Formatted string
+ */
+export function formatVectorSize(bytes: number): string {
+  return formatFileSize(bytes);
 }

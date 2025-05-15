@@ -5,21 +5,41 @@
 /**
  * Format a date to a standard string representation
  * @param date Date to format
+ * @param format Format style ('short', 'medium', 'long')
  * @returns formatted date string
  */
-export function formatDate(date: Date | string | null | undefined): string {
+export function formatDate(date: Date | string | null | undefined, format: 'short' | 'medium' | 'long' = 'medium'): string {
   if (!date) return '';
   
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
   try {
-    return dateObj.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    switch (format) {
+      case 'short':
+        return dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      case 'long':
+        return dateObj.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      case 'medium':
+      default:
+        return dateObj.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+    }
   } catch (error) {
     return 'Invalid date';
   }
