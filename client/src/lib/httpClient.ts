@@ -56,27 +56,10 @@ const DEFAULT_CONFIG: HttpClientConfig = {
 };
 
 /**
- * Get authentication token from storage
- * Note: This is now used directly in buildHeaders via localStorage.getItem
+ * Token management functions have been removed as we've migrated to cookie-based auth
+ * Authentication is now handled via HttpOnly cookies that are automatically
+ * included in requests when using credentials: 'include'
  */
-
-/**
- * Set authentication token in storage
- * Stores in both 'token' (for httpClient) and 'authToken' (for components) for consistency
- */
-export const setAuthToken = (token: string): void => {
-  localStorage.setItem('token', token);
-  localStorage.setItem('authToken', token);
-};
-
-/**
- * Remove authentication token from storage
- * Removes both 'token' (for httpClient) and 'authToken' (for components) for consistency
- */
-export const removeAuthToken = (): void => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('authToken');
-};
 
 /**
  * Sleep utility for retry delay
@@ -135,15 +118,9 @@ export class HttpClient {
       }
     }
     
-    // Add authentication token if available - ALWAYS check directly from localStorage
-    // This ensures we always get the latest token, even if getAuthToken() is outdated
-    // IMPORTANT: We look for both 'token' (used by httpClient) and 'authToken' (used in components)
-    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-    console.log("httpClient directly accessing token from localStorage:", !!token);
-    
-    if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+    // No token handling here anymore
+    // Authentication is now handled through HttpOnly cookies
+    // that are automatically included when using credentials: 'include'
     
     return headers;
   }
@@ -361,6 +338,7 @@ export class HttpClient {
       method: 'PUT',
       headers,
       body,
+      credentials: 'include', // Always include credentials for auth cookies
     });
   }
   
@@ -386,6 +364,7 @@ export class HttpClient {
       method: 'PATCH',
       headers,
       body,
+      credentials: 'include', // Always include credentials for auth cookies
     });
   }
   
@@ -403,6 +382,7 @@ export class HttpClient {
       ...options,
       method: 'DELETE',
       headers,
+      credentials: 'include', // Always include credentials for auth cookies
     });
   }
 }

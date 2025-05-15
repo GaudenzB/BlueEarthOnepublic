@@ -139,19 +139,15 @@ export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: Unauthor
         }
       }
       
-      // Get the auth token from localStorage
-      const token = localStorage.getItem('token');
-      console.log("Query for URL:", url, "token available:", !!token);
+      // No need to get token from localStorage anymore since we're using cookies
+      console.log("Query for URL:", url);
       
-      // Prepare request options with auth header if token exists
-      const options: RequestInit = {};
-      if (token) {
-        options.headers = {
-          'Authorization': `Bearer ${token}`
-        };
-      }
+      // Prepare request options with credentials included for cookies
+      const options: RequestInit = {
+        credentials: 'include' // Include cookies in the request
+      };
       
-      // Use HTTP client to fetch data with auth token
+      // Use HTTP client to fetch data
       const response = await httpClient.get<T>(url, options);
       
       // Special handling for employee detail endpoints
