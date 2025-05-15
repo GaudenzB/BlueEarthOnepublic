@@ -175,3 +175,45 @@ export async function generateSearchQueryEmbedding(query: string): Promise<numbe
   
   return generateEmbedding(query);
 }
+
+/**
+ * Generate embeddings for a text block
+ * This matches the interface expected by the document processor
+ * 
+ * @param text - The full text to generate embeddings for
+ * @returns Array of text chunks with their embeddings
+ */
+export async function generateEmbeddingsForText(text: string): Promise<{ 
+  textChunk: string;
+  chunkIndex: number;
+  embedding: number[] | null;
+}[]> {
+  if (!text) {
+    logger.warn('Empty text provided for embedding generation');
+    return [];
+  }
+  
+  // Split text into chunks
+  const chunks = splitTextIntoChunks(text);
+  logger.info(`Text split into ${chunks.length} chunks for embedding generation`);
+  
+  const results = [];
+  
+  // Process each chunk
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const embedding = await generateEmbedding(chunk);
+    
+    results.push({
+      textChunk: chunk,
+      chunkIndex: i,
+      embedding
+    });
+  }
+  
+  // Filter out any null embeddings
+  const validResults = results.filter(item => item.embedding !== null);
+  logger.info(`Generated ${validResults.length} valid embeddings out of ${chunks.length} chunks`);
+  
+  return validResults;
+}
