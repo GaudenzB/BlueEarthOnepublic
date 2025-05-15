@@ -7,7 +7,7 @@
 
 import { Request, Response } from 'express';
 import { storage } from '../storage';
-import { comparePassword, generateUserToken, hashPassword } from '../auth';
+import { comparePasswords, generateUserToken, hashPassword } from '../auth';
 import { revokeToken } from '../utils/jwtConfig';
 import { errorHandling } from '../utils/errorHandling';
 import { logger } from '../utils/logger';
@@ -57,7 +57,7 @@ const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   }
   
   // Verify password
-  const isPasswordValid = await comparePassword(loginData.password, user.password);
+  const isPasswordValid = await comparePasswords(loginData.password, user.password);
   if (!isPasswordValid) {
     logger.info({ 
       event: "failed_login_attempt", 

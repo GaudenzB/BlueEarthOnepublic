@@ -20,7 +20,7 @@ const scryptAsync = promisify(scrypt);
  * @param password The plain text password to hash
  * @returns A string in the format `hash.salt` for storage
  */
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
@@ -32,7 +32,7 @@ async function hashPassword(password: string): Promise<string> {
  * @param stored The stored password hash in the format `hash.salt`
  * @returns A boolean indicating if the passwords match
  */
-async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   try {
     const [hashed, salt] = stored.split(".");
     if (!hashed || !salt) return false;
@@ -53,12 +53,12 @@ async function comparePasswords(supplied: string, stored: string): Promise<boole
 export function setupAuth(app: Express): void {
   // Configure session
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env["SESSION_SECRET"] || "developmentsecret",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env["NODE_ENV"] === "production",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   };
@@ -115,16 +115,16 @@ export function setupAuth(app: Express): void {
       // Log in the newly created user
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        return res.status(201).json(user);
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   });
 
   // Login API endpoint
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: SelectUser | false, _info: { message: string } | undefined) => {
       if (err) {
         return next(err);
       }
@@ -151,7 +151,7 @@ export function setupAuth(app: Express): void {
   // Get current user API endpoint
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    return res.json(req.user);
   });
 }
 
@@ -165,5 +165,92 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).json({ error: "Unauthorized" });
+  return res.status(401).json({ error: "Unauthorized" });
+}
+
+/**
+ * Middleware to check if a user is a superadmin
+ * @param req Express request
+ * @param res Express response
+ * @param next Express next function
+ */
+export function isSuperAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (req.isAuthenticated() && req.user?.role === "superadmin") {
+    return next();
+  }
+  return res.status(403).json({ error: "Forbidden: Requires superadmin privileges" });
+}
+
+/**
+ * Middleware to check if a user has specific role(s)
+ * @param roles Array of allowed roles
+ * @returns Middleware function
+ */
+export function authorize(roles: string[] = []) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // If no roles specified, just require authentication
+    if (roles.length === 0) {
+      return next();
+    }
+
+    // Check if user has one of the required roles
+    const userRole = req.user?.role;
+    if (!userRole || !roles.includes(userRole)) {
+      return res.status(403).json({ 
+        error: "Forbidden: You don't have the required role to access this resource" 
+      });
+    }
+
+    return next();
+  };
+}
+
+// Import the token-related functions
+import { generateToken, TokenType, verifyToken as verifyJwtToken, revokeToken as revokeJwtToken } from './utils/jwtConfig';
+import crypto from 'crypto';
+
+/**
+ * Generate a user token (access and refresh tokens)
+ * @param user User object to include in the token
+ * @returns Object containing access and refresh tokens
+ */
+export function generateUserToken(user: any) {
+  // Create a safe payload (remove sensitive data)
+  const userPayload = {
+    id: user.id,
+    username: user.username,
+    email: user.email || '',
+    role: user.role || 'user'
+  };
+
+  // Generate an access token
+  const accessToken = generateToken(userPayload, TokenType.ACCESS);
+  
+  // Generate a refresh token
+  const refreshToken = generateToken(userPayload, TokenType.REFRESH);
+
+  return { accessToken, refreshToken };
+}
+
+/**
+ * Generate a reset token for password reset
+ * @returns A random token
+ */
+export function generateResetToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Calculate expiry time for reset tokens
+ * @param hours Number of hours until expiry (default: 1)
+ * @returns ISO date string of expiry time
+ */
+export function calculateExpiryTime(hours: number = 1): string {
+  const expiryDate = new Date();
+  expiryDate.setHours(expiryDate.getHours() + hours);
+  return expiryDate.toISOString();
 }

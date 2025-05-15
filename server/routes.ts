@@ -5,7 +5,7 @@ import { z } from "zod";
 import { 
   authenticate, 
   authorize, 
-  comparePassword, 
+  comparePasswords, 
   generateUserToken,
   hashPassword, 
   isSuperAdmin,
