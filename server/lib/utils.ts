@@ -1,328 +1,256 @@
 /**
- * General utility functions for server-side code
+ * Server utility functions for general purpose use
  */
 
-import crypto from 'crypto';
-import { customAlphabet } from 'nanoid';
-import { NextFunction, Request, Response } from 'express';
-import { db } from '../db';
-import { logger } from './logger';
-
-// Create a custom alphabet nanoid generator for more readable IDs
-const nanoid = customAlphabet('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz', 12);
+import { logger } from '../utils/logger';
 
 /**
- * Generate a unique ID
- * @returns Random ID string
- */
-export function generateId(): string {
-  return nanoid();
-}
-
-/**
- * Generate a UUID
- * @returns UUID string
- */
-export function generateUuid(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Wrap an async function for Express route handlers to catch errors
- * 
- * @param fn Async function to wrap
- * @returns Express route handler with error catching
- */
-export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      await fn(req, res, next);
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-/**
- * Sleep for specified milliseconds
- * 
- * @param ms Milliseconds to sleep
- * @returns Promise that resolves after ms milliseconds
- */
-export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Convert bytes to human-readable size
- * 
- * @param bytes Bytes to convert
- * @returns Human-readable string
- */
-export function bytesToSize(bytes: number): string {
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  if (bytes === 0) return '0 Byte';
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${Math.round(bytes / Math.pow(1024, i))} ${sizes[i]}`;
-}
-
-/**
- * Parse a string to boolean
- * 
- * @param value String value
- * @returns Parsed boolean
- */
-export function parseBoolean(value: string | boolean | undefined | null): boolean {
-  if (typeof value === 'boolean') return value;
-  if (!value) return false;
-  
-  const normalized = value.toString().toLowerCase().trim();
-  return ['true', '1', 'yes', 'y', 'on'].includes(normalized);
-}
-
-/**
- * Debounce a function call
- * 
- * @param func Function to debounce
- * @param wait Wait time in milliseconds
- * @returns Debounced function
- */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  
-  return function(...args: Parameters<T>) {
-    const later = () => {
-      timeout = null;
-      func(...args);
-    };
-    
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    
-    timeout = setTimeout(later, wait);
-  };
-}
-
-/**
- * Run a function with retry logic
- * 
- * @param fn Function to run
- * @param options Retry options
- * @returns Promise with function result
- */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: {
-    retries?: number;
-    delay?: number;
-    exponential?: boolean;
-    onRetry?: (error: Error, attempt: number) => void;
-  } = {}
-): Promise<T> {
-  const { 
-    retries = 3, 
-    delay = 1000, 
-    exponential = true,
-    onRetry
-  } = options;
-  
-  let lastError: Error | null = null;
-  
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      return await fn();
-    } catch (error: any) {
-      lastError = error;
-      
-      if (attempt < retries) {
-        if (onRetry) {
-          onRetry(error, attempt + 1);
-        }
-        
-        const waitTime = exponential ? delay * Math.pow(2, attempt) : delay;
-        await sleep(waitTime);
-      }
-    }
-  }
-  
-  // If we've exhausted retries, throw the last error
-  throw lastError;
-}
-
-/**
- * Check if a value is empty (null, undefined, empty string, empty array, empty object)
- * 
- * @param value Value to check
- * @returns Whether the value is empty
+ * Checks if a value is empty (null, undefined, empty string, empty array, or empty object)
+ * @param value - Value to check
+ * @returns True if the value is empty
  */
 export function isEmpty(value: any): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value === 'string' && value.trim() === '') return true;
-  if (Array.isArray(value) && value.length === 0) return true;
-  if (typeof value === 'object' && Object.keys(value).length === 0) return true;
+  if (value === null || value === undefined) {
+    return true;
+  }
+  
+  if (typeof value === 'string' && value.trim() === '') {
+    return true;
+  }
+  
+  if (Array.isArray(value) && value.length === 0) {
+    return true;
+  }
+  
+  if (typeof value === 'object' && Object.keys(value).length === 0) {
+    return true;
+  }
   
   return false;
 }
 
 /**
- * Ensure a string is a valid UUID
- * 
- * @param str String to validate
- * @returns Whether the string is a valid UUID
+ * Safely gets a value from an object with a nested path
+ * @param obj - The object to extract from
+ * @param path - Path to the property (e.g., 'user.profile.name')
+ * @param defaultValue - Default value if not found
+ * @returns The value or default if not found
  */
-export function isValidUuid(str: string): boolean {
-  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return regex.test(str);
-}
-
-/**
- * Hash a string (for passwords, etc.)
- * 
- * @param str String to hash
- * @returns Hashed string
- */
-export function hashString(str: string): string {
-  return crypto.createHash('sha256').update(str).digest('hex');
-}
-
-/**
- * Safely parse JSON with error handling
- * 
- * @param str JSON string to parse
- * @param fallback Fallback value if parsing fails
- * @returns Parsed JSON or fallback
- */
-export function safeJsonParse<T>(str: string, fallback: T): T {
+export function getNestedValue(obj: any, path: string, defaultValue: any = undefined): any {
   try {
-    return JSON.parse(str) as T;
+    const travel = (regexp: RegExp) =>
+      String.prototype.split
+        .call(path, regexp)
+        .filter(Boolean)
+        .reduce((res, key) => (res !== null && res !== undefined ? res[key] : res), obj);
+    const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
+    return result === undefined ? defaultValue : result;
   } catch (error) {
-    logger.error({ error }, 'Failed to parse JSON');
-    return fallback;
+    logger.debug('Error in getNestedValue', { error, path });
+    return defaultValue;
   }
 }
 
 /**
- * Get the file extension from a filename
- * 
- * @param filename Filename to process
- * @returns Lowercase file extension without the dot
+ * Safely converts a string to a float, returning defaultValue if it fails
+ * @param value - String to convert
+ * @param defaultValue - Default value to return if conversion fails
+ * @returns Parsed float or defaultValue
  */
-export function getFileExtension(filename: string): string {
-  return filename.split('.').pop()?.toLowerCase() || '';
+export function safeParseFloat(value: string | undefined | null, defaultValue: number = 0): number {
+  if (value === undefined || value === null) {
+    return defaultValue;
+  }
+  
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? defaultValue : parsed;
 }
 
 /**
- * Check if a file is of a supported document type based on extension
- * 
- * @param filename Filename to check
- * @returns Whether the file has a supported extension
+ * Converts a string to a boolean value
+ * @param value - String to convert
+ * @param defaultValue - Default value if conversion fails
+ * @returns Boolean value
  */
-export function isSupportedDocument(filename: string): boolean {
-  const supportedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'json', 'xml'];
-  const extension = getFileExtension(filename);
+export function stringToBoolean(value: string | undefined | null, defaultValue: boolean = false): boolean {
+  if (value === undefined || value === null) {
+    return defaultValue;
+  }
   
-  return supportedExtensions.includes(extension);
+  value = value.toLowerCase().trim();
+  if (['true', 'yes', '1', 'on'].includes(value)) {
+    return true;
+  }
+  
+  if (['false', 'no', '0', 'off'].includes(value)) {
+    return false;
+  }
+  
+  return defaultValue;
 }
 
 /**
- * Get document type from file extension
- * 
- * @param filename Filename to check
- * @returns Document type
+ * Check if a URL is valid
+ * @param url - URL to validate
+ * @returns True if the URL is valid
  */
-export function getDocumentTypeFromFilename(filename: string): string {
-  const extension = getFileExtension(filename);
-  
-  const typeMap: Record<string, string> = {
-    'pdf': 'REPORT',
-    'doc': 'CORRESPONDENCE',
-    'docx': 'CORRESPONDENCE',
-    'xls': 'REPORT',
-    'xlsx': 'REPORT',
-    'ppt': 'PRESENTATION',
-    'pptx': 'PRESENTATION',
-    'txt': 'CORRESPONDENCE',
-    'csv': 'REPORT',
-    'json': 'OTHER',
-    'xml': 'OTHER'
-  };
-  
-  return typeMap[extension] || 'OTHER';
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 /**
- * Get the MIME type from a file extension
- * 
- * @param extension File extension
- * @returns MIME type
+ * Truncates a string to a specified length with an optional suffix
+ * @param text - Text to truncate
+ * @param maxLength - Maximum length
+ * @param suffix - Suffix to add (default: '...')
+ * @returns Truncated string
  */
-export function getMimeTypeFromExtension(extension: string): string {
-  const mimeMap: Record<string, string> = {
-    'pdf': 'application/pdf',
-    'doc': 'application/msword',
-    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'xls': 'application/vnd.ms-excel',
-    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'ppt': 'application/vnd.ms-powerpoint',
-    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'txt': 'text/plain',
-    'csv': 'text/csv',
-    'json': 'application/json',
-    'xml': 'application/xml',
-    'html': 'text/html',
-    'htm': 'text/html',
-    'js': 'application/javascript',
-    'css': 'text/css',
-    'png': 'image/png',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'gif': 'image/gif',
-    'svg': 'image/svg+xml'
-  };
-  
-  return mimeMap[extension.toLowerCase()] || 'application/octet-stream';
+export function truncateString(text: string, maxLength: number, suffix: string = '...'): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - suffix.length) + suffix;
 }
 
 /**
- * Generate a random string
- * 
- * @param length Length of the random string
+ * Sanitizes a filename to make it safe for file system operations
+ * @param filename - Filename to sanitize
+ * @returns Sanitized filename
+ */
+export function sanitizeFilename(filename: string): string {
+  // Replace invalid characters
+  return filename
+    .replace(/[\\/:*?"<>|]/g, '-') // Replace invalid chars with dash
+    .replace(/\s+/g, '_')          // Replace spaces with underscore
+    .replace(/\.+$/g, '')          // Remove trailing dots
+    .replace(/^\.+/g, '')          // Remove leading dots
+    .trim();
+}
+
+/**
+ * Generates a random string with specified length
+ * @param length - Length of the random string
  * @returns Random string
  */
-export function generateRandomString(length: number): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+export function generateRandomString(length: number = 10): string {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   
   for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   
   return result;
 }
 
 /**
- * Redact sensitive information from logs
- * 
- * @param obj Object to redact
- * @returns Redacted copy of the object
+ * Formats a file size in bytes to a human-readable string
+ * @param bytes - Number of bytes
+ * @param decimals - Number of decimal places
+ * @returns Formatted file size string
  */
-export function redactSensitiveInfo<T extends object>(obj: T): T {
-  const sensitiveFields = ['password', 'token', 'secret', 'key', 'apiKey', 'auth', 'credentials'];
-  const result = { ...obj };
+export function formatFileSize(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes';
   
-  for (const key of Object.keys(result)) {
-    if (sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
-      (result as any)[key] = '[REDACTED]';
-    } else if (typeof (result as any)[key] === 'object' && (result as any)[key] !== null) {
-      (result as any)[key] = redactSensitiveInfo((result as any)[key]);
-    }
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+/**
+ * Checks if two arrays have the same elements (order doesn't matter)
+ * @param arr1 - First array
+ * @param arr2 - Second array
+ * @returns True if arrays have the same elements
+ */
+export function arraysHaveSameElements<T>(arr1: T[], arr2: T[]): boolean {
+  if (arr1.length !== arr2.length) return false;
+  
+  const set1 = new Set(arr1);
+  for (const item of arr2) {
+    if (!set1.has(item)) return false;
   }
   
-  return result;
+  return true;
+}
+
+/**
+ * Returns the intersection of two arrays
+ * @param arr1 - First array
+ * @param arr2 - Second array
+ * @returns Array with common elements
+ */
+export function getArrayIntersection<T>(arr1: T[], arr2: T[]): T[] {
+  return arr1.filter(item => arr2.includes(item));
+}
+
+/**
+ * Helper function for handling async/await errors
+ * @param promise - Promise to handle
+ * @returns [data, error] tuple
+ */
+export async function safeAwait<T, E = Error>(
+  promise: Promise<T>
+): Promise<[T | null, E | null]> {
+  try {
+    const data = await promise;
+    return [data, null];
+  } catch (error) {
+    return [null, error as E];
+  }
+}
+
+/**
+ * Deep clone an object
+ * @param obj - Object to clone
+ * @returns Cloned object
+ */
+export function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+/**
+ * Check if a value is a valid JSON string
+ * @param str - String to check
+ * @returns True if the string is valid JSON
+ */
+export function isValidJson(str: string): boolean {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Retry a function with exponential backoff
+ * @param fn - Function to retry
+ * @param maxRetries - Maximum number of retries
+ * @param delay - Initial delay in ms
+ * @returns Promise resolving to the function result
+ */
+export async function retry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+    }
+  }
+  throw lastError!;
 }

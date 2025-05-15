@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql, or, like, inArray } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, or, like, inArray, SQL } from 'drizzle-orm';
 import { db } from '../db';
 import { 
   documents, 
@@ -11,8 +11,9 @@ import {
   type DocumentEmbedding,
   type InsertDocumentEmbedding
 } from '../../shared/schema/index';
-import { type SemanticSearchParams } from '../../shared/schema/documents/embeddings';
 import { logger } from '../utils/logger';
+import { formatRelevanceScore } from '../utils/formatting';
+import { isEmpty } from '../lib/utils';
 
 /**
  * Repository for Document-related database operations
@@ -43,26 +44,21 @@ export const documentRepository = {
         search
       } = options;
 
-      let query = db.select()
-        .from(documents)
-        .where(
-          and(
-            eq(documents.tenantId, tenantId),
-            eq(documents.deleted, false)
-          )
-        )
-        .limit(limit)
-        .offset(offset);
+      // Build conditions array for where clause
+      const conditions = [
+        eq(documents.tenantId, tenantId),
+        eq(documents.deleted, false)
+      ];
 
       // Add documentType filter if provided
       if (documentType) {
-        query = query.where(eq(documents.documentType, documentType));
+        conditions.push(eq(documents.documentType, documentType));
       }
 
       // Add text search if provided
       if (search) {
         const searchPattern = `%${search}%`;
-        query = query.where(
+        conditions.push(
           or(
             like(documents.title, searchPattern),
             like(documents.description, searchPattern),
@@ -71,18 +67,50 @@ export const documentRepository = {
         );
       }
 
-      // Add sorting
-      if (sortOrder === 'asc') {
-        query = query.orderBy(asc(documents[sortBy]));
+      // Create the query with all conditions
+      let query = db.select()
+        .from(documents)
+        .where(and(...conditions))
+        .limit(limit)
+        .offset(offset);
+
+      // Add sorting based on sortBy parameter
+      if (sortBy === 'createdAt') {
+        query = sortOrder === 'asc' 
+          ? query.orderBy(asc(documents.createdAt))
+          : query.orderBy(desc(documents.createdAt));
+      } else if (sortBy === 'updatedAt') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.updatedAt))
+          : query.orderBy(desc(documents.updatedAt));
+      } else if (sortBy === 'title') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.title))
+          : query.orderBy(desc(documents.title));
+      } else if (sortBy === 'documentType') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.documentType))
+          : query.orderBy(desc(documents.documentType));
+      } else if (sortBy === 'fileSize') {
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.fileSize))
+          : query.orderBy(desc(documents.fileSize));
       } else {
-        query = query.orderBy(desc(documents[sortBy]));
+        // Default to createdAt if an invalid sortBy is provided
+        query = sortOrder === 'asc'
+          ? query.orderBy(asc(documents.createdAt))
+          : query.orderBy(desc(documents.createdAt));
       }
 
       const results = await query;
       return results;
     } catch (error) {
-      logger.error('Error fetching documents for tenant', { error, tenantId });
-      throw new Error(`Failed to fetch documents: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error fetching documents for tenant', { 
+        error: errorMessage, 
+        tenantId 
+      });
+      throw new Error(`Failed to fetch documents: ${errorMessage}`);
     }
   },
   /**
@@ -576,32 +604,45 @@ export const documentRepository = {
   /**
    * Perform semantic search across document embeddings
    * 
-   * @param tenantId - Tenant ID
-   * @param queryEmbedding - Vector embedding of the search query
-   * @param options - Search options
-   * @returns Documents matching the semantic search
+   * @param params - Search parameters including tenant ID, query embedding, etc.
+   * @returns Documents matching the semantic search with relevance scores
    */
-  async semanticSearch(
-    tenantId: string, 
-    queryEmbedding: number[], 
-    options: Omit<SemanticSearch, 'query'> & { documentIds?: string[] }
-  ): Promise<{ documents: Document[], scores: Record<string, number> }> {
+  async semanticSearch(params: {
+    tenantId: string;
+    queryEmbedding: number[];
+    limit?: number;
+    minSimilarity?: number;
+    documentType?: string;
+    documentIds?: string[];
+    userRole?: string;
+    userAccessibleConfidentialDocs?: string[];
+  }): Promise<{ documents: Document[], scores: Record<string, number> }> {
     try {
       const { 
+        tenantId,
+        queryEmbedding,
         limit = 10, 
         minSimilarity = 0.7, 
         documentType,
-        documentIds
-      } = options;
+        documentIds,
+        userRole,
+        userAccessibleConfidentialDocs = []
+      } = params;
 
       logger.info('Performing semantic search', { 
         tenantId, 
-        vectorLength: queryEmbedding.length,
+        vectorLength: queryEmbedding?.length || 0,
         limit,
         minSimilarity,
         documentType,
-        hasDocumentIds: !!documentIds
+        hasDocumentIds: !!documentIds && documentIds.length > 0,
+        userRole
       });
+
+      if (!queryEmbedding || !Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
+        logger.error('Invalid query embedding provided for semantic search');
+        return { documents: [], scores: {} };
+      }
 
       // Convert the query embedding to a vector
       const embeddingVector = sql.raw(`'[${queryEmbedding.join(',')}]'`);
@@ -624,7 +665,7 @@ export const documentRepository = {
           documents d ON sr.document_id = d.id
         WHERE 
           d.tenant_id = ${tenantId}
-          AND d.deleted = false
+          AND d.deleted IS NOT TRUE
       `;
       
       // Add optional filters
@@ -633,27 +674,42 @@ export const documentRepository = {
       }
       
       if (documentIds && documentIds.length > 0) {
-        const documentIdsPlaceholder = documentIds.map(id => `'${id}'`).join(',');
-        query = sql`${query} AND d.id IN (${sql.raw(documentIdsPlaceholder)})`;
+        const documentIdsStr = documentIds.map(id => `'${id}'`).join(',');
+        query = sql`${query} AND d.id IN (${sql.raw(documentIdsStr)})`;
+      }
+      
+      // Apply permissions filters based on user role
+      if (userRole && userRole !== 'superadmin') {
+        if (userRole === 'admin') {
+          // Admins can see all documents in their tenant
+        } else if (userAccessibleConfidentialDocs.length > 0) {
+          // Users with specific confidential document access
+          const accessibleDocsStr = userAccessibleConfidentialDocs.map(id => `'${id}'`).join(',');
+          query = sql`${query} AND (
+            d.is_confidential IS NOT TRUE 
+            OR d.id IN (${sql.raw(accessibleDocsStr)})
+          )`;
+        } else {
+          // Regular users can't see confidential documents
+          query = sql`${query} AND d.is_confidential IS NOT TRUE`;
+        }
       }
       
       // Add order and limit
-      query = sql`${query} ORDER BY d.id, sr.similarity DESC LIMIT ${limit}`;
+      query = sql`${query} ORDER BY sr.similarity DESC LIMIT ${limit}`;
       
       // Execute the query
       const result = await db.execute(query);
-      
-      if (!result.rows || result.rows.length === 0) {
-        return { documents: [], scores: {} };
-      }
-      
-      // Extract documents and similarity scores
-      const documents = result.rows as Document[];
+
+      // Convert result to appropriate format
+      const documents: Document[] = [];
       const scores: Record<string, number> = {};
       
-      for (const row of result.rows) {
-        // The 'similarity' column is added by our query
-        scores[row.id] = row.similarity;
+      if (result && result.rows && result.rows.length > 0) {
+        for (const row of result.rows) {
+          documents.push(row as Document);
+          scores[row.id] = row.similarity;
+        }
       }
       
       logger.info('Semantic search results', { 
@@ -664,8 +720,12 @@ export const documentRepository = {
       
       return { documents, scores };
     } catch (error) {
-      logger.error('Error performing semantic search', { error, tenantId });
-      throw new Error(`Failed to perform semantic search: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error performing semantic search', { 
+        error: errorMessage,
+        tenantId: params.tenantId
+      });
+      throw new Error(`Failed to perform semantic search: ${errorMessage}`);
     }
   },
   
