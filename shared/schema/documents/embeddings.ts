@@ -1,11 +1,7 @@
 import { z } from 'zod';
 import { pgTable, text, uuid, integer, timestamp } from 'drizzle-orm/pg-core';
-import { customVector } from '@useverk/drizzle-pgvector';
 import { createInsertSchema } from 'drizzle-zod';
 import { documents } from './documents';
-
-// Define vector type using customVector
-const vector = customVector;
 
 /**
  * Document embeddings table schema
@@ -17,7 +13,9 @@ export const documentEmbeddings = pgTable('document_embeddings', {
   documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
   chunkIndex: integer('chunk_index').notNull(),
   textChunk: text('text_chunk').notNull(),
-  embedding: customVector('embedding', { dimensions: 1536 }).notNull(),
+  // Using text type as a placeholder for vector in the Drizzle schema
+  // The real vector column is defined in the SQL migration directly
+  embedding: text('embedding').notNull(),
   embeddingModel: text('embedding_model').notNull().default('text-embedding-ada-002'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
