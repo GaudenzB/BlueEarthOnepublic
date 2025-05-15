@@ -87,6 +87,10 @@ const documentUploadAuth = async (req: Request, res: Response, next: NextFunctio
           email: user.email || '',
           role: user.role || 'user'
         };
+        logger.debug('Document upload: Session user found and set', {
+          userId: user.id,
+          username: user.username
+        });
         return next();
       }
     } catch (err) {
