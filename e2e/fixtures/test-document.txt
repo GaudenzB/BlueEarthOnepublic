@@ -1,0 +1,2 @@
+This is a test document for E2E testing.
+It contains simple text data that can be used in document upload tests.
