@@ -56,17 +56,28 @@ Consistent spacing using variables:
 
 ### Tabs
 
-Tabs use a clear contrast between active and inactive states:
+Tabs use a clear contrast between active and inactive states to ensure accessibility:
 
-- **TabsList**: Light background with a border for definition
+- **TabsList**: 
+  - Light background (bg-muted/10) with a subtle border
+  - Height of 12 (h-12) to provide adequate touch targets
+  - Proper spacing with padding (p-1)
+
 - **TabsTrigger**: 
-  - Active: Bold text with primary color and background change
-  - Inactive: Medium weight text with sufficient contrast against background
+  - Active: 
+    - Bold text (font-bold) with primary color (text-primary)
+    - A bottom border (border-b-2 border-primary) to visually highlight the active tab
+    - Background change to white (bg-background)
+    - Subtle shadow for depth (shadow-sm)
+  - Inactive: 
+    - Medium weight text (font-medium) with muted-foreground color
+    - Hover state with subtle background change (hover:bg-muted/10)
 
 **Implementation Notes:**
-- Always use background-color and text color combinations that provide at least a 4.5:1 contrast ratio
-- Active tabs should be clearly distinguishable from inactive tabs through both color and weight
-- Consider adding a subtle border or shadow to increase definition
+- Use generous padding (px-5 py-2.5) to provide comfortable click/tap targets
+- Maintain a minimum 4.5:1 contrast ratio between text and background colors
+- Use font weight differences (medium vs bold) to reinforce visual hierarchy
+- Add a primary-colored bottom border to the active tab for clear visual indication
 
 ### Buttons
 
