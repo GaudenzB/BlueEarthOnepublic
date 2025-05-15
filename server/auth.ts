@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import { Request, Response, NextFunction } from "express";
-import { User, UserRole } from "@shared/schema";
+import { User } from "@shared/schema";
 import { apiResponse } from "./utils/apiResponse";
 import { generateToken, verifyToken, revokeToken, TokenType } from "./utils/jwtConfig";
-import { roleHelpers } from './repositories/documentRepository';
+import { roleHelpers, UserRole } from './utils/roleHelpers';
 
 /**
  * Enhanced Authentication System

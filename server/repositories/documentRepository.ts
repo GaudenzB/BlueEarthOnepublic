@@ -12,42 +12,7 @@ import {
 } from '../../shared/schema/index';
 import { logger } from '../utils/logger';
 import { formatRelevanceScore } from '../utils/formatting';
-
-/**
- * User role types used for permission handling
- * This supports both uppercase and lowercase formats for backward compatibility
- */
-export type UserRole = 
-  | 'SUPER_ADMIN' | 'superadmin' 
-  | 'ADMIN' | 'admin' 
-  | 'MANAGER' | 'manager'
-  | 'USER' | 'user';
-
-/**
- * Helper functions for role checks
- */
-export const roleHelpers = {
-  /**
-   * Check if a role has admin privileges (ADMIN or SUPER_ADMIN)
-   */
-  isAdmin: (role?: UserRole): boolean => {
-    if (!role) return false;
-    return (
-      role === 'ADMIN' || 
-      role === 'admin' || 
-      role === 'SUPER_ADMIN' || 
-      role === 'superadmin'
-    );
-  },
-  
-  /**
-   * Check if a role is a super admin
-   */
-  isSuperAdmin: (role?: UserRole): boolean => {
-    if (!role) return false;
-    return role === 'SUPER_ADMIN' || role === 'superadmin';
-  }
-};
+import { roleHelpers, UserRole } from '../utils/roleHelpers';
 
 /**
  * Repository for Document-related database operations
