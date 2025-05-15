@@ -897,8 +897,8 @@ export const documentRepository = {
     minSimilarity?: number;
     documentType?: string;
     documentIds?: string[];
-    // Add proper types for role-based access control
-    userRole?: 'ADMIN' | 'MANAGER' | 'USER' | 'SUPER_ADMIN' | 'admin' | 'superadmin';
+    // Use the UserRole type for consistent role handling
+    userRole?: UserRole;
     userAccessibleConfidentialDocs?: string[];
   }): Promise<{ documents: Document[], scores: Record<string, number> }> {
     try {
