@@ -13,6 +13,9 @@ import { z } from "zod";
 import { insertUserSchema, userLoginSchema } from "@shared/schema";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+// Import Microsoft logo
+import { SiMicrosoft } from "react-icons/si";
 
 // Extend the userLoginSchema to include rememberMe option
 const extendedLoginSchema = userLoginSchema.extend({
@@ -22,7 +25,7 @@ const extendedLoginSchema = userLoginSchema.extend({
 type ExtendedLoginFormValues = z.infer<typeof extendedLoginSchema>;
 
 const LoginForm = () => {
-  const { loginMutation } = useAuth();
+  const { loginMutation, microsoftAuthStatus, isMicrosoftAuthStatusLoading } = useAuth();
   const form = useForm<ExtendedLoginFormValues>({
     resolver: zodResolver(extendedLoginSchema),
     defaultValues: {
@@ -34,6 +37,12 @@ const LoginForm = () => {
 
   const onSubmit = (values: ExtendedLoginFormValues) => {
     loginMutation.mutate(values);
+  };
+  
+  // Function to handle Microsoft SSO login
+  const handleMicrosoftLogin = () => {
+    // Redirect to the Microsoft SSO login endpoint
+    window.location.href = "/api/auth/entra/microsoft";
   };
 
   return (
@@ -94,6 +103,30 @@ const LoginForm = () => {
             "Login"
           )}
         </Button>
+        
+        {/* Microsoft SSO Button - only show if enabled */}
+        {microsoftAuthStatus?.enabled && (
+          <>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleMicrosoftLogin}
+            >
+              <SiMicrosoft className="mr-2 h-4 w-4" />
+              Microsoft
+            </Button>
+          </>
+        )}
       </form>
     </Form>
   );

@@ -82,7 +82,8 @@ export async function apiRequest<T = any>(
 /**
  * Create a query function that handles unauthorized responses
  */
-export const getQueryFn = <T>({ on401: unauthorizedBehavior }: { on401: UnauthorizedBehavior }): QueryFunction<T> => {
+export const getQueryFn = <T>(options?: { on401?: UnauthorizedBehavior }): QueryFunction<T> => {
+  const unauthorizedBehavior = options?.on401 || "throw";
   return async ({ queryKey }) => {
     try {
       // Build the URL from the queryKey
