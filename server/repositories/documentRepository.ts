@@ -497,9 +497,8 @@ export const documentRepository = {
 
       // Apply permissions filters based on user role
       if (userRole) {
-        // Handle both uppercase and lowercase role formats for compatibility
-        const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'superadmin';
-        const isAdmin = userRole === 'ADMIN' || userRole === 'admin' || isSuperAdmin;
+        // Use roleHelpers for consistent role checking
+        const isAdmin = roleHelpers.isAdmin(userRole);
         
         if (!isAdmin) {
           // For non-admin users, apply confidentiality restrictions
@@ -942,9 +941,8 @@ export const documentRepository = {
       
       // Apply permissions filters based on user role
       if (userRole) {
-        // Handle both uppercase and lowercase role formats for compatibility
-        const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'superadmin';
-        const isAdmin = userRole === 'ADMIN' || userRole === 'admin' || isSuperAdmin;
+        // Use roleHelpers for consistent role checking
+        const isAdmin = roleHelpers.isAdmin(userRole);
         
         if (!isAdmin) {
           // For non-admin users, apply confidentiality restrictions
