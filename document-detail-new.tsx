@@ -1172,19 +1172,87 @@ export default function DocumentDetail() {
             
             {/* Preview Tab */}
             <TabPanel px={0} py={4}>
-              <Card variant="outline" height="600px">
-                <CardHeader bg={headerBg} py={3} px={4} borderBottomWidth="1px" borderColor={borderColor}>
-                  <Heading size="sm">Document Preview</Heading>
+              <Card 
+                variant="outline" 
+                height="600px"
+                borderRadius="md" 
+                boxShadow="sm"
+                transition="box-shadow 0.2s"
+                _hover={{ boxShadow: "md" }}
+                sx={{
+                  animation: "fadeIn 0.6s ease-in-out",
+                  animationDelay: "0.2s",
+                  "@keyframes fadeIn": {
+                    "0%": { opacity: 0, transform: "translateY(15px)" },
+                    "100%": { opacity: 1, transform: "translateY(0)" }
+                  }
+                }}
+              >
+                <CardHeader 
+                  bg={headerBg} 
+                  py={4} 
+                  px={6} 
+                  borderBottomWidth="1px" 
+                  borderColor={borderColor}
+                  borderTopRadius="md"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Flex alignItems="center" gap={2}>
+                    <Icon as={ViewIcon} color="blue.500" />
+                    <Heading size="sm">Document Preview</Heading>
+                  </Flex>
+                  {document.downloadUrl && (
+                    <Button 
+                      as="a" 
+                      href={document.downloadUrl} 
+                      target="_blank" 
+                      size="xs"
+                      colorScheme="blue"
+                      variant="outline"
+                      leftIcon={<DownloadIcon />}
+                      _hover={{
+                        transform: "translateY(-1px)",
+                        boxShadow: "sm" 
+                      }}
+                      transition="all 0.2s"
+                    >
+                      Download
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardBody p={0} position="relative">
                   {document.mimeType?.includes('pdf') ? (
-                    <Box position="relative" height="100%" width="100%">
-                      <iframe 
-                        src={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
-                        width="100%" 
+                    <Box 
+                        position="relative" 
                         height="100%" 
-                        style={{ border: 'none', borderBottomLeftRadius: '0.375rem', borderBottomRightRadius: '0.375rem' }}
-                        onLoad={(e) => {
+                        width="100%"
+                        borderRadius="md"
+                        overflow="hidden"
+                      >
+                        <Box
+                          position="absolute"
+                          top={0}
+                          left={0}
+                          right={0}
+                          bottom={0}
+                          bg="gray.700"
+                          opacity={0.05}
+                          zIndex={0}
+                        />
+                        <iframe 
+                          src={`/api/documents/${document.id}/download?auth=${localStorage.getItem('authToken')}`}
+                          width="100%" 
+                          height="100%" 
+                          style={{ 
+                            border: 'none', 
+                            borderBottomLeftRadius: '0.375rem', 
+                            borderBottomRightRadius: '0.375rem',
+                            position: 'relative',
+                            zIndex: 1
+                          }}
+                          onLoad={(e) => {
                           // Try to detect failed load or error messages
                           try {
                             const iframe = e.target as HTMLIFrameElement;
