@@ -1,6 +1,8 @@
-import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee, userPermissions as userPermissionsTable, type UserPermission, type InsertUserPermission } from "@shared/schema";
+import { users, type User, type InsertUser, employees, type Employee, type InsertEmployee, userPermissions as userPermissionsTable, type UserPermission, type InsertUserPermission, sessions } from "@shared/schema";
 import { db } from "./db";
 import { eq, like, or, sql } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 export interface IStorage {
   // User operations
@@ -33,9 +35,28 @@ export interface IStorage {
   updateUserPermission(id: number, permission: Partial<InsertUserPermission>): Promise<UserPermission | undefined>;
   deleteUserPermission(id: number): Promise<boolean>;
   hasPermission(userId: number, area: string, permission: 'view' | 'edit' | 'delete'): Promise<boolean>;
+  
+  // Session store for authentication
+  sessionStore: session.SessionStore;
 }
 
 export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+  
+  constructor() {
+    // Set up PostgreSQL session store
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({
+      tableName: 'sessions',
+      createTableIfMissing: true,
+      // We're using the database connection from db.ts so we get connection info
+      // from environment variables
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      }
+    });
+  }
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
