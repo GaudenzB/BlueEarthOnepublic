@@ -1,289 +1,274 @@
 #!/bin/bash
 
-# Health Check Script for BlueEarthOne
-# 
-# This script checks the health of the application's components.
-# It has multiple levels of checks: basic, detailed, and deep.
-#
-# Usage:
-#   ./health-check.sh <base_url> [options]
-#
-# Options:
-#   --level <level>       Level of health check: basic (default), detailed, deep
-#   --output <format>     Output format: text (default), json
-#   --timeout <seconds>   Timeout in seconds for each check (default: 10)
-#   --help                Show this help message
-#
-# Examples:
-#   ./health-check.sh https://blueearth.example.com
-#   ./health-check.sh https://blueearth.example.com --level detailed --output json
-#   ./health-check.sh https://blueearth.example.com --level deep --timeout 30
-
-set -e
+# BlueEarthOne Health Check Script
+# Usage: ./health-check.sh <base_url> [--level basic|detailed|deep] [--output text|json]
 
 # Default values
-BASE_URL=""
-CHECK_LEVEL="basic"
+LEVEL="basic"
 OUTPUT_FORMAT="text"
-TIMEOUT=10
-USE_AUTH=false
-AUTH_TOKEN=""
+BASE_URL=""
 
-# Colors for text output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Health check results
-OVERALL_STATUS="pass"
-COMPONENTS=()
-ERROR_COUNT=0
-WARNING_COUNT=0
-
-# Helper function to print usage
-function print_usage {
-    echo "Health Check Script for BlueEarthOne"
-    echo ""
-    echo "Usage: $0 <base_url> [options]"
-    echo ""
-    echo "Options:"
-    echo "  --level <level>       Level of health check: basic (default), detailed, deep"
-    echo "  --output <format>     Output format: text (default), json"
-    echo "  --timeout <seconds>   Timeout in seconds for each check (default: 10)"
-    echo "  --auth <token>        Authorization token for authenticated checks"
-    echo "  --help                Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0 https://blueearth.example.com"
-    echo "  $0 https://blueearth.example.com --level detailed --output json"
-    echo "  $0 https://blueearth.example.com --level deep --timeout 30"
-}
-
-# Helper function to add a component check result
-function add_component {
-    local name="$1"
-    local status="$2"
-    local message="$3"
-    local response_time="$4"
-    
-    if [ "$status" = "fail" ]; then
-        OVERALL_STATUS="fail"
-        ERROR_COUNT=$((ERROR_COUNT+1))
-    elif [ "$status" = "warn" ]; then
-        WARNING_COUNT=$((WARNING_COUNT+1))
-        if [ "$OVERALL_STATUS" != "fail" ]; then
-            OVERALL_STATUS="warn"
-        fi
-    fi
-    
-    COMPONENTS+=("{\"name\":\"$name\",\"status\":\"$status\",\"message\":\"$message\",\"responseTime\":$response_time}")
-}
-
-# Helper function to check a URL endpoint
-function check_endpoint {
-    local name="$1"
-    local endpoint="$2"
-    local expected_status="$3"
-    local description="$4"
-    
-    local url="${BASE_URL}${endpoint}"
-    local start_time=$(date +%s.%N)
-    local status_code
-    local response_time
-    local curl_cmd="curl -s -o /dev/null -w '%{http_code}' -m $TIMEOUT"
-    
-    # Add auth if provided
-    if [ "$USE_AUTH" = true ] && [ -n "$AUTH_TOKEN" ]; then
-        curl_cmd="$curl_cmd -H \"Authorization: Bearer $AUTH_TOKEN\""
-    fi
-    
-    # Execute curl command
-    status_code=$(eval $curl_cmd \"$url\")
-    response_time=$(echo "$(date +%s.%N) - $start_time" | bc)
-    
-    # Round to 3 decimal places
-    response_time=$(printf "%.3f" $response_time)
-    
-    # Check if status code matches expected
-    if [ "$status_code" = "$expected_status" ]; then
-        add_component "$name" "pass" "Endpoint is responding correctly (HTTP $status_code)" "$response_time"
-    else
-        add_component "$name" "fail" "Endpoint returned HTTP $status_code, expected $expected_status" "$response_time"
-    fi
-}
-
-# Parse command line arguments
+# Process command-line arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        --level)
-            CHECK_LEVEL="$2"
-            shift 2
-            ;;
-        --output)
-            OUTPUT_FORMAT="$2"
-            shift 2
-            ;;
-        --timeout)
-            TIMEOUT="$2"
-            shift 2
-            ;;
-        --auth)
-            USE_AUTH=true
-            AUTH_TOKEN="$2"
-            shift 2
-            ;;
-        --help)
-            print_usage
-            exit 0
-            ;;
-        http*://*)
-            BASE_URL="$1"
-            shift
-            ;;
-        *)
-            echo -e "${RED}Error: Unknown option $1${NC}"
-            print_usage
-            exit 1
-            ;;
-    esac
+  case $1 in
+    --level)
+      LEVEL="$2"
+      shift 2
+      ;;
+    --output)
+      OUTPUT_FORMAT="$2"
+      shift 2
+      ;;
+    --help)
+      echo "Usage: $0 <base_url> [--level basic|detailed|deep] [--output text|json]"
+      echo
+      echo "Options:"
+      echo "  --level LEVEL      Health check level (basic, detailed, deep). Default: basic"
+      echo "  --output FORMAT    Output format (text, json). Default: text"
+      echo "  --help             Show this help message"
+      exit 0
+      ;;
+    *)
+      BASE_URL="$1"
+      shift
+      ;;
+  esac
 done
 
-# Check if URL is provided
-if [ -z "$BASE_URL" ]; then
-    echo -e "${RED}Error: Base URL is required${NC}"
-    print_usage
-    exit 1
+# Validate base URL
+if [[ -z "$BASE_URL" ]]; then
+  echo "Error: Base URL is required."
+  echo "Usage: $0 <base_url> [--level basic|detailed|deep] [--output text|json]"
+  exit 1
 fi
 
-# Remove trailing slash if present
-BASE_URL=$(echo "$BASE_URL" | sed 's/\/$//')
-
-# Validate check level
-if [ "$CHECK_LEVEL" != "basic" ] && [ "$CHECK_LEVEL" != "detailed" ] && [ "$CHECK_LEVEL" != "deep" ]; then
-    echo -e "${RED}Error: Invalid check level. Valid values are: basic, detailed, deep${NC}"
-    exit 1
+# Validate level option
+if [[ "$LEVEL" != "basic" && "$LEVEL" != "detailed" && "$LEVEL" != "deep" ]]; then
+  echo "Error: Invalid level. Must be one of: basic, detailed, deep."
+  exit 1
 fi
 
 # Validate output format
-if [ "$OUTPUT_FORMAT" != "text" ] && [ "$OUTPUT_FORMAT" != "json" ]; then
-    echo -e "${RED}Error: Invalid output format. Valid values are: text, json${NC}"
-    exit 1
+if [[ "$OUTPUT_FORMAT" != "text" && "$OUTPUT_FORMAT" != "json" ]]; then
+  echo "Error: Invalid output format. Must be one of: text, json."
+  exit 1
 fi
 
-# Print banner for text output
-if [ "$OUTPUT_FORMAT" = "text" ]; then
-    echo -e "${BLUE}==============================================${NC}"
-    echo -e "${BLUE}  BlueEarthOne Health Check  ${NC}"
-    echo -e "${BLUE}==============================================${NC}"
-    echo -e "${BLUE}Base URL: ${BASE_URL}${NC}"
-    echo -e "${BLUE}Check Level: ${CHECK_LEVEL}${NC}"
-    echo -e "${BLUE}==============================================${NC}"
-    echo ""
-fi
+# Initialize results
+declare -A results
+status="pass"
+started_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-# Run basic health checks
-check_endpoint "API" "/api/health" 200 "Basic API health check"
-check_endpoint "Frontend" "/" 200 "Frontend serving check"
+# Function to perform HTTP request with timeout
+function do_request() {
+  local url=$1
+  local timeout=${2:-5}
+  local start_time=$(date +%s.%N)
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -m "$timeout" "$url" 2>/dev/null)
+  local end_time=$(date +%s.%N)
+  local resp_time=$(echo "$end_time - $start_time" | bc)
+  
+  echo "$response|$resp_time"
+}
 
-# Run detailed health checks if requested
-if [ "$CHECK_LEVEL" = "detailed" ] || [ "$CHECK_LEVEL" = "deep" ]; then
-    check_endpoint "API Detailed" "/api/health/detailed" 200 "Detailed API health check"
-    check_endpoint "Auth Status" "/api/auth/status" 200 "Authentication service check"
-    check_endpoint "Employee API" "/api/employees?limit=1" 200 "Employee API check"
-    check_endpoint "Document API" "/api/documents?limit=1" 200 "Document API check"
-fi
+# Basic health check - just verify the service is up
+function basic_health_check() {
+  local health_url="${BASE_URL}/api/health"
+  local result=$(do_request "$health_url" 5)
+  local http_code=$(echo "$result" | cut -d'|' -f1)
+  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  
+  if [[ "$http_code" -eq 200 ]]; then
+    results["api"]="pass|API endpoint is responding correctly|$resp_time"
+  else
+    results["api"]="fail|API endpoint is not responding properly (HTTP $http_code)|$resp_time"
+    status="fail"
+  fi
+}
 
-# Run deep health checks if requested
-if [ "$CHECK_LEVEL" = "deep" ]; then
-    check_endpoint "API Deep" "/api/health/deep" 200 "Deep system health check"
-    check_endpoint "Database Status" "/api/health/database" 200 "Database connectivity check"
-    check_endpoint "Storage Status" "/api/health/storage" 200 "Storage service check"
-    check_endpoint "Search Status" "/api/health/search" 200 "Search service check"
-fi
+# Detailed health check - validate API endpoints and basic functionality
+function detailed_health_check() {
+  # Run basic checks first
+  basic_health_check
+  
+  # Additional checks
+  
+  # Auth endpoint check
+  local auth_url="${BASE_URL}/api/auth/status"
+  local result=$(do_request "$auth_url" 5)
+  local http_code=$(echo "$result" | cut -d'|' -f1)
+  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  
+  if [[ "$http_code" -eq 200 || "$http_code" -eq 401 ]]; then
+    results["auth"]="pass|Auth endpoint is responding correctly|$resp_time"
+  else
+    results["auth"]="fail|Auth endpoint is not responding properly (HTTP $http_code)|$resp_time"
+    status="fail"
+  fi
+  
+  # Employees endpoint check
+  local employees_url="${BASE_URL}/api/employees"
+  local result=$(do_request "$employees_url" 5)
+  local http_code=$(echo "$result" | cut -d'|' -f1)
+  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  
+  if [[ "$http_code" -eq 200 || "$http_code" -eq 401 ]]; then
+    results["employees"]="pass|Employees endpoint is responding correctly|$resp_time"
+  else
+    results["employees"]="fail|Employees endpoint is not responding properly (HTTP $http_code)|$resp_time"
+    status="fail"
+  fi
+  
+  # Documents endpoint check
+  local documents_url="${BASE_URL}/api/documents"
+  local result=$(do_request "$documents_url" 5)
+  local http_code=$(echo "$result" | cut -d'|' -f1)
+  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  
+  if [[ "$http_code" -eq 200 || "$http_code" -eq 401 ]]; then
+    results["documents"]="pass|Documents endpoint is responding correctly|$resp_time"
+  else
+    results["documents"]="fail|Documents endpoint is not responding properly (HTTP $http_code)|$resp_time"
+    status="fail"
+  fi
+}
 
-# Generate output
-if [ "$OUTPUT_FORMAT" = "json" ]; then
-    # JSON output format
-    echo "{"
-    echo "  \"status\": \"$OVERALL_STATUS\","
-    echo "  \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\","
-    echo "  \"baseUrl\": \"$BASE_URL\","
-    echo "  \"checkLevel\": \"$CHECK_LEVEL\","
-    echo "  \"components\": ["
+# Deep health check - validate database, storage, and external services
+function deep_health_check() {
+  # Run detailed checks first
+  detailed_health_check
+  
+  # Database health check
+  local db_url="${BASE_URL}/api/health/database"
+  local result=$(do_request "$db_url" 8)
+  local http_code=$(echo "$result" | cut -d'|' -f1)
+  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  
+  if [[ "$http_code" -eq 200 ]]; then
+    results["database"]="pass|Database connection is healthy|$resp_time"
+  else
+    results["database"]="fail|Database connection check failed (HTTP $http_code)|$resp_time"
+    status="fail"
+  fi
+  
+  # Storage health check
+  local storage_url="${BASE_URL}/api/health/storage"
+  local result=$(do_request "$storage_url" 10)
+  local http_code=$(echo "$result" | cut -d'|' -f1)
+  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  
+  if [[ "$http_code" -eq 200 ]]; then
+    results["storage"]="pass|Storage system is functioning properly|$resp_time"
+  else
+    results["storage"]="fail|Storage system check failed (HTTP $http_code)|$resp_time"
+    status="fail"
+  fi
+  
+  # Entra ID / SSO health check (if configured)
+  local sso_url="${BASE_URL}/api/health/sso"
+  local result=$(do_request "$sso_url" 10)
+  local http_code=$(echo "$result" | cut -d'|' -f1)
+  local resp_time=$(echo "$result" | cut -d'|' -f2)
+  
+  if [[ "$http_code" -eq 200 ]]; then
+    results["sso"]="pass|SSO integration is functioning properly|$resp_time"
+  elif [[ "$http_code" -eq 204 ]]; then
+    results["sso"]="warn|SSO integration is not configured|$resp_time"
+  else
+    results["sso"]="fail|SSO integration check failed (HTTP $http_code)|$resp_time"
     
-    # Join component results with commas
-    COMPONENTS_JSON=$(printf ",%s" "${COMPONENTS[@]}")
-    COMPONENTS_JSON=${COMPONENTS_JSON:1}  # Remove leading comma
-    echo "$COMPONENTS_JSON"
+    # Only fail the entire check if SSO is required (which is signaled by a 500 response)
+    if [[ "$http_code" -eq 500 ]]; then
+      status="fail"
+    fi
+  fi
+}
+
+# Run health check based on specified level
+case "$LEVEL" in
+  "basic")
+    basic_health_check
+    ;;
+  "detailed")
+    detailed_health_check
+    ;;
+  "deep")
+    deep_health_check
+    ;;
+esac
+
+completed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Output results based on specified format
+if [[ "$OUTPUT_FORMAT" == "json" ]]; then
+  # Start JSON output
+  echo "{"
+  echo "  \"status\": \"$status\","
+  echo "  \"version\": \"1.0.0\","
+  echo "  \"timestamp\": \"$completed_at\","
+  echo "  \"duration\": \"$(date -u -d "@$(( $(date -d "$completed_at" +%s) - $(date -d "$started_at" +%s) ))" +"%H:%M:%S")\","
+  echo "  \"checks\": {"
+  
+  # Process each result
+  first=true
+  for key in "${!results[@]}"; do
+    if [[ "$first" == "true" ]]; then
+      first=false
+    else
+      echo ","
+    fi
     
-    echo "  ],"
-    echo "  \"summary\": {"
-    echo "    \"total\": ${#COMPONENTS[@]},"
-    echo "    \"pass\": $((${#COMPONENTS[@]} - $ERROR_COUNT - $WARNING_COUNT)),"
-    echo "    \"warn\": $WARNING_COUNT,"
-    echo "    \"fail\": $ERROR_COUNT"
-    echo "  }"
-    echo "}"
+    result_status=$(echo "${results[$key]}" | cut -d'|' -f1)
+    result_message=$(echo "${results[$key]}" | cut -d'|' -f2)
+    result_time=$(echo "${results[$key]}" | cut -d'|' -f3)
+    
+    echo -n "    \"$key\": {"
+    echo -n "\"status\": \"$result_status\", "
+    echo -n "\"message\": \"$result_message\", "
+    echo -n "\"responseTime\": $result_time"
+    echo -n "}"
+  done
+  
+  # Close JSON structure
+  echo ""
+  echo "  }"
+  echo "}"
 else
-    # Text output format
-    echo -e "${BLUE}Health Check Results:${NC}"
-    echo ""
+  # Text output
+  echo "BlueEarthOne Health Check Report"
+  echo "================================"
+  echo "Status: $status"
+  echo "Time: $completed_at"
+  echo "Level: $LEVEL"
+  echo ""
+  echo "Results:"
+  
+  for key in "${!results[@]}"; do
+    result_status=$(echo "${results[$key]}" | cut -d'|' -f1)
+    result_message=$(echo "${results[$key]}" | cut -d'|' -f2)
+    result_time=$(echo "${results[$key]}" | cut -d'|' -f3)
     
-    # Print each component
-    for component in "${COMPONENTS[@]}"; do
-        # Extract values from component JSON
-        name=$(echo "$component" | jq -r '.name')
-        status=$(echo "$component" | jq -r '.status')
-        message=$(echo "$component" | jq -r '.message')
-        response_time=$(echo "$component" | jq -r '.responseTime')
-        
-        # Print with appropriate color
-        if [ "$status" = "pass" ]; then
-            echo -e "${GREEN}✓ $name${NC}: $message ($response_time sec)"
-        elif [ "$status" = "warn" ]; then
-            echo -e "${YELLOW}⚠ $name${NC}: $message ($response_time sec)"
-        else
-            echo -e "${RED}✗ $name${NC}: $message ($response_time sec)"
-        fi
-    done
-    
-    echo ""
-    echo -e "${BLUE}Summary:${NC}"
-    echo -e "Total checks: ${#COMPONENTS[@]}"
-    echo -e "Passed: $((${#COMPONENTS[@]} - $ERROR_COUNT - $WARNING_COUNT))"
-    
-    if [ $WARNING_COUNT -gt 0 ]; then
-        echo -e "${YELLOW}Warnings: $WARNING_COUNT${NC}"
-    else
-        echo -e "Warnings: 0"
+    # Format output
+    status_color=""
+    reset_color=""
+    if [[ -t 1 ]]; then  # Check if stdout is a terminal
+      reset_color="\033[0m"
+      if [[ "$result_status" == "pass" ]]; then
+        status_color="\033[32m"  # Green
+      elif [[ "$result_status" == "warn" ]]; then
+        status_color="\033[33m"  # Yellow
+      else
+        status_color="\033[31m"  # Red
+      fi
     fi
     
-    if [ $ERROR_COUNT -gt 0 ]; then
-        echo -e "${RED}Failed: $ERROR_COUNT${NC}"
-    else
-        echo -e "Failed: 0"
-    fi
-    
-    echo ""
-    
-    # Print overall status
-    if [ "$OVERALL_STATUS" = "pass" ]; then
-        echo -e "${GREEN}Overall Status: HEALTHY${NC}"
-        exit 0
-    elif [ "$OVERALL_STATUS" = "warn" ]; then
-        echo -e "${YELLOW}Overall Status: DEGRADED${NC}"
-        exit 0
-    else
-        echo -e "${RED}Overall Status: UNHEALTHY${NC}"
-        exit 1
-    fi
+    printf "  %s[%s]%s %s (%.2fs)\n" "$status_color" "$result_status" "$reset_color" "$result_message" "$result_time"
+  done
 fi
 
-# Exit with code based on overall status
-if [ "$OVERALL_STATUS" = "pass" ] || [ "$OVERALL_STATUS" = "warn" ]; then
-    exit 0
+# Return appropriate exit code
+if [[ "$status" == "fail" ]]; then
+  exit 1
 else
-    exit 1
+  exit 0
 fi

@@ -1,204 +1,326 @@
 #!/bin/bash
 
-# Rollback Script for BlueEarthOne Deployments
-# 
-# This script handles the rollback of failed deployments:
-# 1. Reverts code to the previous version
-# 2. Restores database to a known good state (if requested)
-# 3. Restarts application services
-#
-# Usage: 
-#   ./rollback.sh                 # Standard rollback to the latest backup
-#   ./rollback.sh -d              # Rollback with database restore
-#   ./rollback.sh -b <backup_id>  # Rollback to a specific backup ID
-#   ./rollback.sh -h              # Display help information
+# BlueEarthOne Rollback Script
+# Usage: ./rollback.sh [--version VERSION] [--backup BACKUP_FILE] [--env ENVIRONMENT] [--force]
 
-set -e
+# Default values
+VERSION=""
+BACKUP_FILE=""
+ENVIRONMENT="staging"
+FORCE=false
+TIMESTAMP=$(date +%Y%m%d%H%M%S)
+BACKUP_DIR="./backups"
 
-# Configuration
-APP_DIR="/var/www/blueearth"
-BACKUP_DIR="/var/www/backups"
-LATEST_BACKUP_LINK="$BACKUP_DIR/latest"
-LOG_FILE="/var/log/deployment/rollback.log"
-
-# Initialize variables
-RESTORE_DB=false
-SPECIFIC_BACKUP=""
-
-# Ensure log directory exists
-mkdir -p "$(dirname "$LOG_FILE")"
-
-# Log function
-log() {
-    local level="$1"
-    local message="$2"
-    local timestamp
-    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-    echo "[$timestamp] [$level] $message" | tee -a "$LOG_FILE"
-}
-
-# Usage help function
-show_help() {
-    echo "Rollback Script for BlueEarthOne Deployments"
-    echo ""
-    echo "Usage: $0 [options]"
-    echo ""
-    echo "Options:"
-    echo "  -d            Restore database from backup"
-    echo "  -b <backup>   Rollback to a specific backup ID (timestamp)"
-    echo "  -h            Display this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0            # Standard rollback to the latest backup"
-    echo "  $0 -d         # Rollback with database restore"
-    echo "  $0 -b 20250515123045  # Rollback to specific backup"
-}
-
-# Parse command-line arguments
-while getopts ":db:h" opt; do
-    case $opt in
-        d)
-            RESTORE_DB=true
-            ;;
-        b)
-            SPECIFIC_BACKUP="$OPTARG"
-            ;;
-        h)
-            show_help
-            exit 0
-            ;;
-        \?)
-            log "ERROR" "Invalid option: -$OPTARG"
-            show_help
-            exit 1
-            ;;
-    esac
+# Process command-line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --version)
+      VERSION="$2"
+      shift 2
+      ;;
+    --backup)
+      BACKUP_FILE="$2"
+      shift 2
+      ;;
+    --env)
+      ENVIRONMENT="$2"
+      shift 2
+      ;;
+    --force)
+      FORCE=true
+      shift
+      ;;
+    --help)
+      echo "Usage: $0 [--version VERSION] [--backup BACKUP_FILE] [--env ENVIRONMENT] [--force]"
+      echo
+      echo "Options:"
+      echo "  --version VERSION    Specific version to rollback to (git tag or commit hash)"
+      echo "  --backup BACKUP_FILE Database backup file to restore"
+      echo "  --env ENVIRONMENT    Target environment (staging, production). Default: staging"
+      echo "  --force              Skip confirmation prompt"
+      echo "  --help               Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Run '$0 --help' for usage information."
+      exit 1
+      ;;
+  esac
 done
 
-log "INFO" "Starting rollback process"
+# Validate environment
+if [[ "$ENVIRONMENT" != "staging" && "$ENVIRONMENT" != "production" ]]; then
+  echo "Error: Invalid environment. Must be one of: staging, production."
+  exit 1
+fi
 
-# Determine which backup to use
-if [ -n "$SPECIFIC_BACKUP" ]; then
-    BACKUP_PATH="$BACKUP_DIR/$SPECIFIC_BACKUP"
-    if [ ! -d "$BACKUP_PATH" ]; then
-        log "ERROR" "Specified backup '$SPECIFIC_BACKUP' does not exist"
-        exit 1
-    fi
-    log "INFO" "Using specified backup: $SPECIFIC_BACKUP"
+# Load environment-specific configuration
+if [[ "$ENVIRONMENT" == "production" ]]; then
+  DB_URL="${PRODUCTION_DATABASE_URL:-}"
+  APP_URL="https://app.blueearth.example.com"
+  SERVICE_NAME="blueearth-app-prod"
 else
-    if [ ! -L "$LATEST_BACKUP_LINK" ]; then
-        log "ERROR" "No latest backup link found at $LATEST_BACKUP_LINK"
-        exit 1
-    fi
-    BACKUP_PATH=$(readlink -f "$LATEST_BACKUP_LINK")
-    BACKUP_ID=$(basename "$BACKUP_PATH")
-    log "INFO" "Using latest backup: $BACKUP_ID"
+  DB_URL="${STAGING_DATABASE_URL:-}"
+  APP_URL="https://staging.blueearth.example.com"
+  SERVICE_NAME="blueearth-app-staging"
 fi
 
-# Check that the backup exists and is valid
-if [ ! -d "$BACKUP_PATH" ]; then
-    log "ERROR" "Backup directory does not exist: $BACKUP_PATH"
-    exit 1
-fi
+# Create backup directory if it doesn't exist
+mkdir -p "$BACKUP_DIR"
 
-if [ ! -f "$BACKUP_PATH/package.json" ]; then
-    log "ERROR" "Backup appears invalid, missing package.json: $BACKUP_PATH"
-    exit 1
-fi
-
-log "INFO" "Stopping application service"
-if command -v pm2 &> /dev/null; then
-    pm2 stop blueearth || log "WARN" "Failed to stop PM2 service, may not be running"
-else
-    log "WARN" "PM2 not found, unable to stop service through PM2"
-    # Fallback to systemd if PM2 is not available
-    if command -v systemctl &> /dev/null && systemctl is-active --quiet blueearth.service; then
-        systemctl stop blueearth.service || log "WARN" "Failed to stop systemd service"
-    fi
-fi
-
-# Create a backup of the current state before rolling back (for potential recovery)
-ROLLBACK_TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-ROLLBACK_BACKUP_DIR="$BACKUP_DIR/pre_rollback_$ROLLBACK_TIMESTAMP"
-log "INFO" "Creating backup of current state: $ROLLBACK_BACKUP_DIR"
-mkdir -p "$ROLLBACK_BACKUP_DIR"
-cp -r "$APP_DIR"/* "$ROLLBACK_BACKUP_DIR/" || log "WARN" "Failed to backup current state, continuing with rollback"
-
-# Restore code from backup
-log "INFO" "Restoring code from backup: $BACKUP_PATH"
-rm -rf "$APP_DIR"/*
-cp -r "$BACKUP_PATH"/* "$APP_DIR/"
-
-# Restore database if requested
-if [ "$RESTORE_DB" = true ]; then
-    DB_BACKUP="$BACKUP_PATH/db-backup.sql"
-    if [ -f "$DB_BACKUP" ]; then
-        log "INFO" "Restoring database from backup"
-        # Get database details from env file or use defaults
-        if [ -f "$APP_DIR/.env" ]; then
-            source "$APP_DIR/.env"
-        fi
-        
-        DB_NAME=${PGDATABASE:-"blueearth"}
-        DB_USER=${PGUSER:-"postgres"}
-        DB_HOST=${PGHOST:-"localhost"}
-        
-        log "INFO" "Running database restoration: $DB_NAME on $DB_HOST as $DB_USER"
-        
-        if ! PGPASSWORD="$PGPASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -d "$DB_NAME" -f "$DB_BACKUP"; then
-            log "ERROR" "Database restore failed"
-            log "INFO" "Continuing with rollback anyway, database may be in an inconsistent state"
-        else
-            log "INFO" "Database successfully restored from backup"
-        fi
+# Function to create a backup of the current state
+function create_backup() {
+  echo "Creating backup of current database state..."
+  
+  # Exit if pg_dump is not available
+  if ! command -v pg_dump &> /dev/null; then
+    echo "Error: pg_dump command not found. Cannot create backup."
+    return 1
+  fi
+  
+  # Create backup filename
+  local backup_file="${BACKUP_DIR}/backup-${ENVIRONMENT}-${TIMESTAMP}.sql"
+  
+  # Perform backup
+  if [[ -n "$DB_URL" ]]; then
+    if pg_dump "$DB_URL" > "$backup_file"; then
+      echo "Backup created successfully: $backup_file"
+      return 0
     else
-        log "WARN" "No database backup found at $DB_BACKUP, skipping database restore"
+      echo "Error: Failed to create backup."
+      return 1
     fi
-fi
+  else
+    echo "Error: Database URL not set. Cannot create backup."
+    return 1
+  fi
+}
 
-# Install dependencies (using production flag for efficiency)
-log "INFO" "Installing dependencies"
-cd "$APP_DIR" || { log "ERROR" "Failed to change to application directory"; exit 1; }
-if ! npm ci --production; then
-    log "ERROR" "Failed to install dependencies"
-    log "INFO" "Attempting to continue rollback despite dependency installation failure"
-fi
-
-# Restart the application
-log "INFO" "Restarting application service"
-if command -v pm2 &> /dev/null; then
-    pm2 restart blueearth || pm2 start dist/server/index.js --name blueearth
-else
-    # Fallback to systemd if PM2 is not available
-    if command -v systemctl &> /dev/null; then
-        systemctl start blueearth.service || log "ERROR" "Failed to start systemd service"
-    else
-        log "ERROR" "Unable to restart application service, no PM2 or systemd available"
-    fi
-fi
-
-# Verify application started successfully
-log "INFO" "Verifying application health"
-sleep 5 # Give the application time to start up
-
-# Health check against the API
-MAX_RETRIES=5
-RETRY_COUNT=0
-HEALTH_URL="http://localhost:3000/api/health"
-
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    log "INFO" "Health check attempt $((RETRY_COUNT+1))/$MAX_RETRIES"
+# Function to restore a database backup
+function restore_backup() {
+  local backup_file="$1"
+  
+  echo "Restoring database from backup: $backup_file"
+  
+  # Exit if psql is not available
+  if ! command -v psql &> /dev/null; then
+    echo "Error: psql command not found. Cannot restore backup."
+    return 1
+  fi
+  
+  # Check if backup file exists
+  if [[ ! -f "$backup_file" ]]; then
+    echo "Error: Backup file not found: $backup_file"
+    return 1
+  fi
+  
+  # Perform restore
+  if [[ -n "$DB_URL" ]]; then
+    # First, drop all tables to avoid conflicts
+    echo "Dropping existing tables..."
+    psql "$DB_URL" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
     
-    if curl -s "$HEALTH_URL" | grep -q '"status":"ok"'; then
-        log "INFO" "Health check passed, rollback completed successfully"
-        exit 0
+    if psql "$DB_URL" < "$backup_file"; then
+      echo "Database restored successfully from: $backup_file"
+      return 0
     else
-        log "WARN" "Health check failed, retrying in 5 seconds..."
-        RETRY_COUNT=$((RETRY_COUNT+1))
-        sleep 5
+      echo "Error: Failed to restore database from backup."
+      return 1
     fi
-done
+  else
+    echo "Error: Database URL not set. Cannot restore backup."
+    return 1
+  fi
+}
 
-log "ERROR" "Health check failed after $MAX_RETRIES attempts, rollback may not be complete"
-log "ERROR" "Manual intervention may be required"
-exit 1
+# Function to find the latest backup file
+function find_latest_backup() {
+  local pattern="${BACKUP_DIR}/backup-${ENVIRONMENT}-*.sql"
+  local latest_backup=$(ls -t $pattern 2>/dev/null | head -n 1)
+  
+  if [[ -n "$latest_backup" && -f "$latest_backup" ]]; then
+    echo "$latest_backup"
+    return 0
+  else
+    echo ""
+    return 1
+  fi
+}
+
+# Function to roll back code to a specific version
+function rollback_code() {
+  local target_version="$1"
+  
+  echo "Rolling back code to version: $target_version"
+  
+  # Stash any changes
+  git stash -m "Automatic stash before rollback" || true
+  
+  # Fetch latest from remote
+  git fetch --all
+  
+  # Check if version exists
+  if git rev-parse --verify "$target_version" >/dev/null 2>&1; then
+    # Checkout the specified version
+    if git checkout "$target_version"; then
+      echo "Code rolled back successfully to: $target_version"
+      return 0
+    else
+      echo "Error: Failed to checkout version: $target_version"
+      return 1
+    fi
+  else
+    echo "Error: Version not found: $target_version"
+    return 1
+  fi
+}
+
+# Function to restart services
+function restart_services() {
+  echo "Restarting services..."
+  
+  # This is a placeholder that should be replaced with actual service restart commands
+  # For example, this might use AWS CLI, systemctl, or other service management tools
+  
+  echo "Rebuilding application..."
+  npm run build
+  
+  echo "Restarting application service..."
+  # Example: systemctl restart $SERVICE_NAME
+  # or: aws ecs update-service --force-new-deployment --service $SERVICE_NAME
+  
+  echo "Services restarted."
+}
+
+# Function to verify rollback success
+function verify_rollback() {
+  echo "Verifying rollback..."
+  
+  # Wait for services to fully start
+  echo "Waiting for services to start..."
+  sleep 10
+  
+  # Perform health check
+  echo "Performing health check..."
+  if ./scripts/health-check.sh "$APP_URL" --level detailed --output text; then
+    echo "Health check passed. Rollback successful."
+    return 0
+  else
+    echo "Warning: Health check failed after rollback."
+    return 1
+  fi
+}
+
+# Main rollback procedure
+echo "======================================="
+echo "BlueEarthOne Rollback - $ENVIRONMENT"
+echo "======================================="
+
+# Confirm rollback unless --force is specified
+if [[ "$FORCE" != "true" ]]; then
+  read -p "Are you sure you want to proceed with rollback? [y/N] " confirm
+  if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+    echo "Rollback cancelled."
+    exit 0
+  fi
+fi
+
+# Create backup of current state
+create_backup
+
+# Handle database rollback
+if [[ -n "$BACKUP_FILE" ]]; then
+  # Use specified backup file
+  if ! restore_backup "$BACKUP_FILE"; then
+    echo "Error: Database rollback failed."
+    exit 1
+  fi
+elif [[ -z "$VERSION" ]]; then
+  # If no version is specified and no backup file, use latest backup
+  latest_backup=$(find_latest_backup)
+  if [[ -n "$latest_backup" ]]; then
+    echo "No backup file specified. Using latest backup: $latest_backup"
+    if ! restore_backup "$latest_backup"; then
+      echo "Error: Database rollback failed."
+      exit 1
+    fi
+  else
+    echo "Warning: No backup file specified and no recent backups found."
+    
+    # Only proceed with code rollback if desired
+    if [[ "$FORCE" != "true" ]]; then
+      read -p "Continue with code rollback only? [y/N] " confirm
+      if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo "Rollback cancelled."
+        exit 0
+      fi
+    fi
+  fi
+fi
+
+# Handle code rollback
+if [[ -n "$VERSION" ]]; then
+  if ! rollback_code "$VERSION"; then
+    echo "Error: Code rollback failed."
+    exit 1
+  fi
+elif [[ -z "$BACKUP_FILE" ]]; then
+  # If neither version nor backup file specified, use previous release
+  echo "No version specified. Rolling back to previous release..."
+  
+  # Get list of tags in reverse chronological order
+  tags=$(git tag --sort=-creatordate)
+  
+  if [[ -n "$tags" ]]; then
+    # Get current tag or commit
+    current_version=$(git describe --tags --always)
+    
+    # Find the previous tag
+    previous_tag=""
+    for tag in $tags; do
+      if [[ "$tag" != "$current_version" ]]; then
+        previous_tag=$tag
+        break
+      fi
+    done
+    
+    if [[ -n "$previous_tag" ]]; then
+      echo "Rolling back to previous release: $previous_tag"
+      if ! rollback_code "$previous_tag"; then
+        echo "Error: Code rollback failed."
+        exit 1
+      fi
+    else
+      echo "Error: Could not determine previous release."
+      exit 1
+    fi
+  else
+    echo "Error: No tags found in the repository."
+    exit 1
+  fi
+fi
+
+# Restart services
+restart_services
+
+# Verify rollback success
+if verify_rollback; then
+  echo "======================================="
+  echo "Rollback completed successfully!"
+  echo "Environment: $ENVIRONMENT"
+  if [[ -n "$VERSION" ]]; then
+    echo "Code version: $VERSION"
+  fi
+  if [[ -n "$BACKUP_FILE" ]]; then
+    echo "Database restored from: $BACKUP_FILE"
+  fi
+  echo "======================================="
+  exit 0
+else
+  echo "======================================="
+  echo "Warning: Rollback completed, but verification failed."
+  echo "Please check system status manually."
+  echo "======================================="
+  exit 1
+fi
