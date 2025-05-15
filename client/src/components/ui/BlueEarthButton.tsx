@@ -5,13 +5,17 @@
  */
 
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type BlueEarthSize = "xs" | "sm" | "md" | "lg" | "xl";
-type BlueEarthVariant = "default" | "secondary" | "outline" | "ghost" | "destructive";
+// Our custom size types
+export type BlueEarthSize = "xs" | "sm" | "md" | "lg" | "xl";
 
-interface BlueEarthButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// We use the same variant types as the Button component
+export type BlueEarthVariant = ButtonProps["variant"];
+
+// Extended props interface
+export interface BlueEarthButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "size"> {
   size?: BlueEarthSize;
   variant?: BlueEarthVariant;
   children?: React.ReactNode;
@@ -34,8 +38,8 @@ export function BlueEarthButton({
     xl: "px-6 py-4 text-xl",
   };
 
-  // Map our custom sizes to the built-in Button sizes
-  const buttonSize = 
+  // Map our custom sizes to the built-in Button sizes for proper sizing
+  const buttonSize: ButtonProps["size"] = 
     size === "sm" || size === "xs" ? "sm" :
     size === "lg" || size === "xl" ? "lg" : 
     "default";
@@ -46,8 +50,8 @@ export function BlueEarthButton({
   return (
     <Button
       className={cn(sizeClass, className)}
-      size={buttonSize as any}
-      variant={variant as any}
+      size={buttonSize}
+      variant={variant}
       {...props}
     >
       {children}

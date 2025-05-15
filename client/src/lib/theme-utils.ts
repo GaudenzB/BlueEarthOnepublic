@@ -6,7 +6,15 @@
  */
 
 import { cn } from "@/lib/utils";
-import { blueEarthTheme } from "@/theme/blueearth-theme";
+import { 
+  blueEarthTheme,
+  type ThemeSpacingKey,
+  type ThemeShadowKey,
+  type ThemeZIndexKey,
+  type ThemeFontSizeKey,
+  type ThemeFontWeightKey,
+  type ThemeBorderRadiusKey
+} from "@/theme/blueearth-theme";
 import { type ClassValue } from "clsx";
 
 /**
@@ -14,7 +22,7 @@ import { type ClassValue } from "clsx";
  * @param size The spacing size key from the theme
  * @returns The spacing value
  */
-export function spacing(size: keyof typeof blueEarthTheme.spacing): string {
+export function spacing(size: ThemeSpacingKey): string {
   return blueEarthTheme.spacing[size];
 }
 
@@ -23,7 +31,7 @@ export function spacing(size: keyof typeof blueEarthTheme.spacing): string {
  * @param size The shadow size key from the theme
  * @returns The shadow value
  */
-export function shadow(size: keyof typeof blueEarthTheme.shadow): string {
+export function shadow(size: ThemeShadowKey): string {
   return blueEarthTheme.shadow[size];
 }
 
@@ -32,7 +40,7 @@ export function shadow(size: keyof typeof blueEarthTheme.shadow): string {
  * @param layer The z-index layer key from the theme
  * @returns The z-index value
  */
-export function zIndex(layer: keyof typeof blueEarthTheme.zIndex): number {
+export function zIndex(layer: ThemeZIndexKey): number {
   return blueEarthTheme.zIndex[layer];
 }
 
@@ -41,7 +49,7 @@ export function zIndex(layer: keyof typeof blueEarthTheme.zIndex): number {
  * @param size The font size key from the theme
  * @returns The font size value
  */
-export function fontSize(size: keyof typeof blueEarthTheme.fontSize): string {
+export function fontSize(size: ThemeFontSizeKey): string {
   return blueEarthTheme.fontSize[size];
 }
 
@@ -50,7 +58,7 @@ export function fontSize(size: keyof typeof blueEarthTheme.fontSize): string {
  * @param weight The font weight key from the theme
  * @returns The font weight value
  */
-export function fontWeight(weight: keyof typeof blueEarthTheme.fontWeight): string {
+export function fontWeight(weight: ThemeFontWeightKey): string {
   return blueEarthTheme.fontWeight[weight];
 }
 
@@ -59,7 +67,7 @@ export function fontWeight(weight: keyof typeof blueEarthTheme.fontWeight): stri
  * @param size The border radius key from the theme
  * @returns The border radius value
  */
-export function borderRadius(size: keyof typeof blueEarthTheme.borderRadius): string {
+export function borderRadius(size: ThemeBorderRadiusKey): string {
   return blueEarthTheme.borderRadius[size];
 }
 
