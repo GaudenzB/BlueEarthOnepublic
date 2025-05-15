@@ -4,7 +4,7 @@ import { json, urlencoded } from "express";
 import cors from "cors";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { registerRoutes as registerOriginalRoutes } from "./routes";
-import { setupAuth, authenticate } from "./auth";
+import { setupAuth, authenticate } from "./auth-minimal";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply common middleware

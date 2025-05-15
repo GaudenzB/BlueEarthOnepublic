@@ -2,7 +2,7 @@
 import './utils/env-loader.js';
 
 import express, { type Express } from "express";
-import { registerRoutes } from "./routes-new"; // Use our new routes file
+import { registerRoutes } from "./routes-new"; // Use our new routes file with auth-minimal
 import { setupVite, serveStatic } from "./vite";
 import { runMigrations } from "./migrations";
 import { checkDatabaseConnection } from "./db";
@@ -11,7 +11,7 @@ import { requestLoggerMiddleware } from "./middleware/requestLogger";
 import { setupSecurityMiddleware } from "./middleware/security";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { setupSession } from "./middleware/session";
-import { setupAuth } from "./auth"; // Import our updated auth system
+// Auth system is now imported and set up in routes-new.ts
 import { logger } from "./utils/logger";
 import { setupDefaultTenant } from "./utils/setupDefaultTenant";
 import { env, isDevelopment } from "./config/env";
@@ -37,8 +37,7 @@ async function bootstrap(): Promise<void> {
     
     // Apply essential middleware
     setupSecurityMiddleware(app);
-    // We're using our passport-auth.ts setup which includes session handling
-    setupAuth(app); // Initialize Passport with its own session setup
+    // Auth will be initialized in routes-new.ts
     app.use(requestLoggerMiddleware);
     
     // Database initialization
