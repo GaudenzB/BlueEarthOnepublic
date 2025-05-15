@@ -50,12 +50,12 @@ const cookieConfig = {
 /**
  * Get the cookie configuration for the current environment
  */
-function getCookieConfig(name?: string, maxAgeOverride?: number): any {
-  const environment = env.NODE_ENV || 'development';
+function getCookieConfig(name?: string, maxAgeOverride?: number): Record<string, any> {
+  const environment = process.env.NODE_ENV || 'development';
   const envConfig = cookieConfig[environment as keyof typeof cookieConfig] || cookieConfig.development;
   
   // Merge base and environment-specific configs
-  const config = {
+  const config: Record<string, any> = {
     ...cookieConfig.base,
     ...envConfig,
   };
@@ -66,17 +66,18 @@ function getCookieConfig(name?: string, maxAgeOverride?: number): any {
   }
   
   // Apply max age override if provided
-  if (maxAgeOverride !== undefined && 'maxAge' in config) {
+  if (maxAgeOverride !== undefined) {
     config.maxAge = maxAgeOverride;
   }
   
   // Log cookie configuration in development for debugging
   if (environment === 'development') {
     logger.debug(`Cookie configuration for ${name || 'unnamed cookie'}:`, {
-      ...config,
-      httpOnly: config.httpOnly,
-      secure: config.secure,
+      httpOnly: Boolean(config.httpOnly),
+      secure: Boolean(config.secure),
       sameSite: config.sameSite,
+      domain: config.domain || 'not set',
+      maxAge: config.maxAge || 'not set'
     });
   }
   
