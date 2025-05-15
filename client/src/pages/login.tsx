@@ -119,7 +119,32 @@ export default function Login() {
               type="button"
               variant="outline"
               className="w-full flex items-center justify-center space-x-2"
-              onClick={() => window.location.href = '/api/auth/entra/login'}
+              onClick={async () => {
+                try {
+                  // Check if Entra ID is enabled
+                  const response = await fetch('/api/auth/entra/status');
+                  const data = await response.json();
+                  
+                  if (data.enabled) {
+                    // If enabled, proceed with login
+                    window.location.href = '/api/auth/entra/login';
+                  } else {
+                    // If not enabled, show a toast message
+                    toast({
+                      title: "Microsoft Login Unavailable",
+                      description: "Microsoft SSO is not configured. Please use username and password login.",
+                      variant: "destructive",
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error checking Entra ID status:", error);
+                  toast({
+                    title: "Error",
+                    description: "Could not verify Microsoft SSO availability. Please use username and password login.",
+                    variant: "destructive",
+                  });
+                }
+              }}
               style={{ borderColor: colors.border.default }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23">
