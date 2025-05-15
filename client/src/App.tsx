@@ -13,6 +13,8 @@ import Login from "@/pages/login";
 import UserManagement from "@/pages/user-management";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
+import EntraComplete from "@/pages/auth/entra-complete";
+import EntraError from "@/pages/auth/entra-error";
 import Integrations from "@/pages/integrations";
 import Documents from "@/pages/documents";
 import DocumentDetail from "@/pages/document-detail-consolidated";
@@ -76,6 +78,8 @@ function Router() {
       <Route path={AUTH_ROUTES.LOGIN} component={(props) => <PublicRoute component={Login} {...props} />} />
       <Route path={AUTH_ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
       <Route path={`${AUTH_ROUTES.RESET_PASSWORD}/:token`} component={ResetPassword} />
+      <Route path={AUTH_ROUTES.ENTRA_COMPLETE} component={EntraComplete} />
+      <Route path={AUTH_ROUTES.ENTRA_ERROR} component={EntraError} />
       
       {/* Protected routes */}
       <Route path={ROUTES.HOME} component={(props) => <ProtectedRoute component={EmployeeDirectory} {...props} />} />
