@@ -7,8 +7,8 @@ import { eq } from 'drizzle-orm';
 import { hashPassword } from '../auth';
 import crypto from 'crypto';
 
-// Configuration for Microsoft Azure AD
-export interface AzureAdConfig {
+// Configuration for Microsoft Entra ID
+export interface EntraIdConfig {
   clientId: string;
   clientSecret: string;
   tenantId: string;
@@ -16,7 +16,7 @@ export interface AzureAdConfig {
   scopes: string[];
 }
 
-export interface AzureAdUser {
+export interface EntraIdUser {
   id: string;
   displayName: string;
   givenName: string;
@@ -28,53 +28,53 @@ export interface AzureAdUser {
 // Store PKCE code verifiers in memory (for production, consider a session store like Redis)
 const codeVerifiers = new Map<string, string>();
 
-let azureAdClient: Client | null = null;
+let entraIdClient: Client | null = null;
 
 /**
- * Initialize the Azure AD OpenID Connect client
+ * Initialize the Microsoft Entra ID OpenID Connect client
  */
-export async function initializeAzureAd(config: AzureAdConfig): Promise<Client> {
+export async function initializeEntraId(config: EntraIdConfig): Promise<Client> {
   try {
-    // Create the Azure AD issuer
+    // Create the Microsoft Entra ID issuer
     const issuer = await Issuer.discover(
       `https://login.microsoftonline.com/${config.tenantId}/v2.0/.well-known/openid-configuration`
     );
     
-    logger.info('Azure AD OIDC issuer discovered successfully', { 
+    logger.info('Microsoft Entra ID OIDC issuer discovered successfully', { 
       issuer: issuer.metadata.issuer,
-      azureAdTenant: config.tenantId 
+      entraIdTenant: config.tenantId 
     });
 
     // Create the client
-    azureAdClient = new issuer.Client({
+    entraIdClient = new issuer.Client({
       client_id: config.clientId,
       client_secret: config.clientSecret,
       redirect_uris: [config.redirectUri],
       response_types: ['code'],
     });
 
-    return azureAdClient;
+    return entraIdClient;
   } catch (error) {
-    logger.error('Failed to initialize Azure AD client', { error });
+    logger.error('Failed to initialize Microsoft Entra ID client', { error });
     throw error;
   }
 }
 
 /**
- * Get the Azure AD client
+ * Get the Microsoft Entra ID client
  */
-export function getAzureAdClient(): Client {
-  if (!azureAdClient) {
-    throw new Error('Azure AD client has not been initialized');
+export function getEntraIdClient(): Client {
+  if (!entraIdClient) {
+    throw new Error('Microsoft Entra ID client has not been initialized');
   }
-  return azureAdClient;
+  return entraIdClient;
 }
 
 /**
- * Create authorization URL to redirect the user to Azure AD login page
+ * Create authorization URL to redirect the user to Microsoft Entra ID login page
  */
-export function createAuthorizationUrl(config: AzureAdConfig): { url: string, state: string } {
-  const client = getAzureAdClient();
+export function createAuthorizationUrl(config: EntraIdConfig): { url: string, state: string } {
+  const client = getEntraIdClient();
   
   // Generate PKCE code challenge
   const codeVerifier = generators.codeVerifier();
@@ -102,10 +102,10 @@ export function createAuthorizationUrl(config: AzureAdConfig): { url: string, st
 }
 
 /**
- * Handle the callback from Azure AD and get tokens
+ * Handle the callback from Microsoft Entra ID and get tokens
  */
-export async function handleCallback(req: Request, config: AzureAdConfig): Promise<TokenSet> {
-  const client = getAzureAdClient();
+export async function handleCallback(req: Request, config: EntraIdConfig): Promise<TokenSet> {
+  const client = getEntraIdClient();
   const { code, state } = req.query as { code: string, state: string };
   
   // Verify state to prevent CSRF
@@ -130,8 +130,8 @@ export async function handleCallback(req: Request, config: AzureAdConfig): Promi
 /**
  * Verify and decode ID token to get user info
  */
-export async function getUserInfo(tokenSet: TokenSet): Promise<AzureAdUser> {
-  const client = getAzureAdClient();
+export async function getUserInfo(tokenSet: TokenSet): Promise<EntraIdUser> {
+  const client = getEntraIdClient();
   
   // Verify the ID token
   const claims = tokenSet.claims();
@@ -140,7 +140,7 @@ export async function getUserInfo(tokenSet: TokenSet): Promise<AzureAdUser> {
   // const userinfo = await client.userinfo(tokenSet);
   
   // Map claims to user object
-  const user: AzureAdUser = {
+  const user: EntraIdUser = {
     id: claims.oid || claims.sub,
     displayName: claims.name || '',
     givenName: claims.given_name || '',
@@ -153,9 +153,9 @@ export async function getUserInfo(tokenSet: TokenSet): Promise<AzureAdUser> {
 }
 
 /**
- * Find or create a user based on Azure AD information
+ * Find or create a user based on Microsoft Entra ID information
  */
-export async function findOrCreateUser(azureAdUser: AzureAdUser): Promise<{
+export async function findOrCreateUser(entraIdUser: EntraIdUser): Promise<{
   id: number;
   username: string;
   email: string;
@@ -165,19 +165,19 @@ export async function findOrCreateUser(azureAdUser: AzureAdUser): Promise<{
   try {
     // Try to find user by email
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, azureAdUser.email)
+      where: eq(users.email, entraIdUser.email)
     });
     
     if (existingUser) {
-      // Update Azure ID if not already set
+      // Update Entra ID if not already set
       if (!existingUser.azureAdId) {
         await db.update(users)
-          .set({ azureAdId: azureAdUser.id })
+          .set({ azureAdId: entraIdUser.id })
           .where(eq(users.id, existingUser.id));
         
-        logger.info('Updated existing user with Azure AD ID', { 
+        logger.info('Updated existing user with Microsoft Entra ID', { 
           userId: existingUser.id, 
-          azureAdId: azureAdUser.id 
+          entraId: entraIdUser.id 
         });
       }
       
@@ -196,7 +196,7 @@ export async function findOrCreateUser(azureAdUser: AzureAdUser): Promise<{
     const hashedPassword = await hashPassword(randomPassword);
     
     // Create simple username from email
-    const username = azureAdUser.email.split('@')[0];
+    const username = entraIdUser.email.split('@')[0];
     
     // Default role
     const defaultRole = 'user';
@@ -205,19 +205,19 @@ export async function findOrCreateUser(azureAdUser: AzureAdUser): Promise<{
     const [newUser] = await db.insert(users)
       .values({
         username,
-        email: azureAdUser.email,
+        email: entraIdUser.email,
         password: hashedPassword,
         role: defaultRole,
-        azureAdId: azureAdUser.id,
-        firstName: azureAdUser.givenName,
-        lastName: azureAdUser.surname
+        azureAdId: entraIdUser.id,
+        firstName: entraIdUser.givenName,
+        lastName: entraIdUser.surname
       })
       .returning();
     
-    logger.info('Created new user from Azure AD login', { 
+    logger.info('Created new user from Microsoft Entra ID login', { 
       userId: newUser.id, 
-      email: azureAdUser.email,
-      azureAdId: azureAdUser.id
+      email: entraIdUser.email,
+      entraId: entraIdUser.id
     });
     
     return {
@@ -228,10 +228,10 @@ export async function findOrCreateUser(azureAdUser: AzureAdUser): Promise<{
       isNewUser: true
     };
   } catch (error) {
-    logger.error('Error finding or creating user from Azure AD', { 
+    logger.error('Error finding or creating user from Microsoft Entra ID', { 
       error, 
-      azureAdUserId: azureAdUser.id,
-      azureAdEmail: azureAdUser.email 
+      entraIdUserId: entraIdUser.id,
+      entraIdEmail: entraIdUser.email 
     });
     throw error;
   }

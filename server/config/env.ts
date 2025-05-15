@@ -48,13 +48,13 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-ada-002'),
   
-  // Azure AD SSO Configuration
-  AZURE_AD_ENABLED: z.boolean().default(false),
-  AZURE_AD_TENANT_ID: z.string().optional(),
-  AZURE_AD_CLIENT_ID: z.string().optional(),
-  AZURE_AD_CLIENT_SECRET: z.string().optional(),
-  AZURE_AD_REDIRECT_URI: z.string().optional(),
-  AZURE_AD_SCOPES: z.string().default('openid profile email'),
+  // Microsoft Entra ID SSO Configuration
+  ENTRA_ID_ENABLED: z.boolean().default(false),
+  ENTRA_ID_TENANT_ID: z.string().optional(),
+  ENTRA_ID_CLIENT_ID: z.string().optional(),
+  ENTRA_ID_CLIENT_SECRET: z.string().optional(),
+  ENTRA_ID_REDIRECT_URI: z.string().optional(),
+  ENTRA_ID_SCOPES: z.string().default('openid profile email'),
 
   // Security settings
   CORS_ORIGIN: z.string().default('*'),
@@ -126,14 +126,14 @@ export const isOpenAIConfigured = () => {
 };
 
 /**
- * Check if Azure AD SSO is configured
+ * Check if Microsoft Entra ID SSO is configured
  */
-export const isAzureAdConfigured = () => {
-  return env.AZURE_AD_ENABLED && 
-    !!env.AZURE_AD_TENANT_ID && 
-    !!env.AZURE_AD_CLIENT_ID && 
-    !!env.AZURE_AD_CLIENT_SECRET && 
-    !!env.AZURE_AD_REDIRECT_URI;
+export const isEntraIdConfigured = () => {
+  return env.ENTRA_ID_ENABLED && 
+    !!env.ENTRA_ID_TENANT_ID && 
+    !!env.ENTRA_ID_CLIENT_ID && 
+    !!env.ENTRA_ID_CLIENT_SECRET && 
+    !!env.ENTRA_ID_REDIRECT_URI;
 };
 
 /**
