@@ -21,6 +21,7 @@
     "@neondatabase/serverless": "^0.10.4",
     "@opentelemetry/auto-instrumentations-node": "^0.58.1",
     "@opentelemetry/sdk-node": "^0.200.0",
+    "@playwright/test": "^1.52.0",
     "@radix-ui/react-accordion": "^1.2.4",
     "@radix-ui/react-alert-dialog": "^1.1.7",
     "@radix-ui/react-aspect-ratio": "^1.1.3",
