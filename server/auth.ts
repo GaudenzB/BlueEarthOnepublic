@@ -80,11 +80,17 @@ export const authenticate = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Get token from header
-  const token = req.header("Authorization")?.replace("Bearer ", "");
+  // Try to get token from cookies first (our new preferred method)
+  const cookieToken = req.cookies?.accessToken;
+  
+  // Fallback to Authorization header if no cookie (for backward compatibility)
+  const headerToken = req.header("Authorization")?.replace("Bearer ", "");
+  
+  // Use the cookie token if available, otherwise use the header token
+  const token = cookieToken || headerToken;
 
   if (!token) {
-    apiResponse.unauthorized(res, "No token, authorization denied");
+    apiResponse.unauthorized(res, "Authentication required");
     return;
   }
 
@@ -93,7 +99,7 @@ export const authenticate = (
     const decoded = verifyToken(token, TokenType.ACCESS);
     
     if (!decoded) {
-      apiResponse.unauthorized(res, "Token is not valid");
+      apiResponse.unauthorized(res, "Invalid authentication token");
       return;
     }
     
@@ -112,18 +118,18 @@ export const authenticate = (
     
     // Provide specific error responses based on verification failure type
     if (error.name === 'TokenExpiredError') {
-      apiResponse.unauthorized(res, "Token has expired");
+      apiResponse.unauthorized(res, "Authentication session expired");
       return;
     } else if (error.name === 'JsonWebTokenError') {
-      apiResponse.unauthorized(res, "Invalid token");
+      apiResponse.unauthorized(res, "Invalid authentication token");
       return;
     } else if (error.name === 'NotBeforeError') {
-      apiResponse.unauthorized(res, "Token not yet active");
+      apiResponse.unauthorized(res, "Authentication token not yet active");
       return;
     }
     
     // Default case for other JWT errors
-    apiResponse.unauthorized(res, "Invalid authentication token");
+    apiResponse.unauthorized(res, "Authentication failed");
     return;
   }
 };
