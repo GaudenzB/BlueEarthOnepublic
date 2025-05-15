@@ -56,14 +56,28 @@ export function useAuth() {
   // Check for existing tokens via a cookie before fetching
   const [tokenExists, setTokenExists] = React.useState<boolean>(false);
 
-  // Initialize tokenExists by checking for the existence of the auth cookie on mount
+  // Initialize tokenExists and check for existing login session
   React.useEffect(() => {
     const detectExistingLogin = () => {
-      // Check documents.cookie for the presence of accessToken cookie
-      // The actual token value is not accessible via JS due to HttpOnly, but
-      // we can check if the name exists in the cookie string
-      const hasCookie = document.cookie.split(';').some(item => 
-        item.trim().startsWith('accessToken='));
+      // In development, we'll always assume there might be a token to trigger the auth check
+      // This is because HttpOnly cookies can't be reliably detected via JavaScript
+      const isDev = import.meta.env.DEV;
+      
+      if (isDev) {
+        // In development, always try to authenticate
+        console.debug("Development environment: Always try to authenticate");
+        setTokenExists(true);
+        return;
+      }
+      
+      // For production, we still attempt to detect cookies 
+      // Even though HttpOnly cookies can't be directly read, 
+      // we can check for other indicators or session cookies
+      const hasCookie = document.cookie.split(';').some(item => {
+        const trimmed = item.trim();
+        return trimmed.startsWith('accessToken=') || trimmed.startsWith('connect.sid=');
+      });
+      console.debug("Cookie detection result:", hasCookie);
       setTokenExists(hasCookie);
     };
     

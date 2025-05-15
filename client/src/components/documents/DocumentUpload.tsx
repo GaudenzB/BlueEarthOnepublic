@@ -223,6 +223,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       // Wrap XHR in a promise for async/await support
       const uploadPromise = new Promise<any>((resolve, reject) => {
+        // Use the withCredentials flag to ensure cookies are sent with the request
+        xhr.withCredentials = true;
         xhr.open('POST', '/api/documents', true);
         
         // Log authentication status from our auth hook
@@ -233,6 +235,27 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           role: user?.role,
           cookies: document.cookie ? 'Present' : 'None'
         });
+        
+        // Always attempt to send token in dev environment, plus use cookies
+        if (import.meta.env.DEV) {
+          // Try to get a token from the dev login endpoint
+          fetch('/api/auth/dev-login', { 
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          .then(resp => resp.json())
+          .then(data => {
+            if (data.data?.token) {
+              // Add the token to the current request
+              xhr.setRequestHeader('Authorization', `Bearer ${data.data.token}`);
+              console.log('Added dev token to Authorization header');
+            }
+          })
+          .catch(err => {
+            console.error('Failed to get dev token:', err);
+          });
+        }
         
         // Include the auth token in the header if we have one from auto-login
         if (authToken) {
@@ -247,7 +270,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           authCookie,
           sessionCookie,
           hasToken: authToken !== '',
-          usingCookieAuth: true
+          withCredentials: xhr.withCredentials
         });
         
         // Add debug logging to console

@@ -24,6 +24,8 @@ const cookieConfig = {
     secure: false,
     // Max age: 7 days in milliseconds
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    // SameSite: 'lax' allows cookies to be sent in cross-site requests (important for development)
+    sameSite: 'lax',
   },
   
   // Production-specific configuration
