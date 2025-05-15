@@ -356,8 +356,7 @@ export const documentRepository = {
       }
 
       // Log the SQL query for debugging (in development only)
-      if (process.env.NODE_ENV !== 'production') {
-        const queryConditions = and(...conditions);
+      if (process.env['NODE_ENV'] !== 'production') {
         logger.debug('Document query conditions:', { 
           conditionsCount: conditions.length,
           tenantCondition: conditions[0],
