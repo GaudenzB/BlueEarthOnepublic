@@ -36,6 +36,7 @@ import documentPreviewRoutes from "./routes/documentPreview";
 import semanticSearchRoutes from "./routes/semanticSearch";
 import chunkedUploadsRoutes from "./routes/chunkedUploads";
 import { apiLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimit";
+import { isEntraIdConfigured } from "./config/env";
 // Contracts module removed
 import healthRoutes from "./routes/health";
 import monitoringRoutes from "./routes/monitoring";
@@ -75,6 +76,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Microsoft Entra ID SSO routes
   app.use('/api/auth/entra', entraSsoRoutes);
+  
+  // Add Entra ID status endpoint for UI to check if Microsoft SSO is available
+  app.get('/api/auth/entra/microsoft/status', (req, res) => {
+    const enabled = isEntraIdConfigured();
+    res.json({
+      success: true,
+      enabled,
+      message: enabled 
+        ? 'Microsoft Entra ID authentication is available' 
+        : 'Microsoft Entra ID authentication is not configured'
+    });
+  });
   
   // Register development auth routes
   app.use('/api/auth', authRoutes);

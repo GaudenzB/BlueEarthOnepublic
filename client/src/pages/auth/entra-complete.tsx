@@ -1,55 +1,29 @@
 import React, { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
-import { colors } from "@/lib/colors";
+import { Loader2 } from "lucide-react";
 
 /**
  * This component handles the authentication completion after a successful Entra ID login.
- * It extracts tokens from the URL hash, processes them, and redirects to the home page.
+ * Session cookies are already set by the server, so we just need to fetch the user data.
  */
 export default function EntraComplete() {
-  const { setTokens } = useAuth();
+  const { refetchUser } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    // Function to process tokens from the URL hash
-    const processTokens = async () => {
+    // Function to complete the authentication process
+    const completeAuth = async () => {
       try {
-        // Extract the tokens from the URL hash
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const accessToken = params.get('token');
-        const refreshToken = params.get('refreshToken');
+        // Refresh user data since cookies are already set by the server
+        const result = await refetchUser();
 
-        if (!accessToken || !refreshToken) {
-          throw new Error('Invalid or missing authentication tokens');
+        if (!result.data) {
+          throw new Error('Failed to retrieve user data');
         }
-
-        // Exchange the tokens for HttpOnly cookies via an API call
-        const response = await fetch('/api/auth/entra/exchange', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            accessToken,
-            refreshToken,
-          }),
-          credentials: 'include', // Important to receive and store cookies
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || 'Token exchange failed');
-        }
-
-        // Refresh user data since cookies are now set
-        await setTokens();
 
         // Show success message
         toast({
@@ -73,24 +47,24 @@ export default function EntraComplete() {
         
         // Redirect to login page
         setTimeout(() => {
-          setLocation("/login");
+          setLocation("/auth");
         }, 2000); // Give user time to see the error
       }
     };
 
-    // Process tokens when component mounts
-    processTokens();
-  }, [setTokens, toast, setLocation]);
+    // Complete authentication when component mounts
+    completeAuth();
+  }, [refetchUser, toast, setLocation]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background.page }}>
-      <Card className="w-full max-w-md p-6" style={{ backgroundColor: colors.background.card }}>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Card className="w-full max-w-md p-6">
         <CardContent className="flex flex-col items-center justify-center space-y-4 text-center py-8">
-          <Spinner className="h-12 w-12" style={{ borderTopColor: colors.primary.base }} />
-          <h2 className="text-xl font-semibold" style={{ color: colors.text.primary }}>
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <h2 className="text-xl font-semibold">
             Completing Authentication
           </h2>
-          <p className="text-sm" style={{ color: colors.text.muted }}>
+          <p className="text-sm text-muted-foreground">
             Please wait while we complete your sign-in with Microsoft...
           </p>
         </CardContent>
