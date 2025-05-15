@@ -77,7 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data.user;
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+      // Update the user data with the proper format that matches the query data structure
+      queryClient.setQueryData(["/api/user"], { 
+        success: true, 
+        user: user 
+      });
+      
+      // Refresh the user data to ensure we have the latest
+      refetchUser();
+      
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
@@ -112,7 +120,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data.user;
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+      // Update the user data with the proper format that matches the query data structure
+      queryClient.setQueryData(["/api/user"], { 
+        success: true, 
+        user: user 
+      });
+      
+      // Refresh the user data to ensure we have the latest
+      refetchUser();
+      
       toast({
         title: "Registration successful",
         description: `Welcome, ${user.username}!`,
@@ -143,7 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data;
     },
     onSuccess: (data) => {
+      // Set user data to null when logged out
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Force a refetch to ensure all user data is cleared
+      refetchUser();
+      
       toast({
         title: "Logged out successfully",
         description: data.message || "You have been logged out"
