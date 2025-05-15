@@ -202,6 +202,13 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         }
         
+        // Add debug logging to console
+        console.log('Starting document upload...', {
+          fileName: data.file.name,
+          fileSize: data.file.size,
+          fileType: data.file.type
+        });
+        
         xhr.withCredentials = true; // Include cookies for session-based auth
         
         // Handle response 
