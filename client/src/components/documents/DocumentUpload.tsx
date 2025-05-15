@@ -530,6 +530,28 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             
             // Prepare headers
             const headers: HeadersInit = {};
+
+            // Always attempt to send token in dev environment, plus use cookies
+            if (import.meta.env.DEV) {
+              try {
+                // Try to get a token from the dev login endpoint
+                const devLoginResponse = await fetch('/api/auth/dev-login', { 
+                  method: 'POST',
+                  credentials: 'include',
+                  headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await devLoginResponse.json();
+                if (data.data?.token) {
+                  headers['Authorization'] = `Bearer ${data.data.token}`;
+                  console.log('Added dev token to Authorization header for fetch upload');
+                }
+              } catch (err) {
+                console.error('Failed to get dev token for fetch upload:', err);
+              }
+            }
+
+            // Include any existing auth token in the request
             if (authToken) {
               headers['Authorization'] = `Bearer ${authToken}`;
               console.log('Added Authorization header to fetch request');
@@ -540,7 +562,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               method: 'POST',
               headers,
               body: fetchFormData,
-              credentials: 'include',
+              credentials: 'include', // Always include credentials to send cookies
               signal: fetchController.signal
             });
             

@@ -71,17 +71,26 @@ export function useAuth() {
       }
       
       // For production, we still attempt to detect cookies 
-      // Even though HttpOnly cookies can't be directly read, 
-      // we can check for other indicators or session cookies
+      // Check for our non-HttpOnly marker cookie which is set alongside the HttpOnly auth cookies
       const hasCookie = document.cookie.split(';').some(item => {
         const trimmed = item.trim();
-        return trimmed.startsWith('accessToken=') || trimmed.startsWith('connect.sid=');
+        return trimmed.startsWith('auth_present=') || 
+               trimmed.startsWith('accessToken=') || 
+               trimmed.startsWith('connect.sid=');
       });
       console.debug("Cookie detection result:", hasCookie);
       setTokenExists(hasCookie);
     };
     
     detectExistingLogin();
+    
+    // Set up an interval to occasionally check for the presence of the auth cookie
+    // This addresses issues where cookies might be set after this component is mounted
+    const cookieCheckInterval = setInterval(() => {
+      detectExistingLogin();
+    }, 5000); // Check every 5 seconds
+    
+    return () => clearInterval(cookieCheckInterval);
   }, []);
 
   // Query to fetch the current user, but only if we might be logged in

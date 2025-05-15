@@ -81,6 +81,27 @@ export const authenticate = (
   res: Response,
   next: NextFunction
 ): void => {
+  // Special handling for document upload routes to provide better error diagnostics
+  const isDocumentUpload = req.path.includes('/documents') && req.method === 'POST';
+  
+  // Enhanced debug logging for document uploads
+  if (isDocumentUpload) {
+    logger.debug('Document upload authentication attempt', {
+      path: req.path,
+      method: req.method,
+      hasAuthHeader: !!req.header("Authorization"),
+      authHeader: req.header("Authorization")?.substring(0, 20) + '...',
+      hasCookies: !!req.cookies?.accessToken,
+      cookieNames: Object.keys(req.cookies || {}),
+      hasSession: !!req.session,
+      hasSessionID: !!req.sessionID,
+      sessionUserId: req.session?.userId,
+      headers: Object.keys(req.headers),
+      origin: req.headers.origin,
+      referer: req.headers.referer
+    });
+  }
+  
   // Try to get token from cookies first (our new preferred method)
   const cookieToken = req.cookies?.accessToken;
   
@@ -90,16 +111,29 @@ export const authenticate = (
   // Use the cookie token if available, otherwise use the header token
   const token = cookieToken || headerToken;
 
-  // Special handling for document upload routes to provide better error diagnostics
-  const isDocumentUpload = req.path.includes('/documents') && req.method === 'POST';
+  // Check for session authentication if no token
+  // This fallback is especially important for document uploads
+  if (!token && req.session && req.session.userId) {
+    // We have an active session but no token
+    if (isDocumentUpload) {
+      logger.info('Document upload: Using session authentication', {
+        sessionId: req.sessionID,
+        userId: req.session.userId
+      });
+    }
+    
+    // Fall through to session auth handling code in documentUploadAuth middleware
+    return next();
+  }
   
   if (!token) {
     if (isDocumentUpload) {
-      logger.error('Document upload authentication failed - no token provided', {
+      logger.error('Document upload authentication failed - no token or session', {
         path: req.path,
         method: req.method,
         hasAuthHeader: !!req.header("Authorization"),
         hasCookies: !!req.cookies?.accessToken,
+        hasSession: !!req.session,
         headers: Object.keys(req.headers),
         ip: req.ip
       });

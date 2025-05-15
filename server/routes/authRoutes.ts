@@ -31,10 +31,19 @@ router.post('/dev-login', (req: Request, res: Response) => {
     role: 'superadmin'
   };
   
-  // Set session for cookie-based auth
+  // Set session for cookie-based auth (most reliable method in development)
   if (req.session) {
     req.session.userId = devUser.id;
     req.session.userRole = devUser.role;
+    req.session.username = devUser.username;
+    req.session.email = devUser.email;
+    
+    // Log session data for debugging
+    logger.debug('Set development session data', {
+      sessionId: req.sessionID,
+      userId: devUser.id,
+      role: devUser.role
+    });
   }
   
   // Generate JWT token for token-based auth
@@ -43,8 +52,17 @@ router.post('/dev-login', (req: Request, res: Response) => {
   // Extract rememberMe from request body, default to true for dev login
   const rememberMe = req.body?.rememberMe !== false;
   
-  // Use our common auth cookie helper
+  // Use our common auth cookie helper with debug information
+  logger.debug('Setting auth cookies with rememberMe=' + rememberMe);
   setAuthCookies(res, token, undefined, rememberMe);
+  
+  // Set a direct SameSite=Lax cookie that isn't HttpOnly for browser detection
+  res.cookie('auth_present', 'true', {
+    httpOnly: false, // Allows JavaScript detection
+    secure: false,   // Works in dev without HTTPS
+    sameSite: 'lax', // More permissive for development
+    maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000 // 30 days or 1 day
+  });
   
   // Return success with user data
   apiResponse.success(res, {
