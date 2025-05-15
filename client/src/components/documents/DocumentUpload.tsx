@@ -169,9 +169,9 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       formData.append("isConfidential", String(data.isConfidential));
       
-      // Get the auth data - session cookies should handle authentication automatically
-      // but we also get the token for completeness
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      // No need to get token from localStorage
+      // Authentication is now handled by HTTP-only cookies that are automatically sent
+      // We'll log authentication status for debugging
       
       // Add CSRF token if available (often stored in meta tag)
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -202,10 +202,12 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       const uploadPromise = new Promise<any>((resolve, reject) => {
         xhr.open('POST', '/api/documents', true);
         
-        // Set auth headers
-        if (token) {
-          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-        }
+        // No need to set auth headers manually - session cookies will be sent automatically
+        // Log authentication attempt
+        console.log('Authentication status:', {
+          isAuthenticated: document.cookie.includes('accessToken'),
+          cookies: document.cookie ? 'Present' : 'None'
+        });
         
         // Add debug logging to console
         console.log('Starting document upload...', {

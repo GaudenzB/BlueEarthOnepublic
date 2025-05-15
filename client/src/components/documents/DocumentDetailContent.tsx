@@ -1,96 +1,57 @@
-import React, { memo } from 'react';
-import { Document } from '@/types/document';
-import { DocumentHeader } from './DocumentHeader';
-import { DocumentProcessingAlert } from './DocumentProcessingAlert';
-import { DocumentStatusBadge } from './DocumentStatusBadge';
-import { DocumentTabs } from './DocumentTabs';
+// Refactored DocumentDetailContent.tsx for improved layout & design
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { DownloadIcon, SparklesIcon } from "lucide-react";
 
 interface DocumentDetailContentProps {
-  document: Document;
-  activeTab: string;
-  onTabChange: (key: string) => void;
-  onDeleteClick: () => void;
-  onShareClick: () => void;
-  onRefreshStatus: () => void;
-  onFavoriteToggle: (() => void) | undefined;
-  onRestoreVersion: ((versionId: string) => void) | undefined;
-  isFavorited: boolean | undefined;
-  isRefreshing: boolean;
-  loading?: {
-    favorite?: boolean;
-    delete?: boolean;
-    download?: boolean;
-    restore?: boolean;
-  };
+  documentTitle: string;
+  documentType: string;
+  createdAt: string;
+  updatedAt: string;
+  onDownload: () => void;
+  onAnalyze: () => void;
 }
 
-/**
- * Main content component for the document detail page
- * Encapsulates all document display elements
- * Memoized to prevent unnecessary re-renders
- */
-export const DocumentDetailContent = memo(({
-  document,
-  activeTab,
-  onTabChange,
-  onDeleteClick,
-  onShareClick,
-  onRefreshStatus,
-  onFavoriteToggle,
-  onRestoreVersion,
-  isFavorited,
-  isRefreshing,
-  loading = {}
+export const DocumentDetailContent = ({
+  documentTitle,
+  documentType,
+  createdAt,
+  updatedAt,
+  onDownload,
+  onAnalyze
 }: DocumentDetailContentProps) => {
   return (
-    <div 
-      style={{ 
-        maxWidth: '1200px', 
-        margin: '0 auto', 
-        padding: '24px 16px' 
-      }}
-      className="document-detail-container"
-    >
-      {/* Document Header with financial services styling */}
-      <div className="financial-section">
-        <DocumentHeader 
-          document={document}
-          statusBadge={<DocumentStatusBadge status={document.processingStatus} />}
-          onDeleteClick={onDeleteClick}
-          onShareClick={onShareClick}
-          onFavorite={onFavoriteToggle}
-          isFavorited={isFavorited}
-          loading={loading}
-        />
-      </div>
-      
-      {/* Processing Alert if needed */}
-      <DocumentProcessingAlert 
-        document={document}
-        onRefresh={onRefreshStatus}
-        isRefreshing={isRefreshing}
-      />
-      
-      {/* Document Tabs with financial industry styling */}
-      <div 
-        className="financial-section"
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(16, 24, 40, 0.1)', 
-          padding: '24px',
-          border: '1px solid #e5e7eb',
-          marginTop: '16px'
-        }}
-      >
-        <DocumentTabs 
-          document={document}
-          activeTab={activeTab}
-          onTabChange={onTabChange}
-          onRestoreVersion={onRestoreVersion}
-          isRestoring={loading?.restore || false}
-        />
-      </div>
-    </div>
+    <Card className="rounded-2xl shadow-md p-6 space-y-6">
+      <CardHeader className="flex flex-col gap-2">
+        <CardTitle className="text-2xl font-semibold text-primary">
+          {documentTitle}
+        </CardTitle>
+        <div className="text-sm text-muted-foreground">
+          <span className="mr-4">Created: {createdAt}</span>
+          <span>Updated: {updatedAt}</span>
+        </div>
+      </CardHeader>
+
+      <Separator />
+
+      <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Badge variant="outline" className="text-sm px-3 py-1">
+            {documentType}
+          </Badge>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={onDownload} className="gap-2">
+            <DownloadIcon className="w-4 h-4" /> Download
+          </Button>
+          <Button variant="default" onClick={onAnalyze} className="gap-2">
+            <SparklesIcon className="w-4 h-4" /> Analyze
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
-});
+};
