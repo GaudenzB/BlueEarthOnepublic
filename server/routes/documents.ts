@@ -121,11 +121,6 @@ const getDocumentsSchema = z.object({
  * @desc Upload a new document
  * @access Authenticated users
  */
-/**
- * Custom middleware for document uploads that tries multiple auth approaches
- * This is used as a fallback if standard authentication fails
- */
-const documentUploadAuth = async (req: Request, res: Response, next: NextFunction) => {
   // If request already has a user (from previous middleware), continue
   if (req.user) {
     return next();

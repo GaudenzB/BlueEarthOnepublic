@@ -74,6 +74,15 @@ const login = errorHandling.wrapHandler(async (req: Request, res: Response) => {
   // Set authentication cookies
   setAuthCookies(res, accessToken, refreshToken);
   
+  // Store user information in session for session-based auth fallback
+  if (req.session) {
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    req.session.email = user.email;
+    req.session.userRole = user.role;
+    logger.debug('User session data stored', { userId: user.id });
+  }
+  
   // Log successful login
   logger.info({ 
     event: "successful_login", 
@@ -141,6 +150,15 @@ const register = errorHandling.wrapHandler(async (req: Request, res: Response) =
   // Set authentication cookies
   setAuthCookies(res, accessToken, refreshToken);
   
+  // Store user information in session for session-based auth fallback
+  if (req.session) {
+    req.session.userId = newUser.id;
+    req.session.username = newUser.username;
+    req.session.email = newUser.email;
+    req.session.userRole = newUser.role;
+    logger.debug('User session data stored for new registration', { userId: newUser.id });
+  }
+  
   // Return success with user info but no token in response body
   return apiResponse.created(res, {
     user: {
@@ -176,6 +194,22 @@ const logout = errorHandling.wrapHandler(async (req: Request, res: Response) => 
   
   // Clear authentication cookies
   clearAuthCookies(res);
+  
+  // Clear session data
+  if (req.session) {
+    // Delete user-related session data
+    delete req.session.userId;
+    delete req.session.username;
+    delete req.session.email;
+    delete req.session.userRole;
+    
+    // Regenerate session to prevent session fixation attacks
+    req.session.regenerate((err) => {
+      if (err) {
+        logger.error('Error regenerating session during logout', { error: err });
+      }
+    });
+  }
   
   return apiResponse.success(res, null, "Logout successful");
 });
