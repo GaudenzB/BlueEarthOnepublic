@@ -278,23 +278,7 @@ export default function AuthPage() {
 
   return (
     <div className="container flex h-screen">
-      <div className="hidden lg:flex flex-col justify-center items-start flex-1 bg-muted p-10 text-gray-900 dark:text-gray-100">
-        <div className="space-y-6">
-          <h1 className="text-6xl font-bold">BlueEarth Capital</h1>
-          <p className="text-2xl">
-            Secure document management platform that streamlines HR processes through intelligent tools
-            and secure authentication.
-          </p>
-          <ul className="list-disc list-inside space-y-2 text-lg">
-            <li>Store and manage all your important documents securely</li>
-            <li>Streamline employee onboarding and management</li>
-            <li>Intelligent document processing and search capabilities</li>
-            <li>Enterprise-grade security and compliance</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center flex-1 p-6">
+      <div className="flex items-center justify-center w-full p-6">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl text-center">
