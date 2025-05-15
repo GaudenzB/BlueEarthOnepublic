@@ -32,14 +32,17 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const {
-    data: user,
+    data: userData,
     error,
     isLoading,
     refetch: refetchUser,
-  } = useQuery<SelectUser | null, Error>({
+  } = useQuery<{success: boolean; user: SelectUser} | null, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
+  
+  // Extract the user from the response
+  const user = userData?.success ? userData.user : null;
   
   // Check if Microsoft Entra ID (Azure AD) SSO is configured
   const {
@@ -131,17 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: "include"
       });
       
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        throw new Error(errorText || response.statusText || "Logout failed");
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || response.statusText || "Logout failed");
       }
       
-      return response;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Logged out successfully",
+        description: data.message || "You have been logged out"
       });
     },
     onError: (error: Error) => {

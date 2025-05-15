@@ -122,10 +122,30 @@ export function setupAuth(app: Express): void {
   // Register API endpoint
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Validate required fields
+      if (!req.body.username || !req.body.password || !req.body.email) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Username, password, and email are required" 
+        });
+      }
+      
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
+        return res.status(400).json({ 
+          success: false, 
+          message: "Username already exists" 
+        });
+      }
+      
+      // Check if email already exists
+      const existingEmail = await storage.getUserByEmail(req.body.email);
+      if (existingEmail) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Email already exists" 
+        });
       }
 
       // Create new user with hashed password
@@ -136,11 +156,24 @@ export function setupAuth(app: Express): void {
 
       // Log in the newly created user
       req.login(user, (err) => {
-        if (err) return next(err);
-        return res.status(201).json(user);
+        if (err) {
+          console.error("Login error after registration:", err);
+          return res.status(500).json({ 
+            success: false, 
+            message: "User created but login failed" 
+          });
+        }
+        return res.status(201).json({
+          success: true,
+          user
+        });
       });
     } catch (error) {
-      return next(error);
+      console.error("Registration error:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "An error occurred during registration" 
+      });
     }
   });
 
@@ -197,16 +230,42 @@ export function setupAuth(app: Express): void {
 
   // Logout API endpoint
   app.post("/api/logout", (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(200).json({
+        success: true,
+        message: "Already logged out"
+      });
+    }
+    
     req.logout((err) => {
-      if (err) return next(err);
-      res.sendStatus(200);
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "An error occurred during logout"
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+      });
     });
   });
 
   // Get current user API endpoint
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    return res.json(req.user);
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated"
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      user: req.user
+    });
   });
 }
 
