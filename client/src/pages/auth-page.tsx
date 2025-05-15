@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,17 +14,25 @@ import { insertUserSchema, userLoginSchema } from "@shared/schema";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 
+// Extend the userLoginSchema to include rememberMe option
+const extendedLoginSchema = userLoginSchema.extend({
+  rememberMe: z.boolean().optional().default(false)
+});
+
+type ExtendedLoginFormValues = z.infer<typeof extendedLoginSchema>;
+
 const LoginForm = () => {
   const { loginMutation } = useAuth();
-  const form = useForm<z.infer<typeof userLoginSchema>>({
-    resolver: zodResolver(userLoginSchema),
+  const form = useForm<ExtendedLoginFormValues>({
+    resolver: zodResolver(extendedLoginSchema),
     defaultValues: {
       username: "",
       password: "",
+      rememberMe: false
     },
   });
 
-  const onSubmit = (values: z.infer<typeof userLoginSchema>) => {
+  const onSubmit = (values: ExtendedLoginFormValues) => {
     loginMutation.mutate(values);
   };
 
@@ -53,6 +62,26 @@ const LoginForm = () => {
                 <Input type="password" placeholder="Enter your password" {...field} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="rememberMe"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-2">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Remember me</FormLabel>
+                <FormDescription>
+                  Keep me signed in on this device
+                </FormDescription>
+              </div>
             </FormItem>
           )}
         />
