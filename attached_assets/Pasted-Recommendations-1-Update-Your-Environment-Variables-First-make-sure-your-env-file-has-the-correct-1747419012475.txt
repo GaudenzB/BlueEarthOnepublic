@@ -1,0 +1,78 @@
+Recommendations
+1. Update Your Environment Variables
+First, make sure your .env file has the correct values:
+# Microsoft Entra ID SSO Configuration
+ENTRA_ID_ENABLED=true
+ENTRA_ID_TENANT_ID=your-tenant-id
+ENTRA_ID_CLIENT_ID=your-client-id 
+ENTRA_ID_CLIENT_SECRET=your-client-secret
+ENTRA_ID_REDIRECT_URI=https://your-replit-app.repl.co/api/auth/entra/microsoft/callback
+2. Fix the Microsoft Entra Integration File
+Update your microsoft.ts file to use the correct environment variable names:
+typescript// Load environment variables for Microsoft Entra ID
+const msalConfig = {
+  clientID: process.env.ENTRA_ID_CLIENT_ID,
+  clientSecret: process.env.ENTRA_ID_CLIENT_SECRET,
+  tenantID: process.env.ENTRA_ID_TENANT_ID,
+  redirectUrl: process.env.ENTRA_ID_REDIRECT_URI,
+  identityMetadata: `https://login.microsoftonline.com/${process.env.ENTRA_ID_TENANT_ID}/v2.0/.well-known/openid-configuration`,
+  // Rest of the config...
+};
+3. Ensure Route Consistency
+Make sure your routes are consistent. I recommend these changes:
+
+In routes.ts, ensure your entraSSO routes are registered as:
+
+typescriptapp.use('/api/auth/entra', entraSsoRoutes);
+
+In Microsoft SSO implementation, ensure these routes:
+
+typescriptrouter.get("/microsoft", ...); // -> /api/auth/entra/microsoft
+router.post("/microsoft/callback", ...); // -> /api/auth/entra/microsoft/callback
+
+In your auth-page.tsx, update the Microsoft login logic:
+
+typescriptconst handleMicrosoftLogin = () => {
+  window.location.href = "/api/auth/entra/microsoft";
+};
+4. Debug Your Integration
+Add specific logging in your Microsoft callback handler:
+typescriptrouter.post(
+  "/microsoft/callback",
+  (req, res, next) => {
+    console.log("Received callback from Microsoft", { 
+      body: req.body,
+      query: req.query,
+      headers: req.headers
+    });
+    next();
+  },
+  passport.authenticate("azuread-openidconnect", { 
+    failureRedirect: "/auth/signin",
+    failureFlash: true,
+  }),
+  (req, res) => {
+    console.log("Microsoft authentication successful", { user: req.user });
+    res.redirect("/");
+  }
+);
+5. Implement a Status Check Endpoint
+Create a diagnostic endpoint to verify your environment configuration:
+typescriptrouter.get("/microsoft/status", (req, res) => {
+  const config = {
+    enabled: isMicrosoftEntraConfigured(),
+    clientIdConfigured: !!process.env.ENTRA_ID_CLIENT_ID,
+    tenantIdConfigured: !!process.env.ENTRA_ID_TENANT_ID,
+    clientSecretConfigured: !!process.env.ENTRA_ID_CLIENT_SECRET,
+    redirectUriConfigured: !!process.env.ENTRA_ID_REDIRECT_URI,
+    redirectUri: process.env.ENTRA_ID_REDIRECT_URI
+  };
+  
+  res.json({
+    success: true,
+    message: config.enabled
+      ? "Microsoft Entra ID integration is enabled and configured"
+      : "Microsoft Entra ID integration is not fully configured",
+    config
+  });
+});

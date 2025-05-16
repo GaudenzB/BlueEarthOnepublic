@@ -287,11 +287,26 @@ router.post('/exchange', requireEntraIdEnabled, wrapHandler(async (req: Request,
 // Route to check if Microsoft Entra ID is enabled and configured
 router.get('/status', (req: Request, res: Response) => {
   const isEnabled = isEntraIdConfigured();
+  
+  // Provide detailed configuration status for debugging
+  const configStatus = {
+    enabled: isEnabled,
+    clientIdConfigured: !!env.ENTRA_ID_CLIENT_ID,
+    tenantIdConfigured: !!env.ENTRA_ID_TENANT_ID,
+    clientSecretConfigured: !!env.ENTRA_ID_CLIENT_SECRET,
+    redirectUriConfigured: !!env.ENTRA_ID_REDIRECT_URI,
+    redirectUri: env.ENTRA_ID_REDIRECT_URI,
+    scopes: env.ENTRA_ID_SCOPES
+  };
+  
+  logger.info('Microsoft Entra ID status requested', { configStatus });
+  
   res.json({
     enabled: isEnabled,
     message: isEnabled 
       ? 'Microsoft Entra ID authentication is configured and ready to use' 
-      : 'Microsoft Entra ID authentication is not configured'
+      : 'Microsoft Entra ID authentication is not configured',
+    config: configStatus
   });
 });
 
