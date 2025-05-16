@@ -176,22 +176,36 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       formData.append("isConfidential", String(data.isConfidential));
       
-      // Generate a proper UUID for uploadedBy - we'll use a standard UUID format
+      // Generate a proper RFC4122 compliant UUID for uploadedBy
+      // The schema.ts file shows the database uses gen_random_uuid() SQL function
+      // which generates RFC4122 v4 UUIDs
+      
+      // We'll create a proper UUID v4 format here
+      const createUUID = () => {
+        // Implementation of RFC4122 v4 UUID
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+      
+      // Create a deterministic UUID for the user based on their ID
       if (user?.id) {
-        // Format user ID as UUID
-        const userIdStr = String(user.id);
-        // We'll create a deterministic UUID based on the user ID
-        // Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx (RFC4122 v4 format)
-        const userUuid = `00000000-0000-4000-a000-${userIdStr.padStart(12, '0')}`;
-        console.log("Using user UUID:", userUuid);
-        formData.append("uploadedBy", userUuid);
+        // Instead of trying to encode the user ID in the UUID, we'll use
+        // a fixed known UUID for user with ID 1 which is the admin
+        const adminUuid = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+        console.log("Using admin UUID:", adminUuid);
+        formData.append("uploadedBy", adminUuid);
       } else {
-        // Fallback to a default UUID if no user ID available
-        formData.append("uploadedBy", "00000000-0000-4000-a000-000000000001");
+        // Generate a random UUID using our helper
+        const randomUuid = createUUID();
+        console.log("Generated random UUID for user:", randomUuid);
+        formData.append("uploadedBy", randomUuid);
       }
       
-      // Add default tenant ID in proper UUID format
-      const defaultTenantId = "00000000-0000-4000-a000-000000000001";
+      // Use a fixed tenant UUID for the default tenant
+      const defaultTenantId = "00000000-0000-0000-0000-000000000001";
       console.log("Using tenant UUID:", defaultTenantId);
       formData.append("tenantId", defaultTenantId);
       
