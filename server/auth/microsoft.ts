@@ -10,9 +10,9 @@ const router = Router();
 // Check if Microsoft Entra ID is configured properly
 const isMicrosoftEntraConfigured = () => {
   return Boolean(
-    process.env.ENTRA_ID_CLIENT_ID &&
-    process.env.ENTRA_ID_CLIENT_SECRET &&
-    process.env.ENTRA_ID_TENANT_ID
+    process.env['ENTRA_ID_CLIENT_ID'] &&
+    process.env['ENTRA_ID_CLIENT_SECRET'] &&
+    process.env['ENTRA_ID_TENANT_ID']
   );
 };
 
@@ -27,15 +27,15 @@ if (isMicrosoftEntraConfigured()) {
 if (isMicrosoftEntraConfigured()) {
   // Load environment variables for Microsoft Entra ID (Azure AD)
   const msalConfig = {
-    clientID: process.env.ENTRA_ID_CLIENT_ID,
-    clientSecret: process.env.ENTRA_ID_CLIENT_SECRET,
-    tenantID: process.env.ENTRA_ID_TENANT_ID,
-    redirectUrl: process.env.ENTRA_ID_REDIRECT_URI || `${process.env.BASE_URL}/api/auth/entra/callback`,
-    identityMetadata: `https://login.microsoftonline.com/${process.env.ENTRA_ID_TENANT_ID}/v2.0/.well-known/openid-configuration`,
+    clientID: process.env['ENTRA_ID_CLIENT_ID'],
+    clientSecret: process.env['ENTRA_ID_CLIENT_SECRET'],
+    tenantID: process.env['ENTRA_ID_TENANT_ID'],
+    redirectUrl: process.env['ENTRA_ID_REDIRECT_URI'] || `${process.env['BASE_URL']}/api/auth/entra/callback`,
+    identityMetadata: `https://login.microsoftonline.com/${process.env['ENTRA_ID_TENANT_ID']}/v2.0/.well-known/openid-configuration`,
     responseType: "code id_token",
     responseMode: "form_post",
     scope: ["openid", "profile", "email", "offline_access"],
-    allowHttpForRedirectUrl: process.env.NODE_ENV !== "production",
+    allowHttpForRedirectUrl: process.env['NODE_ENV'] !== "production",
   };
 
   // Configure Microsoft Entra ID (Azure AD) strategy
