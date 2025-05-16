@@ -256,6 +256,11 @@ export default function UserManagement() {
     setSelectedUserId(userId);
     setShowUserDetails(true);
   };
+  
+  const handleBackFromDetails = () => {
+    setShowUserDetails(false);
+    setSelectedUserId(null);
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -594,7 +599,7 @@ export default function UserManagement() {
               Manage permissions for this user
             </DialogDescription>
           </DialogHeader>
-          {selectedUserId && <UserDetails userId={selectedUserId} />}
+          {selectedUserId && <UserDetails userId={selectedUserId} onBackClick={handleBackFromDetails} />}
         </DialogContent>
       </Dialog>
     </div>
