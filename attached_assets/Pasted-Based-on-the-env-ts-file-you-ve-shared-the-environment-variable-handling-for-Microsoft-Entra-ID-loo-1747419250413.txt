@@ -1,0 +1,40 @@
+Based on the env.ts file you've shared, the environment variable handling for Microsoft Entra ID looks correct. The issue isn't with this file itself - it's with making sure the actual environment variables match what this file is expecting.
+You don't need to update this file. Instead, you need to make sure your actual .env file contains the correct values that match these variable names. Your env.ts file is looking for these specific variables:
+ENTRA_ID_ENABLED=true
+ENTRA_ID_TENANT_ID=your-tenant-id
+ENTRA_ID_CLIENT_ID=your-client-id
+ENTRA_ID_CLIENT_SECRET=your-client-secret
+ENTRA_ID_REDIRECT_URI=your-redirect-uri
+But I noticed in your microsoft.ts file, you're using different variable names:
+AZURE_AD_CLIENT_ID
+AZURE_AD_CLIENT_SECRET
+AZURE_AD_TENANT_ID
+AZURE_AD_REDIRECT_URL
+This is the mismatch I was referring to. You have two options:
+
+Update your .env file to include both sets of variables (this is a quick fix but not ideal)
+# Microsoft Entra ID SSO Configuration - Using both naming conventions
+ENTRA_ID_ENABLED=true
+ENTRA_ID_TENANT_ID=your-tenant-id
+ENTRA_ID_CLIENT_ID=your-client-id
+ENTRA_ID_CLIENT_SECRET=your-client-secret
+ENTRA_ID_REDIRECT_URI=https://your-replit-app.repl.co/api/auth/entra/microsoft/callback
+
+# Duplicate values with old variable names
+AZURE_AD_TENANT_ID=your-tenant-id
+AZURE_AD_CLIENT_ID=your-client-id
+AZURE_AD_CLIENT_SECRET=your-client-secret
+AZURE_AD_REDIRECT_URL=https://your-replit-app.repl.co/api/auth/entra/microsoft/callback
+
+Update your microsoft.ts file to use the same variable names as defined in env.ts (better long-term solution)
+Replace the variable references in microsoft.ts to match those in env.ts:
+typescriptconst msalConfig = {
+  clientID: process.env.ENTRA_ID_CLIENT_ID,
+  clientSecret: process.env.ENTRA_ID_CLIENT_SECRET,
+  tenantID: process.env.ENTRA_ID_TENANT_ID,
+  redirectUrl: process.env.ENTRA_ID_REDIRECT_URI || `${process.env.BASE_URL}/api/auth/entra/microsoft/callback`,
+  // Rest of config remains the same
+};
+
+
+I recommend option 2 for better consistency, but option 1 is a quicker fix if you want to test it first.
