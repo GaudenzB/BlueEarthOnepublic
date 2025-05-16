@@ -29,7 +29,8 @@ export const functionalAreaEnum = z.enum([
   'hr',
   'it',
   'legal',
-  'operations'
+  'operations',
+  'documents'
 ]);
 
 export type FunctionalArea = z.infer<typeof functionalAreaEnum>;
