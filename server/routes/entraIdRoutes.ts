@@ -15,7 +15,11 @@ import { wrapHandler } from '../utils/errorHandling';
 const router = Router();
 
 // Initialize Microsoft Entra ID client when the routes are loaded
-(async () => {
+let entraIdInitialized = false;
+
+async function initializeEntraIdClient() {
+  if (entraIdInitialized) return;
+  
   try {
     if (isEntraIdConfigured()) {
       logger.info('Initializing Microsoft Entra ID client with configuration', {
@@ -33,6 +37,8 @@ const router = Router();
         redirectUri: env.ENTRA_ID_REDIRECT_URI!,
         scopes: env.ENTRA_ID_SCOPES.split(' ')
       });
+      
+      entraIdInitialized = true;
       logger.info('Microsoft Entra ID client initialized successfully');
     } else {
       logger.warn('Microsoft Entra ID SSO is not configured or disabled');
@@ -40,7 +46,10 @@ const router = Router();
   } catch (error) {
     logger.error('Failed to initialize Microsoft Entra ID client', { error });
   }
-})();
+}
+
+// Initialize on module load
+initializeEntraIdClient();
 
 // Middleware to check if Microsoft Entra ID is enabled
 const requireEntraIdEnabled = (req: Request, res: Response, next: NextFunction) => {
@@ -54,8 +63,11 @@ const requireEntraIdEnabled = (req: Request, res: Response, next: NextFunction) 
 };
 
 // Route to initiate login with Microsoft Entra ID
-router.get('/login', requireEntraIdEnabled, (req: Request, res: Response) => {
+router.get('/login', requireEntraIdEnabled, async (req: Request, res: Response) => {
   try {
+    // Make sure Entra ID client is initialized
+    await initializeEntraIdClient();
+    
     // Create authorization URL with PKCE
     const { url, state } = createAuthorizationUrl({
       clientId: env.ENTRA_ID_CLIENT_ID!,
