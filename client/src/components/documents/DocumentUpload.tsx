@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { queryClient } from "@/lib/queryClient";
 import { Progress } from "antd";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 
 interface DocumentUploadProps {
   isOpen: boolean;
