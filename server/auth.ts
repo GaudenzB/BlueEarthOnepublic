@@ -285,7 +285,7 @@ export function setupAuth(app: Express): void {
                   email: 'admin@example.com',
                   firstName: 'Admin',
                   lastName: 'User',
-                  role: 'admin',
+                  role: 'superadmin', // Make sure admin gets superadmin privileges
                   active: true
                 })
                 .then(newAdmin => {
@@ -321,22 +321,62 @@ export function setupAuth(app: Express): void {
               });
             }
             
-            // Login with admin
-            req.login(adminUser, (loginErr) => {
-              if (loginErr) {
-                console.error("❌ Admin login error:", loginErr);
-                return res.status(500).json({
-                  success: false,
-                  message: "An error occurred during admin login"
+            // Ensure admin has superadmin privileges before login
+            if (adminUser.role !== 'superadmin') {
+              console.log("⚠️ Updating admin role to superadmin");
+              // Update admin to have superadmin role
+              storage.updateUser(adminUser.id, { role: 'superadmin' })
+                .then(() => {
+                  // Get fresh admin user with updated role
+                  return storage.getUserByUsername('admin');
+                })
+                .then(updatedAdmin => {
+                  if (!updatedAdmin) {
+                    throw new Error("Failed to retrieve updated admin user");
+                  }
+                  
+                  // Login with updated admin user
+                  req.login(updatedAdmin, (loginErr) => {
+                    if (loginErr) {
+                      console.error("❌ Admin login error:", loginErr);
+                      return res.status(500).json({
+                        success: false,
+                        message: "An error occurred during admin login"
+                      });
+                    }
+                    
+                    console.log("✅ Admin with updated role logged in successfully");
+                    return res.status(200).json({
+                      success: true,
+                      user: updatedAdmin
+                    });
+                  });
+                })
+                .catch(error => {
+                  console.error("❌ Error updating admin role:", error);
+                  return res.status(500).json({
+                    success: false,
+                    message: "Error updating admin role"
+                  });
                 });
-              }
-              
-              console.log("✅ Admin logged in successfully via development override");
-              return res.status(200).json({
-                success: true,
-                user: adminUser
+            } else {
+              // Admin already has superadmin role, proceed with login
+              req.login(adminUser, (loginErr) => {
+                if (loginErr) {
+                  console.error("❌ Admin login error:", loginErr);
+                  return res.status(500).json({
+                    success: false,
+                    message: "An error occurred during admin login"
+                  });
+                }
+                
+                console.log("✅ Admin logged in successfully via development override");
+                return res.status(200).json({
+                  success: true,
+                  user: adminUser
+                });
               });
-            });
+            }
           })
           .catch(error => {
             console.error("❌ Error retrieving admin user:", error);
