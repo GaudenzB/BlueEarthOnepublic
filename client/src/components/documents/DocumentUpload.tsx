@@ -506,6 +506,16 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           
           fetchFormData.append("isConfidential", String(data.isConfidential));
           
+          // Add user ID if available - this helps with the UUID fields
+          if (user?.id) {
+            fetchFormData.append("uploadedBy", String(user.id));
+          }
+          
+          // Add tenant ID if available from user context
+          if (user?.tenantId) {
+            fetchFormData.append("tenantId", user.tenantId);
+          }
+          
           // Attempt fetch API fallback
           try {
             // Only add timeout for files larger than 5MB
