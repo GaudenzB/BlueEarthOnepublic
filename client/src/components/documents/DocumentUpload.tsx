@@ -176,14 +176,23 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       formData.append("isConfidential", String(data.isConfidential));
       
-      // Add user ID if available - this helps with the UUID fields
+      // Generate a proper UUID for uploadedBy - we'll use a standard UUID format
       if (user?.id) {
-        formData.append("uploadedBy", String(user.id));
+        // Format user ID as UUID
+        const userIdStr = String(user.id);
+        // We'll create a deterministic UUID based on the user ID
+        // Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx (RFC4122 v4 format)
+        const userUuid = `00000000-0000-4000-a000-${userIdStr.padStart(12, '0')}`;
+        console.log("Using user UUID:", userUuid);
+        formData.append("uploadedBy", userUuid);
+      } else {
+        // Fallback to a default UUID if no user ID available
+        formData.append("uploadedBy", "00000000-0000-4000-a000-000000000001");
       }
       
-      // Add default tenant ID if user object doesn't include it 
-      // In many enterprise apps, tenantId might be a constant or an environment variable
-      const defaultTenantId = "00000000-0000-0000-0000-000000000001";
+      // Add default tenant ID in proper UUID format
+      const defaultTenantId = "00000000-0000-4000-a000-000000000001";
+      console.log("Using tenant UUID:", defaultTenantId);
       formData.append("tenantId", defaultTenantId);
       
       // No need to get token from localStorage
