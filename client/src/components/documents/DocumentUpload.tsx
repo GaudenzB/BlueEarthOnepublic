@@ -221,10 +221,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         }
       });
       
-      // Use development endpoint in dev mode for better testing
-      const uploadEndpoint = import.meta.env.DEV ? 
-        '/api/documents/dev-upload' : 
-        '/api/documents';
+      // Use the standard document upload endpoint
+      const uploadEndpoint = '/api/documents';
       
       // Wrap XHR in a promise for async/await support
       const uploadPromise = new Promise<any>((resolve, reject) => {
@@ -568,10 +566,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             // We use cookie-based authentication, so no need to add Authorization header
             // The credentials: 'include' option will ensure cookies are sent with the request
             
-            // Use development endpoint in dev mode for better testing
-            const fetchUploadEndpoint = import.meta.env.DEV ? 
-              '/api/documents/dev-upload' : 
-              '/api/documents';
+            // Use the standard document upload endpoint
+            const fetchUploadEndpoint = '/api/documents';
               
             console.log('Starting fetch upload attempt...', {
               endpoint: fetchUploadEndpoint,
