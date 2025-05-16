@@ -161,7 +161,8 @@ export default function Login() {
                   if (data.enabled) {
                     // If enabled, proceed with login by redirecting the browser
                     console.log("Redirecting to Microsoft login...");
-                    window.location.href = '/api/auth/entra/login';
+                    // Use window.location.assign instead of window.location.href for more reliable redirects
+                    window.location.assign('/login');
                   } else {
                     // If not enabled, show a toast message
                     toast({
