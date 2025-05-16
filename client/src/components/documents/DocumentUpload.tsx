@@ -291,7 +291,15 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               resolve(data);
             } catch (e) {
               console.error('Error parsing XHR response:', e, 'Response text:', xhr.responseText);
-              reject(new Error('Invalid response from server'));
+              
+              // Check if the response starts with HTML (which indicates an error page)
+              if (xhr.responseText.trim().startsWith('<!DOCTYPE') || 
+                  xhr.responseText.trim().startsWith('<html') ||
+                  xhr.responseText.trim().indexOf('<') === 0) {
+                reject(new Error(`Unexpected token '<', '<!DOCTYPE "... is not valid JSON`));
+              } else {
+                reject(new Error('Invalid response from server'));
+              }
             }
           } else {
             try {
