@@ -190,19 +190,11 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         });
       };
       
-      // Create a deterministic UUID for the user based on their ID
-      if (user?.id) {
-        // Instead of trying to encode the user ID in the UUID, we'll use
-        // a fixed known UUID for user with ID 1 which is the admin
-        const adminUuid = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
-        console.log("Using admin UUID:", adminUuid);
-        formData.append("uploadedBy", adminUuid);
-      } else {
-        // Generate a random UUID using our helper
-        const randomUuid = createUUID();
-        console.log("Generated random UUID for user:", randomUuid);
-        formData.append("uploadedBy", randomUuid);
-      }
+      // Always use a valid UUID format for uploadedBy regardless of user ID
+      // This ensures compatibility with the database's UUID column type
+      const defaultAdminUuid = "00000000-0000-0000-0000-000000000001";
+      console.log("Using default admin UUID for uploadedBy:", defaultAdminUuid);
+      formData.append("uploadedBy", defaultAdminUuid);
       
       // Use a fixed tenant UUID for the default tenant
       const defaultTenantId = "00000000-0000-0000-0000-000000000001";
