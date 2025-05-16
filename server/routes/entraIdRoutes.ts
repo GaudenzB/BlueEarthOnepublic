@@ -18,6 +18,14 @@ const router = Router();
 (async () => {
   try {
     if (isEntraIdConfigured()) {
+      logger.info('Initializing Microsoft Entra ID client with configuration', {
+        clientId: env.ENTRA_ID_CLIENT_ID ? 'provided' : 'missing',
+        clientSecret: env.ENTRA_ID_CLIENT_SECRET ? 'provided' : 'missing',
+        tenantId: env.ENTRA_ID_TENANT_ID ? 'provided' : 'missing',
+        redirectUri: env.ENTRA_ID_REDIRECT_URI,
+        scopes: env.ENTRA_ID_SCOPES
+      });
+      
       await initializeEntraId({
         clientId: env.ENTRA_ID_CLIENT_ID!,
         clientSecret: env.ENTRA_ID_CLIENT_SECRET!,
