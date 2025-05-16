@@ -77,6 +77,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Microsoft Entra ID SSO routes
   app.use('/api/auth/entra', entraSsoRoutes);
   
+  // Add a redirect from /login to the Microsoft Entra ID login endpoint
+  // This is needed because some client code might be using this route
+  app.get('/login', (req, res) => {
+    logger.info('Received request to /login, redirecting to /api/auth/entra/login');
+    res.redirect('/api/auth/entra/login');
+  });
+  
   // Add Entra ID status endpoint for UI to check if Microsoft SSO is available
   app.get('/api/auth/entra/microsoft/status', (req, res) => {
     const enabled = isEntraIdConfigured();
