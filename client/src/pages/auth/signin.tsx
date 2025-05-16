@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Schema for form validation
 const loginSchema = z.object({
@@ -22,10 +23,11 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function SigninPage() {
-  const { user, loginMutation } = useAuth();
+  const { user, loginMutation, microsoftAuthStatus, isMicrosoftAuthStatusLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isEntraLoading, setIsEntraLoading] = useState(false);
+  const [entraError, setEntraError] = useState<string | null>(null);
 
   // Create form
   const form = useForm<LoginFormValues>({
@@ -35,6 +37,21 @@ export default function SigninPage() {
       password: "",
     },
   });
+
+  // Check for Microsoft Entra ID login errors in URL
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const error = url.searchParams.get('error');
+    const errorDescription = url.searchParams.get('error_description');
+    
+    if (error) {
+      setEntraError(errorDescription || 'Error during Microsoft authentication');
+      // Clear the URL parameters
+      url.searchParams.delete('error');
+      url.searchParams.delete('error_description');
+      window.history.replaceState({}, document.title, url.toString());
+    }
+  }, []);
 
   // Redirect if already logged in
   if (user) {
@@ -50,8 +67,9 @@ export default function SigninPage() {
   // Handler for Microsoft SSO login
   const handleMicrosoftLogin = () => {
     setIsEntraLoading(true);
-    // Redirect to the Microsoft SSO endpoint
-    window.location.href = "/api/auth/microsoft";
+    setEntraError(null);
+    // Redirect to the Microsoft Entra ID SSO endpoint
+    window.location.href = "/api/auth/entra/login";
   };
 
   return (
@@ -64,25 +82,44 @@ export default function SigninPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Microsoft SSO Button */}
-          <Button
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2"
-            onClick={handleMicrosoftLogin}
-            disabled={isEntraLoading}
-          >
-            {isEntraLoading ? (
+          {microsoftAuthStatus?.enabled ? (
+            <>
+              {entraError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{entraError}</AlertDescription>
+                </Alert>
+              )}
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleMicrosoftLogin}
+                disabled={isEntraLoading || isMicrosoftAuthStatusLoading}
+              >
+                {isEntraLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23">
+                    <path fill="#f3f3f3" d="M0 0h23v23H0z" />
+                    <path fill="#f35325" d="M1 1h10v10H1z" />
+                    <path fill="#81bc06" d="M12 1h10v10H12z" />
+                    <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                    <path fill="#ffba08" d="M12 12h10v10H12z" />
+                  </svg>
+                )}
+                <span>Continue with Microsoft</span>
+              </Button>
+            </>
+          ) : isMicrosoftAuthStatusLoading ? (
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              disabled
+            >
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23">
-                <path fill="#f3f3f3" d="M0 0h23v23H0z" />
-                <path fill="#f35325" d="M1 1h10v10H1z" />
-                <path fill="#81bc06" d="M12 1h10v10H12z" />
-                <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                <path fill="#ffba08" d="M12 12h10v10H12z" />
-              </svg>
-            )}
-            <span>Continue with Microsoft</span>
-          </Button>
+              Checking authentication options...
+            </Button>
+          ) : null}
 
           {/* Separator */}
           <div className="relative">
