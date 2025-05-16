@@ -44,6 +44,9 @@ function AppRoutes() {
     <Switch>
       {/* Public authentication routes - available when logged out */}
       <Route path="/auth" component={AuthPage} />
+      <Route path="/login">
+        <Redirect to="/auth" />
+      </Route>
       <Route path={AUTH_ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
       <Route path={`${AUTH_ROUTES.RESET_PASSWORD}/:token`} component={ResetPassword} />
       <Route path={AUTH_ROUTES.ENTRA_COMPLETE} component={EntraComplete} />
