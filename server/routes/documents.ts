@@ -235,8 +235,9 @@ router.post('/dev-upload', singleFileUpload, async (req: Request, res: Response)
     }
 
     // Use a development tenant ID and user ID
+    // Use a string UUID instead of a numeric ID to avoid type conversion issues
     req.user = {
-      id: 1,
+      id: '00000000-0000-0000-0000-000000000001', // Use valid UUID format
       username: 'dev-admin',
       email: 'dev-admin@example.com',
       role: 'superadmin'
