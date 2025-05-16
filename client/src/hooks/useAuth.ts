@@ -48,6 +48,8 @@ export function useAuth() {
     message: string;
     data: User;
   }
+  
+  // Skip additional declarations as they're defined below
 
   // We don't need to check for a token in localStorage anymore
   // because we're using HttpOnly cookies that are automatically 

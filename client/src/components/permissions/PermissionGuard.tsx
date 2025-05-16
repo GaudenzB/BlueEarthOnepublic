@@ -23,7 +23,7 @@ export function PermissionGuard({
   fallback,
   showAlert = true
 }: PermissionGuardProps) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isAdmin, isSuperAdmin } = useAuth();
   const { hasPermission } = usePermissions(user?.id);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
@@ -34,7 +34,9 @@ export function PermissionGuard({
         permission, 
         isAuthenticated, 
         userRole: user?.role,
-        userId: user?.id 
+        userId: user?.id,
+        isAdmin,
+        isSuperAdmin
       });
 
       if (!isAuthenticated) {
@@ -43,20 +45,19 @@ export function PermissionGuard({
         return;
       }
       
-      // Grant access to admin or superadmin users for documents area
-      // This is needed for both development and production environments
-      const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
-      const isAdmin = user?.role?.toLowerCase() === 'admin';
+      // Directly use isAdmin and isSuperAdmin from useAuth hook
       
       // Handle both "documents" and "document" variations
       const isDocumentArea = area?.toLowerCase() === 'documents' || area?.toLowerCase() === 'document';
       
+      // Special case: Always grant document permissions to admin and superadmin users
       if (isDocumentArea && (isAdmin || isSuperAdmin)) {
         console.log(`PermissionGuard: Granting ${area}:${permission} permission to ${user?.role} user`);
         setHasAccess(true);
         return;
       }
       
+      // Default case: check permissions for regular users or non-document areas
       try {
         console.log(`PermissionGuard: Checking permission via API for ${area}:${permission}`);
         const result = await hasPermission(area, permission);
@@ -69,7 +70,7 @@ export function PermissionGuard({
     };
 
     checkPermission();
-  }, [hasPermission, area, permission, isAuthenticated, user?.role]);
+  }, [hasPermission, area, permission, isAuthenticated, user?.role, isAdmin, isSuperAdmin]);
 
   // Loading state
   if (hasAccess === null) {
