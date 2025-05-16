@@ -11,6 +11,14 @@ import { logger } from '../utils/logger';
 import { generateUserToken } from '../auth';
 import { setAuthCookies } from '../utils/cookieManager';
 import { wrapHandler } from '../utils/errorHandling';
+import { Session } from 'express-session';
+
+// Extend the express-session type to include our custom properties
+declare module 'express-session' {
+  interface SessionData {
+    entraIdState?: string;
+  }
+}
 
 const router = Router();
 
@@ -95,13 +103,25 @@ router.get('/login', requireEntraIdEnabled, async (req: Request, res: Response) 
 
 // Callback route for Microsoft Entra ID
 router.get('/callback', requireEntraIdEnabled, wrapHandler(async (req: Request, res: Response) => {
+  // Make sure Entra ID client is initialized
+  await initializeEntraIdClient();
+  
   // Verify state parameter to prevent CSRF
   const { state } = req.query as { state: string };
   const storedState = req.session?.entraIdState;
   
   if (!state || !storedState || state !== storedState) {
+    logger.warn('Invalid state parameter in Entra ID callback', {
+      receivedState: state,
+      hasStoredState: !!storedState,
+      match: state === storedState
+    });
     throw new Error('Invalid state parameter');
   }
+  
+  logger.info('Microsoft Entra ID callback received with valid state', {
+    hasStoredState: !!storedState
+  });
   
   // Clear session state
   if (req.session) {
