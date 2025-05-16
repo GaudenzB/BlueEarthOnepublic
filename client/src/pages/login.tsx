@@ -155,11 +155,12 @@ export default function Login() {
               onClick={async () => {
                 try {
                   // Check if Entra ID is enabled
-                  const response = await fetch('/api/auth/entra/status');
+                  const response = await fetch('/api/auth/entra/microsoft/status');
                   const data = await response.json();
                   
                   if (data.enabled) {
-                    // If enabled, proceed with login
+                    // If enabled, proceed with login by redirecting the browser
+                    console.log("Redirecting to Microsoft login...");
                     window.location.href = '/api/auth/entra/login';
                   } else {
                     // If not enabled, show a toast message
