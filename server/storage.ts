@@ -279,8 +279,10 @@ export class DatabaseStorage implements IStorage {
       return true;
     }
     
-    // For admins, grant all permissions to documents area
-    if (user?.role === 'admin' && area === 'documents') {
+    // For admins, grant all permissions to documents area (case-insensitive check)
+    if (user?.role?.toLowerCase() === 'admin' && 
+        (area.toLowerCase() === 'documents' || area.toLowerCase() === 'document')) {
+      console.log(`Admin access granted for ${area} area`);
       return true;
     }
 
@@ -289,8 +291,13 @@ export class DatabaseStorage implements IStorage {
       .from(userPermissionsTable)
       .where(eq(userPermissionsTable.userId, userId));
     
-    // Filter for the specific area
-    const areaPermissions = permissions.filter(p => p.area === area);
+    // Filter for the specific area (case-insensitive)
+    const normalizedArea = area.toLowerCase();
+    const areaPermissions = permissions.filter(p => 
+      p.area.toLowerCase() === normalizedArea || 
+      (normalizedArea === 'documents' && p.area.toLowerCase() === 'document') ||
+      (normalizedArea === 'document' && p.area.toLowerCase() === 'documents')
+    );
 
     if (areaPermissions.length === 0) {
       return false;
