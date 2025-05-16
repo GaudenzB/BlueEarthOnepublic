@@ -1,4 +1,4 @@
-import * as openidClient from 'openid-client';
+import * as openid from 'openid-client';
 import { NextFunction, Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { db } from '../db';
@@ -28,12 +28,12 @@ export interface EntraIdUser {
 // Store PKCE code verifiers in memory (for production, consider a session store like Redis)
 const codeVerifiers = new Map<string, string>();
 
-let entraIdClient: openidClient.Client | null = null;
+let entraIdClient: openid.Client | null = null;
 
 /**
  * Initialize the Microsoft Entra ID OpenID Connect client
  */
-export async function initializeEntraId(config: EntraIdConfig): Promise<openidClient.Client> {
+export async function initializeEntraId(config: EntraIdConfig): Promise<Client> {
   try {
     // Validate the configuration
     if (!config.clientId || !config.clientSecret || !config.tenantId) {
@@ -62,7 +62,7 @@ export async function initializeEntraId(config: EntraIdConfig): Promise<openidCl
     
     let issuer;
     try {
-      issuer = await openidClient.Issuer.discover(issuerUrl);
+      issuer = await Issuer.discover(issuerUrl);
     } catch (discoverError) {
       logger.error('Failed to discover Microsoft Entra ID issuer', { 
         error: discoverError instanceof Error ? discoverError.message : 'Unknown error' 
@@ -158,11 +158,11 @@ export function createAuthorizationUrl(config: EntraIdConfig): { url: string, st
     const client = getEntraIdClient();
     
     // Generate PKCE code challenge
-    const codeVerifier = openidClient.generators.codeVerifier();
-    const codeChallenge = openidClient.generators.codeChallenge(codeVerifier);
+    const codeVerifier = generators.codeVerifier();
+    const codeChallenge = generators.codeChallenge(codeVerifier);
     
     // Generate state for CSRF protection
-    const state = openidClient.generators.state();
+    const state = generators.state();
     
     // Store the code verifier keyed by state
     codeVerifiers.set(state, codeVerifier);
