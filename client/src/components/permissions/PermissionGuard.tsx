@@ -29,7 +29,16 @@ export function PermissionGuard({
 
   useEffect(() => {
     const checkPermission = async () => {
+      console.log('PermissionGuard check:', { 
+        area, 
+        permission, 
+        isAuthenticated, 
+        userRole: user?.role,
+        userId: user?.id 
+      });
+
       if (!isAuthenticated) {
+        console.log('PermissionGuard: Not authenticated');
         setHasAccess(false);
         return;
       }
@@ -40,17 +49,21 @@ export function PermissionGuard({
       const isAdmin = user?.role?.toLowerCase() === 'admin';
       
       // Handle both "documents" and "document" variations
-      if ((area?.toLowerCase() === 'documents' || area?.toLowerCase() === 'document') && (isAdmin || isSuperAdmin)) {
-        console.log(`Granting ${area}:${permission} permission to admin/superadmin user`);
+      const isDocumentArea = area?.toLowerCase() === 'documents' || area?.toLowerCase() === 'document';
+      
+      if (isDocumentArea && (isAdmin || isSuperAdmin)) {
+        console.log(`PermissionGuard: Granting ${area}:${permission} permission to ${user?.role} user`);
         setHasAccess(true);
         return;
       }
       
       try {
+        console.log(`PermissionGuard: Checking permission via API for ${area}:${permission}`);
         const result = await hasPermission(area, permission);
+        console.log(`PermissionGuard: API permission check result: ${result}`);
         setHasAccess(result);
       } catch (error) {
-        console.error("Error checking permission:", error);
+        console.error("PermissionGuard: Error checking permission:", error);
         setHasAccess(false);
       }
     };

@@ -127,13 +127,19 @@ export function registerPermissionRoutes(app: Express) {
     try {
       const { area, action } = req.params;
       const userId = req.user?.id;
+      const userRole = req.user?.role;
+      
+      // Debug log to trace permission check requests
+      console.log(`Permission check request:`, { userId, userRole, area, action });
       
       if (!userId) {
+        console.log(`Permission check failed: No user ID`);
         return res.status(401).json({ message: "Unauthorized" });
       }
       
       // Validate action
       if (!['view', 'edit', 'delete'].includes(action)) {
+        console.log(`Permission check failed: Invalid action "${action}"`);
         return res.status(400).json({ message: "Invalid action. Must be 'view', 'edit', or 'delete'" });
       }
       
@@ -143,6 +149,8 @@ export function registerPermissionRoutes(app: Express) {
         area, 
         action as 'view' | 'edit' | 'delete'
       );
+      
+      console.log(`Permission check result for user ${userId} (${userRole}): ${area}:${action} => ${hasPermission}`);
       
       res.json({ hasPermission });
     } catch (error) {
