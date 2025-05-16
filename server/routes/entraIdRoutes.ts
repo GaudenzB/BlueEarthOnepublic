@@ -5,7 +5,8 @@ import {
   createAuthorizationUrl, 
   handleCallback, 
   getUserInfo, 
-  findOrCreateUser 
+  findOrCreateUser,
+  hasInitializedEntraIdClient
 } from '../services/entraIdService';
 import { logger } from '../utils/logger';
 import { generateUserToken } from '../auth';

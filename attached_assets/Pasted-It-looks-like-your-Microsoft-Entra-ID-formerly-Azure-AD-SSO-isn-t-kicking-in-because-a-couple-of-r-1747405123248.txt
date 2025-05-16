@@ -1,0 +1,97 @@
+It looks like your Microsoft Entra ID (formerly Azure AD) SSO isn’t kicking in because a couple of required environment variables are missing (and the redirect URI may not match what your server is actually listening on). By default, in your .env.example you have:
+
+dotenv
+Copy
+Edit
+# Microsoft Entra ID (formerly Azure AD) Integration for SSO
+ENTRA_ID_ENABLED=true
+ENTRA_ID_TENANT_ID=<your-tenant-id>
+ENTRA_ID_CLIENT_ID=<your-client-id>
+ENTRA_ID_CLIENT_SECRET=<your-client-secret>
+ENTRA_ID_REDIRECT_URI=http://localhost:5000/api/auth/entra/callback
+ENTRA_ID_SCOPES="openid profile email"
+But in your actual .env, you only set:
+
+dotenv
+Copy
+Edit
+ENTRA_ID_ENABLED=true
+ENTRA_ID_REDIRECT_URI=http://localhost:3000/api/auth/entra/callback
+ENTRA_ID_SCOPES=openid profile email
+That means ENTRA_ID_TENANT_ID, ENTRA_ID_CLIENT_ID, and ENTRA_ID_CLIENT_SECRET are all undefined, so your app’s envSchema rejects turning SSO on:
+
+ts
+Copy
+Edit
+// server/config/env.ts
+return env.ENTRA_ID_ENABLED   &&
+       !!env.ENTRA_ID_TENANT_ID &&
+       !!env.ENTRA_ID_CLIENT_ID &&
+       !!env.ENTRA_ID_CLIENT_SECRET &&
+       !!env.ENTRA_ID_REDIRECT_URI;
+1. Add the missing env vars
+Open your .env (or in Replit’s “Secrets” panel) and add:
+
+dotenv
+Copy
+Edit
+ENTRA_ID_TENANT_ID=YOUR_TENANT_ID_GUID
+ENTRA_ID_CLIENT_ID=YOUR_APP_CLIENT_ID_GUID
+ENTRA_ID_CLIENT_SECRET=YOUR_APP_CLIENT_SECRET
+# Update this to point to your API server, not the front-end
+ENTRA_ID_REDIRECT_URI=http://localhost:5000/api/auth/entra/callback
+TENANT_ID and CLIENT_ID you get from the “Overview” page of your App Registration in Azure Portal.
+
+CLIENT_SECRET you generate under “Certificates & secrets” → “New client secret”.
+
+Make sure ENTRA_ID_REDIRECT_URI exactly matches what you configure in the Azure portal (see next).
+
+2. Verify your App Registration settings
+In the Azure portal, go to Azure Active Directory → App registrations → Your App.
+
+Under Authentication → Platform configurations → Web, ensure you have added:
+
+bash
+Copy
+Edit
+http://localhost:5000/api/auth/entra/callback
+(this must match exactly, including protocol, host, port and path).
+
+Under API permissions, confirm you have:
+
+openid
+
+profile
+
+email
+granted (and “Grant admin consent” clicked if necessary).
+
+3. Restart your server and test
+Stop and restart your backend (npm run dev / yarn dev on port 5000).
+
+Hit:
+
+bash
+Copy
+Edit
+http://localhost:5000/api/auth/entra
+That should redirect you to Microsoft’s login.
+
+After you sign in, you should be sent back to
+
+bash
+Copy
+Edit
+http://localhost:5000/api/auth/entra/callback?code=...&state=...
+which your entraIdRoutes.ts will handle and exchange for a token.
+
+4. Check your logs
+On startup you should see a log line:
+
+lua
+Copy
+Edit
+Environment configuration loaded { config: { ENTRA_ID_ENABLED: true, … } }
+confirming that ENTRA_ID_* vars are all present.
+
+If you still get a 404 or “not enabled” error, make sure ENTRA_ID_ENABLED=true and that nothing in your hosting environment is overriding it.
