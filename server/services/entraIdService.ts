@@ -28,12 +28,12 @@ export interface EntraIdUser {
 // Store PKCE code verifiers in memory (for production, consider a session store like Redis)
 const codeVerifiers = new Map<string, string>();
 
-let entraIdClient: openid.Client | null = null;
+let entraIdClient: Client | null = null;
 
 /**
  * Initialize the Microsoft Entra ID OpenID Connect client
  */
-export async function initializeEntraId(config: EntraIdConfig): Promise<openid.Client> {
+export async function initializeEntraId(config: EntraIdConfig): Promise<Client> {
   try {
     // Validate the configuration
     if (!config.clientId || !config.clientSecret || !config.tenantId) {
@@ -62,7 +62,7 @@ export async function initializeEntraId(config: EntraIdConfig): Promise<openid.C
     
     let issuer;
     try {
-      issuer = await openid.Issuer.discover(issuerUrl);
+      issuer = await Issuer.discover(issuerUrl);
     } catch (discoverError) {
       logger.error('Failed to discover Microsoft Entra ID issuer', { 
         error: discoverError instanceof Error ? discoverError.message : 'Unknown error' 
@@ -129,7 +129,7 @@ export async function initializeEntraId(config: EntraIdConfig): Promise<openid.C
 /**
  * Get the Microsoft Entra ID client
  */
-export function getEntraIdClient(): openid.Client {
+export function getEntraIdClient(): Client {
   if (!entraIdClient) {
     logger.error('Microsoft Entra ID client requested but not initialized');
     throw new Error('Microsoft Entra ID client has not been initialized');
@@ -158,11 +158,11 @@ export function createAuthorizationUrl(config: EntraIdConfig): { url: string, st
     const client = getEntraIdClient();
     
     // Generate PKCE code challenge
-    const codeVerifier = openid.generators.codeVerifier();
-    const codeChallenge = openid.generators.codeChallenge(codeVerifier);
+    const codeVerifier = generators.codeVerifier();
+    const codeChallenge = generators.codeChallenge(codeVerifier);
     
     // Generate state for CSRF protection
-    const state = openid.generators.state();
+    const state = generators.state();
     
     // Store the code verifier keyed by state
     codeVerifiers.set(state, codeVerifier);
@@ -211,7 +211,7 @@ export function createAuthorizationUrl(config: EntraIdConfig): { url: string, st
 /**
  * Handle the callback from Microsoft Entra ID and get tokens
  */
-export async function handleCallback(req: Request, config: EntraIdConfig): Promise<openid.TokenSet> {
+export async function handleCallback(req: Request, config: EntraIdConfig): Promise<TokenSet> {
   const client = getEntraIdClient();
   const { code, state } = req.query as { code: string, state: string };
   
@@ -237,7 +237,7 @@ export async function handleCallback(req: Request, config: EntraIdConfig): Promi
 /**
  * Verify and decode ID token to get user info
  */
-export async function getUserInfo(tokenSet: openid.TokenSet): Promise<EntraIdUser> {
+export async function getUserInfo(tokenSet: TokenSet): Promise<EntraIdUser> {
   const client = getEntraIdClient();
   
   // Verify the ID token
