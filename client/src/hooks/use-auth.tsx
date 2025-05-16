@@ -24,6 +24,8 @@ type AuthContextType = {
   microsoftAuthStatus: MicrosoftAuthStatus | null;
   isMicrosoftAuthStatusLoading: boolean;
   refetchUser: () => Promise<any>;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password"> & { rememberMe?: boolean };
@@ -179,6 +181,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Check if the user has admin privileges
+  const isAdmin = !!user && (user.role === 'admin' || user.role === 'superadmin');
+  
+  // Check if the user has superadmin privileges
+  const isSuperAdmin = !!user && user.role === 'superadmin';
+  
   return (
     <AuthContext.Provider
       value={{
@@ -191,6 +199,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         microsoftAuthStatus: microsoftAuthStatus || null,
         isMicrosoftAuthStatusLoading,
         refetchUser,
+        isAdmin,
+        isSuperAdmin,
       }}
     >
       {children}
