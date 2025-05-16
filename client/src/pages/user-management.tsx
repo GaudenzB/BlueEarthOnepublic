@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -13,11 +13,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { UserDetails } from "@/components/admin/UserDetails";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { USER_ROLES } from "@/constants";
 
 // Define user type
 interface User {
@@ -85,8 +83,13 @@ export default function UserManagement() {
     },
   });
   
-  // Extract users from data response
-  const users = data as User[];
+  // Safely extract users from data response
+  // The API response structure might be { data: User[] } or just User[]
+  const users = data && typeof data === 'object' && 'data' in data && Array.isArray(data.data) 
+    ? data.data 
+    : Array.isArray(data) 
+      ? data 
+      : [];
 
   // Create user mutation
   const createUser = useMutation({
