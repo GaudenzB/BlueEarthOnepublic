@@ -282,6 +282,12 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         
         xhr.withCredentials = true; // Include cookies for session-based auth
         
+        // Add authorization token if available
+        if (localStorage.getItem('auth_token')) {
+          xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('auth_token')}`);
+          console.log('Added auth token to XHR Authorization header');
+        }
+        
         // Handle response 
         xhr.onload = function() {
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -535,20 +541,27 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             // Always attempt to send token in dev environment, plus use cookies
             if (import.meta.env.DEV) {
               try {
-                // Try to get a token from the dev login endpoint
-                const devLoginResponse = await fetch('/api/auth/dev-login', { 
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const data = await devLoginResponse.json();
-                if (data.data?.token) {
-                  headers['Authorization'] = `Bearer ${data.data.token}`;
-                  console.log('Added dev token to Authorization header for fetch upload');
+                // First try to get auth token from localStorage
+                const authToken = localStorage.getItem('auth_token');
+                if (authToken) {
+                  headers['Authorization'] = `Bearer ${authToken}`;
+                  console.log('Added stored auth token to Authorization header for fetch upload');
+                } else {
+                  // If no localStorage token, try dev login endpoint
+                  const devLoginResponse = await fetch('/api/auth/dev-login', { 
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                  });
+                  
+                  const data = await devLoginResponse.json();
+                  if (data.data?.token) {
+                    headers['Authorization'] = `Bearer ${data.data.token}`;
+                    console.log('Added dev token to Authorization header for fetch upload');
+                  }
                 }
               } catch (err) {
-                console.error('Failed to get dev token for fetch upload:', err);
+                console.error('Failed to get auth token for fetch upload:', err);
               }
             }
 
