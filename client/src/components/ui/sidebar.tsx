@@ -16,7 +16,7 @@ import {
 import { useSidebar } from "@/hooks/use-sidebar"
 import { Button } from "antd"
 import { Avatar } from "antd"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/use-auth"
 import blueEarthLogo from "@/assets/BlueEarth-Capital_white.png"
 import { getNavItems } from "@/lib/routes"
 
@@ -25,7 +25,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Sidebar({ className, ...props }: SidebarProps) {
   const [location] = useLocation()
   const { isOpen, toggleSidebar } = useSidebar()
-  const { user, logout, isSuperAdmin } = useAuth()
+  const { user, logoutMutation, isAdmin, isSuperAdmin } = useAuth()
 
   // Define sidebar colors
   const sidebarBgColor = "#0e4a86"; // Deep blue from our theme
@@ -34,7 +34,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const textColor = "#ffffff"; // White text
 
   // Get navigation items from centralized routes configuration
-  const navItems = getNavItems(isSuperAdmin).map(item => {
+  const navItems = getNavItems(isAdmin || isSuperAdmin).map(item => {
     // Map the icon string to the corresponding Ant Design icon component
     const iconStyle = { fontSize: '20px', color: textColor };
     let icon;
@@ -195,7 +195,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               onMouseOut={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
-              onClick={() => logout.mutate()}
+              onClick={() => logoutMutation.mutate()}
               title="Logout"
             />
           </div>

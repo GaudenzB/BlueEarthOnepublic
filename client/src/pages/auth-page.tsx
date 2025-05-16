@@ -271,9 +271,37 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
   const { user } = useAuth();
 
-  // If user is already logged in, redirect to home page
+  // For debugging purposes, if the user is logged in, we'll show the debug info first
+  // instead of redirecting immediately
   if (user) {
-    return <Redirect to="/" />;
+    // After 5 seconds, we'll redirect to home page
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 5000);
+    
+    return (
+      <div className="p-6">
+        <h2 className="text-xl font-semibold mb-4 text-center">
+          Redirecting to dashboard in 5 seconds...
+        </h2>
+        {/* Import our debug component */}
+        {/* <UserRoleDebug /> */}
+        <div className="w-full max-w-md mx-auto mt-4 p-4 border rounded-md bg-white shadow-sm">
+          <h3 className="text-lg font-medium">User Role Debug</h3>
+          <div className="mt-2 space-y-2">
+            <div><strong>Username:</strong> {user.username}</div>
+            <div><strong>Email:</strong> {user.email}</div>
+            <div><strong>Role:</strong> <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">{user.role}</span></div>
+            <details>
+              <summary className="cursor-pointer text-sm text-gray-500">View full user object</summary>
+              <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto">
+                {JSON.stringify(user, null, 2)}
+              </pre>
+            </details>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
