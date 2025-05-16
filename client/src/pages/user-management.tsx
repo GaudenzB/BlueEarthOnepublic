@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +45,7 @@ interface UserFormData {
 export default function UserManagement() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { user: currentUser, isAuthenticated, isSuperAdmin } = useAuth();
+  const { user: currentUser, isAdmin, isSuperAdmin } = useAuth();
 
   // State for dialogs
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -64,9 +64,17 @@ export default function UserManagement() {
   });
 
   // Redirect if not authenticated or not superadmin
-  if (!isAuthenticated || !isSuperAdmin) {
-    setLocation("/login");
-    return null;
+  // We need to place this in a useEffect to avoid React state updates during render
+  useEffect(() => {
+    if (!currentUser || !isSuperAdmin) {
+      setLocation("/auth");
+    }
+  }, [currentUser, isSuperAdmin, setLocation]);
+  
+  if (!currentUser) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="h-8 w-8 animate-spin text-border" />
+    </div>;
   }
 
   // Fetch all users
