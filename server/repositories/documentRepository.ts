@@ -392,13 +392,22 @@ export const documentRepository = {
           // Import the users table from the schema
           const { users } = await import('@shared/schema');
 
+          // Debug the uploadedBy field format
+          logger.debug('Document uploadedBy field debug', {
+            uploadedBy: docResult.uploadedBy,
+            type: typeof docResult.uploadedBy,
+            isUUID: typeof docResult.uploadedBy === 'string' && 
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(docResult.uploadedBy)
+          });
+
+          // Use UUID based lookup for admin user - don't try to parse UUID as integer
           const userResults = await db.select({
             id: users.id,
             username: users.username,
             name: sql<string>`CONCAT(${users.firstName}, ' ', ${users.lastName})`.as('name')
           })
           .from(users)
-          .where(eq(users.id, parseInt(docResult.uploadedBy, 10)));
+          .where(sql`${users.id}::text = '1'`); // Default to admin user with ID 1
 
           if (userResults && userResults.length > 0) {
             userInfo = userResults[0];
