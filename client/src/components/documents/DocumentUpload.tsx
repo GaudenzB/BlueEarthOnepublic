@@ -430,24 +430,17 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               const authData = await devLoginResponse.json();
               console.log('Development auto-login successful', authData);
               
-              // Save the token for direct use in the upload
-              if (authData.data?.token) {
-                setAuthToken(authData.data.token);
-                console.log('Obtained auth token for upload');
-              }
-              
               // Wait a moment for cookies to be set
               await new Promise(resolve => setTimeout(resolve, 500));
               
               // Verify cookies were set
               const postLoginAuthStatus = {
                 authCookie: document.cookie.includes('accessToken'),
-                sessionCookie: document.cookie.includes('connect.sid'),
-                hasToken: authToken !== ''
+                sessionCookie: document.cookie.includes('connect.sid')
               };
               console.log('Post-login auth status:', postLoginAuthStatus);
               
-              if (!postLoginAuthStatus.authCookie && !postLoginAuthStatus.sessionCookie && !postLoginAuthStatus.hasToken) {
+              if (!postLoginAuthStatus.authCookie && !postLoginAuthStatus.sessionCookie) {
                 console.warn('Auto-login succeeded but no authentication method is available');
               }
             } else {
@@ -551,11 +544,8 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
               }
             }
 
-            // Include any existing auth token in the request
-            if (authToken) {
-              headers['Authorization'] = `Bearer ${authToken}`;
-              console.log('Added Authorization header to fetch request');
-            }
+            // We use cookie-based authentication, so no need to add Authorization header
+            // The credentials: 'include' option will ensure cookies are sent with the request
             
             // Use development endpoint in dev mode for better testing
             const fetchUploadEndpoint = import.meta.env.DEV ? 

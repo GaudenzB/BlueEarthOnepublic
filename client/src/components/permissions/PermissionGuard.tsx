@@ -34,10 +34,13 @@ export function PermissionGuard({
         return;
       }
       
-      // Special handling for document uploads in development environment
-      const isDev = import.meta.env.DEV;
-      if (isDev && area === 'documents' && (user?.role === 'admin' || user?.role === 'superadmin')) {
-        console.debug(`DEV MODE: Granting ${area}:${permission} permission to admin user`);
+      // Grant access to admin or superadmin users for documents area
+      // This is needed for both development and production environments
+      const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+      const isAdmin = user?.role?.toLowerCase() === 'admin';
+      
+      if (area.toLowerCase() === 'documents' && (isAdmin || isSuperAdmin)) {
+        console.log(`Granting ${area}:${permission} permission to admin/superadmin user`);
         setHasAccess(true);
         return;
       }
