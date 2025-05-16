@@ -117,7 +117,19 @@ function createDocumentPayload(
   tenantId: string,
   userId: string
 ): InsertDocument {
-  // Build a payload object with correct typing
+  // Check if userId is a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let formattedUserId = userId;
+  
+  // If userId is not a valid UUID (like a numeric ID), use the default admin UUID
+  if (!uuidRegex.test(userId)) {
+    logger.warn('Invalid UUID format for user ID in document upload, using default admin UUID', { 
+      userId 
+    });
+    formattedUserId = '00000000-0000-0000-0000-000000000001';
+  }
+  
+  // Build a payload object with correct typing and properly formatted UUID
   const createPayload: InsertDocument = {
     filename: sanitizedFilename,
     originalFilename: file.originalname,
@@ -126,7 +138,7 @@ function createDocumentPayload(
     storageKey: uploadResult.storageKey,
     checksum: uploadResult.checksum,
     title: documentData.title || sanitizedFilename,
-    uploadedBy: userId,
+    uploadedBy: formattedUserId, // Now using properly formatted UUID
     tenantId,
     deleted: false,
     processingStatus: 'PENDING',
