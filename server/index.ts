@@ -14,8 +14,19 @@ import { setupSession } from "./middleware/session";
 // Auth system is now imported and set up in routes-new.ts
 import { logger } from "./utils/logger";
 import { setupDefaultTenant } from "./utils/setupDefaultTenant";
-import { env, isDevelopment } from "./config/env";
+import { env, isDevelopment, isEntraIdConfigured } from "./config/env";
 // Centralized environment configuration is imported from ./config/env
+
+// Log Entra ID configuration at startup for debugging
+console.log('🔎 Microsoft Entra ID Configuration Check:');
+console.log({
+  isConfigured: isEntraIdConfigured(),
+  ENTRA_ID_ENABLED: env.ENTRA_ID_ENABLED,
+  ENTRA_ID_TENANT_ID: !!env.ENTRA_ID_TENANT_ID ? 'PRESENT' : 'MISSING',
+  ENTRA_ID_CLIENT_ID: !!env.ENTRA_ID_CLIENT_ID ? 'PRESENT' : 'MISSING',
+  ENTRA_ID_CLIENT_SECRET: !!env.ENTRA_ID_CLIENT_SECRET ? 'PRESENT' : 'MISSING',
+  ENTRA_ID_REDIRECT_URI: env.ENTRA_ID_REDIRECT_URI,
+});
 
 // Import the modular system
 import { initializeModules } from "../modules";
