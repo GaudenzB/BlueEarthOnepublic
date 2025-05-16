@@ -51,7 +51,7 @@ const envSchema = z.object({
   OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-ada-002'),
   
   // Microsoft Entra ID SSO Configuration
-  ENTRA_ID_ENABLED: z.boolean().default(false),
+  ENTRA_ID_ENABLED: z.union([z.boolean(), z.enum(['true', 'false'])]).transform(val => val === true || val === 'true').default(false),
   ENTRA_ID_TENANT_ID: z.string().optional(),
   ENTRA_ID_CLIENT_ID: z.string().optional(),
   ENTRA_ID_CLIENT_SECRET: z.string().optional(),
