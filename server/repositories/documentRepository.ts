@@ -400,14 +400,16 @@ export const documentRepository = {
               /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(docResult.uploadedBy)
           });
 
-          // Use UUID based lookup for admin user - don't try to parse UUID as integer
+          // Hardcode to use admin user with ID 1
+          // This fixes the issue where uploaded documents were using UUID format for uploadedBy
+          // but the users table expects a numeric ID
           const userResults = await db.select({
             id: users.id,
             username: users.username,
             name: sql<string>`CONCAT(${users.firstName}, ' ', ${users.lastName})`.as('name')
           })
           .from(users)
-          .where(sql`${users.id}::text = '1'`); // Default to admin user with ID 1
+          .where(eq(users.id, 1)); // Always use admin user for now
 
           if (userResults && userResults.length > 0) {
             userInfo = userResults[0];
