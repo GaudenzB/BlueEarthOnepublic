@@ -23,23 +23,34 @@ export function PermissionGuard({
   fallback,
   showAlert = true
 }: PermissionGuardProps) {
-  const { isAuthenticated, user, isAdmin, isSuperAdmin } = useAuth();
+  const { user, isAdmin, isSuperAdmin } = useAuth();
   const { hasPermission } = usePermissions(user?.id);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkPermission = async () => {
+      // Get authentication info from useAuth hook
+      const authenticated = !!user; // Double-check authentication status
+      
       console.log('PermissionGuard check:', { 
         area, 
         permission, 
-        isAuthenticated, 
+        authenticated,
         userRole: user?.role,
         userId: user?.id,
         isAdmin,
         isSuperAdmin
       });
 
-      if (!isAuthenticated) {
+      // Always grant access to admin/superadmin for documents
+      if (user && (isAdmin || isSuperAdmin) && 
+          (area?.toLowerCase() === 'document' || area?.toLowerCase() === 'documents')) {
+        console.log(`PermissionGuard: Granting ${area}:${permission} access to admin user`);
+        setHasAccess(true);
+        return;
+      }
+      
+      if (!authenticated) {
         console.log('PermissionGuard: Not authenticated');
         setHasAccess(false);
         return;
@@ -70,7 +81,7 @@ export function PermissionGuard({
     };
 
     checkPermission();
-  }, [hasPermission, area, permission, isAuthenticated, user?.role, isAdmin, isSuperAdmin]);
+  }, [hasPermission, area, permission, user, user?.role, isAdmin, isSuperAdmin]);
 
   // Loading state
   if (hasAccess === null) {
