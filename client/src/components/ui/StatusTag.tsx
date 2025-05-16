@@ -204,10 +204,10 @@ function StatusTag({
   onClick,
   ariaLabel,
 }: StatusTagProps): JSX.Element {
-  const config = STATUS_CONFIG[status];
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.custom;
   
   // Default to formatted status if no text provided
-  const displayText = text || config.text || formatStatusText(status);
+  const displayText = text || config?.text || formatStatusText(status);
   
   // Determine size-specific styles
   const sizeStyles = {
@@ -231,21 +231,22 @@ function StatusTag({
     },
   };
   
-  const currentSize = sizeStyles[size];
+  // Get the style for the selected size or default to medium
+  const currentSizeConfig = sizeStyles[size] || sizeStyles.medium;
   
   // Set tag props
   const tagProps: TagProps = {
     icon: animated && status === 'processing' 
       ? <SyncOutlined spin /> 
-      : config.icon,
+      : config?.icon,
     style: {
-      backgroundColor: config.bg || 'transparent',
-      color: config.color,
-      borderColor: config.borderColor || config.color,
-      padding: currentSize.padding,
-      fontSize: currentSize.fontSize,
-      height: currentSize.height,
-      lineHeight: `${parseInt(currentSize.height) - 2}px`,
+      backgroundColor: config?.bg || 'transparent',
+      color: config?.color || tokens.colors.neutral[600],
+      borderColor: config?.borderColor || config?.color || tokens.colors.neutral[300],
+      padding: currentSizeConfig.padding || '0px 8px',
+      fontSize: currentSizeConfig.fontSize || '0.8125rem',
+      height: currentSizeConfig.height || '24px',
+      lineHeight: currentSizeConfig.height ? `${parseInt(currentSizeConfig.height) - 2}px` : '22px',
       display: 'inline-flex',
       alignItems: 'center',
       fontWeight: 500,

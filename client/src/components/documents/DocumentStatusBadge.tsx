@@ -65,7 +65,7 @@ export function DocumentStatusBadge({
         <StatusTag 
           status={config.statusValue} 
           text={showText ? config.text : undefined}
-          size="default"
+          size="medium"
         />
       </div>
     </Tooltip>

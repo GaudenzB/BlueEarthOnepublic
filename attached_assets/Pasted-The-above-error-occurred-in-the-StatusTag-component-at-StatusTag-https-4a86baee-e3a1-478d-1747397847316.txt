@@ -1,0 +1,108 @@
+The above error occurred in the <StatusTag> component:
+
+    at StatusTag (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/ui/StatusTag.tsx:165:3)
+    at div
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:25199:24
+    at DomWrapper4 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:2538:5)
+    at SingleObserver (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:2552:24)
+    at ResizeObserver3 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:2629:24)
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:25851:34
+    at Tooltip2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:31531:32)
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:32202:16
+    at DocumentStatusBadge (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/documents/DocumentStatusBadge.tsx:21:3)
+    at span
+    at td
+    at Cell (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:61907:5)
+    at tr
+    at Row2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:62033:32)
+    at tbody
+    at table
+    at div
+    at div
+    at Descriptions (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:62278:16)
+    at div
+    at div
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:49287:16
+    at DocumentInformation2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/documents/tabs/DocumentOverviewTab.tsx:25:71)
+    at div
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:54571:16
+    at div
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:54713:16
+    at DocumentOverviewTab2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/documents/tabs/DocumentOverviewTab.tsx:306:79)
+    at div
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:47568:25
+    at DomWrapper4 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:7709:5)
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:8096:32
+    at div
+    at div
+    at TabPanelList2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:47617:18)
+    at div
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:47689:18
+    at Tabs2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:48792:11)
+    at div
+    at div
+    at DocumentDetail (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/pages/document-detail-consolidated.tsx?t=1747397030558:46:18)
+    at main
+    at div
+    at div
+    at MainLayout (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/layouts/MainLayout.tsx?t=1747397030558:19:38)
+    at component
+    at Route (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e2970e52:323:16)
+    at ProtectedRoute (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/lib/protected-route.tsx?t=1747397030558:23:3)
+    at Switch…
+
+at StatusTag (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/ui/StatusTag.tsx:165:3)
+at div
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:25199:24
+at DomWrapper4 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:2538:5)
+at SingleObserver (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:2552:24)
+at ResizeObserver3 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:2629:24)
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:25851:34
+at Tooltip2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:31531:32)
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:32202:16
+at DocumentStatusBadge (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/documents/DocumentStatusBadge.tsx:21:3)
+at span
+at td
+at Cell (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:61907:5)
+at tr
+at Row2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:62033:32)
+at tbody
+at table
+at div
+at div
+at Descriptions (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:62278:16)
+at div
+at div
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:49287:16
+at DocumentInformation2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/documents/tabs/DocumentOverviewTab.tsx:25:71)
+at div
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:54571:16
+at div
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:54713:16
+at DocumentOverviewTab2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/documents/tabs/DocumentOverviewTab.tsx:306:79)
+at div
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:47568:25
+at DomWrapper4 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:7709:5)
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:8096:32
+at div
+at div
+at TabPanelList2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:47617:18)
+at div
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:47689:18
+at Tabs2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=e2970e52:48792:11)
+at div
+at div
+at DocumentDetail (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/pages/document-detail-consolidated.tsx?t=1747397030558:46:18)
+at main
+at div
+at div
+at MainLayout (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/layouts/MainLayout.tsx?t=1747397030558:19:38)
+at component
+at Route (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e2970e52:323:16)
+at ProtectedRoute (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/lib/protected-route.tsx?t=1747397030558:23:3)
+at Switch…
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Cannot read properties of undefined (reading 'padding')
