@@ -176,6 +176,16 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       
       formData.append("isConfidential", String(data.isConfidential));
       
+      // Add user ID if available - this helps with the UUID fields
+      if (user?.id) {
+        formData.append("uploadedBy", String(user.id));
+      }
+      
+      // Add default tenant ID if user object doesn't include it 
+      // In many enterprise apps, tenantId might be a constant or an environment variable
+      const defaultTenantId = "00000000-0000-0000-0000-000000000001";
+      formData.append("tenantId", defaultTenantId);
+      
       // No need to get token from localStorage
       // Authentication is now handled by HTTP-only cookies that are automatically sent
       // We'll log authentication status for debugging
@@ -511,10 +521,10 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
             fetchFormData.append("uploadedBy", String(user.id));
           }
           
-          // Add tenant ID if available from user context
-          if (user?.tenantId) {
-            fetchFormData.append("tenantId", user.tenantId);
-          }
+          // Add default tenant ID if user object doesn't include it
+          // In many enterprise apps, tenantId might be a constant or an environment variable
+          const fetchDefaultTenantId = "00000000-0000-0000-0000-000000000001";
+          fetchFormData.append("tenantId", fetchDefaultTenantId);
           
           // Attempt fetch API fallback
           try {
