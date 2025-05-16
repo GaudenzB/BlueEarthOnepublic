@@ -34,6 +34,14 @@ export function PermissionGuard({
         return;
       }
       
+      // Special handling for document uploads in development environment
+      const isDev = import.meta.env.DEV;
+      if (isDev && area === 'documents' && (user?.role === 'admin' || user?.role === 'superadmin')) {
+        console.debug(`DEV MODE: Granting ${area}:${permission} permission to admin user`);
+        setHasAccess(true);
+        return;
+      }
+      
       try {
         const result = await hasPermission(area, permission);
         setHasAccess(result);
@@ -44,7 +52,7 @@ export function PermissionGuard({
     };
 
     checkPermission();
-  }, [hasPermission, area, permission, isAuthenticated]);
+  }, [hasPermission, area, permission, isAuthenticated, user?.role]);
 
   // Loading state
   if (hasAccess === null) {
