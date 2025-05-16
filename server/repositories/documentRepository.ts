@@ -230,10 +230,44 @@ export const documentRepository = {
    */
   async create(document: InsertDocument): Promise<Document> {
     try {
+      // Add detailed debug logging for UUID validation
+      logger.debug('Document repository create - input validation', {
+        uploadedBy: {
+          value: document?.uploadedBy,
+          type: document?.uploadedBy ? typeof document.uploadedBy : 'undefined',
+          isUUID: document?.uploadedBy ? 
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(document.uploadedBy) : false
+        },
+        tenantId: {
+          value: document?.tenantId,
+          type: document?.tenantId ? typeof document.tenantId : 'undefined',
+          isUUID: document?.tenantId ? 
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(document.tenantId) : false
+        }
+      });
+      
       // Validate document data
       if (!document || !document.tenantId) {
         throw new Error('Invalid document data: missing required fields');
       }
+      
+      // Ensure uploadedBy is a valid UUID format - fix it if it's not
+      if (document.uploadedBy && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(document.uploadedBy)) {
+        logger.warn('Converting invalid UUID format for uploadedBy', { 
+          originalValue: document.uploadedBy,
+          type: typeof document.uploadedBy
+        });
+        document.uploadedBy = '00000000-0000-0000-0000-000000000001';
+      }
+      
+      // Log the final document object being inserted
+      logger.debug('Document repository - inserting document', {
+        documentData: {
+          title: document.title,
+          uploadedBy: document.uploadedBy,
+          tenantId: document.tenantId
+        }
+      });
       
       // Insert document with validation
       const [result] = await db.insert(documents)
@@ -245,6 +279,7 @@ export const documentRepository = {
         throw new Error('Document created but no data returned');
       }
       
+      logger.debug('Document created successfully', { documentId: result.id });
       return result;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -252,7 +287,9 @@ export const documentRepository = {
         error: errorMsg, 
         tenantId: document?.tenantId,
         documentType: document?.documentType,
-        fileName: document?.originalFilename 
+        fileName: document?.originalFilename,
+        uploadedBy: document?.uploadedBy,
+        fullError: error
       });
       throw new Error(`Failed to create document: ${errorMsg}`);
     }
