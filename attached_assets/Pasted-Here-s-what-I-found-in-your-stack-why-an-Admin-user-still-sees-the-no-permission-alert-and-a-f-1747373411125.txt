@@ -1,0 +1,118 @@
+Here’s what I found in your stack, why an “Admin” user still sees the “no permission” alert, and a few suggestions both to fix that and to harden the whole system:
+
+1. UI Is Always Showing a Static Alert
+In your Documents page (client/src/pages/documents.tsx) you have:
+
+tsx
+Copy
+Edit
+{/* Upload button wrapped in PermissionGuard */}
+<PermissionGuard area="documents" permission="edit">
+  <Button onClick={…}>Upload Document</Button>
+</PermissionGuard>
+
+{/* Permission Alert */}
+<Alert
+  message="You don't have permission to upload or edit documents."
+  type="info"
+  showIcon
+  …
+/>
+Because that second <Alert> lives outside of any guard or conditional, it will always render—even for a SuperAdmin or Admin.
+
+Fix
+Remove the static <Alert> and instead leverage your PermissionGuard’s showAlert prop:
+
+diff
+Copy
+Edit
+- {/* Permission Alert */}
+- <Alert … />
+
++ <PermissionGuard 
++   area="documents" 
++   permission="edit" 
++   showAlert
++ >
++   {/* if they have permission, show the upload button */}
++   <Button onClick={…}>Upload Document</Button>
++ </PermissionGuard>
+That way the message only appears when the guard actually denies.
+
+2. “Documents” Isn’t in Your Functional‐Area Enums
+Your client hook allows area: 'documents':
+
+ts
+Copy
+Edit
+interface AddPermissionData {
+  area: 'finance' | 'hr' | 'it' | 'legal' | 'operations' | 'documents';
+  …
+}
+but your server Zod schema for permission areas only knows about:
+
+ts
+Copy
+Edit
+export const permissionAreaEnum = z.enum([
+  'FINANCE',
+  'HR',
+  'IT',
+  'LEGAL',
+  'OPERATIONS'
+]);
+That means any attempt to call the POST /api/users/:id/permissions with area: "documents" will fail validation (400).
+
+Even if you could add it, your database enum (pgEnum('permission_area', […])) doesn’t include “documents.”
+
+Fix
+– Add a DOCUMENTS (or lowercase, your call) entry to both the Zod and the Postgres enum in your migrations.
+– Regenerate the enum in the database (e.g. ALTER TYPE permission_area ADD VALUE 'DOCUMENTS';).
+– Update your shared/common schemas so that both client and server speak the very same enum.
+
+3. Role‐String Casing Mismatches
+You actually have two separate role enums floating around:
+
+core-common (used by your registration logic) defines roles as lowercase:
+
+ts
+Copy
+Edit
+z.enum(['superadmin','admin','manager','user'])
+core-server (your Zod and PG definitions) defines them UPPERCASE:
+
+ts
+Copy
+Edit
+z.enum(['SUPERADMIN','ADMIN','MANAGER','USER'])
+That discrepancy can lead to:
+
+A newly registered user having a lowercase role in the DB, but your server‐side authorize/permission checks expecting uppercase (or vice-versa).
+
+The client useAuth test user?.role==='superadmin' never matching if the DB stored 'SUPERADMIN'.
+
+Fix
+Pick one casing convention and unify it across:
+
+Update the Zod enums (both common and server) to one style.
+
+Migrate any existing DB values or add cast‐or‐lowercase steps in your getCurrentUser so that what the client sees always matches the client’s expectations.
+
+4. PermissionGuard Wiring
+Your PermissionGuard currently:
+
+Hits your GET /api/check-permission/:area/:action endpoint
+
+Renders a <Skeleton/> while loading
+
+Renders children when allowed
+
+Renders either its fallback or, if showAlert is true, its own Alert
+
+Make sure you:
+
+Pass showAlert to get the built-in denial message.
+
+Don’t duplicate alerts in the page.
+
+Consider adding a fallback={<SomethingElse/>} so the UI doesn’t collapse to nothing when a user lacks permission.

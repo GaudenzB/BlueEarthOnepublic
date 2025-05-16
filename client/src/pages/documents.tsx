@@ -77,7 +77,12 @@ export default function Documents() {
             <Title level={2} style={{ margin: 0, color: '#1E2A40' }}>Documents</Title>
           </Col>
           <Col>
-            <PermissionGuard area="documents" permission="edit">
+            <PermissionGuard 
+              area="documents" 
+              permission="edit"
+              showAlert
+              fallback={null}
+            >
               <Button 
                 onClick={() => setIsUploadModalOpen(true)} 
                 className="flex items-center gap-2"
@@ -88,15 +93,6 @@ export default function Documents() {
             </PermissionGuard>
           </Col>
         </Row>
-        
-        {/* Permission Alert */}
-        <Alert
-          message="You don't have permission to upload or edit documents."
-          type="info"
-          showIcon
-          icon={<InfoCircleOutlined />}
-          style={{ marginBottom: 24 }}
-        />
         
         {/* Filter Controls */}
         <Card 
