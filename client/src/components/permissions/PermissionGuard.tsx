@@ -39,7 +39,8 @@ export function PermissionGuard({
       const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
       const isAdmin = user?.role?.toLowerCase() === 'admin';
       
-      if (area.toLowerCase() === 'documents' && (isAdmin || isSuperAdmin)) {
+      // Handle both "documents" and "document" variations
+      if ((area?.toLowerCase() === 'documents' || area?.toLowerCase() === 'document') && (isAdmin || isSuperAdmin)) {
         console.log(`Granting ${area}:${permission} permission to admin/superadmin user`);
         setHasAccess(true);
         return;

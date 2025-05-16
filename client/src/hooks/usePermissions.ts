@@ -97,9 +97,11 @@ export function usePermissions(userId?: number) {
     if (isSuperAdmin) return true;
     
     // Special handling for development mode to improve reliability
-    if (import.meta.env.DEV && user?.role?.toLowerCase() === 'admin') {
-      console.debug(`DEV MODE: Admin user checking permission for ${area}:${action}`);
-      if (area.toLowerCase() === 'documents') {
+    if (user?.role?.toLowerCase() === 'admin') {
+      console.debug(`Admin user checking permission for ${area}:${action}`);
+      // Handle both "documents" and "document" variations with case-insensitive check
+      if (area?.toLowerCase() === 'documents' || area?.toLowerCase() === 'document') {
+        console.log(`Granting ${area}:${action} permission to admin user`);
         return true;
       }
     }
