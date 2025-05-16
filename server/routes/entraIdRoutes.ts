@@ -73,14 +73,36 @@ const requireEntraIdEnabled = (req: Request, res: Response, next: NextFunction) 
 // Route to initiate login with Microsoft Entra ID
 router.get('/login', requireEntraIdEnabled, async (req: Request, res: Response) => {
   try {
+    // Check if all required Microsoft Entra ID environment variables are set
+    if (!env.ENTRA_ID_CLIENT_ID || !env.ENTRA_ID_CLIENT_SECRET || !env.ENTRA_ID_TENANT_ID) {
+      logger.error('Microsoft Entra ID credentials missing', {
+        hasClientId: !!env.ENTRA_ID_CLIENT_ID,
+        hasClientSecret: !!env.ENTRA_ID_CLIENT_SECRET,
+        hasTenantId: !!env.ENTRA_ID_TENANT_ID
+      });
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Microsoft Entra ID is not properly configured'
+      });
+    }
+    
     // Make sure Entra ID client is initialized
     await initializeEntraIdClient();
     
+    if (!hasInitializedEntraIdClient()) {
+      logger.error('Microsoft Entra ID client failed to initialize');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to initialize Microsoft Entra ID client'
+      });
+    }
+    
     // Create authorization URL with PKCE
     const { url, state } = createAuthorizationUrl({
-      clientId: env.ENTRA_ID_CLIENT_ID!,
-      clientSecret: env.ENTRA_ID_CLIENT_SECRET!,
-      tenantId: env.ENTRA_ID_TENANT_ID!,
+      clientId: env.ENTRA_ID_CLIENT_ID,
+      clientSecret: env.ENTRA_ID_CLIENT_SECRET,
+      tenantId: env.ENTRA_ID_TENANT_ID,
       redirectUri: env.ENTRA_ID_REDIRECT_URI!,
       scopes: env.ENTRA_ID_SCOPES.split(' ')
     });
@@ -93,7 +115,17 @@ router.get('/login', requireEntraIdEnabled, async (req: Request, res: Response) 
     logger.info('Redirecting to Microsoft Entra ID for authentication', { redirectUrl: url });
     res.redirect(url);
   } catch (error) {
-    logger.error('Failed to create Microsoft Entra ID authorization URL', { error });
+    // Log detailed error information
+    if (error instanceof Error) {
+      logger.error('Failed to create Microsoft Entra ID authorization URL', { 
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack 
+      });
+    } else {
+      logger.error('Failed to create Microsoft Entra ID authorization URL with unknown error');
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to initiate Microsoft Entra ID login'

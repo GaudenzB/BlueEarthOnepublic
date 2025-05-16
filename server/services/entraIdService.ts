@@ -35,10 +35,20 @@ let entraIdClient: openidClient.Client | null = null;
  */
 export async function initializeEntraId(config: EntraIdConfig): Promise<openidClient.Client> {
   try {
+    // Log the configuration being used (redacting secrets)
+    logger.info('Initializing Microsoft Entra ID client with configuration details', { 
+      tenantId: config.tenantId,
+      redirectUri: config.redirectUri,
+      scopes: config.scopes,
+      hasClientId: !!config.clientId,
+      hasClientSecret: !!config.clientSecret
+    });
+    
     // Create the Microsoft Entra ID issuer
-    const issuer = await openidClient.Issuer.discover(
-      `https://login.microsoftonline.com/${config.tenantId}/v2.0/.well-known/openid-configuration`
-    );
+    const issuerUrl = `https://login.microsoftonline.com/${config.tenantId}/v2.0/.well-known/openid-configuration`;
+    logger.info('Discovering Microsoft Entra ID issuer', { issuerUrl });
+    
+    const issuer = await openidClient.Issuer.discover(issuerUrl);
     
     logger.info('Microsoft Entra ID OIDC issuer discovered successfully', { 
       issuer: issuer.metadata.issuer,
@@ -53,9 +63,19 @@ export async function initializeEntraId(config: EntraIdConfig): Promise<openidCl
       response_types: ['code'],
     });
 
+    logger.info('Microsoft Entra ID client created successfully');
     return entraIdClient;
   } catch (error) {
-    logger.error('Failed to initialize Microsoft Entra ID client', { error });
+    // Provide more detailed error logging
+    if (error instanceof Error) {
+      logger.error('Failed to initialize Microsoft Entra ID client', { 
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack 
+      });
+    } else {
+      logger.error('Failed to initialize Microsoft Entra ID client with unknown error type', { error });
+    }
     throw error;
   }
 }
@@ -65,9 +85,17 @@ export async function initializeEntraId(config: EntraIdConfig): Promise<openidCl
  */
 export function getEntraIdClient(): openidClient.Client {
   if (!entraIdClient) {
+    logger.error('Microsoft Entra ID client requested but not initialized');
     throw new Error('Microsoft Entra ID client has not been initialized');
   }
   return entraIdClient;
+}
+
+/**
+ * Safe wrapper to get Entra ID client that doesn't throw
+ */
+export function hasInitializedEntraIdClient(): boolean {
+  return !!entraIdClient;
 }
 
 /**
