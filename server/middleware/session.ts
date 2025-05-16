@@ -46,6 +46,7 @@ export function setupSession(app: Express): void {
       httpOnly: true,
       secure: isProduction,
       maxAge: sessionTtl,
+      sameSite: 'lax', // Allow cookies to work with redirects from Microsoft
     },
     name: 'blueearth.sid',
   };
