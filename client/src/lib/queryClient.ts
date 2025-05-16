@@ -171,8 +171,18 @@ export const getQueryFn = <T>(options?: { on401?: UnauthorizedBehavior }): Query
           dataType: 'data' in response ? typeof response.data : 'none'
         });
         
-        // Check if the data contains the document
+        // Check if the data contains the document - handle nested data structure
         if ('success' in response && response.success && 'data' in response) {
+          // Check if we have a double-nested data structure like {success: true, data: {success: true, data: {...}}}
+          if ('data' in response.data && 'success' in response.data) {
+            console.log("Document found in double-nested response:", {
+              nestedDataExists: !!response.data.data,
+              nestedDataType: typeof response.data.data,
+              docId: response.data.data?.id
+            });
+            return response.data.data as T;
+          }
+          
           console.log("Document found in response wrapper:", {
             docId: response.data?.id,
             docTitle: response.data?.title || response.data?.originalFilename,
