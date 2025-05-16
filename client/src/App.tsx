@@ -9,7 +9,7 @@ import NotFound from "@/pages/not-found";
 import EmployeeDirectory from "@/pages/employee-directory";
 import EmployeeDetail from "@/pages/employee-detail-new";
 import Dashboard from "@/pages/dashboard";
-import UserManagement from "@/pages/user-management";
+import UserManagement from "@/pages/user-management-fixed";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import EntraComplete from "@/pages/auth/entra-complete";
