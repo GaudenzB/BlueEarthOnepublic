@@ -8,6 +8,15 @@ import { logger } from '../utils/logger';
 // In production, this should be properly derived from authenticated users
 const DEFAULT_TENANT_ID = process.env.DEFAULT_TENANT_ID || '00000000-0000-0000-0000-000000000001';
 
+// Helper function to validate UUID format
+function isValidUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
+// Fallback UUID to use when an invalid format is detected
+const FALLBACK_UUID = '00000000-0000-0000-0000-000000000001';
+
 /**
  * Middleware to establish tenant context for multi-tenant operations
  * This adds tenantId to the request object for use in handlers
@@ -34,6 +43,16 @@ export const tenantContext = async (req: Request, res: Response, next: NextFunct
         });
       }
       tenantId = DEFAULT_TENANT_ID;
+    }
+    
+    // Ensure tenantId is a valid UUID format
+    if (!isValidUUID(tenantId)) {
+      logger.warn('Invalid UUID format for tenant ID, using fallback', { 
+        invalidTenantId: tenantId,
+        url: req.url,
+        method: req.method
+      });
+      tenantId = FALLBACK_UUID;
     }
 
     // Validate that the tenant exists in the database

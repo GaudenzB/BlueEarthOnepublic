@@ -1,0 +1,48 @@
+Root cause
+
+ERROR:  invalid input syntax for type uuid: "1"
+comes from PostgreSQL when it tries to write the tenant_id column in documents.
+That column is declared uuid, but the value that reaches the insert statement is the string "1" instead of a 36-character UUID.
+
+Tracing the request path:
+
+server/middleware/tenantContext.ts
+const DEFAULT_TENANT_ID =
+  process.env.DEFAULT_TENANT_ID || '00000000-0000-0000-0000-000000000001';
+…
+(req as any).tenantId = tenantId;   // <- used later by the upload route
+If the request doesn’t already contain a tenant id, the middleware falls back to
+process.env.DEFAULT_TENANT_ID.
+On your Replit instance that environment variable is set to the literal 1,
+so the request now carries "1" as the tenantId.
+server/routes/documents.ts (upload endpoint)
+const tenantId = (req as any).tenantId || DEFAULT_TENANT_ID;
+…
+const createPayload: InsertDocument = {
+  …,
+  tenantId,          // ← "1"
+};
+await documentRepository.create(createPayload);
+The payload is passed straight to Drizzle ORM, which issues the failing
+INSERT … tenant_id='1' ….
+(The FormData.append('tenantId', defaultTenantId) you do in
+client/src/components/documents/DocumentUpload.tsx
+is too late: tenantContext runs before Multer parses the multipart body, so that value is never seen.)
+
+Fixes (any one of these will work)
+Where	What to change	Why it works
+Backend	Set a valid UUID in your Replit secrets or .env:
+DEFAULT_TENANT_ID=00000000-0000-0000-0000-000000000001	The middleware’s fallback becomes a valid UUID, so the insert succeeds.
+Frontend	Send the tenant id in a place the middleware can see, e.g.
+POST /api/documents?tenantId=00000000-0000-0000-0000-000000000001
+or add a header before xhr.send(formData):
+xhr.setRequestHeader('X-Tenant-ID', defaultTenantId);	tenantContext checks req.query.tenantId and X-Tenant-ID before it falls back to the default, so the correct UUID is propagated.
+Harden middleware (optional)	After you resolve tenantId, add a sanity check:
+ts if (!isUuid(tenantId)) { logger.warn(`invalid tenantId ${tenantId}`); tenantId = DEFAULT_TENANT_ID; }	Guarantees that only valid UUIDs ever reach the database.
+Recommended next step
+The simplest immediate fix is to add
+DEFAULT_TENANT_ID=00000000-0000-0000-0000-000000000001
+to your Replit Secrets panel and redeploy.
+After that, uploads should save without the 500 error.
+
+Let me know if you’d like a quick patch for the front-end header or the middleware check—I can drop the code in for you.
