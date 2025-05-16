@@ -96,8 +96,9 @@ export function useAuth() {
   }, []);
 
   // Query to fetch the current user, but only if we might be logged in
+  // Use /api/user instead of /api/auth/me based on server endpoints
   const { data, isLoading, error, refetch } = useQuery<MeResponse | null>({
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/user"],
     retry: false,
     staleTime: Infinity, // Don't auto-refresh, we'll manually refresh when needed
     gcTime: Infinity, // Don't garbage collect this query
@@ -117,7 +118,7 @@ export function useAuth() {
 
   // Set user in local state
   const setUser = (userData: User) => {
-    queryClient.setQueryData(["/api/auth/me"], {
+    queryClient.setQueryData(["/api/user"], {
       success: true,
       message: "User data retrieved successfully",
       data: userData
@@ -194,7 +195,7 @@ export function useAuth() {
       }
       
       // Local cleanup
-      queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.setQueryData(["/api/user"], null);
       queryClient.invalidateQueries();
     }
   });
