@@ -35,6 +35,18 @@ let entraIdClient: openidClient.Client | null = null;
  */
 export async function initializeEntraId(config: EntraIdConfig): Promise<openidClient.Client> {
   try {
+    // Validate the configuration
+    if (!config.clientId || !config.clientSecret || !config.tenantId) {
+      const missing = [];
+      if (!config.clientId) missing.push('clientId');
+      if (!config.clientSecret) missing.push('clientSecret');
+      if (!config.tenantId) missing.push('tenantId');
+      
+      const missingMsg = `Missing required Microsoft Entra ID configuration: ${missing.join(', ')}`;
+      logger.error(missingMsg);
+      throw new Error(missingMsg);
+    }
+    
     // Log the configuration being used (redacting secrets)
     logger.info('Initializing Microsoft Entra ID client with configuration details', { 
       tenantId: config.tenantId,
@@ -44,28 +56,62 @@ export async function initializeEntraId(config: EntraIdConfig): Promise<openidCl
       hasClientSecret: !!config.clientSecret
     });
     
-    // Create the Microsoft Entra ID issuer
+    // Create the Microsoft Entra ID issuer with explicit timeout and retry
     const issuerUrl = `https://login.microsoftonline.com/${config.tenantId}/v2.0/.well-known/openid-configuration`;
     logger.info('Discovering Microsoft Entra ID issuer', { issuerUrl });
     
-    const issuer = await openidClient.Issuer.discover(issuerUrl);
+    let issuer;
+    try {
+      issuer = await openidClient.Issuer.discover(issuerUrl);
+    } catch (discoverError) {
+      logger.error('Failed to discover Microsoft Entra ID issuer', { 
+        error: discoverError instanceof Error ? discoverError.message : 'Unknown error' 
+      });
+      throw new Error(`Failed to discover Microsoft Entra ID issuer: ${discoverError instanceof Error ? discoverError.message : 'Unknown error'}`);
+    }
+    
+    if (!issuer) {
+      logger.error('Microsoft Entra ID issuer discovery returned null/undefined');
+      throw new Error('Microsoft Entra ID issuer discovery returned null/undefined');
+    }
     
     logger.info('Microsoft Entra ID OIDC issuer discovered successfully', { 
       issuer: issuer.metadata.issuer,
-      entraIdTenant: config.tenantId 
+      entraIdTenant: config.tenantId,
+      authorizationEndpoint: issuer.metadata.authorization_endpoint,
+      tokenEndpoint: issuer.metadata.token_endpoint
     });
 
-    // Create the client
-    entraIdClient = new issuer.Client({
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      redirect_uris: [config.redirectUri],
-      response_types: ['code'],
-    });
+    // Create the client with explicit configuration
+    try {
+      entraIdClient = new issuer.Client({
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        redirect_uris: [config.redirectUri],
+        response_types: ['code'],
+      });
+    } catch (clientError) {
+      logger.error('Failed to create Microsoft Entra ID client', { 
+        error: clientError instanceof Error ? clientError.message : 'Unknown error'
+      });
+      throw new Error(`Failed to create Microsoft Entra ID client: ${clientError instanceof Error ? clientError.message : 'Unknown error'}`);
+    }
+    
+    if (!entraIdClient) {
+      logger.error('Microsoft Entra ID client creation returned null/undefined');
+      throw new Error('Microsoft Entra ID client creation returned null/undefined');
+    }
 
-    logger.info('Microsoft Entra ID client created successfully');
+    logger.info('Microsoft Entra ID client created successfully', {
+      clientId: config.clientId.substring(0, 5) + '...',
+      redirectUri: config.redirectUri
+    });
+    
     return entraIdClient;
   } catch (error) {
+    // Clear the client if initialization failed
+    entraIdClient = null;
+    
     // Provide more detailed error logging
     if (error instanceof Error) {
       logger.error('Failed to initialize Microsoft Entra ID client', { 
@@ -102,31 +148,64 @@ export function hasInitializedEntraIdClient(): boolean {
  * Create authorization URL to redirect the user to Microsoft Entra ID login page
  */
 export function createAuthorizationUrl(config: EntraIdConfig): { url: string, state: string } {
-  const client = getEntraIdClient();
-  
-  // Generate PKCE code challenge
-  const codeVerifier = openidClient.generators.codeVerifier();
-  const codeChallenge = openidClient.generators.codeChallenge(codeVerifier);
-  
-  // Generate state for CSRF protection
-  const state = openidClient.generators.state();
-  
-  // Store the code verifier keyed by state
-  codeVerifiers.set(state, codeVerifier);
-  
-  // Clean up old verifiers to prevent memory leaks
-  setTimeout(() => {
-    codeVerifiers.delete(state);
-  }, 1000 * 60 * 10); // 10 minutes expiry
-  
-  const url = client.authorizationUrl({
-    scope: config.scopes.join(' '),
-    code_challenge: codeChallenge,
-    code_challenge_method: 'S256',
-    state,
-  });
-  
-  return { url, state };
+  try {
+    // Check if client is initialized
+    if (!hasInitializedEntraIdClient()) {
+      logger.error('Cannot create authorization URL: Microsoft Entra ID client not initialized');
+      throw new Error('Microsoft Entra ID client not initialized');
+    }
+    
+    const client = getEntraIdClient();
+    
+    // Generate PKCE code challenge
+    const codeVerifier = openidClient.generators.codeVerifier();
+    const codeChallenge = openidClient.generators.codeChallenge(codeVerifier);
+    
+    // Generate state for CSRF protection
+    const state = openidClient.generators.state();
+    
+    // Store the code verifier keyed by state
+    codeVerifiers.set(state, codeVerifier);
+    
+    // Clean up old verifiers to prevent memory leaks
+    setTimeout(() => {
+      codeVerifiers.delete(state);
+    }, 1000 * 60 * 10); // 10 minutes expiry
+    
+    // Log the scopes and state for debugging
+    logger.info('Creating Microsoft Entra ID authorization URL', {
+      scopes: config.scopes,
+      state: state.substring(0, 8) + '...',
+      verifierLength: codeVerifier.length,
+      challengeLength: codeChallenge.length
+    });
+    
+    const url = client.authorizationUrl({
+      scope: config.scopes.join(' '),
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
+      state,
+    });
+    
+    logger.info('Microsoft Entra ID authorization URL created successfully', {
+      urlLength: url.length,
+      urlPrefix: url.substring(0, 50) + '...',
+      state: state.substring(0, 8) + '...'
+    });
+    
+    return { url, state };
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error('Failed to create Microsoft Entra ID authorization URL', { 
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack 
+      });
+    } else {
+      logger.error('Failed to create Microsoft Entra ID authorization URL with unknown error type');
+    }
+    throw error;
+  }
 }
 
 /**

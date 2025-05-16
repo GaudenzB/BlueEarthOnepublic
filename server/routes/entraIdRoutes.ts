@@ -23,41 +23,67 @@ declare module 'express-session' {
 const router = Router();
 
 // Initialize Microsoft Entra ID client when the routes are loaded
-let entraIdInitialized = false;
-
-async function initializeEntraIdClient() {
-  if (entraIdInitialized) return;
+async function initializeEntraIdClient(): Promise<boolean> {
+  // If client is already initialized, return success
+  if (hasInitializedEntraIdClient()) {
+    logger.info('Microsoft Entra ID client already initialized, reusing existing client');
+    return true;
+  }
   
   try {
-    if (isEntraIdConfigured()) {
-      logger.info('Initializing Microsoft Entra ID client with configuration', {
-        clientId: env.ENTRA_ID_CLIENT_ID ? 'provided' : 'missing',
-        clientSecret: env.ENTRA_ID_CLIENT_SECRET ? 'provided' : 'missing',
-        tenantId: env.ENTRA_ID_TENANT_ID ? 'provided' : 'missing',
-        redirectUri: env.ENTRA_ID_REDIRECT_URI,
-        scopes: env.ENTRA_ID_SCOPES
-      });
-      
-      await initializeEntraId({
-        clientId: env.ENTRA_ID_CLIENT_ID!,
-        clientSecret: env.ENTRA_ID_CLIENT_SECRET!,
-        tenantId: env.ENTRA_ID_TENANT_ID!,
-        redirectUri: env.ENTRA_ID_REDIRECT_URI!,
-        scopes: env.ENTRA_ID_SCOPES.split(' ')
-      });
-      
-      entraIdInitialized = true;
-      logger.info('Microsoft Entra ID client initialized successfully');
-    } else {
-      logger.warn('Microsoft Entra ID SSO is not configured or disabled');
+    if (!isEntraIdConfigured()) {
+      logger.warn('Microsoft Entra ID SSO is not properly configured or is disabled');
+      return false;
     }
+    
+    logger.info('Initializing Microsoft Entra ID client with configuration', {
+      clientId: env.ENTRA_ID_CLIENT_ID ? 'provided' : 'missing',
+      clientSecret: env.ENTRA_ID_CLIENT_SECRET ? 'provided' : 'missing',
+      tenantId: env.ENTRA_ID_TENANT_ID ? 'provided' : 'missing',
+      redirectUri: env.ENTRA_ID_REDIRECT_URI,
+      scopes: env.ENTRA_ID_SCOPES
+    });
+    
+    // Initialize with all required parameters
+    const client = await initializeEntraId({
+      clientId: env.ENTRA_ID_CLIENT_ID!,
+      clientSecret: env.ENTRA_ID_CLIENT_SECRET!,
+      tenantId: env.ENTRA_ID_TENANT_ID!,
+      redirectUri: env.ENTRA_ID_REDIRECT_URI!,
+      scopes: env.ENTRA_ID_SCOPES.split(' ')
+    });
+    
+    if (!client) {
+      logger.error('Microsoft Entra ID client initialization returned null/undefined');
+      return false;
+    }
+    
+    logger.info('Microsoft Entra ID client initialized successfully');
+    return true;
   } catch (error) {
-    logger.error('Failed to initialize Microsoft Entra ID client', { error });
+    if (error instanceof Error) {
+      logger.error('Failed to initialize Microsoft Entra ID client', { 
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack 
+      });
+    } else {
+      logger.error('Failed to initialize Microsoft Entra ID client with unknown error', { error });
+    }
+    return false;
   }
 }
 
-// Initialize on module load
-initializeEntraIdClient();
+// Initialize on module load (but don't await the result, just fire it off)
+initializeEntraIdClient().then(success => {
+  if (success) {
+    logger.info('Microsoft Entra ID client initialized at module load time');
+  } else {
+    logger.warn('Microsoft Entra ID client failed to initialize at module load time, will retry on demand');
+  }
+}).catch(error => {
+  logger.error('Unexpected error during initial Microsoft Entra ID client initialization', { error });
+});
 
 // Middleware to check if Microsoft Entra ID is enabled
 const requireEntraIdEnabled = (req: Request, res: Response, next: NextFunction) => {
@@ -87,43 +113,65 @@ router.get('/login', requireEntraIdEnabled, async (req: Request, res: Response) 
       });
     }
     
-    // Make sure Entra ID client is initialized
-    await initializeEntraIdClient();
+    // Attempt to initialize the client if it's not already initialized
+    logger.info('Microsoft login initiated, ensuring client is initialized');
+    const initSuccess = await initializeEntraIdClient();
     
-    if (!hasInitializedEntraIdClient()) {
-      logger.error('Microsoft Entra ID client failed to initialize');
+    if (!initSuccess || !hasInitializedEntraIdClient()) {
+      logger.error('Microsoft Entra ID client failed to initialize (fatal error)');
       return res.status(500).json({
         success: false,
         message: 'Failed to initialize Microsoft Entra ID client'
       });
     }
     
-    // Create authorization URL with PKCE
-    const { url, state } = createAuthorizationUrl({
-      clientId: env.ENTRA_ID_CLIENT_ID,
-      clientSecret: env.ENTRA_ID_CLIENT_SECRET,
-      tenantId: env.ENTRA_ID_TENANT_ID,
-      redirectUri: env.ENTRA_ID_REDIRECT_URI!,
-      scopes: env.ENTRA_ID_SCOPES.split(' ')
-    });
+    logger.info('Creating Microsoft Entra ID authorization URL');
     
-    // Store state in session for validation
-    if (req.session) {
-      req.session.entraIdState = state;
+    try {
+      // Create authorization URL with PKCE
+      const { url, state } = createAuthorizationUrl({
+        clientId: env.ENTRA_ID_CLIENT_ID!,
+        clientSecret: env.ENTRA_ID_CLIENT_SECRET!,
+        tenantId: env.ENTRA_ID_TENANT_ID!,
+        redirectUri: env.ENTRA_ID_REDIRECT_URI!,
+        scopes: env.ENTRA_ID_SCOPES.split(' ')
+      });
+      
+      // Store state in session for validation
+      if (req.session) {
+        req.session.entraIdState = state;
+        logger.info('Stored Microsoft Entra ID state in session', { stateLength: state.length });
+      } else {
+        logger.warn('Session object not available, cannot store state');
+      }
+
+      logger.info('Redirecting to Microsoft Entra ID for authentication', { 
+        urlLength: url.length,
+        urlPrefix: url.substring(0, 30) + '...' 
+      });
+      
+      // Redirect to Microsoft Entra ID login page
+      res.redirect(url);
+    } catch (urlError) {
+      logger.error('Failed to create Microsoft Entra ID authorization URL', { 
+        error: urlError instanceof Error ? urlError.message : 'Unknown error'
+      });
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create Microsoft Entra ID login URL'
+      });
     }
-    
-    logger.info('Redirecting to Microsoft Entra ID for authentication', { redirectUrl: url });
-    res.redirect(url);
   } catch (error) {
     // Log detailed error information
     if (error instanceof Error) {
-      logger.error('Failed to create Microsoft Entra ID authorization URL', { 
+      logger.error('Failed to initiate Microsoft Entra ID login flow', { 
         errorMessage: error.message,
         errorName: error.name,
         errorStack: error.stack 
       });
     } else {
-      logger.error('Failed to create Microsoft Entra ID authorization URL with unknown error');
+      logger.error('Failed to initiate Microsoft Entra ID login flow with unknown error');
     }
     
     res.status(500).json({
