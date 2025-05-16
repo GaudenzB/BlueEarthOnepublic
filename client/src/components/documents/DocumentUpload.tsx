@@ -43,10 +43,10 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
   const { toast } = useToast();
   
   // Get authentication information to use for uploads
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
   
-  // Store auth token for uploads if needed
-  const [authToken, setAuthToken] = useState<string>('');
+  // Derive authentication status from user
+  const isAuthenticated = !!user;
 
   // Initialize form with react-hook-form and zod validation
   const form = useForm<DocumentUploadFormValues>({
@@ -262,11 +262,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
           });
         }
         
-        // Include the auth token in the header if we have one from auto-login
-        if (authToken) {
-          xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
-          console.log('Added Authorization header with token to XHR request');
-        }
+        // No need to set auth headers, we're using credentials: 'include' which sends cookies
         
         // For debug purposes, log authentication methods
         const authCookie = document.cookie.includes('accessToken');
@@ -274,7 +270,6 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
         console.log('Authentication cookies status:', {
           authCookie,
           sessionCookie,
-          hasToken: authToken !== '',
           withCredentials: xhr.withCredentials
         });
         

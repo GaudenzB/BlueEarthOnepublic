@@ -200,11 +200,16 @@ export function useAuth() {
   // Check if user is authenticated
   const isAuthenticated = !!user;
   
-  // Check if user is a superadmin
-  const isSuperAdmin = isAuthenticated && user?.role === "superadmin";
+  // Check if user is a superadmin - case insensitive check
+  const isSuperAdmin = isAuthenticated && 
+    (user?.role?.toLowerCase() === "superadmin" || user?.role?.toUpperCase() === "SUPERADMIN");
   
-  // Check if user is an admin (including superadmin)
-  const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "superadmin");
+  // Check if user is an admin (including superadmin) - case insensitive check
+  const isAdmin = isAuthenticated && 
+    (user?.role?.toLowerCase() === "admin" || 
+     user?.role?.toLowerCase() === "superadmin" || 
+     user?.role?.toUpperCase() === "ADMIN" || 
+     user?.role?.toUpperCase() === "SUPERADMIN");
   
   // Get user's full name
   const fullName = user 
