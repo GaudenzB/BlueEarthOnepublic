@@ -358,28 +358,61 @@ router.post('/', async (req: Request, res: Response) => {
     }
     
     // Create the contract object with proper types
-    const newContract = {
+    // Handle date fields - convert to null if they're empty strings
+    const processedContractData = {
       ...contractData,
-      tenantId: tenantId.toString(), // Convert to string for character varying field
+      effectiveDate: contractData.effectiveDate || null,
+      expiryDate: contractData.expiryDate || null,
+      executionDate: contractData.executionDate || null,
+      renewalDate: contractData.renewalDate || null
+    };
+    
+    // Create the new contract with proper type conversions
+    const newContract = {
+      ...processedContractData,
+      // Convert to string for character varying field
+      tenantId: tenantId.toString(), 
+      // The documentId needs to be a valid UUID
+      documentId: processedContractData.documentId,
+      // User IDs need integer conversion
       createdBy: parsedUserId,
-      updatedBy: parsedUserId
+      updatedBy: parsedUserId,
+      // Set confidence level explicitly to avoid type issues
+      confidenceLevel: 'UNVERIFIED'
     };
 
     // Insert the new contract
-    logger.info('Creating new contract', { documentId: contractData.documentId, contractData: newContract });
-    const result = await db.insert(contracts).values(newContract).returning();
+    logger.info('Creating new contract', { documentId: contractData.documentId });
     
-    // Get the created contract
-    const createdContract = result[0];
-
-    res.status(201).json({
-      success: true,
-      message: 'Contract created successfully',
-      data: createdContract
+    try {
+      // Use type casting to ensure compatibility with Drizzle ORM
+      const result = await db.insert(contracts).values(newContract as any).returning();
+      logger.info('Contract created successfully', { contractId: result[0]?.id });
+      
+      // Get the created contract
+      const createdContract = result[0];
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Contract created successfully',
+        data: createdContract
+      });
+    } catch (dbError: any) {
+      logger.error('Database error creating contract', { 
+        error: dbError.message,
+        stack: dbError.stack,
+        details: dbError.detail || 'No additional details'
+      });
+      
+      throw dbError; // Let the outer catch block handle this
+    }
+  } catch (error: any) {
+    logger.error('Error creating contract', { 
+      error: error.message || error,
+      stack: error.stack
     });
-  } catch (error) {
-    logger.error('Error creating contract', { error });
-    res.status(500).json({
+    
+    return res.status(500).json({
       success: false,
       message: 'Server error creating contract'
     });
