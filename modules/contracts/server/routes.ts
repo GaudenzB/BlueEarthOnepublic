@@ -381,8 +381,14 @@ router.post('/', async (req: Request, res: Response) => {
       confidenceLevel: 'UNVERIFIED'
     };
 
-    // Insert the new contract
-    logger.info('Creating new contract', { documentId: contractData.documentId });
+    // Log the full contract data for debugging
+    logger.info('Creating new contract', { 
+      documentId: contractData.documentId
+    });
+    
+    // Debug log the complete contract data
+    console.log('\n❌ [Contract POST] Raw Contract Data:', JSON.stringify(contractData, null, 2));
+    console.log('\n❌ [Contract POST] Processed Contract Data:', JSON.stringify(newContract, null, 2));
     
     try {
       // Use type casting to ensure compatibility with Drizzle ORM
@@ -398,6 +404,12 @@ router.post('/', async (req: Request, res: Response) => {
         data: createdContract
       });
     } catch (dbError: any) {
+      // Log detailed error information
+      console.error('\n❌ [Contract POST] Database Error:', dbError.message);
+      console.error('\n❌ [Contract POST] Error Code:', dbError.code);
+      console.error('\n❌ [Contract POST] Error Detail:', dbError.detail);
+      console.error('\n❌ [Contract POST] Stack Trace:', dbError.stack);
+      
       logger.error('Database error creating contract', { 
         error: dbError.message,
         stack: dbError.stack,
