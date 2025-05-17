@@ -5,7 +5,16 @@ import { db } from '../../../server/db';
 import { createEventEmitter } from '../../../server/utils/eventEmitter';
 
 // Event emitter for contract processing events
-export const contractEvents = createEventEmitter();
+interface ContractEvents {
+  CONTRACT_PARSED: {
+    contractId: string;
+    documentId: string;
+    tenantId: string;
+    userId?: string;
+  };
+}
+
+export const contractEvents = createEventEmitter<ContractEvents>();
 
 /**
  * Contract metadata structure as extracted from AI

@@ -13,7 +13,7 @@ const router = Router();
  * @desc Get all contracts for a tenant
  * @access Authenticated users
  */
-router.get('/', requireUser, tenantContext, async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId;
     
@@ -42,7 +42,7 @@ router.get('/', requireUser, tenantContext, async (req: Request, res: Response) 
  * @desc Get a specific contract by ID
  * @access Authenticated users
  */
-router.get('/:id', authenticate, tenantContext, async (req: Request, res: Response) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
     const contractId = req.params.id;
     const tenantId = (req as any).tenantId;
@@ -93,7 +93,7 @@ router.get('/:id', authenticate, tenantContext, async (req: Request, res: Respon
  * @desc Get contract by document ID
  * @access Authenticated users
  */
-router.get('/document/:documentId', authenticate, tenantContext, async (req: Request, res: Response) => {
+router.get('/document/:documentId', async (req: Request, res: Response) => {
   try {
     const documentId = req.params.documentId;
     const tenantId = (req as any).tenantId;
@@ -128,7 +128,7 @@ router.get('/document/:documentId', authenticate, tenantContext, async (req: Req
  * @desc Update contract with additional metadata
  * @access Authenticated users
  */
-router.patch('/:id', authenticate, tenantContext, async (req: Request, res: Response) => {
+router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const contractId = req.params.id;
     const tenantId = (req as any).tenantId;
@@ -217,7 +217,7 @@ router.patch('/:id', authenticate, tenantContext, async (req: Request, res: Resp
  * @desc Get all obligations for a contract
  * @access Authenticated users
  */
-router.get('/:id/obligations', authenticate, tenantContext, async (req: Request, res: Response) => {
+router.get('/:id/obligations', async (req: Request, res: Response) => {
   try {
     const contractId = req.params.id;
     const tenantId = (req as any).tenantId;
