@@ -25,6 +25,7 @@ import AuthPage from "@/pages/auth-page";
 import MainLayout from "@/components/layouts/MainLayout";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import SidebarProviderWrapper from "@/hooks/use-sidebar";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
 // Initialize contract routes
@@ -162,8 +163,10 @@ function App() {
         <HelmetProvider>
           <AuthProvider>
             <PermissionsProvider>
-              <Toaster />
-              <AppRoutes />
+              <SidebarProviderWrapper>
+                <Toaster />
+                <AppRoutes />
+              </SidebarProviderWrapper>
             </PermissionsProvider>
           </AuthProvider>
         </HelmetProvider>
