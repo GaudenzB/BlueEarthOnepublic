@@ -1,7 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { logger } from '../../../server/utils/logger';
-import { authenticate } from '../../../server/middleware/auth';
-import { tenantContext } from '../../../server/middleware/tenant';
 import { db } from '../../../server/db';
 import { contracts, contractClauses, contractObligations } from '../../../shared/schema';
 import { sql } from 'drizzle-orm';
@@ -15,7 +13,7 @@ const router = Router();
  * @desc Get all contracts for a tenant
  * @access Authenticated users
  */
-router.get('/', authenticate, tenantContext, async (req: Request, res: Response) => {
+router.get('/', requireUser, tenantContext, async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId;
     
