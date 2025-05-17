@@ -1,0 +1,53 @@
+1. Surface the server-side error
+Right now your client only sees status: 500 with no body. Let’s change your /api/contracts handler to log and return the error message and stack. For example, in your Express setup around the contract routes:
+
+ts
+Copy
+Edit
+// modules/contracts/server/routes.ts
+import { Router } from "express";
+export function setupContractModule(app: Express) {
+  const router = Router();
+
+  router.post("/contracts", async (req, res) => {
+    try {
+      const newContract = await createContractInDb(req.body);
+      return res.status(201).json(newContract);
+    } catch (err) {
+      console.error("❌ Error in POST /api/contracts:", err);
+      // return the message so the client can see it
+      return res
+        .status(err.statusCode || 500)
+        .json({ error: err.message, stack: err.stack });
+    }
+  });
+
+  app.use("/api", router);
+}
+Restart your server.
+
+Reproduce the POST error from the Contract wizard.
+
+Look at the server console—copy the full err.message and err.stack.
+
+2. Inspect the request payload
+In your browser DevTools → Network → click the failing /api/contracts request → look at the Request Payload.
+• Are all required fields present?
+• Do dates come as ISO strings?
+• Does documentVersionId match an existing document?
+
+If you’ve added any non-nullable columns to your contracts table (e.g. status, type, effectiveDate), missing or malformed values will trigger a DB error.
+
+3. Common culprits
+Symptom	Likely cause	Fix
+Column “X” cannot be null	You omitted a required field	Add that field to the wizard form & include it in the POST body.
+Invalid input syntax for type date	Date string isn’t ISO-formatted	Wrap with new Date(value).toISOString().slice(0,10) on the client.
+Foreign key violation	documentVersionId or fundId doesn’t exist	Double-check you passed the correct ID from your drop-down or URL param.
+Zod “unexpected key”	Body has extra fields your schema doesn’t allow	Either remove those keys or update your Zod schema.
+
+4. Next steps once you have the real error
+Post the error message/stack here.
+
+Share the POST payload (you can redact sensitive bits).
+
+With that info we can pinpoint exactly which field or validation is failing and get your Contract save working end-to-end.

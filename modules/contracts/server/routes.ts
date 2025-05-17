@@ -401,21 +401,47 @@ router.post('/', async (req: Request, res: Response) => {
       logger.error('Database error creating contract', { 
         error: dbError.message,
         stack: dbError.stack,
-        details: dbError.detail || 'No additional details'
+        details: dbError.detail || 'No additional details',
+        code: dbError.code
       });
+      
+      // Send the detailed error back to the client in development mode
+      if (process.env.NODE_ENV === 'development') {
+        return res.status(500).json({
+          success: false,
+          message: 'Database error creating contract',
+          error: dbError.message,
+          code: dbError.code,
+          detail: dbError.detail,
+          stack: dbError.stack
+        });
+      }
       
       throw dbError; // Let the outer catch block handle this
     }
   } catch (error: any) {
     logger.error('Error creating contract', { 
       error: error.message || error,
-      stack: error.stack
+      stack: error.stack,
+      code: error.code
     });
     
-    return res.status(500).json({
-      success: false,
-      message: 'Server error creating contract'
-    });
+    // In development, send detailed error information to client
+    if (process.env.NODE_ENV === 'development') {
+      return res.status(500).json({
+        success: false,
+        message: 'Server error creating contract',
+        error: error.message,
+        stack: error.stack, 
+        code: error.code
+      });
+    } else {
+      // In production, hide sensitive details
+      return res.status(500).json({
+        success: false,
+        message: 'Server error creating contract. Please try again later.'
+      });
+    }
   }
 });
 
