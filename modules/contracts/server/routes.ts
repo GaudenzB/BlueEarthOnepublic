@@ -1,0 +1,260 @@
+import { Router, Request, Response } from 'express';
+import { logger } from '../../../server/utils/logger';
+import { authenticate } from '../../../server/middleware/auth';
+import { tenantContext } from '../../../server/middleware/tenant';
+import { db } from '../../../server/db';
+import { contracts, contractClauses, contractObligations } from '../../../shared/schema';
+import { sql } from 'drizzle-orm';
+import { z } from 'zod';
+
+// Create router
+const router = Router();
+
+/**
+ * @route GET /api/contracts
+ * @desc Get all contracts for a tenant
+ * @access Authenticated users
+ */
+router.get('/', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    
+    const contractList = await db.query.contracts.findMany({
+      where: sql`${contracts.tenantId} = ${tenantId} AND ${contracts.documentId} IS NOT NULL`,
+      orderBy: [sql`${contracts.updatedAt} DESC`],
+      limit: 100
+    });
+    
+    res.json({
+      success: true,
+      message: 'Contracts retrieved successfully',
+      data: contractList
+    });
+  } catch (error) {
+    logger.error('Error getting contracts', { error });
+    res.status(500).json({
+      success: false,
+      message: 'Server error retrieving contracts'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/:id
+ * @desc Get a specific contract by ID
+ * @access Authenticated users
+ */
+router.get('/:id', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const contractId = req.params.id;
+    const tenantId = (req as any).tenantId;
+    
+    const contract = await db.query.contracts.findFirst({
+      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+    
+    // Get associated clauses
+    const clauses = await db.query.contractClauses.findMany({
+      where: sql`${contractClauses.contractId} = ${contractId} AND ${contractClauses.tenantId} = ${tenantId}`,
+      orderBy: [sql`${contractClauses.pageNumber} ASC NULLS LAST`]
+    });
+    
+    // Get associated obligations
+    const obligations = await db.query.contractObligations.findMany({
+      where: sql`${contractObligations.contractId} = ${contractId} AND ${contractObligations.tenantId} = ${tenantId}`,
+      orderBy: [sql`${contractObligations.dueDate} ASC NULLS LAST`]
+    });
+    
+    res.json({
+      success: true,
+      message: 'Contract retrieved successfully',
+      data: {
+        ...contract,
+        clauses,
+        obligations
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting contract', { error, id: req.params.id });
+    res.status(500).json({
+      success: false,
+      message: 'Server error retrieving contract'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/document/:documentId
+ * @desc Get contract by document ID
+ * @access Authenticated users
+ */
+router.get('/document/:documentId', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const documentId = req.params.documentId;
+    const tenantId = (req as any).tenantId;
+    
+    const contract = await db.query.contracts.findFirst({
+      where: sql`${contracts.documentId} = ${documentId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'No contract found for this document'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Contract retrieved successfully',
+      data: contract
+    });
+  } catch (error) {
+    logger.error('Error getting contract by document ID', { error, documentId: req.params.documentId });
+    res.status(500).json({
+      success: false,
+      message: 'Server error retrieving contract'
+    });
+  }
+});
+
+/**
+ * @route PATCH /api/contracts/:id
+ * @desc Update contract with additional metadata
+ * @access Authenticated users
+ */
+router.patch('/:id', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const contractId = req.params.id;
+    const tenantId = (req as any).tenantId;
+    const userId = (req as any).user.id;
+    
+    // Validate request data
+    const schema = z.object({
+      contractStatus: z.enum(['DRAFT', 'UNDER_REVIEW', 'ACTIVE', 'EXPIRED', 'TERMINATED', 'RENEWED']).optional(),
+      contractNumber: z.string().optional(),
+      counterpartyName: z.string().optional(),
+      counterpartyAddress: z.string().optional(),
+      counterpartyContactEmail: z.string().email().optional().nullable(),
+      effectiveDate: z.string().optional().nullable(),
+      expiryDate: z.string().optional().nullable(),
+      executionDate: z.string().optional().nullable(),
+      renewalDate: z.string().optional().nullable(),
+      totalValue: z.string().optional(),
+      currency: z.string().optional(),
+      customMetadata: z.record(z.any()).optional()
+    });
+    
+    const validationResult = schema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request data',
+        errors: validationResult.error.errors
+      });
+    }
+    
+    // Check if contract exists
+    const existingContract = await db.query.contracts.findFirst({
+      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    if (!existingContract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+    
+    // Update contract with validated data
+    const validData = validationResult.data;
+    
+    // Only update fields that were provided
+    const updateData: any = {
+      updatedAt: new Date().toISOString(),
+      updatedBy: userId
+    };
+    
+    // Add provided fields to the update data
+    Object.keys(validData).forEach(key => {
+      if (validData[key as keyof typeof validData] !== undefined) {
+        updateData[key] = validData[key as keyof typeof validData];
+      }
+    });
+    
+    // Perform update
+    await db.update(contracts)
+      .set(updateData)
+      .where(sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`);
+    
+    // Get updated contract
+    const updatedContract = await db.query.contracts.findFirst({
+      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    res.json({
+      success: true,
+      message: 'Contract updated successfully',
+      data: updatedContract
+    });
+  } catch (error) {
+    logger.error('Error updating contract', { error, id: req.params.id });
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating contract'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/:id/obligations
+ * @desc Get all obligations for a contract
+ * @access Authenticated users
+ */
+router.get('/:id/obligations', authenticate, tenantContext, async (req: Request, res: Response) => {
+  try {
+    const contractId = req.params.id;
+    const tenantId = (req as any).tenantId;
+    
+    // Check if contract exists
+    const contract = await db.query.contracts.findFirst({
+      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+    
+    // Get obligations
+    const obligations = await db.query.contractObligations.findMany({
+      where: sql`${contractObligations.contractId} = ${contractId} AND ${contractObligations.tenantId} = ${tenantId}`,
+      orderBy: [sql`${contractObligations.dueDate} ASC NULLS LAST`]
+    });
+    
+    res.json({
+      success: true,
+      message: 'Contract obligations retrieved successfully',
+      data: obligations
+    });
+  } catch (error) {
+    logger.error('Error getting contract obligations', { error, id: req.params.id });
+    res.status(500).json({
+      success: false,
+      message: 'Server error retrieving contract obligations'
+    });
+  }
+});
+
+// Export router
+export default router;

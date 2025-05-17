@@ -78,7 +78,7 @@ export async function initializeModules(app: Express): Promise<ModuleManager> {
     { name: 'employee', path: './employees/server' }, // Changed 'employees' to 'employee' to match setupEmployeeModule function
     // Add more modules here as they are developed
     // { name: 'document', path: './documents/server' }, // Same singular naming convention for consistency
-    // { name: 'contract', path: './contracts/server' }, // Same singular naming convention for consistency
+    { name: 'contract', path: './contracts/server' }, // Added contract module
   ];
   
   try {
