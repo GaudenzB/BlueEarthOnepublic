@@ -3,7 +3,6 @@ import { Sidebar } from "@/components/ui/sidebar"
 import { MenuOutlined } from "@ant-design/icons"
 import { Button } from "antd"
 import { useSidebar } from "@/hooks/use-sidebar"
-import blueEarthLogoBlue from "@/assets/BlueEarth-Capital_blue.png"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -32,11 +31,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             aria-label="Toggle menu"
           />
           <div className="flex justify-center flex-grow">
-            <img 
-              src={blueEarthLogoBlue} 
-              alt="BlueEarth Capital" 
-              className="h-8" 
-            />
+            <h1 className="text-lg font-semibold text-primary">BlueEarth Portal</h1>
           </div>
           <div className="w-10"></div> {/* Spacer for balance */}
         </div>
