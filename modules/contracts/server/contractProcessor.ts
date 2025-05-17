@@ -1,5 +1,5 @@
 import { logger } from '../../../server/utils/logger';
-import { contracts, contractClauses, contractObligations, confidenceLevelEnum, obligationTypeEnum } from '../../../shared/schema';
+import { contracts, contractClauses, contractObligations } from '../../../shared/schema';
 import { sql } from 'drizzle-orm';
 import { db } from '../../../server/db';
 import { createEventEmitter } from '../../../server/utils/eventEmitter';
@@ -160,15 +160,15 @@ export async function postProcessContract(
       return null;
     }
     
-    // Create contract record
-    const [contract] = await db.insert(contracts).values({
+    // Create contract record with properly typed values
+    const insertData = {
       documentId,
       tenantId,
       createdBy: userId,
       
       // Contract type mapping
       contractType: mapContractType(contractData.metadata.contractType) as any,
-      contractStatus: 'DRAFT',
+      contractStatus: 'DRAFT' as const,
       contractNumber: contractData.metadata.contractNumber,
       
       // Try to identify counterparty
@@ -176,11 +176,19 @@ export async function postProcessContract(
       counterpartyAddress: findCounterpartyAddress(contractData.parties),
       counterpartyContactEmail: findCounterpartyEmail(contractData.parties),
       
-      // Extract key dates
-      effectiveDate: findDateByType(contractData.keyDates, 'EFFECTIVE'),
-      expiryDate: findDateByType(contractData.keyDates, 'EXPIRY'),
-      executionDate: findDateByType(contractData.keyDates, 'EXECUTION'),
-      renewalDate: findDateByType(contractData.keyDates, 'RENEWAL'),
+      // Extract key dates - convert Date objects to ISO strings for Drizzle
+      effectiveDate: findDateByType(contractData.keyDates, 'EFFECTIVE') 
+        ? new Date(findDateByType(contractData.keyDates, 'EFFECTIVE')!).toISOString().split('T')[0]
+        : null,
+      expiryDate: findDateByType(contractData.keyDates, 'EXPIRY')
+        ? new Date(findDateByType(contractData.keyDates, 'EXPIRY')!).toISOString().split('T')[0]
+        : null,
+      executionDate: findDateByType(contractData.keyDates, 'EXECUTION')
+        ? new Date(findDateByType(contractData.keyDates, 'EXECUTION')!).toISOString().split('T')[0]
+        : null,
+      renewalDate: findDateByType(contractData.keyDates, 'RENEWAL')
+        ? new Date(findDateByType(contractData.keyDates, 'RENEWAL')!).toISOString().split('T')[0]
+        : null,
       
       // Financial terms
       totalValue: findFinancialTermByType(contractData.financialTerms, 'TOTAL'),
@@ -190,7 +198,9 @@ export async function postProcessContract(
       confidenceLevel: mapConfidenceToLevel(contractData.metadata.confidenceScore) as any,
       rawExtraction: contractData as any,
       sourcePageReferences: contractData.metadata.sourceReferences as any,
-    }).returning();
+    };
+    
+    const [contract] = await db.insert(contracts).values(insertData).returning();
     
     if (!contract) {
       logger.error('Failed to create contract record', { documentId });
@@ -232,7 +242,7 @@ export async function postProcessContract(
         await processContractObligations(
           contract.id, 
           tenantId, 
-          userId, 
+          userId || undefined, 
           contractData.obligations,
           contractData.clauses
         );
@@ -336,35 +346,50 @@ async function processContractObligations(
       })
     );
     
-    // Insert batch
-    await db.insert(contractObligations).values(
-      obligationBatch.map((obligation, index) => {
-        let dueDate: Date | null = null;
-        
-        if (obligation.dueDate) {
-          try {
-            dueDate = new Date(obligation.dueDate);
-          } catch (e) {
-            // Invalid date format
-          }
+    // Insert batch with properly formatted dates
+    for (let i = 0; i < obligationBatch.length; i++) {
+      const obligation = obligationBatch[i];
+      if (!obligation) continue; // Skip undefined obligations
+      
+      let dueDateISO: string | null = null;
+      
+      if (obligation.dueDate) {
+        try {
+          const dateObj = new Date(obligation.dueDate);
+          dueDateISO = dateObj.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+        } catch (e) {
+          // Invalid date format
+          logger.warn('Invalid date format for obligation', { 
+            dueDate: obligation.dueDate,
+            obligationTitle: obligation.title
+          });
         }
-        
-        return {
+      }
+      
+      // Insert each obligation individually to handle data type issues
+      try {
+        await db.insert(contractObligations).values({
           contractId,
           tenantId,
           createdBy: userId,
-          clauseId: clauseIds[index],
+          clauseId: clauseIds[i] || null,
           title: obligation.title,
           description: obligation.description,
-          obligationType: mapObligationType(obligation.type) as any,
-          responsibleParty: obligation.responsibleParty,
-          dueDate: dueDate,
-          recurringPattern: obligation.recurringPattern,
+          obligationType: mapObligationType(obligation.type || 'OTHER') as any,
+          responsibleParty: obligation.responsibleParty || null,
+          dueDate: dueDateISO,
+          recurringPattern: obligation.recurringPattern || null,
           reminderDays: [30, 14, 7, 1], // Default reminder days
-          confidenceLevel: mapConfidenceToLevel(obligation.confidenceScore) as any
-        };
-      })
-    );
+          confidenceLevel: mapConfidenceToLevel(obligation.confidenceScore || 0.5) as any
+        });
+      } catch (insertError) {
+        logger.error('Error inserting obligation', { 
+          error: insertError, 
+          obligationTitle: obligation.title,
+          contractId
+        });
+      }
+    }
   }
 }
 

@@ -8,7 +8,12 @@ export function initializeContractEventHandlers(): void {
   logger.info('Initializing contract event handlers');
   
   // Listen for contract parsed event
-  contractEvents.on('CONTRACT_PARSED', async (data) => {
+  contractEvents.on('CONTRACT_PARSED', async (data: {
+    contractId: string;
+    documentId: string;
+    tenantId: string;
+    userId?: string;
+  }) => {
     logger.info('Contract parsed event received', { 
       contractId: data.contractId,
       documentId: data.documentId,

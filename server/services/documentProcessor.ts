@@ -5,6 +5,23 @@ import { documentRepository } from '../repositories/documentRepository';
 import { documentEmbeddingsRepository } from '../repositories/documentEmbeddingsRepository';
 import { downloadFile } from '../services/documentStorage';
 
+// Import contract processing functionality if available
+let postProcessContract: ((documentId: string, tenantId: string, userId: string | undefined, aiAnalysis: any) => Promise<string | null>) | null = null;
+
+// Dynamically import contract processor to avoid circular dependencies
+try {
+  import('../../modules/contracts/server/contractProcessor')
+    .then(module => {
+      postProcessContract = module.postProcessContract;
+      logger.info('Contract processor module loaded successfully');
+    })
+    .catch(error => {
+      logger.warn('Contract processor module not available', { error: error.message });
+    });
+} catch (error) {
+  logger.warn('Contract processor module not available', { error });
+}
+
 /**
  * Document Processing Service
  * 
@@ -192,12 +209,50 @@ class DocumentProcessorService {
         }
       });
       
+      // Step 8: Process as contract if the document type is CONTRACT and processor available
+      if (document.documentType === 'CONTRACT' && postProcessContract) {
+        try {
+          logger.info('Document identified as CONTRACT, triggering contract processing', { documentId });
+          
+          // Get the user who uploaded the document (if available)
+          const userId = document.uploadedBy;
+          
+          // Process contract with AI extracted data
+          const contractId = await postProcessContract(
+            documentId,
+            tenantId,
+            userId || undefined,
+            aiAnalysis
+          );
+          
+          if (contractId) {
+            logger.info('Contract processed successfully', { 
+              documentId, 
+              contractId,
+              tenantId
+            });
+          } else {
+            logger.warn('Contract processing did not return a contract ID', { 
+              documentId,
+              tenantId 
+            });
+          }
+        } catch (contractError) {
+          logger.error('Error during contract processing', { 
+            error: contractError, 
+            documentId 
+          });
+          // Contract processing errors should not fail the overall document processing
+        }
+      }
+      
       logger.info('Document processing completed successfully', { 
         documentId,
         tenantId,
         summaryLength: aiAnalysis.summary.length,
         entitiesCount: aiAnalysis.entities.length,
-        embeddingsGenerated
+        embeddingsGenerated,
+        documentType: document.documentType
       });
       
       return true;
