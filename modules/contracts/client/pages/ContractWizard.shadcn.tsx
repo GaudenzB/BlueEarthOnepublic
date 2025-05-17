@@ -114,13 +114,38 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
         queryClient.invalidateQueries({ queryKey: ['/api/contracts'] });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      // Try to extract detailed error message from the response
+      let errorMsg = 'Failed to save contract. Please try again.';
+      
+      if (error.response?.data) {
+        // If server returned a structured error response
+        const serverError = error.response.data;
+        if (serverError.error) {
+          errorMsg = `Error: ${serverError.error}`;
+          
+          // If there's a detailed error message in the response
+          if (serverError.detail) {
+            errorMsg += ` (${serverError.detail})`;
+          } else if (serverError.code) {
+            errorMsg += ` (Code: ${serverError.code})`;
+          }
+        } else if (serverError.message) {
+          errorMsg = serverError.message;
+        }
+      }
+      
       toast({
-        title: 'Error',
-        description: 'Failed to save contract. Please try again.',
+        title: 'Contract Save Error',
+        description: errorMsg,
         variant: 'destructive',
       });
+      
+      // Log complete error details to console for debugging
       console.error('Contract save error:', error);
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+      }
     }
   });
   
