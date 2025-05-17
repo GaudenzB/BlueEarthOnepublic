@@ -292,16 +292,22 @@ router.post('/', async (req: Request, res: Response) => {
     // Build a validation schema for contract creation
     const createContractSchema = z.object({
       contractType: z.enum(['LPA', 'SUBSCRIPTION_AGREEMENT', 'SIDE_LETTER', 'AMENDMENT', 'NDA', 'SERVICE_AGREEMENT', 'OTHER']),
-      // For development, generate a UUID if none is provided
-      documentId: z.string()
+      // Allow documentId to be optional in development
+      documentId: z.string().optional()
         .transform(val => {
-          // If valid UUID, use it, otherwise generate a new one
+          // In development mode, create a dummy document or use null
+          if (!val || val === '') {
+            logger.info('No document ID provided in development mode, creating contract without document reference');
+            return null;
+          }
+          
+          // If valid UUID, use it
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           if (uuidRegex.test(val)) {
             return val;
           } else {
-            logger.info('Generating UUID for invalid documentId', { providedValue: val });
-            return crypto.randomUUID();
+            logger.info('Invalid documentId format, treating as null', { providedValue: val });
+            return null;
           }
         }),
       contractStatus: z.enum(['DRAFT', 'UNDER_REVIEW', 'ACTIVE', 'EXPIRED', 'TERMINATED', 'RENEWED']).default('DRAFT'),
