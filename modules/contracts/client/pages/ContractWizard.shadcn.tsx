@@ -12,7 +12,13 @@ import ContractReviewForm from '../components/ContractReviewForm.shadcn';
 
 // Feature flag check
 const isContractsEnabled = () => {
-  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
+  // Feature is always enabled in development (for testing purposes)
+  if (import.meta.env.MODE === 'development') {
+    return true;
+  }
+  
+  // Use the standard ENABLE_CONTRACTS flag for consistency
+  return import.meta.env.ENABLE_CONTRACTS === 'true';
 };
 
 // Steps for the wizard
