@@ -11,7 +11,8 @@ import {
   LogoutOutlined,
   LinkOutlined,
   BarChartOutlined,
-  PieChartOutlined
+  PieChartOutlined,
+  FileProtectOutlined // Added for contract icon
 } from "@ant-design/icons"
 import { useSidebar } from "@/hooks/use-sidebar"
 import { Button } from "antd"
@@ -52,6 +53,9 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         break;
       case 'FileText':
         icon = <FileTextOutlined style={iconStyle} />;
+        break;
+      case 'FileContract':
+        icon = <FileProtectOutlined style={iconStyle} />;
         break;
       case 'GanttChart':
         icon = <BarChartOutlined style={iconStyle} />;
