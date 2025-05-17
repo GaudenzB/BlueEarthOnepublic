@@ -45,6 +45,11 @@ export const ADMIN_ROUTES = {
   INTEGRATIONS: '/integrations',
 };
 
+// Feature flag check for contracts module
+const isContractsEnabled = () => {
+  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
+};
+
 // Navigation items for Sidebar
 export const getNavItems = (isSuperAdmin: boolean) => {
   // Base navigation items
@@ -70,11 +75,6 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       icon: "FileText",
     },
     {
-      title: "Contracts",
-      href: ROUTES.CONTRACTS.LIST,
-      icon: "FileContract",
-    },
-    {
       title: "Messages",
       href: ROUTES.MESSAGES,
       icon: "MessageSquare",
@@ -93,8 +93,18 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       title: "Theme Showcase",
       href: ROUTES.THEME_SHOWCASE,
       icon: "Palette",
-    },
+    }
   ];
+  
+  // Add Contracts menu item if the feature is enabled
+  if (isContractsEnabled()) {
+    // Insert after Documents and before Messages
+    baseNavItems.splice(4, 0, {
+      title: "Contracts",
+      href: ROUTES.CONTRACTS.LIST,
+      icon: "FileContract",
+    });
+  }
   
   // Admin navigation items - only visible to superadmins
   const adminNavItems = isSuperAdmin ? [
