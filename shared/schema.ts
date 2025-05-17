@@ -243,12 +243,35 @@ import { documents, processingStatusEnum as docProcessingStatusEnum, documentTyp
 import { analysisVersions, analysisStatusEnum } from './schema/documents/analysisVersions';
 import { documentEmbeddings } from './schema/documents/embeddings';
 
+// Import contract schema from subdirectories
+import { 
+  contracts, 
+  contractClauses, 
+  contractObligations,
+  contractStatusEnum, 
+  contractTypeEnum, 
+  obligationStatusEnum,
+  obligationTypeEnum,
+  confidenceLevelEnum
+} from './schema/contracts/contracts';
+
 // Re-export for easy access
 export { 
+  // Document-related exports
   documents, 
   analysisVersions, 
   documentEmbeddings,
   docProcessingStatusEnum, 
   documentTypeEnum, 
-  analysisStatusEnum
+  analysisStatusEnum,
+  
+  // Contract-related exports
+  contracts,
+  contractClauses,
+  contractObligations,
+  contractStatusEnum,
+  contractTypeEnum,
+  obligationStatusEnum,
+  obligationTypeEnum,
+  confidenceLevelEnum
 };
