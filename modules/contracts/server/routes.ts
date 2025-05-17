@@ -344,11 +344,25 @@ router.post('/', async (req: Request, res: Response) => {
     const contractData = validationResult.data;
 
     // Ensure tenant ID is set
+    // Convert userId to integer if available since the DB column is integer type
+    let parsedUserId = null;
+    if (userId) {
+      try {
+        parsedUserId = parseInt(userId, 10);
+        if (isNaN(parsedUserId)) {
+          parsedUserId = null;
+        }
+      } catch (e) {
+        logger.warn('Could not parse userId as integer', { userId });
+      }
+    }
+    
+    // Create the contract object with proper types
     const newContract = {
       ...contractData,
-      tenantId: tenantId,
-      createdBy: userId || null,
-      updatedBy: userId || null
+      tenantId: tenantId.toString(), // Convert to string for character varying field
+      createdBy: parsedUserId,
+      updatedBy: parsedUserId
     };
 
     // Insert the new contract
