@@ -47,7 +47,8 @@ export const ADMIN_ROUTES = {
 
 // Feature flag check for contracts module
 const isContractsEnabled = () => {
-  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
+  return true; // Force enable contracts module for testing
+  // return import.meta.env['ENABLE_CONTRACTS'] === 'true';
 };
 
 // Navigation items for Sidebar
@@ -102,7 +103,7 @@ export const getNavItems = (isSuperAdmin: boolean) => {
     baseNavItems.splice(4, 0, {
       title: "Contracts",
       href: ROUTES.CONTRACTS.LIST,
-      icon: "FileSignature",
+      icon: "FileContract",
     });
   }
   
