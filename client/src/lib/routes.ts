@@ -26,7 +26,12 @@ export const ROUTES = {
     LIST: '/documents',
     DETAIL: (id: string | number) => `/documents/${id}`,
   },
-  // CONTRACTS module removed
+  CONTRACTS: {
+    LIST: '/contracts',
+    NEW: '/contracts/new',
+    DETAIL: (id: string | number) => `/contracts/${id}`,
+    EDIT: (id: string | number) => `/contracts/${id}/edit`,
+  },
   CALENDAR: '/calendar',
   MESSAGES: '/messages',
   DESIGN_TESTING: '/design-testing',
@@ -64,7 +69,11 @@ export const getNavItems = (isSuperAdmin: boolean) => {
       href: ROUTES.DOCUMENTS.LIST,
       icon: "FileText",
     },
-    // Contracts module removed
+    {
+      title: "Contracts",
+      href: ROUTES.CONTRACTS.LIST,
+      icon: "FileContract",
+    },
     {
       title: "Messages",
       href: ROUTES.MESSAGES,
