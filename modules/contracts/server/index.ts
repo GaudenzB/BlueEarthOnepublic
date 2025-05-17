@@ -4,7 +4,7 @@ import { initializeContractEventHandlers } from './contractEventHandlers';
 /**
  * Initialize the contract module server components
  */
-export function initializeContractsModule(): void {
+export function setupContractModule(): void {
   logger.info('Initializing contracts module');
   
   // Initialize event handlers
