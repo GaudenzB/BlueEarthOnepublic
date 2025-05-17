@@ -17,9 +17,15 @@ import {
 import { FileText, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
-// Feature flag check
+// Feature flag check - allow access in development regardless of flag
 const isContractsEnabled = () => {
-  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
+  // Feature is always enabled in development (for testing purposes)
+  if (import.meta.env.MODE === 'development') {
+    return true;
+  }
+  
+  // Check the VITE_ENABLE_CONTRACTS environment variable
+  return import.meta.env['VITE_ENABLE_CONTRACTS'] === 'true';
 };
 
 export default function ContractList() {
