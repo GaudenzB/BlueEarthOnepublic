@@ -5,6 +5,7 @@ import cors from "cors";
 import { setupSwaggerDocs } from "./middleware/swagger";
 import { registerRoutes as registerOriginalRoutes } from "./routes";
 import { setupAuth, authenticate } from "./auth";
+import { setupContractModule } from "../modules/contracts/server";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply common middleware
@@ -20,6 +21,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register existing routes
   const httpServer = await registerOriginalRoutes(app);
+  
+  // Set up the contract module and routes
+  setupContractModule(app);
   
   // Define a simple test endpoint to verify our auth is working
   app.get('/api/protected', authenticate, (req, res) => {
