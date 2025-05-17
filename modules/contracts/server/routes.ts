@@ -1,7 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { logger } from '../../../server/utils/logger';
 import { db } from '../../../server/db';
-import { contracts, contractClauses, contractObligations } from '../../../shared/schema';
+import { 
+  contracts, 
+  contractClauses, 
+  contractObligations
+} from '../../../shared/schema';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -266,6 +270,84 @@ router.get('/:id/obligations', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Server error retrieving contract obligations'
+    });
+  }
+});
+
+/**
+ * @route POST /api/contracts
+ * @desc Create a new contract
+ * @access Authenticated users
+ */
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    // Get authenticated user info
+    const user = (req as any).user;
+    const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000000';
+    const userId = user?.id;
+
+    logger.info('Contract creation request received', { body: req.body });
+
+    // Build a validation schema for contract creation
+    const createContractSchema = z.object({
+      contractType: z.enum(['LPA', 'SUBSCRIPTION_AGREEMENT', 'SIDE_LETTER', 'AMENDMENT', 'NDA', 'SERVICE_AGREEMENT', 'OTHER']),
+      documentId: z.string().uuid(),
+      contractStatus: z.enum(['DRAFT', 'UNDER_REVIEW', 'ACTIVE', 'EXPIRED', 'TERMINATED', 'RENEWED']).default('DRAFT'),
+      contractNumber: z.string().optional(),
+      counterpartyName: z.string().optional(),
+      counterpartyAddress: z.string().optional(),
+      counterpartyContactEmail: z.string().email().optional().nullable(),
+      effectiveDate: z.string().optional().nullable(),
+      expiryDate: z.string().optional().nullable(),
+      executionDate: z.string().optional().nullable(),
+      renewalDate: z.string().optional().nullable(),
+      totalValue: z.string().optional(),
+      currency: z.string().optional(),
+      customMetadata: z.record(z.any()).optional()
+    });
+    
+    // Validate request data
+    const validationResult = createContractSchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      logger.error('Contract creation validation failed', {
+        errors: validationResult.error.errors
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid contract data',
+        errors: validationResult.error.errors
+      });
+    }
+
+    // Extract the validated data
+    const contractData = validationResult.data;
+
+    // Ensure tenant ID is set
+    const newContract = {
+      ...contractData,
+      tenantId: tenantId,
+      createdBy: userId || null,
+      updatedBy: userId || null
+    };
+
+    // Insert the new contract
+    logger.info('Creating new contract', { documentId: contractData.documentId, contractData: newContract });
+    const result = await db.insert(contracts).values(newContract).returning();
+    
+    // Get the created contract
+    const createdContract = result[0];
+
+    res.status(201).json({
+      success: true,
+      message: 'Contract created successfully',
+      data: createdContract
+    });
+  } catch (error) {
+    logger.error('Error creating contract', { error });
+    res.status(500).json({
+      success: false,
+      message: 'Server error creating contract'
     });
   }
 });
