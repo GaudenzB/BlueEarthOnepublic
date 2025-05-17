@@ -1,0 +1,50 @@
+Warning: findDOMNode is deprecated and will be removed in the next major release. Instead, add a ref directly to the element you want to reference. Learn more about using refs safely here: https://reactjs.org/link/strict-mode-find-node
+    at SingleObserver (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:2552:24)
+    at ResizeObserver3 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:2629:24)
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:25851:34
+    at Tooltip2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:31531:32)
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:32202:16
+    at td
+    at Cell2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:90275:5)
+    at tr
+    at BodyRow (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:90674:5)
+    at ImmutableComponent2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:90079:7)
+    at tbody
+    at Body (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:90794:5)
+    at ImmutableComponent2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:90079:7)
+    at table
+    at div
+    at div
+    at div
+    at Provider2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:89973:22)
+    at Table (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:91798:32)
+    at ImmutableComponent2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:90051:38)
+    at div
+    at div
+    at Spin (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:71181:16)
+    at div
+    at InternalTable (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:98669:16)
+    at Table2 (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:99004:36)
+    at DocumentList (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/documents/DocumentList.tsx:49:40)
+    at div
+    at div
+    at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/antd.js?v=45b00378:49287:16
+    at div
+    at Documents (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/pages/documents.tsx:41:43)
+    at main
+    at div
+    at div
+    at MainLayout (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/components/layouts/MainLayout.tsx?t=1747469026466:19:38)
+    at component
+    at Route (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=45b00378:323:16)
+    at ProtectedRoute (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/lib/protected-route.tsx:23:3)
+    at Switch (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=45b00378:379:17)
+    at AppRoutes (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/App.tsx?t=1747469026466&v=eJ8jT-2CkrN4sgo_GiuNG:51:31)
+    at PermissionsProvider (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/contexts/PermissionsContext.tsx:27:39)
+    at AuthProvider (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/hooks/use-auth.tsx:27:32)
+    at _a (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-helmet-async.js?v=45b00378:624:5)
+    at…
+PermissionGuard check: 
+Object {area: "documents", permission: "edit", authenticated: true, userRole: "superadmin", userId: 1, …}
+PermissionGuard: Granting documents:edit access to admin user
+Development environment: Always try to authenticate

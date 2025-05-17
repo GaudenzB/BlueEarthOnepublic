@@ -5,10 +5,10 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-// Import steps - using relative imports with .tsx extension to help TypeScript find them
-import ContractDetailsForm from '../components/ContractDetailsForm.shadcn.tsx';
-import ContractObligationsForm from '../components/ContractObligationsForm.shadcn.tsx';
-import ContractReviewForm from '../components/ContractReviewForm.shadcn.tsx';
+// Import steps - using relative imports without explicit file extensions
+import ContractDetailsForm from '../components/ContractDetailsForm.shadcn';
+import ContractObligationsForm from '../components/ContractObligationsForm.shadcn';
+import ContractReviewForm from '../components/ContractReviewForm.shadcn';
 
 // Feature flag check
 const isContractsEnabled = () => {
