@@ -273,7 +273,7 @@ export async function postProcessContract(
       contractId: contract.id,
       documentId,
       tenantId,
-      userId
+      userId: userId || undefined
     });
     
     return contract.id;

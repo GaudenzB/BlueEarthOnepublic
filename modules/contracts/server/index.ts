@@ -8,7 +8,7 @@ import contractRoutes from './routes';
  * @param app Express application instance
  * @returns void
  */
-export function setupContractModule(app: Express): void {
+export function setupContractModule(app: Express) {
   logger.info('Initializing contracts module');
   
   // Initialize event handlers
@@ -18,6 +18,12 @@ export function setupContractModule(app: Express): void {
   app.use('/api/contracts', contractRoutes);
   
   logger.info('Contracts module initialized successfully');
+  
+  // Return module instance
+  return {
+    name: 'contracts',
+    routes: contractRoutes
+  };
 }
 
 // Export contract processing functions

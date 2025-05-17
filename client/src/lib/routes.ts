@@ -102,7 +102,7 @@ export const getNavItems = (isSuperAdmin: boolean) => {
     baseNavItems.splice(4, 0, {
       title: "Contracts",
       href: ROUTES.CONTRACTS.LIST,
-      icon: "FileContract",
+      icon: "FileSignature",
     });
   }
   
