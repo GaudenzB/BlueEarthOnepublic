@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import { logger } from '../../../server/utils/logger';
-import { initializeContractsModule } from './index';
+import { setupContractModule as initializeContractModule } from './index';
 import contractRoutes from './routes';
 
 /**
@@ -14,7 +14,7 @@ export async function setupContractModule(app: Express): Promise<object> {
   
   try {
     // Initialize the contracts module
-    initializeContractsModule();
+    initializeContractModule();
     
     // Register API routes
     app.use('/api/contracts', contractRoutes);

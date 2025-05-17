@@ -27,7 +27,7 @@ import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
-import ContractRoutes from "../modules/contracts/client";
+import ContractRoutes from "../../modules/contracts/client";
 
 // Router configuration with separate auth and protected routes
 function AppRoutes() {

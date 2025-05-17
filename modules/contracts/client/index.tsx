@@ -12,7 +12,7 @@ const isContractsEnabled = () => {
 /**
  * Contract module routes
  */
-export const ContractRoutes: React.FC = () => {
+const ContractRoutes: React.FC = () => {
   // Skip rendering if contracts are not enabled
   if (!isContractsEnabled()) {
     return null;
