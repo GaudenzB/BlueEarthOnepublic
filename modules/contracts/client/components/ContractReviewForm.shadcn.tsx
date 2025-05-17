@@ -1,7 +1,9 @@
 import React from 'react';
+import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { CalendarIcon, Check } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface ContractReviewFormProps {
   contractData: any;
@@ -14,138 +16,140 @@ export default function ContractReviewForm({
   obligations,
   onSubmit
 }: ContractReviewFormProps) {
-  const handleSubmit = () => {
-    // Pass along existing data without changes for final submission
-    onSubmit({});
-  };
-  
   // Format date for display
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Not set';
-    return format(new Date(dateString), 'PPP');
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Not specified';
+    try {
+      return format(parseISO(dateString), 'PPP');
+    } catch (error) {
+      return dateString;
+    }
   };
-  
+
+  // Get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'OVERDUE':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Handle submission
+  const handleSubmit = () => {
+    onSubmit({
+      contractData,
+      obligations
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Review Contract Information</h3>
-      
-      <div className="rounded-md border p-4 space-y-6">
-        <div>
-          <h4 className="text-base font-semibold mb-3">Contract Details</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <Card>
+        <CardHeader>
+          <CardTitle>Review Contract Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <span className="block font-medium text-gray-500">Contract Type</span>
-              <span>{contractData.contractType || 'Not specified'}</span>
-            </div>
-            <div>
-              <span className="block font-medium text-gray-500">Contract Number</span>
-              <span>{contractData.contractNumber || 'Not specified'}</span>
+              <h3 className="font-medium text-gray-700">Contract Type</h3>
+              <p>{contractData.contractType || 'Not specified'}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Counterparty</span>
-              <span>{contractData.counterpartyName || 'Not specified'}</span>
+              <h3 className="font-medium text-gray-700">Contract Number</h3>
+              <p>{contractData.contractNumber || 'Not specified'}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Counterparty Address</span>
-              <span>{contractData.counterpartyAddress || 'Not specified'}</span>
+              <h3 className="font-medium text-gray-700">Counterparty</h3>
+              <p>{contractData.counterpartyName || 'Not specified'}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Counterparty Email</span>
-              <span>{contractData.counterpartyContactEmail || 'Not specified'}</span>
+              <h3 className="font-medium text-gray-700">Counterparty Address</h3>
+              <p>{contractData.counterpartyAddress || 'Not specified'}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Effective Date</span>
-              <span>{formatDate(contractData.effectiveDate)}</span>
+              <h3 className="font-medium text-gray-700">Counterparty Email</h3>
+              <p>{contractData.counterpartyContactEmail || 'Not specified'}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Expiry Date</span>
-              <span>{formatDate(contractData.expiryDate)}</span>
+              <h3 className="font-medium text-gray-700">Effective Date</h3>
+              <p>{formatDate(contractData.effectiveDate)}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Execution Date</span>
-              <span>{formatDate(contractData.executionDate)}</span>
+              <h3 className="font-medium text-gray-700">Expiry Date</h3>
+              <p>{formatDate(contractData.expiryDate)}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Renewal Date</span>
-              <span>{formatDate(contractData.renewalDate)}</span>
+              <h3 className="font-medium text-gray-700">Execution Date</h3>
+              <p>{formatDate(contractData.executionDate)}</p>
             </div>
             <div>
-              <span className="block font-medium text-gray-500">Total Value</span>
-              <span>
-                {contractData.totalValue 
-                  ? `${contractData.totalValue} ${contractData.currency}` 
-                  : 'Not specified'}
-              </span>
+              <h3 className="font-medium text-gray-700">Renewal Date</h3>
+              <p>{formatDate(contractData.renewalDate)}</p>
             </div>
-          </div>
-        </div>
-        
-        {obligations.length > 0 && (
-          <div>
-            <h4 className="text-base font-semibold mb-3">Obligations ({obligations.length})</h4>
-            <div className="divide-y border rounded-md">
-              {obligations.map((obligation, index) => (
-                <div key={index} className="p-3">
-                  <div className="font-medium">{obligation.title}</div>
-                  {obligation.description && (
-                    <div className="text-sm text-gray-600 mt-1">{obligation.description}</div>
-                  )}
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {obligation.dueDate && (
-                      <div className="inline-flex items-center text-xs text-gray-600">
-                        <CalendarIcon className="mr-1 h-3 w-3" />
-                        Due: {format(new Date(obligation.dueDate), "PPP")}
-                      </div>
-                    )}
-                    <div 
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        obligation.priority === 'LOW' ? 'bg-gray-100 text-gray-800' :
-                        obligation.priority === 'MEDIUM' ? 'bg-blue-100 text-blue-800' :
-                        obligation.priority === 'HIGH' ? 'bg-amber-100 text-amber-800' :
-                        'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {obligation.priority}
-                    </div>
-                    <div 
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        obligation.status === 'PENDING' ? 'bg-gray-100 text-gray-800' :
-                        obligation.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                        obligation.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                        obligation.status === 'OVERDUE' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {obligation.status}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <Check className="h-5 w-5 text-blue-400" aria-hidden="true" />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">Ready to Submit</h3>
-            <div className="mt-2 text-sm text-blue-700">
+            <div>
+              <h3 className="font-medium text-gray-700">Total Value</h3>
               <p>
-                By clicking "Submit Contract", this contract will be saved and you'll be redirected to the contract details page.
-                You can make additional edits to the contract from there.
+                {contractData.totalValue 
+                  ? `${contractData.totalValue} ${contractData.currency || ''}` 
+                  : 'Not specified'}
               </p>
             </div>
           </div>
-        </div>
-      </div>
-      
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Review Obligations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {obligations.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Responsible</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {obligations.map((obligation, index) => (
+                  <TableRow key={obligation.id || index}>
+                    <TableCell>{obligation.title}</TableCell>
+                    <TableCell>{obligation.obligationType}</TableCell>
+                    <TableCell>{obligation.responsibleParty}</TableCell>
+                    <TableCell>{formatDate(obligation.dueDate)}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(obligation.status)}>
+                        {obligation.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-4 border border-dashed rounded-md text-center">
+              <p className="text-muted-foreground">No obligations added</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
-        <Button onClick={handleSubmit}>
-          Submit Contract
+        <Button 
+          onClick={handleSubmit} 
+          className="px-6"
+        >
+          Finalize Contract
         </Button>
       </div>
     </div>

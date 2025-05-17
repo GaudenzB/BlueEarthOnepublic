@@ -6,7 +6,7 @@ import ContractWizard from './pages/ContractWizard.shadcn';
 
 // Feature flag check
 const isContractsEnabled = () => {
-  return import.meta.env.ENABLE_CONTRACTS === 'true';
+  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
 };
 
 /**

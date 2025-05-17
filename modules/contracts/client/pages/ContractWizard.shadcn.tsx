@@ -5,14 +5,14 @@ import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-// Import steps
-import ContractDetailsForm from '../components/ContractDetailsForm.shadcn';
-import ContractObligationsForm from '../components/ContractObligationsForm.shadcn';
-import ContractReviewForm from '../components/ContractReviewForm.shadcn';
+// Import steps - using relative imports with .tsx extension to help TypeScript find them
+import ContractDetailsForm from '../components/ContractDetailsForm.shadcn.tsx';
+import ContractObligationsForm from '../components/ContractObligationsForm.shadcn.tsx';
+import ContractReviewForm from '../components/ContractReviewForm.shadcn.tsx';
 
 // Feature flag check
 const isContractsEnabled = () => {
-  return import.meta.env.ENABLE_CONTRACTS === 'true';
+  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
 };
 
 // Steps for the wizard
