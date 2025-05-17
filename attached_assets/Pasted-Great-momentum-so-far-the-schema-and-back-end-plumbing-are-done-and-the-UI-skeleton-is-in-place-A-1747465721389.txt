@@ -1,0 +1,45 @@
+Great momentum so far — the schema and back-end plumbing are done and the UI skeleton is in place. At this point the fastest path to an end-to-end demo (and to unblock the AI pre-fill work in M3) is:
+
+✅ Next focus: “Make the wizard actually run”
+Fix the Chakra-UI integration & build errors (highest-impact quick win)
+
+Add <ChakraProvider theme={theme}> at the very top of client/src/App.tsx.
+
+Ensure only one version of Emotion is in package.json; mismatched versions often cause the TypeScript LSP errors you’re seeing.
+
+Replace any import { Stack } from "@chakra-ui/react/dist/stack"-style paths with the top-level package: @chakra-ui/react.
+
+Run pnpm dlx depcheck (or npm ls @emotion/react) to surface duplicate packages.
+
+Wire the wizard forms to the existing tRPC endpoints
+
+modules/contracts/client/components/ContractDetailsForm.tsx should call trpc.contracts.createDraft.useMutation() on Step 1 “Next” and keep the returned contractId in React-Query / context so subsequent steps can update.
+
+Use react-hook-form’s context provider so the three step components share the same form state without prop-drilling.
+
+Connect documents → contracts (“Convert to Contract”)
+
+In DocumentDetail add a “Create Contract from this document” button that:
+
+Sets a isContract=true flag on the document (if not already),
+
+Navigates to /contracts/new?documentVersionId=xyz,
+
+Wizard reads documentVersionId from the querystring, stores it in the draft row, and shows the PDF in the side panel.
+
+Bonus: if the document was already detected as a contract by AI (you set that flag in post-processing), deep-link directly to /contracts/:id/edit.
+
+Smoke-test the whole flow
+
+Scenario 1: Upload PDF → click “Create Contract” → step through wizard → save → shows in Contract List.
+
+Scenario 2: Wizard blank-form save → revisit /contracts/:id and verify data persisted.
+
+Include a Cypress test for each; they’ll double as regression guards when we toggle the AI features on.
+
+Leave stubs/hooks for M3
+
+Accept (but ignore) a prefillId param on the wizard steps so the AI routine can later call router.push('/contracts/new?prefill=123').
+
+Add an optional confidence prop to each form control; for now render nothing, but set you up for colour-coding in the next milestone.
+

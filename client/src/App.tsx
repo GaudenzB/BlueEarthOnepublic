@@ -2,6 +2,7 @@ import React from "react";
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { ChakraProvider } from "@chakra-ui/react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { HelmetProvider } from "react-helmet-async";
@@ -130,16 +131,18 @@ function AppRoutes() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <HelmetProvider>
-          <AuthProvider>
-            <PermissionsProvider>
-              <Toaster />
-              <AppRoutes />
-            </PermissionsProvider>
-          </AuthProvider>
-        </HelmetProvider>
-      </TooltipProvider>
+      <ChakraProvider>
+        <TooltipProvider>
+          <HelmetProvider>
+            <AuthProvider>
+              <PermissionsProvider>
+                <Toaster />
+                <AppRoutes />
+              </PermissionsProvider>
+            </AuthProvider>
+          </HelmetProvider>
+        </TooltipProvider>
+      </ChakraProvider>
     </QueryClientProvider>
   );
 }

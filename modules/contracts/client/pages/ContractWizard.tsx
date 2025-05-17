@@ -5,25 +5,28 @@ import {
   Flex, 
   Heading, 
   Text, 
-  Stack, 
-  Stepper, 
-  Step, 
-  StepIndicator, 
-  StepStatus, 
-  StepTitle, 
-  StepDescription, 
-  StepSeparator,
+  HStack,
   useToast
 } from '@chakra-ui/react';
-import { useNavigate, useParams } from 'wouter';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form } from '@/components/ui/form';
 import { Card, CardBody, CardHeader, CardFooter } from '@chakra-ui/react';
+import {
+  Step,
+  StepDescription,
+  StepIcon,
+  StepIndicator,
+  StepNumber,
+  StepSeparator,
+  StepStatus,
+  StepTitle,
+  Stepper,
+  useSteps,
+} from '@chakra-ui/stepper';
+import { useLocation } from 'wouter';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
+
+// Import Document Viewer (will need to update path if this doesn't exist)
 import { DocumentViewer } from '../../documents/client/components/DocumentViewer';
 
 // Import steps
