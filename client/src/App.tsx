@@ -27,12 +27,10 @@ import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
-// Import Contract Routes with React.lazy for code splitting
-const ContractRoutes = React.lazy(() => 
-  import("../../modules/contracts/client").then(module => ({
-    default: module.ContractRoutes
-  }))
-);
+// Initialize contract routes
+const ContractList = React.lazy(() => import("../../modules/contracts/client/pages/ContractList"));
+const ContractDetail = React.lazy(() => import("../../modules/contracts/client/pages/ContractDetail"));
+const ContractWizard = React.lazy(() => import("../../modules/contracts/client/pages/ContractWizard.shadcn"));
 
 // Router configuration with separate auth and protected routes
 function AppRoutes() {
@@ -120,11 +118,32 @@ function AppRoutes() {
         </MainLayout>
       )} />
       
-      {/* Contract Routes */}
-      <ProtectedRoute path="/contracts/*" component={() => (
+      {/* Contract Routes - with Suspense loading */}
+      <ProtectedRoute path="/contracts" component={() => (
         <MainLayout>
-          <React.Suspense fallback={<div className="p-4">Loading contracts...</div>}>
-            <ContractRoutes />
+          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <ContractList />
+          </React.Suspense>
+        </MainLayout>
+      )} />
+      <ProtectedRoute path="/contracts/new" component={() => (
+        <MainLayout>
+          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <ContractWizard />
+          </React.Suspense>
+        </MainLayout>
+      )} />
+      <ProtectedRoute path="/contracts/:id/edit" component={({params}) => (
+        <MainLayout>
+          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <ContractWizard documentId={params.id} />
+          </React.Suspense>
+        </MainLayout>
+      )} />
+      <ProtectedRoute path="/contracts/:id" component={({params}) => (
+        <MainLayout>
+          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <ContractDetail />
           </React.Suspense>
         </MainLayout>
       )} />
