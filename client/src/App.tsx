@@ -27,8 +27,12 @@ import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
-// Import ContractRoutes - using direct import for better module resolution
-import ContractRoutes from "../../modules/contracts/client";
+// Import Contract Routes with React.lazy for code splitting
+const ContractRoutes = React.lazy(() => 
+  import("../../modules/contracts/client").then(module => ({
+    default: module.ContractRoutes
+  }))
+);
 
 // Router configuration with separate auth and protected routes
 function AppRoutes() {
@@ -117,9 +121,11 @@ function AppRoutes() {
       )} />
       
       {/* Contract Routes */}
-      <ProtectedRoute path="/contracts" component={() => (
+      <ProtectedRoute path="/contracts/*" component={() => (
         <MainLayout>
-          <ContractRoutes />
+          <React.Suspense fallback={<div className="p-4">Loading contracts...</div>}>
+            <ContractRoutes />
+          </React.Suspense>
         </MainLayout>
       )} />
       

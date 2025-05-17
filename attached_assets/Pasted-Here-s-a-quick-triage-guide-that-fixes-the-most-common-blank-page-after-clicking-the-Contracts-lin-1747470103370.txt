@@ -1,0 +1,75 @@
+Here’s a quick triage guide that fixes the most common “ blank page after clicking the Contracts link ” causes in a React-router + lazy-loaded module setup.
+
+1 Check the feature-flag first
+bash
+Copy
+Edit
+# .env (root)
+VITE_ENABLE_CONTRACTS=true        # vite / pnpm dev
+# or
+ENABLE_CONTRACTS=true             # CRA / Next.js
+Hot-reload, open DevTools → console.log(import.meta.env) (or process.env) to verify the flag is really true at runtime.
+
+2 Fix the lazy import / default-export mismatch
+Symptom: no red error, but the page stays blank and the network tab never fetches contracts-*.js.
+
+2.1 Make ContractRoutes the default export in the module
+modules/contracts/client/index.tsx
+
+tsx
+Copy
+Edit
+import { ContractRoutes } from "./routes";   // or wherever you defined them
+export default ContractRoutes;
+(If you already have a default export, skip this step.)
+
+2.2 Adjust the lazy import in client/src/App.tsx
+tsx
+Copy
+Edit
+// BEFORE
+// const ContractRoutes = React.lazy(() => import("modules/contracts/client"));
+
+// AFTER  ➜  explicitly pick the named export if there is no default
+const ContractRoutes = React.lazy(async () => {
+  const mod = await import("modules/contracts/client");
+  return { default: mod.default ?? mod.ContractRoutes };
+});
+Add a simple fallback so you see a spinner while the chunk loads:
+
+tsx
+Copy
+Edit
+<Suspense fallback={<div className="p-4">Loading contracts…</div>}>
+  <ContractRoutes />
+</Suspense>
+3 Make sure “/contracts” has an element
+If the root route only defines nested routes (new, :id) but no index element, React-router will render nothing when you hit /contracts.
+
+tsx
+Copy
+Edit
+// routes.tsx (or the file that defines <Routes>)
+<Route path="contracts" element={<ContractsLayout />}>
+  <Route index element={<ContractList />} />           {/* <- this line! */}
+  <Route path="new" element={<ContractWizard />} />
+  <Route path=":id" element={<ContractDetail />} />
+</Route>
+If you don’t have a ContractsLayout, just point the element prop directly at ContractList and keep the children:
+
+tsx
+Copy
+Edit
+<Route path="contracts" element={<ContractList />}>
+  {/* children routes */}
+</Route>
+4 Verify the chunk really loads
+Open DevTools → Network → filter on contracts.
+You should see something like contracts-[hash].js fetched after you click the menu item. If not:
+
+double-check the import path,
+
+rebuild (pnpm run build) to ensure the chunk is emitted,
+
+ensure vite/webpack isn’t tree-shaking the code because the feature flag is false.
+

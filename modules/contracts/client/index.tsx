@@ -12,7 +12,7 @@ const isContractsEnabled = () => {
 /**
  * Contract module routes
  */
-const ContractRoutes: React.FC = () => {
+export const ContractRoutes: React.FC = () => {
   // Skip rendering if contracts are not enabled
   if (!isContractsEnabled()) {
     return null;
@@ -20,14 +20,15 @@ const ContractRoutes: React.FC = () => {
 
   return (
     <Switch>
-      <Route path="/contracts/new" component={() => <ContractWizard />} />
-      <Route path="/contracts/:id/edit" component={(params) => 
+      <Route path="/" component={ContractList} />
+      <Route path="/new" component={() => <ContractWizard />} />
+      <Route path="/:id/edit" component={(params) => 
         <ContractWizard documentId={params.params.id} />
       } />
-      <Route path="/contracts/:id" component={ContractDetail} />
-      <Route path="/contracts" component={ContractList} />
+      <Route path="/:id" component={ContractDetail} />
     </Switch>
   );
 };
 
+// Default export for backward compatibility
 export default ContractRoutes;
