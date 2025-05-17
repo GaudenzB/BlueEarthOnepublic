@@ -6,15 +6,12 @@ import {
   Heading, 
   Text,
   Stack,
-  useToast
+  useToast,
 } from '@chakra-ui/react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
-
-// Import Document Viewer (will need to update path if this doesn't exist)
-import { DocumentViewer } from '../../documents/client/components/DocumentViewer';
 
 // Import steps
 import ContractDetailsForm from '../components/ContractDetailsForm';
@@ -40,7 +37,7 @@ interface ContractWizardProps {
 
 export default function ContractWizard({ documentId, showConfidence = false }: ContractWizardProps) {
   const [activeStep, setActiveStep] = useState(0);
-  const navigate = useNavigate();
+  const [location, setLocation] = useLocation();
   const toast = useToast();
   
   // State for contract being created
@@ -72,45 +69,6 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
       return apiRequest(`/api/documents/${documentId}`);
     },
     enabled: !!documentId
-  });
-  
-  // Get contract data if it exists for this document
-  const contractQuery = useQuery({
-    queryKey: ['/api/contracts/document', documentId],
-    queryFn: async () => {
-      if (!documentId) return null;
-      return apiRequest(`/api/contracts/document/${documentId}`);
-    },
-    enabled: !!documentId,
-    onSuccess: (data) => {
-      if (data?.success && data?.data) {
-        // Pre-fill with existing data
-        setContractData(prev => ({
-          ...prev,
-          ...data.data,
-        }));
-        
-        // Fetch obligations if contract exists
-        if (data.data.id) {
-          obligationsQuery.refetch();
-        }
-      }
-    }
-  });
-  
-  // Get obligations if contract exists
-  const obligationsQuery = useQuery({
-    queryKey: ['/api/contracts', contractData.id, 'obligations'],
-    queryFn: async () => {
-      if (!contractData.id) return null;
-      return apiRequest(`/api/contracts/${contractData.id}/obligations`);
-    },
-    enabled: !!contractData.id,
-    onSuccess: (data) => {
-      if (data?.success && data?.data) {
-        setObligations(data.data);
-      }
-    }
   });
   
   // Create contract mutation
@@ -153,7 +111,7 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
           setActiveStep(activeStep + 1);
         } else {
           // Navigate to contract details page
-          navigate(`/contracts/${data.data.id}`);
+          setLocation(`/contracts/${data.data.id}`);
         }
         
         // Invalidate queries
@@ -202,7 +160,7 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
   
   // Handle cancel - go back to contracts list
   const handleCancel = () => {
-    navigate('/contracts');
+    setLocation('/contracts');
   };
   
   // Render active step content
@@ -251,7 +209,7 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
   }
   
   // Loading state
-  if (documentId && (documentQuery.isLoading || contractQuery.isLoading)) {
+  if (documentId && documentQuery.isLoading) {
     return (
       <Box p={8} textAlign="center">
         <Text>Loading contract information...</Text>
@@ -260,79 +218,62 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
   }
   
   return (
-    <Flex direction={{ base: 'column', lg: 'row' }} gap={4} p={4}>
-      {/* Document viewer panel */}
-      {documentId && (
-        <Box width={{ base: '100%', lg: '50%' }} mb={{ base: 4, lg: 0 }}>
-          <Card height="calc(100vh - 150px)" overflow="hidden">
-            <CardHeader>
-              <Heading size="md">Document Viewer</Heading>
-            </CardHeader>
-            <CardBody p={0} overflow="auto">
-              <DocumentViewer 
-                documentId={documentId} 
-                readOnly={true} 
-              />
-            </CardBody>
-          </Card>
-        </Box>
-      )}
-      
-      {/* Wizard panel */}
-      <Box width={{ base: '100%', lg: documentId ? '50%' : '100%' }}>
-        <Card>
-          <CardHeader>
-            <Heading size="md">
-              {contractData.id ? 'Edit Contract' : 'New Contract'}
-            </Heading>
-            
-            {/* Stepper */}
-            <Stepper
-              mt={6}
-              colorScheme="blue"
-              size="sm"
-              index={activeStep}
+    <Flex direction="column" p={4}>
+      <Box mb={6}>
+        <Heading size="md" mb={2}>
+          {contractData.id ? 'Edit Contract' : 'New Contract'}
+        </Heading>
+        
+        {/* Simple Stepper */}
+        <Flex mt={6} mb={6} justifyContent="space-between">
+          {steps.map((step, index) => (
+            <Box 
+              key={index} 
+              textAlign="center" 
+              p={2} 
+              borderWidth={index === activeStep ? 2 : 1}
+              borderColor={index === activeStep ? "blue.500" : "gray.200"}
+              borderRadius="md"
+              bg={index < activeStep ? "blue.50" : "white"}
+              flex="1"
+              mx={1}
             >
-              {steps.map((step, index) => (
-                <Step key={index}>
-                  <StepIndicator>
-                    <StepStatus
-                      complete={index < activeStep ? "✓" : undefined}
-                      incomplete={index > activeStep ? "○" : undefined}
-                      active={index === activeStep ? "●" : undefined}
-                    />
-                  </StepIndicator>
-                  <Box flexShrink={0}>
-                    <StepTitle>{step.title}</StepTitle>
-                    <StepDescription>{step.description}</StepDescription>
-                  </Box>
-                  <StepSeparator />
-                </Step>
-              ))}
-            </Stepper>
-          </CardHeader>
-          
-          <CardBody>
-            {renderStepContent()}
-          </CardBody>
-          
-          <CardFooter>
-            <Flex width="100%" justify="space-between">
-              <Button onClick={handleCancel} variant="outline">
-                Cancel
-              </Button>
-              <Stack direction="row" spacing={4}>
-                {activeStep > 0 && (
-                  <Button onClick={handleBack} variant="outline">
-                    Back
-                  </Button>
-                )}
-                {/* Next/Submit buttons are handled within each step component */}
-              </Stack>
-            </Flex>
-          </CardFooter>
-        </Card>
+              <Box 
+                width="24px" 
+                height="24px" 
+                borderRadius="50%" 
+                bg={index <= activeStep ? "blue.500" : "gray.200"}
+                color="white"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                margin="0 auto"
+                mb={2}
+              >
+                {index < activeStep ? "✓" : index + 1}
+              </Box>
+              <Text fontWeight="bold">{step.title}</Text>
+              <Text fontSize="sm" color="gray.600">{step.description}</Text>
+            </Box>
+          ))}
+        </Flex>
       </Box>
+      
+      <Box bg="white" p={6} borderRadius="md" borderWidth="1px" mb={4}>
+        {renderStepContent()}
+      </Box>
+      
+      <Flex width="100%" justify="space-between" mt={4}>
+        <Button onClick={handleCancel} variant="outline">
+          Cancel
+        </Button>
+        {activeStep > 0 && (
+          <Button onClick={handleBack} variant="outline">
+            Back
+          </Button>
+        )}
+        {/* Next/Submit buttons are handled within each step component */}
+      </Flex>
     </Flex>
   );
 }
