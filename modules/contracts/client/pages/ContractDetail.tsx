@@ -1,535 +1,451 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Heading,
-  Text,
-  Flex,
-  Grid,
-  GridItem,
-  Badge,
-  Spinner,
-  IconButton,
-  useToast,
-  Card,
-  CardHeader,
-  CardBody,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Divider,
-  List,
-  ListItem,
-  HStack,
-  Link,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td
-} from '@chakra-ui/react';
-import { ChevronLeftIcon, EditIcon, DownloadIcon, ChevronDownIcon } from '@chakra-ui/icons';
-import { useParams, useLocation } from 'wouter';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useParams, Link } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
-import { DocumentViewer } from '../../documents/client/components/DocumentViewer';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  AlertTriangle, 
+  Calendar, 
+  ChevronLeft, 
+  Clock, 
+  Edit, 
+  File, 
+  FileText
+} from 'lucide-react';
+import { format, parseISO, differenceInDays } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
 
 // Feature flag check
 const isContractsEnabled = () => {
-  return process.env.ENABLE_CONTRACTS === 'true';
-};
-
-// Helper to determine badge color based on contract status
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'DRAFT': return 'gray';
-    case 'UNDER_REVIEW': return 'yellow';
-    case 'ACTIVE': return 'green';
-    case 'EXPIRED': return 'red';
-    case 'TERMINATED': return 'purple';
-    case 'RENEWED': return 'blue';
-    default: return 'gray';
-  }
-};
-
-// Helper to determine color based on obligation type
-const getObligationColorScheme = (type: string): string => {
-  switch (type) {
-    case 'REPORTING': return 'blue';
-    case 'PAYMENT': return 'green';
-    case 'DISCLOSURE': return 'purple';
-    case 'COMPLIANCE': return 'orange';
-    case 'OPERATIONAL': return 'cyan';
-    default: return 'gray';
-  }
-};
-
-// Helper to determine color based on confidence
-const getConfidenceColor = (confidence: string | null) => {
-  switch (confidence) {
-    case 'HIGH': return 'green';
-    case 'MEDIUM': return 'yellow';
-    case 'LOW': return 'orange';
-    default: return 'gray';
-  }
+  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
 };
 
 export default function ContractDetail() {
-  const params = useParams<{ id: string }>();
-  const [location, setLocation] = useLocation();
-  const toast = useToast();
-  const showConfidence = process.env.ENABLE_CONTRACT_AI === 'true'; // Read confidence UI flag
-  
-  // Fetch contract details
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['/api/contracts', params.id],
+  // Get contract ID from route params
+  const params = useParams();
+  const contractId = params.id;
+
+  // Get contract data
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['/api/contracts', contractId],
     queryFn: async () => {
-      return apiRequest(`/api/contracts/${params.id}`);
-    }
+      return apiRequest(`/api/contracts/${contractId}`);
+    },
+    enabled: Boolean(contractId)
   });
-  
+
+  // Get contract obligations
+  const { data: obligationsData } = useQuery({
+    queryKey: ['/api/contracts/obligations', contractId],
+    queryFn: async () => {
+      return apiRequest(`/api/contracts/${contractId}/obligations`);
+    },
+    enabled: Boolean(contractId)
+  });
+
+  // Get contract clauses
+  const { data: clausesData } = useQuery({
+    queryKey: ['/api/contracts/clauses', contractId],
+    queryFn: async () => {
+      return apiRequest(`/api/contracts/${contractId}/clauses`);
+    },
+    enabled: Boolean(contractId)
+  });
+
   // Format date for display
   const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'Not specified';
-    return new Date(dateString).toLocaleDateString();
-  };
-  
-  // Navigate back to contracts list
-  const handleBackToList = () => {
-    setLocation('/contracts');
-  };
-  
-  // Navigate to edit page
-  const handleEdit = () => {
-    setLocation(`/contracts/${params.id}/edit`);
-  };
-  
-  // Handle document viewer reference for source linking
-  const documentViewerRef = React.useRef<any>(null);
-  
-  // Handle scrolling to source in document
-  const scrollToSource = (pageNumber: number, coords?: any) => {
-    if (documentViewerRef.current && documentViewerRef.current.scrollToPage) {
-      documentViewerRef.current.scrollToPage(pageNumber, coords);
-      
-      toast({
-        title: "Source Located",
-        description: `Scrolled to page ${pageNumber}`,
-        status: "info",
-        duration: 2000,
-        isClosable: true,
-      });
-    } else {
-      toast({
-        title: "Cannot Scroll",
-        description: "Document viewer is not available",
-        status: "warning",
-        duration: 2000,
-        isClosable: true,
-      });
+    if (!dateString) return 'N/A';
+    try {
+      return format(parseISO(dateString), 'MMMM d, yyyy');
+    } catch (error) {
+      return dateString;
     }
   };
-  
+
+  // Check if a date is approaching (within 30 days)
+  const isDateApproaching = (dateString: string | null | undefined) => {
+    if (!dateString) return false;
+    try {
+      const date = parseISO(dateString);
+      const today = new Date();
+      const daysRemaining = differenceInDays(date, today);
+      return daysRemaining <= 30 && daysRemaining > 0;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  // Get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-800';
+      case 'PENDING':
+      case 'DRAFT':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'EXPIRED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   // Feature flag check
   if (!isContractsEnabled()) {
     return (
-      <Box p={8} textAlign="center">
-        <Heading size="md">Contract Management</Heading>
-        <Text mt={4}>Contract management is not enabled in this environment.</Text>
-      </Box>
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-semibold">Contract Management</h2>
+        <p className="mt-4">Contract management is not enabled in this environment.</p>
+      </div>
     );
   }
-  
-  // Loading state
+
   if (isLoading) {
     return (
-      <Flex justify="center" align="center" height="50vh">
-        <Spinner size="xl" />
-      </Flex>
+      <div className="p-8 text-center">
+        <p>Loading contract details...</p>
+      </div>
     );
   }
-  
-  // Error state
-  if (isError) {
+
+  if (error || !data?.data) {
     return (
-      <Box p={8} textAlign="center">
-        <Heading size="md" color="red.500">Error Loading Contract</Heading>
-        <Text mt={4}>{(error as Error)?.message || 'Unknown error'}</Text>
-        <Button mt={6} onClick={handleBackToList} leftIcon={<ChevronLeftIcon />}>
-          Back to Contracts
-        </Button>
-      </Box>
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-semibold text-red-600">Error</h2>
+        <p className="mt-4">Failed to load contract details. The contract may not exist.</p>
+        <Link href="/contracts">
+          <Button variant="outline" className="mt-4">
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Back to Contracts
+          </Button>
+        </Link>
+      </div>
     );
   }
-  
-  // Extract contract data
-  const contract = data?.data;
-  if (!contract) {
-    return (
-      <Box p={8} textAlign="center">
-        <Heading size="md">Contract Not Found</Heading>
-        <Button mt={6} onClick={handleBackToList} leftIcon={<ChevronLeftIcon />}>
-          Back to Contracts
-        </Button>
-      </Box>
-    );
-  }
-  
-  // Extract document related data
-  const documentId = contract.documentId;
-  const clauses = contract.clauses || [];
-  const obligations = contract.obligations || [];
-  
-  // Confidence level from AI extraction
-  const confidenceLevel = contract.confidenceLevel || null;
-  
+
+  const contract = data.data;
+  const obligations = obligationsData?.data || [];
+  const clauses = clausesData?.data || [];
+
+  // Filter upcoming obligations (due in the next 30 days)
+  const upcomingObligations = obligations.filter((obligation: any) => 
+    isDateApproaching(obligation.dueDate)
+  );
+
   return (
-    <Box p={6}>
-      {/* Header */}
-      <Flex 
-        justify="space-between" 
-        align="center" 
-        mb={6} 
-        wrap="wrap"
-        gap={4}
-      >
-        <Box>
-          <Button 
-            variant="ghost" 
-            leftIcon={<ChevronLeftIcon />} 
-            onClick={handleBackToList}
-            size="sm"
-            mb={2}
-          >
-            All Contracts
+    <div className="container mx-auto p-6">
+      <div className="flex items-center mb-6">
+        <Link href="/contracts">
+          <Button variant="ghost" className="mr-2">
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Back
           </Button>
-          <Heading size="lg">
-            {contract.contractNumber ? 
-              `Contract ${contract.contractNumber}` : 
-              'Contract Details'}
-          </Heading>
-          <HStack mt={1} spacing={2}>
-            <Badge colorScheme={getStatusColor(contract.contractStatus)} fontSize="0.8em">
-              {contract.contractStatus.replace('_', ' ')}
-            </Badge>
-            <Badge colorScheme="blue" fontSize="0.8em">
-              {contract.contractType.replace('_', ' ')}
-            </Badge>
-            {showConfidence && confidenceLevel && (
-              <Badge colorScheme={getConfidenceColor(confidenceLevel)} fontSize="0.8em">
-                AI Confidence: {confidenceLevel}
-              </Badge>
-            )}
-          </HStack>
-        </Box>
-        
-        <HStack spacing={2}>
-          <Button 
-            leftIcon={<DownloadIcon />} 
-            variant="outline"
-            onClick={() => window.open(`/api/documents/${documentId}/download`, '_blank')}
-          >
-            Download Document
-          </Button>
-          <Button 
-            leftIcon={<EditIcon />} 
-            colorScheme="blue"
-            onClick={handleEdit}
-          >
-            Edit Contract
-          </Button>
-        </HStack>
-      </Flex>
-      
-      {/* Content */}
-      <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
-        {/* Left Side - Contract Details */}
-        <GridItem>
-          <Tabs variant="enclosed" colorScheme="blue">
-            <TabList>
-              <Tab>Details</Tab>
-              <Tab>Obligations ({obligations.length})</Tab>
-              <Tab>Clauses ({clauses.length})</Tab>
-            </TabList>
-            
-            <TabPanels>
-              {/* Details Tab */}
-              <TabPanel p={4}>
-                <Card mb={4}>
-                  <CardHeader bg="gray.50" py={3}>
-                    <Heading size="sm">Key Information</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                      <GridItem>
-                        <Text fontWeight="bold">Contract Type</Text>
-                        <Text>{contract.contractType.replace('_', ' ')}</Text>
-                      </GridItem>
-                      <GridItem>
-                        <Text fontWeight="bold">Contract Number</Text>
-                        <Text>{contract.contractNumber || 'Not specified'}</Text>
-                      </GridItem>
-                      <GridItem colSpan={2}>
-                        <Text fontWeight="bold">Counterparty</Text>
-                        <Text>{contract.counterpartyName}</Text>
-                        {contract.counterpartyContactEmail && (
-                          <Text fontSize="sm" color="blue.600">
-                            {contract.counterpartyContactEmail}
-                          </Text>
-                        )}
-                      </GridItem>
-                      {contract.counterpartyAddress && (
-                        <GridItem colSpan={2}>
-                          <Text fontWeight="bold">Counterparty Address</Text>
-                          <Text whiteSpace="pre-line">{contract.counterpartyAddress}</Text>
-                        </GridItem>
-                      )}
-                    </Grid>
-                  </CardBody>
-                </Card>
-                
-                <Card mb={4}>
-                  <CardHeader bg="gray.50" py={3}>
-                    <Heading size="sm">Key Dates</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                      <GridItem>
-                        <Text fontWeight="bold">Effective Date</Text>
-                        <Text>{formatDate(contract.effectiveDate)}</Text>
-                      </GridItem>
-                      <GridItem>
-                        <Text fontWeight="bold">Expiry Date</Text>
-                        <Text>{formatDate(contract.expiryDate)}</Text>
-                      </GridItem>
-                      <GridItem>
-                        <Text fontWeight="bold">Execution Date</Text>
-                        <Text>{formatDate(contract.executionDate)}</Text>
-                      </GridItem>
-                      <GridItem>
-                        <Text fontWeight="bold">Renewal Date</Text>
-                        <Text>{formatDate(contract.renewalDate)}</Text>
-                      </GridItem>
-                    </Grid>
-                  </CardBody>
-                </Card>
-                
-                <Card>
-                  <CardHeader bg="gray.50" py={3}>
-                    <Heading size="sm">Financial Terms</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                      <GridItem>
-                        <Text fontWeight="bold">Total Value</Text>
-                        <Text>
-                          {contract.totalValue
-                            ? `${contract.totalValue} ${contract.currency || ''}`
-                            : 'Not specified'}
-                        </Text>
-                      </GridItem>
-                      <GridItem>
-                        <Text fontWeight="bold">Currency</Text>
-                        <Text>{contract.currency || 'Not specified'}</Text>
-                      </GridItem>
-                    </Grid>
-                  </CardBody>
-                </Card>
-              </TabPanel>
-              
-              {/* Obligations Tab */}
-              <TabPanel p={4}>
-                {obligations.length === 0 ? (
-                  <Box textAlign="center" py={8} bg="gray.50" borderRadius="md">
-                    <Text color="gray.500">No obligations added to this contract.</Text>
-                    <Button 
-                      mt={4} 
-                      colorScheme="blue" 
-                      size="sm"
-                      onClick={handleEdit}
-                    >
-                      Add Obligations
-                    </Button>
-                  </Box>
-                ) : (
-                  <Box>
-                    <Table variant="simple" size="sm">
-                      <Thead>
-                        <Tr>
-                          <Th>Title</Th>
-                          <Th>Type</Th>
-                          <Th>Due Date</Th>
-                          <Th>Responsible Party</Th>
-                          <Th width="80px">Actions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {obligations.map((obligation: any) => (
-                          <Tr key={obligation.id}>
-                            <Td>
-                              {obligation.title}
-                              {showConfidence && obligation.confidenceLevel && (
-                                <Badge 
-                                  ml={2} 
-                                  colorScheme={getConfidenceColor(obligation.confidenceLevel)}
-                                  fontSize="xs"
-                                >
-                                  {obligation.confidenceLevel}
-                                </Badge>
-                              )}
-                            </Td>
-                            <Td>
-                              <Badge colorScheme={getObligationColorScheme(obligation.obligationType)}>
-                                {obligation.obligationType}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              {obligation.dueDate ? new Date(obligation.dueDate).toLocaleDateString() : 'N/A'}
-                              {obligation.recurringPattern && (
-                                <Badge ml={2} colorScheme="purple" fontSize="xs">
-                                  {obligation.recurringPattern}
-                                </Badge>
-                              )}
-                            </Td>
-                            <Td>{obligation.responsibleParty || 'N/A'}</Td>
-                            <Td>
-                              {obligation.clauseId && (
-                                <IconButton
-                                  aria-label="View source"
-                                  icon={<ChevronDownIcon />}
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    // Find the clause for this obligation
-                                    const clause = clauses.find((c: any) => c.id === obligation.clauseId);
-                                    if (clause && clause.pageNumber) {
-                                      scrollToSource(clause.pageNumber, clause.pageCoordinates);
-                                    } else {
-                                      toast({
-                                        title: "Source Not Found",
-                                        description: "No page reference available for this obligation",
-                                        status: "warning",
-                                        duration: 2000,
-                                        isClosable: true,
-                                      });
-                                    }
-                                  }}
-                                />
-                              )}
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </Box>
-                )}
-              </TabPanel>
-              
-              {/* Clauses Tab */}
-              <TabPanel p={4}>
-                {clauses.length === 0 ? (
-                  <Box textAlign="center" py={8} bg="gray.50" borderRadius="md">
-                    <Text color="gray.500">No clauses extracted from this contract.</Text>
-                  </Box>
-                ) : (
-                  <List spacing={4}>
-                    {clauses.map((clause: any, index: number) => (
-                      <ListItem 
-                        key={clause.id || index} 
-                        p={3} 
-                        border="1px" 
-                        borderColor="gray.200" 
-                        borderRadius="md"
-                      >
-                        <Flex justify="space-between">
-                          <Box>
-                            <Flex align="center">
-                              <Text fontWeight="bold">
-                                {clause.title || `Clause ${clause.sectionNumber || (index + 1)}`}
-                              </Text>
-                              {showConfidence && clause.confidenceLevel && (
-                                <Badge 
-                                  ml={2} 
-                                  colorScheme={getConfidenceColor(clause.confidenceLevel)}
-                                  fontSize="xs"
-                                >
-                                  {clause.confidenceLevel}
-                                </Badge>
-                              )}
-                            </Flex>
-                            {clause.sectionNumber && (
-                              <Text fontSize="sm" color="gray.500">
-                                Section {clause.sectionNumber}
-                              </Text>
-                            )}
-                          </Box>
-                          
-                          {clause.pageNumber && (
-                            <IconButton
-                              aria-label="Go to page"
-                              icon={<ChevronDownIcon />}
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => scrollToSource(clause.pageNumber, clause.pageCoordinates)}
-                            />
-                          )}
-                        </Flex>
-                        
-                        <Divider my={2} />
-                        
-                        <Text mt={2} fontSize="sm" whiteSpace="pre-line">
-                          {clause.content.substring(0, 300)}
-                          {clause.content.length > 300 && '...'}
-                        </Text>
-                        
-                        {clause.pageNumber && (
-                          <Text fontSize="xs" mt={2} color="gray.500">
-                            Page {clause.pageNumber}
-                          </Text>
-                        )}
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </GridItem>
-        
-        {/* Right Side - Document Viewer */}
-        <GridItem>
-          <Card height="calc(100vh - 180px)" overflow="hidden">
-            <CardHeader bg="gray.50" py={3}>
-              <Heading size="sm">Document Viewer</Heading>
+        </Link>
+        <h1 className="text-2xl font-bold">{contract.contractType || 'Contract'}</h1>
+        <Badge className={`ml-4 ${getStatusColor(contract.contractStatus)}`}>
+          {contract.contractStatus}
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main contract details */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader className="flex flex-row justify-between items-start">
+              <div>
+                <CardTitle className="text-xl">
+                  {contract.contractNumber ? `#${contract.contractNumber}` : 'Contract Details'}
+                </CardTitle>
+                <CardDescription>
+                  Contract with {contract.counterpartyName || 'Unnamed Party'}
+                </CardDescription>
+              </div>
+              <Link href={`/contracts/${contractId}/edit`}>
+                <Button variant="outline" size="sm">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </Link>
             </CardHeader>
-            <CardBody p={0} height="100%" overflow="auto">
-              {documentId ? (
-                <DocumentViewer 
-                  documentId={documentId} 
-                  readOnly={true}
-                  ref={documentViewerRef}
-                />
-              ) : (
-                <Flex 
-                  justify="center" 
-                  align="center" 
-                  height="100%" 
-                  bg="gray.50"
-                >
-                  <Text color="gray.500">No document associated with this contract</Text>
-                </Flex>
-              )}
-            </CardBody>
+            <CardContent>
+              <Tabs defaultValue="details">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="clauses">Clauses</TabsTrigger>
+                  <TabsTrigger value="obligations">Obligations</TabsTrigger>
+                </TabsList>
+                
+                {/* Details Tab */}
+                <TabsContent value="details">
+                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Contract Type</dt>
+                      <dd className="mt-1">{contract.contractType || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Contract Number</dt>
+                      <dd className="mt-1">{contract.contractNumber || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Counterparty</dt>
+                      <dd className="mt-1">{contract.counterpartyName || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Counterparty Contact</dt>
+                      <dd className="mt-1">{contract.counterpartyContactEmail || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Effective Date</dt>
+                      <dd className="mt-1 flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {formatDate(contract.effectiveDate)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Expiry Date</dt>
+                      <dd className="mt-1 flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {formatDate(contract.expiryDate)}
+                        {isDateApproaching(contract.expiryDate) && (
+                          <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 border-amber-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Approaching
+                          </Badge>
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Execution Date</dt>
+                      <dd className="mt-1 flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {formatDate(contract.executionDate)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Renewal Date</dt>
+                      <dd className="mt-1 flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {formatDate(contract.renewalDate)}
+                        {isDateApproaching(contract.renewalDate) && (
+                          <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 border-amber-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Approaching
+                          </Badge>
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Total Value</dt>
+                      <dd className="mt-1">
+                        {contract.totalValue ? `${contract.currency || '$'}${contract.totalValue.toLocaleString()}` : 'N/A'}
+                      </dd>
+                    </div>
+                  </dl>
+                  
+                  {contract.notes && (
+                    <>
+                      <Separator className="my-4" />
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Notes</h3>
+                        <p className="text-sm">{contract.notes}</p>
+                      </div>
+                    </>
+                  )}
+
+                  {contract.documentId && (
+                    <div className="mt-6">
+                      <Link href={`/documents/${contract.documentId}`}>
+                        <Button variant="outline" className="flex items-center">
+                          <FileText className="h-4 w-4 mr-2" />
+                          View Source Document
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                {/* Clauses Tab */}
+                <TabsContent value="clauses">
+                  {clauses.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Clause Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Section</TableHead>
+                          <TableHead>Confidence</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {clauses.map((clause: any) => (
+                          <TableRow key={clause.id}>
+                            <TableCell className="font-medium">{clause.title}</TableCell>
+                            <TableCell>{clause.type}</TableCell>
+                            <TableCell>{clause.section || 'N/A'}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <div 
+                                  className={`w-2 h-2 rounded-full mr-2 ${
+                                    clause.confidenceScore >= 0.8 ? 'bg-green-500' : 
+                                    clause.confidenceScore >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'
+                                  }`}
+                                />
+                                {Math.round(clause.confidenceScore * 100)}%
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center p-4">
+                      <FileText className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                      <p className="text-muted-foreground">No clauses found</p>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                {/* Obligations Tab */}
+                <TabsContent value="obligations">
+                  {obligations.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {obligations.map((obligation: any) => (
+                          <TableRow key={obligation.id}>
+                            <TableCell className="font-medium">{obligation.description}</TableCell>
+                            <TableCell>{obligation.obligationType}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                                {formatDate(obligation.dueDate)}
+                                {isDateApproaching(obligation.dueDate) && (
+                                  <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 border-amber-200">
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    Upcoming
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(obligation.status || 'PENDING')}>
+                                {obligation.status || 'Pending'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center p-4">
+                      <File className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                      <p className="text-muted-foreground">No obligations found</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
           </Card>
-        </GridItem>
-      </Grid>
-    </Box>
+        </div>
+        
+        {/* Sidebar */}
+        <div>
+          {/* Upcoming Obligations Card */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Upcoming Obligations</CardTitle>
+              <CardDescription>Due in the next 30 days</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {upcomingObligations.length > 0 ? (
+                <ul className="space-y-3">
+                  {upcomingObligations.map((obligation: any) => (
+                    <li key={obligation.id} className="flex items-start p-3 border rounded-md">
+                      <AlertTriangle className="h-5 w-5 text-amber-500 mr-3 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">{obligation.description}</p>
+                        <div className="flex items-center mt-1 text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {formatDate(obligation.dueDate)}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center p-4">
+                  <p className="text-muted-foreground">No upcoming obligations</p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href={`/contracts/${contractId}/obligations`}>
+                  <p>Manage Obligations</p>
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          {/* Metadata Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Contract Metadata</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-3">
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Created</dt>
+                  <dd className="mt-1 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {formatDate(contract.createdAt)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Last Updated</dt>
+                  <dd className="mt-1 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    {formatDate(contract.updatedAt)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Created By</dt>
+                  <dd className="mt-1">{contract.createdBy || 'System'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Contract ID</dt>
+                  <dd className="mt-1 text-xs font-mono bg-gray-100 p-1 rounded">{contract.id}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }
