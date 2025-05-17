@@ -23,6 +23,9 @@ export const ContractRoutes: React.FC = () => {
   if (!isContractsEnabled()) {
     return null;
   }
+  
+  // This index element is needed for proper module delegation
+  // when routing is handled at the application level
 
   return (
     <Switch>

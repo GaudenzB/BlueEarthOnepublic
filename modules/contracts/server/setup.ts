@@ -14,7 +14,7 @@ export async function setupContractModule(app: Express): Promise<object> {
   
   try {
     // Initialize the contracts module
-    initializeContractModule();
+    initializeContractModule(app);
     
     // Register API routes
     app.use('/api/contracts', contractRoutes);
