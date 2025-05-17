@@ -117,7 +117,7 @@ function AppRoutes() {
       )} />
       
       {/* Contract Routes */}
-      <ProtectedRoute path="/contracts/*" component={() => (
+      <ProtectedRoute path="/contracts" component={() => (
         <MainLayout>
           <ContractRoutes />
         </MainLayout>

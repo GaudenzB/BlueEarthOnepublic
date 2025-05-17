@@ -20,12 +20,12 @@ const ContractRoutes: React.FC = () => {
 
   return (
     <Switch>
-      <Route path="/" component={ContractList} />
-      <Route path="/new" component={() => <ContractWizard />} />
-      <Route path="/:id/edit" component={(params) => 
+      <Route path="/contracts/new" component={() => <ContractWizard />} />
+      <Route path="/contracts/:id/edit" component={(params) => 
         <ContractWizard documentId={params.params.id} />
       } />
-      <Route path="/:id" component={ContractDetail} />
+      <Route path="/contracts/:id" component={ContractDetail} />
+      <Route path="/contracts" component={ContractList} />
     </Switch>
   );
 };
