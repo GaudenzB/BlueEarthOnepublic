@@ -10,7 +10,7 @@ interface ContractEvents {
     contractId: string;
     documentId: string;
     tenantId: string;
-    userId?: string;
+    userId: string | undefined;
   };
 }
 
