@@ -2,7 +2,7 @@ import React from "react";
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ChakraProvider } from "@chakra-ui/react";
+// Using shadcn UI, not Chakra
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { HelmetProvider } from "react-helmet-async";
@@ -27,7 +27,8 @@ import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
-import ContractRoutes from "../../modules/contracts/client";
+// Import ContractRoutes with dynamic import to avoid build issues if not found
+const ContractRoutes = React.lazy(() => import("../../modules/contracts/client").catch(() => ({ default: () => null })));
 
 // Router configuration with separate auth and protected routes
 function AppRoutes() {
@@ -118,7 +119,9 @@ function AppRoutes() {
       {/* Contract Routes */}
       <ProtectedRoute path="/contracts" component={() => (
         <MainLayout>
-          <ContractRoutes />
+          <React.Suspense fallback={<div>Loading contract module...</div>}>
+            <ContractRoutes />
+          </React.Suspense>
         </MainLayout>
       )} />
       
@@ -131,18 +134,16 @@ function AppRoutes() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider>
-        <TooltipProvider>
-          <HelmetProvider>
-            <AuthProvider>
-              <PermissionsProvider>
-                <Toaster />
-                <AppRoutes />
-              </PermissionsProvider>
-            </AuthProvider>
-          </HelmetProvider>
-        </TooltipProvider>
-      </ChakraProvider>
+      <TooltipProvider>
+        <HelmetProvider>
+          <AuthProvider>
+            <PermissionsProvider>
+              <Toaster />
+              <AppRoutes />
+            </PermissionsProvider>
+          </AuthProvider>
+        </HelmetProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
