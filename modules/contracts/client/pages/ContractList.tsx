@@ -24,8 +24,8 @@ const isContractsEnabled = () => {
     return true;
   }
   
-  // Use the standard ENABLE_CONTRACTS flag for consistency
-  return import.meta.env.ENABLE_CONTRACTS === 'true';
+  // Use the standard VITE_ENABLE_CONTRACTS flag for consistency
+  return import.meta.env.VITE_ENABLE_CONTRACTS === 'true';
 };
 
 export default function ContractList() {

@@ -6,7 +6,13 @@ import ContractWizard from './pages/ContractWizard.shadcn';
 
 // Feature flag check
 const isContractsEnabled = () => {
-  return import.meta.env['ENABLE_CONTRACTS'] === 'true';
+  // Feature is always enabled in development (for testing purposes)
+  if (import.meta.env.MODE === 'development') {
+    return true;
+  }
+  
+  // Use the standard VITE_ENABLE_CONTRACTS flag for consistency
+  return import.meta.env.VITE_ENABLE_CONTRACTS === 'true';
 };
 
 /**
@@ -20,12 +26,13 @@ export const ContractRoutes: React.FC = () => {
 
   return (
     <Switch>
-      <Route path="/" component={ContractList} />
+      {/* Specific routes must come before dynamic ones for wouter to match correctly */}
       <Route path="/new" component={() => <ContractWizard />} />
       <Route path="/:id/edit" component={(params) => 
         <ContractWizard documentId={params.params.id} />
       } />
       <Route path="/:id" component={ContractDetail} />
+      <Route path="/" component={ContractList} />
     </Switch>
   );
 };
