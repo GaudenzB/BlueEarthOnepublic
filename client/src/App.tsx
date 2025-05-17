@@ -119,13 +119,7 @@ function AppRoutes() {
       )} />
       
       {/* Contract Routes - with Suspense loading */}
-      <ProtectedRoute path="/contracts" component={() => (
-        <MainLayout>
-          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
-            <ContractList />
-          </React.Suspense>
-        </MainLayout>
-      )} />
+      {/* Specific routes must come before the dynamic id routes to prevent swallowing */}
       <ProtectedRoute path="/contracts/new" component={() => (
         <MainLayout>
           <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
@@ -144,6 +138,13 @@ function AppRoutes() {
         <MainLayout>
           <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
             <ContractDetail />
+          </React.Suspense>
+        </MainLayout>
+      )} />
+      <ProtectedRoute path="/contracts" component={() => (
+        <MainLayout>
+          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <ContractList />
           </React.Suspense>
         </MainLayout>
       )} />
