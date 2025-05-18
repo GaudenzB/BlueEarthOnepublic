@@ -87,32 +87,40 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
       }
     },
     onSuccess: (data) => {
-      if (data?.success) {
-        toast({
-          title: contractData.id ? 'Contract updated' : 'Contract created',
-          description: 'Contract has been saved successfully',
-          variant: 'default',
-        });
+      console.log('Contract saved successfully:', data);
+      
+      // Always consider a successful API response as success
+      toast({
+        title: contractData.id ? 'Contract updated' : 'Contract created',
+        description: 'Contract has been saved successfully',
+        variant: 'default',
+      });
+      
+      // Update contract ID if this was a new contract
+      const contractId = data?.data?.id || (data?.data ? data.data : null);
+      if (!contractData.id && contractId) {
+        setContractData(prev => ({
+          ...prev,
+          id: contractId
+        }));
         
-        // Update contract ID if this was a new contract
-        if (!contractData.id && data.data?.id) {
-          setContractData(prev => ({
-            ...prev,
-            id: data.data.id
-          }));
-        }
-        
-        // Move to next step or complete
-        if (activeStep < steps.length - 1) {
-          setActiveStep(activeStep + 1);
-        } else {
-          // Navigate to contract details page
-          setLocation(`/contracts/${data.data.id}`);
-        }
-        
-        // Invalidate queries
-        queryClient.invalidateQueries({ queryKey: ['/api/contracts'] });
+        // In development mode, log the contract ID
+        console.log('Set contract ID to:', contractId);
       }
+      
+      // Move to next step or complete
+      if (activeStep < steps.length - 1) {
+        console.log('Moving to next step:', activeStep + 1);
+        setActiveStep(activeStep + 1);
+      } else {
+        // Navigate to contract details page
+        const navTarget = `/contracts/${contractId || data?.id || contractData.id}`;
+        console.log('Navigating to:', navTarget);
+        setLocation(navTarget);
+      }
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['/api/contracts'] });
     },
     onError: (error: any) => {
       // Try to extract detailed error message from the response
@@ -165,6 +173,7 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
       if (activeStep === 0) {
         // Save contract details
         createContractMutation.mutate(updatedData);
+        // Note: the advancement to the next step is now handled in the onSuccess callback
       } else {
         // For other steps just advance
         setActiveStep(activeStep + 1);
