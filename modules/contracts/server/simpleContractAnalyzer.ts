@@ -276,7 +276,7 @@ function extractDates(text: string): string[] {
   ];
   
   // Find dates
-  const foundDates = [];
+  const foundDates: string[] = [];
   for (const pattern of datePatterns) {
     let match;
     const regex = new RegExp(pattern);
@@ -286,17 +286,18 @@ function extractDates(text: string): string[] {
   }
   
   // Try to parse dates into standard format
-  const parsedDates = foundDates.map(dateStr => {
+  const parsedDates: string[] = [];
+  
+  for (const dateStr of foundDates) {
     try {
       const date = new Date(dateStr);
       if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
+        parsedDates.push(date.toISOString().split('T')[0]);
       }
     } catch (e) {
       // Ignore parsing errors
     }
-    return null;
-  }).filter((date): date is string => Boolean(date));
+  }
   
   return parsedDates;
 }
