@@ -125,8 +125,8 @@ export default function ContractDetail() {
   }
 
   // Find the specific contract from the list
-  const contracts = data?.data || [];
-  const contract = contracts.find((c: any) => c.id === contractId) || {};
+  const contractsList = data?.data || [];
+  const contract = contractsList.find((c: any) => c.id === contractId) || {};
   
   // Since we've simplified the API, we aren't loading obligations and clauses
   // in this initial implementation
