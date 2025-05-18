@@ -235,6 +235,31 @@ export default function ContractDetailsForm({
 
   // Handle form submission
   const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
+    // Validate required fields manually that might not be caught by zod
+    if (!values.title) {
+      form.setError('title', { 
+        type: 'required', 
+        message: 'Contract title is required' 
+      });
+      return;
+    }
+    
+    if (!values.contractType) {
+      form.setError('contractType', { 
+        type: 'required', 
+        message: 'Contract type is required' 
+      });
+      return;
+    }
+    
+    if (!values.effectiveDate) {
+      form.setError('effectiveDate', { 
+        type: 'required', 
+        message: 'Effective date is required' 
+      });
+      return;
+    }
+
     // Format dates for API
     const formattedData = {
       ...values,
