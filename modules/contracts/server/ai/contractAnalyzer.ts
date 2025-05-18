@@ -21,28 +21,69 @@ export async function analyzeContractDocument(documentId: string, userId: string
   logger.info(`Starting AI analysis of contract document ${documentId}`);
 
   try {
+    // First, check if the document exists
+    const document = await db.query.documents.findFirst({
+      where: eq(documents.id, documentId)
+    });
+
+    if (!document) {
+      const errorMessage = `Document not found with ID: ${documentId}`;
+      logger.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
     // Create an initial analysis record with PENDING status
-    const [initialRecord] = await db.insert(contractUploadAnalysis)
-      .values({
-        documentId,
-        userId,
-        tenantId,
-        status: 'PENDING'
-      })
-      .returning();
+    let initialRecord;
+    try {
+      const insertResult = await db.insert(contractUploadAnalysis)
+        .values({
+          documentId,
+          userId,
+          tenantId,
+          status: 'PENDING'
+        })
+        .returning();
+      
+      initialRecord = insertResult[0];
+      
+      if (!initialRecord || !initialRecord.id) {
+        throw new Error('Failed to create analysis record');
+      }
+    } catch (dbError) {
+      logger.error(`Database error creating analysis record for document ${documentId}:`, dbError);
+      throw new Error(`Failed to initialize document analysis: ${dbError instanceof Error ? dbError.message : 'Database error'}`);
+    }
 
     // Process asynchronously
     processDocumentAsync(documentId, initialRecord.id, tenantId).catch(error => {
       logger.error(`Error in async processing of document ${documentId}:`, error);
+      // We don't rethrow here since this is async and not part of the request-response cycle
     });
 
     return {
       id: initialRecord.id,
-      status: 'PENDING'
+      status: 'PENDING',
+      documentId: documentId,
+      filename: document.filename,
+      title: document.title
     };
   } catch (error) {
+    // Ensure we return a structured error that can be sent to the client
     logger.error(`Error initiating contract analysis for document ${documentId}:`, error);
-    throw error;
+    
+    // Re-wrap the error so it's guaranteed to be a proper Error object with message and stack
+    const structuredError = new Error(error instanceof Error 
+      ? error.message 
+      : `Analysis initialization failed: ${String(error)}`);
+    
+    // Add additional context to the error for better debugging
+    (structuredError as any).context = {
+      documentId,
+      userId,
+      timestamp: new Date().toISOString()
+    };
+    
+    throw structuredError;
   }
 }
 

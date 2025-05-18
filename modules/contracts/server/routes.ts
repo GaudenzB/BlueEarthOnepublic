@@ -700,9 +700,13 @@ router.delete('/:contractId/documents/:attachmentId', async (req: Request, res: 
  * @access Authenticated users
  */
 router.post('/upload/analyze/:documentId', async (req: Request, res: Response) => {
+  // Use a unique request ID for tracing this request through logs
+  const requestId = crypto.randomUUID();
+  
   try {
     // Log the full request information for debugging
     logger.info('Starting contract document analysis', {
+      requestId,
       path: req.path, 
       documentId: req.params.documentId,
       hasUser: !!(req as any).user,
@@ -721,41 +725,65 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
     const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000000';
     
     // Validate document ID
-    if (!documentId) {
+    if (!documentId || !documentId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      logger.warn('Invalid document ID format', { requestId, documentId });
       return res.status(400).json({
         success: false,
-        message: 'Document ID is required'
+        message: 'Invalid document ID format',
+        error: 'INVALID_DOCUMENT_ID'
       });
     }
     
     // Verify document exists before starting analysis
-    const document = await db.query.documents.findFirst({
-      where: eq(documents.id, documentId)
-    });
-    
-    if (!document) {
-      logger.error('Document not found for analysis', { documentId });
-      return res.status(404).json({
+    try {
+      const document = await db.query.documents.findFirst({
+        where: eq(documents.id, documentId)
+      });
+      
+      if (!document) {
+        logger.error('Document not found for analysis', { requestId, documentId });
+        return res.status(404).json({
+          success: false,
+          message: `Document not found with ID: ${documentId}`,
+          error: 'DOCUMENT_NOT_FOUND'
+        });
+      }
+      
+      // Log document details
+      logger.info('Document found for analysis', {
+        requestId,
+        documentId,
+        filename: document.filename,
+        fileSize: document.fileSize,
+        mimeType: document.mimeType,
+        title: document.title
+      });
+    } catch (dbError) {
+      // Handle database errors looking up the document
+      logger.error('Database error looking up document', { 
+        requestId,
+        documentId, 
+        error: dbError instanceof Error ? dbError.message : String(dbError) 
+      });
+      
+      return res.status(500).json({
         success: false,
-        message: `Document not found with ID: ${documentId}`,
-        error: 'DOCUMENT_NOT_FOUND'
+        message: 'Failed to verify document existence',
+        error: dbError instanceof Error ? dbError.message : 'Database error',
+        errorType: 'DATABASE_ERROR'
       });
     }
-    
-    // Log document details
-    logger.info('Document found for analysis', {
-      documentId,
-      filename: document.filename,
-      fileSize: document.fileSize,
-      mimeType: document.mimeType,
-      title: document.title
-    });
     
     // Start the analysis process
     try {
       const analysisResult = await analyzeContractDocument(documentId, userId, tenantId);
       
+      if (!analysisResult || !analysisResult.id) {
+        throw new Error('Analysis did not return a valid result');
+      }
+      
       logger.info('Contract analysis initiated successfully', {
+        requestId,
         analysisId: analysisResult.id,
         status: analysisResult.status
       });
@@ -766,7 +794,9 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
         data: analysisResult
       });
     } catch (analysisError) {
+      // Handle errors from the analyzer
       logger.error('Error in contract document analysis', {
+        requestId,
         documentId,
         error: analysisError instanceof Error ? {
           message: analysisError.message,
@@ -787,11 +817,13 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
     const errorStack = error instanceof Error ? error.stack : undefined;
     
     logger.error('Unhandled error in document analysis route:', {
+      requestId,
       error: errorMessage,
       stack: errorStack,
       documentId: req.params.documentId
     });
     
+    // Always return a structured JSON response, never let Express send an HTML error page
     return res.status(500).json({
       success: false,
       message: 'Failed to analyze document',
