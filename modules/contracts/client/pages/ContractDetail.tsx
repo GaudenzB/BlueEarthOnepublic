@@ -45,12 +45,13 @@ export default function ContractDetail() {
   const params = useParams();
   const contractId = params?.id;
 
-  // Get contract data using the standard path parameter approach
+  // Get contract data using a dedicated endpoint for contract details
   const { data, isLoading, error } = useQuery({
-    queryKey: ['/api/contracts', contractId],
+    queryKey: ['/api/contracts/detail', contractId],
     queryFn: async () => {
       console.log('Fetching contract with ID:', contractId);
-      const result = await apiRequest(`/api/contracts/${contractId}`);
+      // Use a more reliable approach with query parameters
+      const result = await apiRequest(`/api/contracts/detail?id=${contractId}`);
       console.log('Contract API response:', result);
       return result;
     },

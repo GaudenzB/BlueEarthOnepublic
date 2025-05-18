@@ -84,6 +84,76 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 /**
+ * @route GET /api/contracts/detail
+ * @desc Get contract details using query parameters
+ * @access Authenticated users
+ */
+router.get('/detail', async (req: Request, res: Response) => {
+  try {
+    // Extract the contract ID from the query parameters
+    const contractId = req.query.id as string;
+    
+    if (!contractId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Contract ID is required as a query parameter'
+      });
+    }
+    
+    // Always use the default tenant in development
+    const tenantId = '00000000-0000-0000-0000-000000000001';
+    
+    logger.info('Fetching contract detail by query parameter', { contractId });
+    
+    try {
+      // Try to get the contract using a direct SQL query
+      const result = await db.execute(
+        sql`SELECT * FROM contracts WHERE id = ${contractId}`
+      );
+      
+      if (!result || result.length === 0) {
+        logger.warn('Contract not found using query parameter', { contractId });
+        return res.status(404).json({
+          success: false, 
+          message: 'Contract not found'
+        });
+      }
+      
+      const contract = result[0];
+      
+      return res.json({
+        success: true,
+        data: contract
+      });
+    } catch (dbError) {
+      logger.error('Database error fetching contract by query parameter', { 
+        error: String(dbError),
+        contractId
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Database error retrieving contract'
+      });
+    }
+  } catch (error) {
+    logger.error('Error in contract detail endpoint', { 
+      error: String(error), 
+      query: req.query
+    });
+    return res.status(500).json({
+      success: false,
+      message: 'Server error processing contract detail request'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/document/:documentId
+ * @desc Get contract by document ID
+ * @access Authenticated users
+ */
+
+/**
  * @route GET /api/contracts/:id
  * @desc Get a specific contract by ID
  * @access Authenticated users
@@ -113,7 +183,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         sql`SELECT * FROM contracts WHERE id = ${contractId}`
       );
       
-      if (!result || !result.length) {
+      if (!result || result.length === 0) {
         logger.warn('Contract not found', { contractId });
         return res.status(404).json({
           success: false, 
@@ -145,6 +215,70 @@ router.get('/:id', async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Server error retrieving contract'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/detail
+ * @desc Get contract details using query parameters
+ * @access Authenticated users
+ */
+router.get('/detail', async (req: Request, res: Response) => {
+  try {
+    // Extract the contract ID from the query parameters
+    const contractId = req.query.id as string;
+    
+    if (!contractId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Contract ID is required as a query parameter'
+      });
+    }
+    
+    // Always use the default tenant in development
+    const tenantId = '00000000-0000-0000-0000-000000000001';
+    
+    logger.info('Fetching contract detail by query parameter', { contractId });
+    
+    try {
+      // Try to get the contract using a direct SQL query
+      const result = await db.execute(
+        sql`SELECT * FROM contracts WHERE id = ${contractId}`
+      );
+      
+      if (!result.length) {
+        logger.warn('Contract not found using query parameter', { contractId });
+        return res.status(404).json({
+          success: false, 
+          message: 'Contract not found'
+        });
+      }
+      
+      const contract = result[0];
+      
+      return res.json({
+        success: true,
+        data: contract
+      });
+    } catch (dbError) {
+      logger.error('Database error fetching contract by query parameter', { 
+        error: String(dbError),
+        contractId
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Database error retrieving contract'
+      });
+    }
+  } catch (error) {
+    logger.error('Error in contract detail endpoint', { 
+      error: String(error), 
+      query: req.query
+    });
+    return res.status(500).json({
+      success: false,
+      message: 'Server error processing contract detail request'
     });
   }
 });
