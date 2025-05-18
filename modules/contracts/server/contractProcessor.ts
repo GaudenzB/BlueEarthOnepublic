@@ -132,9 +132,12 @@ export async function postProcessContract(
   try {
     logger.info('Starting contract post-processing', { documentId, tenantId });
     
-    // Check for env flag to enable contract processing
-    if (process.env['ENABLE_CONTRACT_AI'] !== 'true') {
-      logger.info('Contract AI processing is disabled', { documentId });
+    // In development environment, always enable AI processing for testing
+    if (process.env['NODE_ENV'] === 'development') {
+      logger.info('Contract AI processing enabled in development mode', { documentId });
+      // Continue with processing
+    } else if (process.env['ENABLE_CONTRACT_AI'] !== 'true') {
+      logger.info('Contract AI processing is disabled in production', { documentId });
       return null;
     }
     

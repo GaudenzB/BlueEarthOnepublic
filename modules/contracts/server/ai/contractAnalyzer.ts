@@ -141,10 +141,21 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
     // Run AI analysis - wrap in try/catch to handle analysis errors
     let analysisResult;
     try {
+      logger.info(`Starting AI analysis for document ${documentId}`);
+      
+      // Always use AI analysis in development for testing
       analysisResult = await runAiAnalysis(text, document.title || 'Untitled Document');
+      
       if (!analysisResult) {
         throw new Error('AI analysis returned null result');
       }
+      
+      logger.info('AI analysis completed successfully', { 
+        documentId,
+        analysisId,
+        vendor: analysisResult.vendor,
+        contractTitle: analysisResult.contractTitle
+      });
     } catch (aiError) {
       logger.error(`Error running AI analysis for document ${documentId}:`, aiError);
       await updateAnalysisWithError(analysisId, aiError);
