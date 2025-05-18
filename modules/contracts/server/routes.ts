@@ -669,5 +669,63 @@ router.delete('/:contractId/documents/:attachmentId', async (req: Request, res: 
   }
 });
 
+/**
+ * @route GET /api/vendors
+ * @desc Get a list of all vendors
+ * @access Authenticated users
+ */
+router.get('/vendors', async (req: Request, res: Response) => {
+  try {
+    // For now, return a sample list of vendors until we implement the vendors table
+    return res.json({
+      success: true,
+      data: [
+        { id: 'vendor-001', name: 'Acme Corporation' },
+        { id: 'vendor-002', name: 'Globex Industries' },
+        { id: 'vendor-003', name: 'Initech LLC' },
+        { id: 'vendor-004', name: 'Umbrella Corporation' },
+        { id: 'vendor-005', name: 'Stark Industries' }
+      ]
+    });
+  } catch (error) {
+    logger.error('Error fetching vendors:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch vendors'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/lookup/contract-types
+ * @desc Get a list of available contract types
+ * @access Authenticated users
+ */
+router.get('/lookup/contract-types', async (req: Request, res: Response) => {
+  try {
+    // Return a list of contract types
+    return res.json({
+      success: true,
+      data: [
+        { id: 'SERVICE', name: 'Service Agreement' },
+        { id: 'LEASE', name: 'Lease Agreement' },
+        { id: 'EMPLOYMENT', name: 'Employment Contract' },
+        { id: 'LICENSE', name: 'License Agreement' },
+        { id: 'SALE', name: 'Sale Agreement' },
+        { id: 'CONSULTING', name: 'Consulting Agreement' },
+        { id: 'SUBSCRIPTION', name: 'Subscription Agreement' },
+        { id: 'NDA', name: 'Non-Disclosure Agreement' },
+        { id: 'OTHER', name: 'Other' }
+      ]
+    });
+  } catch (error) {
+    logger.error('Error fetching contract types:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch contract types'
+    });
+  }
+});
+
 // Export router
 export default router;
