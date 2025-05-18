@@ -4,8 +4,9 @@ import { documents } from '../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
 import { contracts } from '../../../../shared/schema/contracts/contracts';
-import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
-// Import statement removed as we're using dynamic imports in the code
+import { contractUploadAnalysis } from '../../../../shared/schema';
+import * as documentStorage from '../../../../server/services/documentStorage';
+import * as openaiUtils from '../../../../server/utils/openai';
 
 // Simple OpenAI client instance for contract analysis
 // In production, would use the main openai instance from server services
@@ -141,13 +142,9 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
       });
       
       try {
-        // Direct require for document storage with correct path handling
-        // First try to use require for most compatibility
-        const documentServices = require('../../../../server/services/documentStorage');
-        const openaiServices = require('../../../../server/utils/openai');
-        
+        // Use the imported modules directly
         // Download the file content
-        const fileBuffer = await documentServices.downloadFile(document.storageKey);
+        const fileBuffer = await documentStorage.downloadFile(document.storageKey);
         
         logger.info(`Document downloaded successfully, extracting text`, {
           documentId,
@@ -155,14 +152,14 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
         });
         
         // Extract text based on mime type
-        documentText = await openaiServices.extractTextFromDocument(
+        documentText = await openaiUtils.extractTextFromDocument(
           fileBuffer,
           document.mimeType,
           document.originalFilename
         );
-      } catch (importError) {
-        logger.error(`Error importing document services: ${importError.message}`, {
-          error: importError,
+      } catch (error: any) {
+        logger.error(`Error processing document: ${error.message}`, {
+          error: error,
           documentId
         });
         
