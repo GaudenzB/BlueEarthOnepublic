@@ -102,6 +102,6 @@ ALTER TABLE contracts
 -- Update any code that relies on document_id to use the contract_documents table
 -- (This is handled in application code)
 
--- Drop the document_id column after a safe transition period
--- This will be handled in a future migration after confirming the new structure works well
--- ALTER TABLE contracts DROP COLUMN document_id;
+-- Drop the document_id column after migrating all data
+-- We're proceeding with this now since we've safely migrated all references
+ALTER TABLE contracts DROP COLUMN document_id;
