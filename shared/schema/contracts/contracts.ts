@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, varchar, boolean, jsonb, pgEnum, index, integer, date, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, varchar, boolean, jsonb, pgEnum, index, integer, date } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -64,12 +64,47 @@ export const confidenceLevelEnum = pgEnum('confidence_level', [
 ]);
 
 /**
+ * Contract Document Type Enum
+ * Used to categorize documents associated with a contract
+ */
+export const contractDocTypeEnum = pgEnum('contract_doc_type', [
+  'MAIN',
+  'AMENDMENT',
+  'SIDE_LETTER',
+  'EXHIBIT',
+  'TERMINATION',
+  'RENEWAL',
+  'OTHER'
+]);
+
+/**
+ * Vendors Table
+ * Stores information about vendors that can be associated with multiple contracts
+ */
+export const vendors = pgTable('vendors', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  
+  // References
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  
+  // Auditing
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+}, (table) => {
+  return {
+    nameIdx: index('vendor_name_idx').on(table.name),
+    tenantIdIdx: index('vendor_tenant_id_idx').on(table.tenantId)
+  };
+});
+
+/**
  * Contracts Table
  * Stores contract metadata extracted from documents
  */
 export const contracts = pgTable('contracts', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
-  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
   
   // Contract metadata
   contractType: contractTypeEnum('contract_type').notNull(),
@@ -80,6 +115,9 @@ export const contracts = pgTable('contracts', {
   counterpartyName: varchar('counterparty_name', { length: 255 }),
   counterpartyAddress: text('counterparty_address'),
   counterpartyContactEmail: varchar('counterparty_contact_email', { length: 255 }),
+  
+  // Vendor relationship
+  vendorId: uuid('vendor_id').references(() => vendors.id), // Optional link to vendor
   
   // Key dates
   effectiveDate: date('effective_date'),
@@ -106,15 +144,18 @@ export const contracts = pgTable('contracts', {
   // Raw extraction data from AI
   rawExtraction: jsonb('raw_extraction'),
   
+  // Description to provide context if no document is attached
+  description: text('description'),
+  
   // Additional metadata
   sourcePageReferences: jsonb('source_page_references'), // Map of field names to page/coordinate references
   customMetadata: jsonb('custom_metadata'),
 }, (table) => {
   return {
-    documentIdIdx: index('contract_document_id_idx').on(table.documentId),
     contractTypeIdx: index('contract_type_idx').on(table.contractType),
     contractStatusIdx: index('contract_status_idx').on(table.contractStatus),
     tenantIdIdx: index('contract_tenant_id_idx').on(table.tenantId),
+    vendorIdIdx: index('contract_vendor_id_idx').on(table.vendorId),
     effectiveDateIdx: index('contract_effective_date_idx').on(table.effectiveDate),
     expiryDateIdx: index('contract_expiry_date_idx').on(table.expiryDate),
   };
@@ -157,6 +198,40 @@ export const contractClauses = pgTable('contract_clauses', {
  * Contract Obligations Table
  * Stores individual obligations and commitments extracted from contract clauses
  */
+/**
+ * Contract Documents Table
+ * Links documents to contracts with additional metadata about document role
+ */
+export const contractDocuments = pgTable('contract_documents', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
+  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'restrict' }),
+  
+  // Document classification
+  docType: contractDocTypeEnum('doc_type').notNull().default('MAIN'),
+  isPrimary: boolean('is_primary').default(false), // Flag for the main contract document
+  
+  // Document metadata
+  effectiveDate: date('effective_date'), // When this particular document took effect
+  notes: text('notes'),
+  
+  // References
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  addedBy: uuid('added_by').references(() => users.id),
+  
+  // Auditing
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    contractIdIdx: index('contract_doc_contract_id_idx').on(table.contractId),
+    documentIdIdx: index('contract_doc_document_id_idx').on(table.documentId),
+    docTypeIdx: index('contract_doc_type_idx').on(table.docType),
+    tenantIdIdx: index('contract_doc_tenant_id_idx').on(table.tenantId),
+    isPrimaryIdx: index('contract_doc_is_primary_idx').on(table.isPrimary),
+  };
+});
+
 export const contractObligations = pgTable('contract_obligations', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
   contractId: uuid('contract_id').notNull().references(() => contracts.id, { onDelete: 'cascade' }),
