@@ -399,7 +399,7 @@ router.post('/', async (req: Request, res: Response) => {
       updatedBy: userId || null,
       // Set confidence level explicitly to avoid type issues
       confidenceLevel: 'UNVERIFIED',
-      // Making sure fields that might cause errors are explicitly null
+      // Use the correct column name as it exists in the database (camelCase)
       vendorId: null
     };
 

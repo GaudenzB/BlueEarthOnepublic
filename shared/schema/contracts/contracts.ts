@@ -117,7 +117,7 @@ export const contracts = pgTable('contracts', {
   counterpartyContactEmail: varchar('counterparty_contact_email', { length: 255 }),
   
   // Vendor relationship
-  vendorId: uuid('vendor_id').references(() => vendors.id), // Optional link to vendor
+  vendorId: uuid('vendorId').references(() => vendors.id), // Optional link to vendor
   
   // Key dates
   effectiveDate: date('effective_date'),
