@@ -37,6 +37,12 @@ import ContractDocumentSection from '../components/ContractDocumentSection';
 
 // Feature flag check
 const isContractsEnabled = () => {
+  // Feature is always enabled in development (for testing purposes)
+  if (import.meta.env.MODE === 'development') {
+    return true;
+  }
+  
+  // Use the environment variable for production
   return import.meta.env['ENABLE_CONTRACTS'] === 'true';
 };
 
