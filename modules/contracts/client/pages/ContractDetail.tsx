@@ -45,18 +45,13 @@ export default function ContractDetail() {
   const params = useParams();
   const contractId = params?.id;
 
-  // Get all contracts and find the correct one by ID
+  // Load the list of contracts
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/contracts'],
-    queryFn: async () => {
-      console.log('Loading all contracts');
-      return await apiRequest('/api/contracts');
-    }
+    queryFn: () => apiRequest('/api/contracts')
   });
   
-  // Find the specific contract in the list
-  const contractsList = data?.data || [];
-  const contract = contractsList.find((c: any) => c.id === contractId) || {};
+  // Data will be used by the component below
 
   // Format date for display
   const formatDate = (dateString: string | null | undefined) => {
@@ -129,11 +124,14 @@ export default function ContractDetail() {
     );
   }
 
-  const contract = data.data;
+  // Find the specific contract from the list
+  const contracts = data?.data || [];
+  const contract = contracts.find((c: any) => c.id === contractId) || {};
+  
   // Since we've simplified the API, we aren't loading obligations and clauses
   // in this initial implementation
-  const obligations = [];
-  const clauses = [];
+  const obligations: any[] = [];
+  const clauses: any[] = [];
 
   // Filter upcoming obligations (due in the next 30 days)
   const upcomingObligations = obligations.filter((obligation: any) => 
