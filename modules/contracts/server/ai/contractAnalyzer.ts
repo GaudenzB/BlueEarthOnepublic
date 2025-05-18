@@ -552,10 +552,14 @@ async function updateAnalysisWithError(analysisId: string, error: any) {
  */
 export async function getContractAnalysisStatus(documentId: string) {
   try {
-    const analysisRecord = await db.query.contractUploadAnalysis.findFirst({
-      where: eq(contractUploadAnalysis.documentId, documentId),
-      orderBy: (analysis, { desc }) => [desc(analysis.createdAt)]
-    });
+    // Use direct query instead of db.query.table format
+    const analysisRecord = await db
+      .select()
+      .from(contractUploadAnalysis)
+      .where(eq(contractUploadAnalysis.documentId, documentId))
+      .orderBy(contractUploadAnalysis.createdAt)
+      .limit(1)
+      .then(results => results[0]);
     
     if (!analysisRecord) {
       return { 
@@ -589,9 +593,12 @@ export async function getContractAnalysisStatus(documentId: string) {
  */
 export async function getAnalysisById(analysisId: string) {
   try {
-    const analysisRecord = await db.query.contractUploadAnalysis.findFirst({
-      where: eq(contractUploadAnalysis.id, analysisId)
-    });
+    // Use direct query instead of db.query.table format
+    const analysisRecord = await db
+      .select()
+      .from(contractUploadAnalysis)
+      .where(eq(contractUploadAnalysis.id, analysisId))
+      .then(results => results[0]);
     
     if (!analysisRecord) {
       return null;
@@ -609,10 +616,11 @@ export async function getAnalysisById(analysisId: string) {
  */
 export async function savePrefillData(analysisId: string, prefillData: any) {
   try {
-    // Update the analysis record with prefill data
+    // Update the analysis record with prefill data stored in rawAnalysisJson
+    // Since prefillData doesn't exist in the schema, we'll store it in rawAnalysisJson
     await db.update(contractUploadAnalysis)
       .set({
-        prefillData: prefillData,
+        rawAnalysisJson: JSON.stringify({ prefillData }),
         updatedAt: new Date()
       })
       .where(eq(contractUploadAnalysis.id, analysisId));
