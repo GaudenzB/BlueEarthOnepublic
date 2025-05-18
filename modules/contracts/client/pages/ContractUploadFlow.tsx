@@ -92,8 +92,8 @@ export default function ContractUploadFlow() {
       formData.append('title', file.name);
       formData.append('documentType', 'CONTRACT');
       
-      // Use apiRequest for better error handling with proper headers
-      const uploadResult = await fetch('/api/documents/upload', {
+      // Use correct API endpoint at /api/documents
+      const uploadResult = await fetch('/api/documents', {
         method: 'POST',
         body: formData,
         // Don't set Content-Type here, let the browser set it with the boundary for FormData
