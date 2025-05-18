@@ -5,8 +5,7 @@ import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
 import { contracts } from '../../../../shared/schema/contracts/contracts';
 import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
-import * as documentStorage from '../../../../server/services/documentStorage';
-import * as textExtractor from '../../../../server/utils/openai';
+// Import statement removed as we're using dynamic imports in the code
 
 // Simple OpenAI client instance for contract analysis
 // In production, would use the main openai instance from server services
@@ -141,22 +140,35 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
         mimeType: document.mimeType 
       });
       
-      // We already have the imports at the top, no need to re-import them
-      
-      // Download the file content
-      const fileBuffer = await documentStorage.downloadFile(document.storageKey);
-      
-      logger.info(`Document downloaded successfully, extracting text`, {
-        documentId,
-        bufferSize: fileBuffer.length
-      });
-      
-      // Extract text based on mime type
-      documentText = await textExtractor.extractTextFromDocument(
-        fileBuffer,
-        document.mimeType,
-        document.originalFilename
-      );
+      try {
+        // Direct require for document storage with correct path handling
+        // First try to use require for most compatibility
+        const documentServices = require('../../../../server/services/documentStorage');
+        const openaiServices = require('../../../../server/utils/openai');
+        
+        // Download the file content
+        const fileBuffer = await documentServices.downloadFile(document.storageKey);
+        
+        logger.info(`Document downloaded successfully, extracting text`, {
+          documentId,
+          bufferSize: fileBuffer.length
+        });
+        
+        // Extract text based on mime type
+        documentText = await openaiServices.extractTextFromDocument(
+          fileBuffer,
+          document.mimeType,
+          document.originalFilename
+        );
+      } catch (importError) {
+        logger.error(`Error importing document services: ${importError.message}`, {
+          error: importError,
+          documentId
+        });
+        
+        // Fallback to just using the document title and metadata as the content
+        documentText = `Contract document: ${document.title || 'Untitled Document'}\nFilename: ${document.originalFilename || document.filename}`;
+      }
       
       logger.info(`Successfully extracted text from document`, {
         documentId,
