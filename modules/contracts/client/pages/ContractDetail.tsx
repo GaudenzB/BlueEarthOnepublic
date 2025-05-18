@@ -45,29 +45,14 @@ export default function ContractDetail() {
   const params = useParams();
   const contractId = params.id;
 
-  // Get contract data
+  // Get contract data (single query for contract data)
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/contracts', contractId],
     queryFn: async () => {
-      return apiRequest(`/api/contracts/${contractId}`);
-    },
-    enabled: Boolean(contractId)
-  });
-
-  // Get contract obligations
-  const { data: obligationsData } = useQuery({
-    queryKey: ['/api/contracts/obligations', contractId],
-    queryFn: async () => {
-      return apiRequest(`/api/contracts/${contractId}/obligations`);
-    },
-    enabled: Boolean(contractId)
-  });
-
-  // Get contract clauses
-  const { data: clausesData } = useQuery({
-    queryKey: ['/api/contracts/clauses', contractId],
-    queryFn: async () => {
-      return apiRequest(`/api/contracts/${contractId}/clauses`);
+      console.log('Fetching contract with ID:', contractId);
+      const result = await apiRequest(`/api/contracts/${contractId}`);
+      console.log('Contract API response:', result);
+      return result;
     },
     enabled: Boolean(contractId)
   });

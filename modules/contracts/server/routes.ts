@@ -93,37 +93,25 @@ router.get('/:id', async (req: Request, res: Response) => {
     const contractId = req.params.id;
     const tenantId = (req as any).tenantId;
     
+    logger.info('Fetching contract detail', { contractId, tenantId });
+    
     const contract = await db.query.contracts.findFirst({
       where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
     });
     
     if (!contract) {
+      logger.warn('Contract not found', { contractId, tenantId });
       return res.status(404).json({
         success: false,
         message: 'Contract not found'
       });
     }
     
-    // Get associated clauses
-    const clauses = await db.query.contractClauses.findMany({
-      where: sql`${contractClauses.contractId} = ${contractId} AND ${contractClauses.tenantId} = ${tenantId}`,
-      orderBy: [sql`${contractClauses.pageNumber} ASC NULLS LAST`]
-    });
-    
-    // Get associated obligations
-    const obligations = await db.query.contractObligations.findMany({
-      where: sql`${contractObligations.contractId} = ${contractId} AND ${contractObligations.tenantId} = ${tenantId}`,
-      orderBy: [sql`${contractObligations.dueDate} ASC NULLS LAST`]
-    });
-    
+    // Return just the contract data - don't try to load clauses or obligations
+    // as these endpoints need to be separated for better performance
     res.json({
       success: true,
-      message: 'Contract retrieved successfully',
-      data: {
-        ...contract,
-        clauses,
-        obligations
-      }
+      data: contract
     });
   } catch (error) {
     logger.error('Error getting contract', { error, id: req.params.id });
