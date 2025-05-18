@@ -40,6 +40,9 @@ export function setupContractModule(app: Express) {
   // Register routes
   app.use('/api/contracts', contractRoutes);
   
+  // Register lookup routes for shared data
+  app.use('/api', contractRoutes);
+  
   // Register vendor routes (separate endpoint)
   // Extract the vendors endpoint from our contract routes
   app.get('/api/vendors', async (req, res) => {

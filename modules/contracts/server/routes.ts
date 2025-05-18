@@ -13,9 +13,30 @@ import { analyzeContractDocument, getAnalysisById, savePrefillData } from './ai/
 import { sql, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { CONTRACT_TYPES } from '../../../shared/constants/contractTypes';
 
 // Create router
 const router = Router();
+
+/**
+ * @route GET /api/lookup/contract-types
+ * @desc Get all contract types for dropdown lists
+ * @access Public
+ */
+router.get('/lookup/contract-types', (req: Request, res: Response) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      data: CONTRACT_TYPES
+    });
+  } catch (error) {
+    logger.error('Error retrieving contract types:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve contract types'
+    });
+  }
+});
 
 /**
  * @route GET /api/contracts
