@@ -33,7 +33,9 @@ export default function ContractList() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/contracts'],
     queryFn: async () => {
-      return apiRequest('/api/contracts');
+      const result = await apiRequest('/api/contracts');
+      console.log('Contract data received:', result);
+      return result;
     }
   });
 

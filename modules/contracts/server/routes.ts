@@ -47,7 +47,7 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     // Get tenant ID from request - in development, use a default if not available
     const user = (req as any).user;
-    const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000000';
+    const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000001';
     
     // Log the tenantId we're using for debugging
     logger.info('Fetching contracts for tenant', { tenantId });
