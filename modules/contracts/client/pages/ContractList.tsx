@@ -29,14 +29,18 @@ const isContractsEnabled = () => {
 };
 
 export default function ContractList() {
-  // Get contract data
+  // Get contract data with cache configuration to always fetch fresh data
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/contracts'],
     queryFn: async () => {
       const result = await apiRequest('/api/contracts');
       console.log('Contract data received:', result);
       return result;
-    }
+    },
+    // Ensure we don't use stale data and always fetch fresh contracts
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0 // Consider data stale immediately
   });
 
   // Format date for display
