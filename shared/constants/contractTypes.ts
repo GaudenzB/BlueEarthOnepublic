@@ -1,8 +1,4 @@
-/**
- * Contract Types
- * These are the standardized contract types used throughout the application
- */
-
+// Contract type constants for use in the client and server
 export const CONTRACT_TYPES = [
   { id: 'MSA', name: 'Master Services Agreement' },
   { id: 'SOW', name: 'Statement of Work' },

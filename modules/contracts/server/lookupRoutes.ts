@@ -1,23 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { logger } from '../../../server/utils/logger';
+import { CONTRACT_TYPES } from '../../../shared/constants/contractTypes';
 
 // Create router
 const router = Router();
-
-// Define contract types
-const CONTRACT_TYPES = [
-  { id: 'MSA', name: 'Master Services Agreement' },
-  { id: 'SOW', name: 'Statement of Work' },
-  { id: 'NDA', name: 'Non-Disclosure Agreement' },
-  { id: 'SLA', name: 'Service Level Agreement' },
-  { id: 'PO', name: 'Purchase Order' },
-  { id: 'AMENDMENT', name: 'Amendment' },
-  { id: 'LEASE', name: 'Lease Agreement' },
-  { id: 'LICENSE', name: 'License Agreement' },
-  { id: 'CONSULTING', name: 'Consulting Agreement' },
-  { id: 'EMPLOYMENT', name: 'Employment Contract' },
-  { id: 'OTHER', name: 'Other' }
-];
 
 /**
  * @route GET /contract-types

@@ -3,4 +3,5 @@ export * from './tenants';
 export * from './documents/documents';
 export * from './documents/analysisVersions';
 export * from './documents/embeddings';
-// Contracts module removed
+// Export contract module schemas
+export * from './contracts/contract_upload_analysis';

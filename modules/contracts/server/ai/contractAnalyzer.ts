@@ -1,9 +1,8 @@
 import { logger } from '../../../../server/utils/logger';
 import { db } from '../../../../server/db';
-import { documents } from '../../../../shared/schema';
+import { documents, contractUploadAnalysis } from '../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
-import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
 import { contracts } from '../../../../shared/schema/contracts/contracts';
 
 // Simple OpenAI client instance for contract analysis
