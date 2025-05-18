@@ -1,13 +1,15 @@
 /**
- * Simple Contract Analyzer 
+ * Contract Analyzer 
  * 
- * This is a simplified version of the contract analyzer that directly processes
- * documents without complex database interactions to avoid errors.
+ * This module provides contract analysis functionality using both OpenAI for AI-powered extraction
+ * and fallback mechanisms for basic metadata extraction from contract documents.
+ * 
+ * It handles document processing, text extraction from PDFs, and metadata analysis.
  */
 
 import { logger } from '../../../server/utils/logger';
 import { db } from '../../../server/db';
-import { documents } from '../../../shared/schema';
+import { documents, contractUploadAnalysis } from '../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import * as documentStorage from '../../../server/services/documentStorage';
@@ -21,7 +23,7 @@ if (!apiKey) {
 // Initialize OpenAI client with proper configuration
 const openai = apiKey ? new OpenAI({ 
   apiKey, 
-  timeout: 30000, // 30 second timeout
+  timeout: 45000, // 45 second timeout for longer documents
   maxRetries: 2   // Retry failed API calls twice 
 }) : null;
 
@@ -99,19 +101,29 @@ export async function analyzeContractDocumentSimple(documentId: string) {
  */
 async function extractTextFromBuffer(buffer: Buffer): Promise<string[]> {
   try {
-    // Here you would typically use a library like pdf-parse
-    // For simplicity, we'll just return the buffer as string with some basic formatting
-    const text = buffer.toString('utf8').replace(/\r\n/g, '\n');
+    // Import the PDF utility function
+    const { extractTextFromPDFBuffer } = await import('../../../server/utils/pdfUtils');
     
-    // Split into chunks of reasonable size
-    const chunks: string[] = [];
-    const maxChunkSize = 10000;
+    // Use the proper PDF extraction utility
+    const extractedText = await extractTextFromPDFBuffer(buffer);
     
-    for (let i = 0; i < text.length; i += maxChunkSize) {
-      chunks.push(text.substring(i, i + maxChunkSize));
+    // If we got text, split it into manageable chunks
+    if (extractedText && extractedText.length > 0) {
+      logger.info(`Successfully extracted ${extractedText.length} characters from PDF buffer`);
+      
+      // Split into chunks of reasonable size
+      const chunks: string[] = [];
+      const maxChunkSize = 10000;
+      
+      for (let i = 0; i < extractedText.length; i += maxChunkSize) {
+        chunks.push(extractedText.substring(i, i + maxChunkSize));
+      }
+      
+      return chunks.length > 0 ? chunks : ['No text extracted'];
+    } else {
+      logger.warn('PDF extraction returned empty text');
+      return ['No text extracted'];
     }
-    
-    return chunks.length > 0 ? chunks : ['No text extracted'];
   } catch (error) {
     logger.error('Error extracting text from buffer:', error);
     return ['Error extracting text'];
@@ -133,35 +145,46 @@ async function performSimpleAnalysis(text: string, documentTitle: string) {
         ? text.substring(0, maxTextLength) + "... [content truncated for length]" 
         : text;
         
+      // Improved prompt with more detailed extraction guidelines
+      const systemPrompt = `You are an expert contract analyst AI. Extract and analyze the following information from the contract:
+      1. Vendor/counterparty name - Extract the name of the company that is the counterparty in this contract
+      2. Contract title/subject - Determine the main subject or title of this contract
+      3. Document type - Classify as one of: MAIN_AGREEMENT, AMENDMENT, ADDENDUM, SIDE_LETTER, NDA, SERVICE_AGREEMENT, OTHER
+      4. Effective date - Find the date when this contract becomes effective (in YYYY-MM-DD format)
+      5. Termination date - Find the date when this contract ends or terminates (in YYYY-MM-DD format)
+      
+      Important guidelines:
+      - If you cannot confidently determine a specific field, use null instead of guessing
+      - For dates, only return in YYYY-MM-DD format, or null if unclear
+      - Pay attention to phrases like "effective as of", "shall commence on", "agreement date" for effective date
+      - For termination date, look for terms like "expiration", "termination", "shall end on"
+      - Analyze the whole document, not just the header or first page
+      
+      Return a JSON object with the following structure:
+      {
+        "vendor": string or null,
+        "contractTitle": string or null,
+        "docType": string or null,
+        "effectiveDate": string or null,
+        "terminationDate": string or null,
+        "confidence": {
+          "vendor": number from 0.0 to 1.0,
+          "contractTitle": number from 0.0 to 1.0,
+          "docType": number from 0.0 to 1.0,
+          "effectiveDate": number from 0.0 to 1.0,
+          "terminationDate": number from 0.0 to 1.0
+        }
+      }
+      `;
+        
       // Call OpenAI API for analysis
       const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        // Use GPT-4 for better extraction if available, fallback to 3.5
+        model: "gpt-4",
         messages: [
           {
             role: "system",
-            content: `You are an expert contract analyst AI. Extract and analyze the following information from the contract:
-            1. Vendor/counterparty name
-            2. Contract title/subject
-            3. Document type (e.g., MAIN_AGREEMENT, AMENDMENT, ADDENDUM, SIDE_LETTER, etc.)
-            4. Effective date (in YYYY-MM-DD format)
-            5. Termination date (in YYYY-MM-DD format)
-            
-            Return a JSON object with the following structure:
-            {
-              "vendor": string or null,
-              "contractTitle": string or null,
-              "docType": string or null,
-              "effectiveDate": string or null,
-              "terminationDate": string or null,
-              "confidence": {
-                "vendor": number from 0.0 to 1.0,
-                "contractTitle": number from 0.0 to 1.0,
-                "docType": number from 0.0 to 1.0,
-                "effectiveDate": number from 0.0 to 1.0,
-                "terminationDate": number from 0.0 to 1.0
-              }
-            }
-            `
+            content: systemPrompt
           },
           {
             role: "user", 
@@ -170,13 +193,23 @@ async function performSimpleAnalysis(text: string, documentTitle: string) {
         ],
         response_format: { type: "json_object" },
         max_tokens: 1000,
-        temperature: 0.3
+        temperature: 0.2  // Lower temperature for more deterministic extraction
       });
       
       const content = completion.choices[0]?.message?.content;
       if (content) {
         try {
+          // Parse and validate the response
           const parsedData = JSON.parse(content);
+          
+          // Log successful analysis
+          logger.info('Contract analysis successful', {
+            vendor: parsedData.vendor,
+            contractTitle: parsedData.contractTitle,
+            docType: parsedData.docType,
+            confidenceScores: parsedData.confidence
+          });
+          
           return parsedData;
         } catch (parseError) {
           logger.error('Error parsing OpenAI response:', parseError);
