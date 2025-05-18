@@ -1,6 +1,6 @@
 import { logger } from '../../../server/utils/logger';
-import { contracts, contractClauses, contractObligations } from '../../../shared/schema';
-import { sql } from 'drizzle-orm';
+import { contracts, contractClauses, contractObligations, contractDocuments } from '../../../shared/schema';
+import { sql, and, eq } from 'drizzle-orm';
 import { db } from '../../../server/db';
 import { createEventEmitter } from '../../../server/utils/eventEmitter';
 
@@ -66,6 +66,8 @@ export interface ContractExtraction {
     contractNumber?: string;
     confidenceScore: number;
     processingTime?: number;
+    // Adding summary to use as description for contracts without documents
+    summary?: string;
     sourceReferences: Record<string, {
       page: number;
       coordinates?: {
@@ -136,14 +138,23 @@ export async function postProcessContract(
       return null;
     }
     
-    // Check if the document is already processed as a contract
-    const existingContract = await db.query.contracts.findFirst({
-      where: sql`${contracts.documentId} = ${documentId} AND ${contracts.tenantId} = ${tenantId}`
+    // Check if the document is already associated with a contract
+    const existingContractDocument = await db.query.contractDocuments.findFirst({
+      where: and(
+        eq(contractDocuments.documentId, documentId),
+        eq(contractDocuments.tenantId, tenantId)
+      ),
+      with: {
+        contract: true
+      }
     });
 
-    if (existingContract) {
-      logger.info('Document already processed as contract', { documentId, contractId: existingContract.id });
-      return existingContract.id;
+    if (existingContractDocument) {
+      logger.info('Document already processed as contract', { 
+        documentId, 
+        contractId: existingContractDocument.contractId 
+      });
+      return existingContractDocument.contractId;
     }
     
     // Extract contract-specific data from AI analysis
@@ -171,7 +182,6 @@ export async function postProcessContract(
     
     // Create contract record with properly typed values
     const insertData = {
-      documentId,
       tenantId,
       createdBy: userId,
       
@@ -203,6 +213,9 @@ export async function postProcessContract(
       totalValue: findFinancialTermByType(contractData.financialTerms, 'TOTAL'),
       currency: findCurrency(contractData.financialTerms),
       
+      // Description for context - derived from contract type and any available metadata
+      description: `${contractData.metadata.contractType} Contract`,
+      
       // AI-related metadata
       confidenceLevel: mapConfidenceToLevel(contractData.metadata.confidenceScore) as any,
       rawExtraction: contractData as any,
@@ -210,6 +223,19 @@ export async function postProcessContract(
     };
     
     const [contract] = await db.insert(contracts).values(insertData).returning();
+    
+    // Now create the association between the contract and document
+    if (contract) {
+      await db.insert(contractDocuments).values({
+        contractId: contract.id,
+        documentId,
+        tenantId,
+        docType: 'MAIN',
+        isPrimary: true,
+        addedBy: userId,
+        effectiveDate: contract.effectiveDate
+      });
+    }
     
     if (!contract) {
       logger.error('Failed to create contract record', { documentId });
