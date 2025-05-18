@@ -43,7 +43,7 @@ const isContractsEnabled = () => {
 export default function ContractDetail() {
   // Get contract ID from route params
   const params = useParams();
-  const contractId = params.id;
+  const contractId = params?.id;
 
   // Get contract data using the standard path parameter approach
   const { data, isLoading, error } = useQuery({

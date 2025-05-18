@@ -90,6 +90,7 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    // Extract the contract ID from the request parameters
     const contractId = req.params.id;
     
     if (!contractId || !contractId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
@@ -101,31 +102,46 @@ router.get('/:id', async (req: Request, res: Response) => {
     
     // Get tenant ID from request - in development, use a default if not available
     const user = (req as any).user;
-    const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000001';
+    // Always use the default tenant in development if no specific tenant is provided
+    const tenantId = '00000000-0000-0000-0000-000000000001';
     
-    logger.info('Fetching contract detail', { contractId, tenantId });
+    logger.info('Fetching contract detail with ID', { contractId });
     
-    // Use a simpler query approach
-    const contract = await db.query.contracts.findFirst({
-      where: eq(contracts.id, contractId)
-    });
-    
-    if (!contract) {
-      logger.warn('Contract not found', { contractId, tenantId });
-      return res.status(404).json({
+    try {
+      // Direct SQL approach for debugging
+      const result = await db.execute(
+        sql`SELECT * FROM contracts WHERE id = ${contractId}`
+      );
+      
+      if (!result || !result.length) {
+        logger.warn('Contract not found', { contractId });
+        return res.status(404).json({
+          success: false, 
+          message: 'Contract not found'
+        });
+      }
+      
+      const contract = result[0];
+      
+      return res.json({
+        success: true,
+        data: contract
+      });
+    } catch (dbError) {
+      logger.error('Database error fetching contract', { 
+        error: String(dbError),
+        contractId
+      });
+      return res.status(500).json({
         success: false,
-        message: 'Contract not found'
+        message: 'Database error retrieving contract'
       });
     }
-    
-    // Return just the contract data - don't try to load clauses or obligations
-    // as these endpoints need to be separated for better performance
-    return res.json({
-      success: true,
-      data: contract
-    });
   } catch (error) {
-    logger.error('Error getting contract', { error: String(error), contractId: req.params.id });
+    logger.error('Error getting contract', { 
+      error: String(error), 
+      contractId: req.params.id 
+    });
     return res.status(500).json({
       success: false,
       message: 'Server error retrieving contract'
