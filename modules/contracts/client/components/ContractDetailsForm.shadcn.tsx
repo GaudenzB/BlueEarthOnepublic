@@ -283,7 +283,7 @@ export default function ContractDetailsForm({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="contract-wizard-form">
             {/* Contract Details Section */}
             <div className="grid grid-cols-2 gap-4">
               {/* Contract Type */}

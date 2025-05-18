@@ -305,25 +305,33 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
     );
   }
   
-  // Add handleNextClick and handleReviewSubmit functions
+  // Improved handlers for the wizard navigation
   const handleNextClick = () => {
-    // Trigger form submission through a hidden button
-    const submitButton = document.querySelector('.contract-form-submit') as HTMLButtonElement | null;
-    if (submitButton) {
-      submitButton.click();
+    // Find and submit the active form
+    const activeForm = document.querySelector('.contract-wizard-form') as HTMLFormElement | null;
+    
+    if (activeForm) {
+      // Create and dispatch a submit event
+      const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+      activeForm.dispatchEvent(submitEvent);
     } else {
-      // Fallback if no submit button is found
+      // If no form is found, manually advance to next step
+      console.log('No form found, manually advancing to next step');
       setActiveStep(Math.min(steps.length - 1, activeStep + 1));
     }
   };
   
   const handleReviewSubmit = () => {
-    // Trigger form submission for the review step
-    const submitButton = document.querySelector('.contract-form-submit') as HTMLButtonElement | null;
-    if (submitButton) {
-      submitButton.click();
+    // Find and submit the review form
+    const reviewForm = document.querySelector('.contract-wizard-form') as HTMLFormElement | null;
+    
+    if (reviewForm) {
+      // Create and dispatch a submit event
+      const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+      reviewForm.dispatchEvent(submitEvent);
     } else {
-      // Fallback direct submission
+      // Direct submission as fallback
+      console.log('No review form found, submitting directly');
       createContractMutation.mutate(contractData);
     }
   };
@@ -339,45 +347,58 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
           {contractData.id ? 'Edit Contract' : 'New Contract'}
         </h2>
         
-        {/* New Stepper Implementation */}
+        {/* Enhanced Clickable Stepper */}
         <div className="flex justify-between items-center mt-6 mb-6 relative">
           {/* Connection lines */}
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -translate-y-1/2 z-0"></div>
           
-          {steps.map((step, index) => (
-            <div 
-              key={index}
-              className="flex flex-col items-center relative z-10 cursor-pointer"
-              onClick={() => {
-                // Only allow going back to previous steps or staying on current
-                if (index <= activeStep) {
-                  setActiveStep(index);
-                }
-              }}
-            >
-              {/* Step number bubble */}
-              <div 
-                className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 border-2 transition-colors
-                  ${index < activeStep 
-                    ? 'bg-blue-500 border-blue-500 text-white' 
-                    : index === activeStep 
-                      ? 'bg-white border-blue-500 text-blue-500' 
-                      : 'bg-white border-gray-300 text-gray-400'
+          {steps.map((step, index) => {
+            // Determine if this step is clickable
+            const isClickable = index <= activeStep;
+            
+            return (
+              <button 
+                key={index}
+                type="button"
+                className={`flex flex-col items-center relative z-10 border-none bg-transparent ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                onClick={() => {
+                  if (isClickable) {
+                    // If we're moving backward, just navigate directly
+                    if (index < activeStep) {
+                      setActiveStep(index);
+                    } 
+                    // If clicking current step, do nothing
+                    else if (index === activeStep) {
+                      // Stays on current step
+                    }
                   }
-                `}
+                }}
+                disabled={!isClickable}
               >
-                <span className="text-lg font-semibold">{index + 1}</span>
-              </div>
-              
-              {/* Step title and description */}
-              <div className={`text-center max-w-[150px] transition-colors
-                ${index <= activeStep ? 'text-blue-900' : 'text-gray-400'}
-              `}>
-                <div className="font-bold text-sm">{step.title}</div>
-                <div className="text-xs mt-1">{step.description}</div>
-              </div>
-            </div>
-          ))}
+                {/* Step number bubble */}
+                <div 
+                  className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 border-2 transition-colors
+                    ${index < activeStep 
+                      ? 'bg-blue-500 border-blue-500 text-white' 
+                      : index === activeStep 
+                        ? 'bg-white border-blue-500 text-blue-500 font-bold' 
+                        : 'bg-white border-gray-300 text-gray-400'
+                    }
+                  `}
+                >
+                  <span className="text-lg font-semibold">{index + 1}</span>
+                </div>
+                
+                {/* Step title and description */}
+                <div className={`text-center max-w-[150px] transition-colors
+                  ${index <= activeStep ? 'text-blue-900' : 'text-gray-400'}
+                `}>
+                  <div className="font-bold text-sm">{step.title}</div>
+                  <div className="text-xs mt-1">{step.description}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
       
