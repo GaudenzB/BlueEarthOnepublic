@@ -701,6 +701,17 @@ router.delete('/:contractId/documents/:attachmentId', async (req: Request, res: 
  */
 router.post('/upload/analyze/:documentId', async (req: Request, res: Response) => {
   try {
+    // Log the full request information for debugging
+    logger.info('Starting contract document analysis', {
+      path: req.path, 
+      documentId: req.params.documentId,
+      hasUser: !!(req as any).user,
+      headers: {
+        contentType: req.headers['content-type'],
+        authorization: req.headers.authorization ? 'Present' : 'Missing'
+      }
+    });
+    
     // Get document ID from params
     const { documentId } = req.params;
     
@@ -717,19 +728,75 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
       });
     }
     
-    // Start the analysis process
-    const analysisResult = await analyzeContractDocument(documentId, userId, tenantId);
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Document analysis started',
-      data: analysisResult
+    // Verify document exists before starting analysis
+    const document = await db.query.documents.findFirst({
+      where: eq(documents.id, documentId)
     });
+    
+    if (!document) {
+      logger.error('Document not found for analysis', { documentId });
+      return res.status(404).json({
+        success: false,
+        message: `Document not found with ID: ${documentId}`,
+        error: 'DOCUMENT_NOT_FOUND'
+      });
+    }
+    
+    // Log document details
+    logger.info('Document found for analysis', {
+      documentId,
+      filename: document.filename,
+      fileSize: document.fileSize,
+      mimeType: document.mimeType,
+      title: document.title
+    });
+    
+    // Start the analysis process
+    try {
+      const analysisResult = await analyzeContractDocument(documentId, userId, tenantId);
+      
+      logger.info('Contract analysis initiated successfully', {
+        analysisId: analysisResult.id,
+        status: analysisResult.status
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Document analysis started',
+        data: analysisResult
+      });
+    } catch (analysisError) {
+      logger.error('Error in contract document analysis', {
+        documentId,
+        error: analysisError instanceof Error ? {
+          message: analysisError.message,
+          stack: analysisError.stack
+        } : 'Unknown error'
+      });
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to analyze document',
+        error: analysisError instanceof Error ? analysisError.message : 'Unknown analysis error',
+        errorType: 'ANALYSIS_FAILED'
+      });
+    }
   } catch (error) {
-    logger.error('Error analyzing document:', error);
+    // Handle any unexpected errors in the route itself
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    logger.error('Unhandled error in document analysis route:', {
+      error: errorMessage,
+      stack: errorStack,
+      documentId: req.params.documentId
+    });
+    
     return res.status(500).json({
       success: false,
-      message: 'Failed to analyze document'
+      message: 'Failed to analyze document',
+      error: errorMessage,
+      errorType: 'ROUTE_ERROR'
     });
   }
 });

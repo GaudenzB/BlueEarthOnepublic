@@ -1,0 +1,88 @@
+new errors:
+API Request Error: /api/contracts/upload/analyze/e9fc7ec3-bb79-499e-8122-8ecfa7e89094 
+ApiError {name: "ApiError", status: 500, errors: undefined}
+
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Upload error: 
+ApiError {name: "ApiError", status: 500, errors: undefined}
+
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+ChatGPT said:
+You're still getting a backend 500 on:
+
+POST /api/contracts/upload/analyze/{uploadId}
+→ ApiError: status 500, errors: undefined
+That means your AI analysis route is still crashing, and it's not returning a useful JSON error payload. Here's what you need to do right now to debug and fix it.
+
+✅ Step-by-Step Debug Checklist
+
+1. 🔍 Log at the entry point of the analyzer
+In contractAnalyzer.ts or wherever analyzeContractUpload(uploadId) is called:
+
+console.log("▶️ Starting analysis for upload ID:", uploadId);
+Then log what you're loading:
+
+const upload = await db.getUploadById(uploadId);
+if (!upload) throw new Error(`No upload found for ID ${uploadId}`);
+console.log("📄 Upload found:", upload.filename);
+If this fails silently → you’re calling analysis on an invalid/missing document.
+
+2. 🧪 Isolate the crash
+Wrap everything in try/catch with full logging:
+
+export async function analyzeContractUpload(uploadId: string) {
+  try {
+    const file = await loadPdfFromUpload(uploadId); // <- might be undefined
+    const text = await extractText(file);
+    const metadata = await extractContractMetadata(text); // GPT or Azure call
+    return metadata;
+  } catch (err: any) {
+    console.error("❌ Analysis failed for", uploadId, err.message, err.stack);
+    throw new Error("AI analysis failed: " + (err.message || "Unknown error"));
+  }
+}
+Then confirm in routes.ts you return structured JSON:
+
+router.post("/contracts/upload/analyze/:id", async (req, res) => {
+  try {
+    const result = await analyzeContractUpload(req.params.id);
+    return res.json(result);
+  } catch (err: any) {
+    console.error("❌ API error:", err.message);
+    return res.status(500).json({
+      error: "Failed to analyze document",
+      detail: err.message || "Unknown error",
+    });
+  }
+});
+3. 🧱 Check file access
+This is a very likely root cause:
+
+If the uploaded file is stored on disk (file.path) but your analysis function expects a Buffer, you may be trying to parse an empty file or undefined.
+Add:
+
+console.log("📂 File path:", file.path);
+console.log("📄 File size:", file.size);
+If either is undefined or 0, you’re analyzing a ghost file.
+
+4. 🧠 If GPT or Azure is used, wrap it
+try {
+  const response = await callGPT(text);
+  return mapResponse(response);
+} catch (err: any) {
+  console.error("❌ GPT error:", err.message);
+  throw new Error("AI metadata extraction failed");
+}
+✅ Action Plan
+
+Please confirm that:
+
+Your server logs now show the upload ID, filename, and file size
+The catch block in /analyze/:id returns { error, detail }
+The frontend handles res.error and shows the message

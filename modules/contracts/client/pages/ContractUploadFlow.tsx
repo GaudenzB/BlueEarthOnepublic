@@ -136,12 +136,34 @@ export default function ContractUploadFlow() {
       setIsUploading(false);
       setIsAnalyzing(true);
       
-      const analysisResponse = await apiRequest(`/api/contracts/upload/analyze/${documentId}`, {
-        method: 'POST'
-      });
-      
-      setAnalysisResult(analysisResponse.data);
-      setIsAnalyzing(false);
+      try {
+        const analysisResponse = await apiRequest(`/api/contracts/upload/analyze/${documentId}`, {
+          method: 'POST'
+        });
+        
+        if (!analysisResponse.success) {
+          throw new Error(analysisResponse.message || 'Failed to analyze document');
+        }
+        
+        setAnalysisResult(analysisResponse.data);
+        setIsAnalyzing(false);
+        
+      } catch (analysisError) {
+        console.error('Analysis error:', analysisError);
+        setIsAnalyzing(false);
+        
+        // Show detailed error message to user
+        toast({
+          title: 'Analysis failed',
+          description: analysisError instanceof Error 
+            ? analysisError.message 
+            : 'Unable to analyze document. Please try again.',
+          variant: 'destructive'
+        });
+        
+        // Reset to upload state so user can try again
+        setUploadedDocumentId(null);
+      }
       
     } catch (error) {
       console.error('Upload error:', error);
