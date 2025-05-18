@@ -89,26 +89,54 @@ export default function ContractUploadFlow() {
       // First upload the document to get a document ID
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('title', file.name);
       formData.append('documentType', 'CONTRACT');
       
-      const uploadResponse = await fetch('/api/documents/upload', {
+      // Use apiRequest for better error handling with proper headers
+      const uploadResult = await fetch('/api/documents/upload', {
         method: 'POST',
-        body: formData
+        body: formData,
+        // Don't set Content-Type here, let the browser set it with the boundary for FormData
+        headers: {
+          // Ensure we accept JSON response
+          'Accept': 'application/json'
+        }
       });
       
-      const uploadResult = await uploadResponse.json();
-      
-      if (!uploadResponse.ok) {
-        throw new Error(uploadResult.message || 'Failed to upload document');
+      // Check if response is OK before trying to parse JSON
+      if (!uploadResult.ok) {
+        // Handle non-JSON responses safely
+        let errorMessage = 'Failed to upload document';
+        try {
+          const contentType = uploadResult.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await uploadResult.json();
+            errorMessage = errorData.message || errorMessage;
+          } else {
+            // For non-JSON responses, just get the status text
+            errorMessage = `${uploadResult.status}: ${uploadResult.statusText}`;
+          }
+        } catch (parseError) {
+          errorMessage = `Server error (${uploadResult.status})`;
+        }
+        throw new Error(errorMessage);
       }
       
-      setUploadedDocumentId(uploadResult.data.id);
+      // Parse the JSON response
+      const responseData = await uploadResult.json();
+      const documentId = responseData.data.id;
+      
+      if (!documentId) {
+        throw new Error('Document ID not returned from server');
+      }
+      
+      setUploadedDocumentId(documentId);
       
       // Now analyze the document
       setIsUploading(false);
       setIsAnalyzing(true);
       
-      const analysisResponse = await apiRequest(`/api/contracts/upload/analyze/${uploadResult.data.id}`, {
+      const analysisResponse = await apiRequest(`/api/contracts/upload/analyze/${documentId}`, {
         method: 'POST'
       });
       
