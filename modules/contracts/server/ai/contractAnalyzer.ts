@@ -8,8 +8,8 @@ import { contractUploadAnalysis } from '../../../../shared/schema/contracts/cont
 
 // Simple OpenAI client instance for contract analysis
 // In production, would use the main openai instance from server services
-const openai = process.env.OPENAI_API_KEY ? 
-  new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+const apiKey = process.env['OPENAI_API_KEY'];
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 
 /**
  * Analyze a contract document and extract key information
@@ -224,7 +224,7 @@ async function runAiAnalysis(text: string, documentTitle: string) {
       titleLength: documentTitle.length,
       textLength: text.length,
       hasOpenAI: !!openai,
-      openAIKeyPresent: !!process.env.OPENAI_API_KEY
+      openAIKeyPresent: !!process.env['OPENAI_API_KEY']
     });
     
     // First attempt to use OpenAI if available
