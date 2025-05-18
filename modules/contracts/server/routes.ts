@@ -465,5 +465,209 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @route GET /api/contracts/:id/documents
+ * @desc Get all documents attached to a contract
+ * @access Authenticated users
+ */
+router.get('/:id/documents', async (req: Request, res: Response) => {
+  try {
+    const contractId = req.params.id;
+    const tenantId = (req as any).tenantId;
+    
+    // Check if contract exists
+    const contract = await db.query.contracts.findFirst({
+      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+    
+    // Get documents attached to this contract with join to document details
+    const attachedDocs = await db.query.contractDocuments.findMany({
+      where: sql`${contractDocuments.contractId} = ${contractId}`,
+      with: {
+        document: true
+      },
+      orderBy: [
+        // Primary documents first, then by type, then by effectiveDate descending
+        sql`${contractDocuments.isPrimary} DESC`,
+        sql`${contractDocuments.docType} ASC`,
+        sql`${contractDocuments.effectiveDate} DESC NULLS LAST`
+      ]
+    });
+    
+    res.json({
+      success: true,
+      message: 'Contract documents retrieved successfully',
+      data: attachedDocs
+    });
+  } catch (error) {
+    logger.error('Error getting contract documents', { error, id: req.params.id });
+    res.status(500).json({
+      success: false,
+      message: 'Server error retrieving contract documents'
+    });
+  }
+});
+
+/**
+ * @route POST /api/contracts/:id/documents
+ * @desc Attach a document to a contract
+ * @access Authenticated users
+ */
+router.post('/:id/documents', async (req: Request, res: Response) => {
+  try {
+    const contractId = req.params.id;
+    const tenantId = (req as any).tenantId;
+    const userId = (req as any).user?.id;
+    
+    // Validate request data
+    const schema = z.object({
+      documentId: z.string().uuid(),
+      docType: z.enum(['MAIN', 'AMENDMENT', 'SIDE_LETTER', 'EXHIBIT', 'TERMINATION', 'RENEWAL', 'OTHER']),
+      isPrimary: z.boolean().default(false),
+      notes: z.string().optional(),
+      effectiveDate: z.string().optional()
+    });
+    
+    const validationResult = schema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request data',
+        errors: validationResult.error.errors
+      });
+    }
+    
+    // Check if contract exists
+    const contract = await db.query.contracts.findFirst({
+      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+    
+    // Check if document exists
+    const document = await db.query.documents.findFirst({
+      where: sql`${documents.id} = ${validationResult.data.documentId}`
+    });
+    
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+    
+    // Check if document is already attached to this contract
+    const existingAttachment = await db.query.contractDocuments.findFirst({
+      where: sql`${contractDocuments.contractId} = ${contractId} AND ${contractDocuments.documentId} = ${validationResult.data.documentId}`,
+    });
+    
+    if (existingAttachment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document is already attached to this contract'
+      });
+    }
+    
+    // If this is a primary document, clear any existing primary flag
+    if (validationResult.data.isPrimary) {
+      await db.update(contractDocuments)
+        .set({ isPrimary: false })
+        .where(sql`${contractDocuments.contractId} = ${contractId}`);
+    }
+    
+    // Create attachment
+    const attachment = await db.insert(contractDocuments)
+      .values({
+        contractId,
+        documentId: validationResult.data.documentId,
+        docType: validationResult.data.docType,
+        isPrimary: validationResult.data.isPrimary,
+        notes: validationResult.data.notes,
+        effectiveDate: validationResult.data.effectiveDate ? new Date(validationResult.data.effectiveDate) : undefined,
+      })
+      .returning();
+    
+    res.json({
+      success: true,
+      message: 'Document attached successfully',
+      data: attachment[0]
+    });
+  } catch (error) {
+    logger.error('Error attaching document to contract', { error, id: req.params.id });
+    res.status(500).json({
+      success: false,
+      message: 'Server error attaching document to contract'
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/contracts/:contractId/documents/:attachmentId
+ * @desc Remove a document attachment from a contract
+ * @access Authenticated users
+ */
+router.delete('/:contractId/documents/:attachmentId', async (req: Request, res: Response) => {
+  try {
+    const { contractId, attachmentId } = req.params;
+    const tenantId = (req as any).tenantId;
+    
+    // Check if contract exists
+    const contract = await db.query.contracts.findFirst({
+      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+    });
+    
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+    
+    // Check if attachment exists
+    const attachment = await db.query.contractDocuments.findFirst({
+      where: sql`${contractDocuments.id} = ${attachmentId} AND ${contractDocuments.contractId} = ${contractId}`,
+    });
+    
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document attachment not found'
+      });
+    }
+    
+    // Delete the attachment
+    await db.delete(contractDocuments)
+      .where(sql`${contractDocuments.id} = ${attachmentId}`);
+    
+    res.json({
+      success: true,
+      message: 'Document attachment removed successfully'
+    });
+  } catch (error) {
+    logger.error('Error removing document from contract', { 
+      error, 
+      contractId: req.params.contractId,
+      attachmentId: req.params.attachmentId 
+    });
+    res.status(500).json({
+      success: false,
+      message: 'Server error removing document from contract'
+    });
+  }
+});
+
 // Export router
 export default router;
