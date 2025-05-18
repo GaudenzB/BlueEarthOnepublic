@@ -46,23 +46,31 @@ const formSchema = z.object({
   effectiveDate: z.date().optional(),
   expiryDate: z.date()
     .optional()
-    .refine(
-      (date, ctx) => {
-        const effectiveDate = ctx.path ? (ctx as any).parent?.effectiveDate : null;
-        return !date || !effectiveDate || date > effectiveDate;
-      },
-      { message: 'Expiry date must be after effective date' }
-    ),
+    .superRefine((date, ctx) => {
+      if (!date) return;
+      
+      const effectiveDate = ctx.parent?.effectiveDate;
+      if (effectiveDate && date <= effectiveDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Expiry date must be after effective date'
+        });
+      }
+    }),
   executionDate: z.date().optional(),
   renewalDate: z.date()
     .optional()
-    .refine(
-      (date, ctx) => {
-        const expiryDate = ctx.path ? (ctx as any).parent?.expiryDate : null;
-        return !date || !expiryDate || date >= expiryDate;
-      },
-      { message: 'Renewal date should be on or after the expiry date' }
-    ),
+    .superRefine((date, ctx) => {
+      if (!date) return;
+      
+      const expiryDate = ctx.parent?.expiryDate;
+      if (expiryDate && date < expiryDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Renewal date should be on or after the expiry date'
+        });
+      }
+    }),
     
   // Other metadata
   totalValue: z.string()

@@ -137,6 +137,8 @@ export default function ContractUploadFlow() {
       setIsAnalyzing(true);
       
       try {
+        console.log(`Sending analysis request for document ID: ${documentId}`);
+        
         // Use fetch directly so we can handle raw response data if there's an error
         const response = await fetch(`/api/contracts/upload/analyze/${documentId}`, {
           method: 'POST',
@@ -146,11 +148,23 @@ export default function ContractUploadFlow() {
           }
         });
         
+        console.log(`Analysis response status: ${response.status} ${response.statusText}`);
+        
         // If the response is not OK (status 200-299), handle the error
         if (!response.ok) {
           // Try to get the raw response text first for better diagnostics
           const errorText = await response.text();
           console.error("Server raw error response:", errorText);
+          
+          // Log the full response for debugging
+          console.error("Response details:", {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries([...response.headers.entries()]),
+            url: response.url,
+            type: response.type,
+            redirected: response.redirected
+          });
           
           // Try to parse as JSON if possible
           let errorMessage = `Server error: ${response.status} ${response.statusText}`;
@@ -163,6 +177,7 @@ export default function ContractUploadFlow() {
               const errorData = JSON.parse(errorText);
               errorMessage = errorData.message || errorData.error || errorMessage;
               errorDetails = errorData.details || '';
+              console.error("Parsed error response:", errorData);
             }
           } catch (jsonError) {
             console.error("Failed to parse error response as JSON:", jsonError);

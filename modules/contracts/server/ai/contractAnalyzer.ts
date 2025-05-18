@@ -8,15 +8,10 @@ import { contractUploadAnalysis } from '../../../../shared/schema/contracts/cont
 import * as documentStorage from '../../../../server/services/documentStorage';
 import * as openaiUtils from '../../../../server/utils/openai';
 
-// Simple OpenAI client instance for contract analysis
-// In production, would use the main openai instance from server services
-// Load OpenAI API key from environment
-const apiKey = process.env['OPENAI_API_KEY'];
-// Create OpenAI client instance with api key, with proper logging
-if (!apiKey) {
-  logger.warn('OPENAI_API_KEY environment variable is not set. AI contract analysis will use fallback methods');
-}
-const openai = apiKey ? new OpenAI({ apiKey }) : null;
+// Use the shared OpenAI client from server/utils/openai instead of creating a new one
+// This ensures we use the same correctly configured client throughout the application
+import { getOpenAIClient } from '../../../../server/utils/openai';
+const openai = getOpenAIClient();
 
 /**
  * Analyze a contract document and extract key information
