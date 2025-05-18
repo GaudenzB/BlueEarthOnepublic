@@ -45,13 +45,15 @@ export default function ContractDetail() {
   const params = useParams();
   const contractId = params?.id;
 
-  // Load the list of contracts
+  // Fetch only the specific contract by ID
   const { data, isLoading, error } = useQuery({
-    queryKey: ['/api/contracts'],
-    queryFn: () => apiRequest('/api/contracts')
+    queryKey: ['/api/contracts', contractId],
+    queryFn: () => apiRequest(`/api/contracts/${contractId}`),
+    enabled: !!contractId
   });
   
-  // Data will be used by the component below
+  // Extract contract data from response
+  const contract = data;
 
   // Format date for display
   const formatDate = (dateString: string | null | undefined) => {
@@ -109,7 +111,7 @@ export default function ContractDetail() {
     );
   }
 
-  if (error || !data?.data) {
+  if (error) {
     return (
       <div className="p-8 text-center">
         <h2 className="text-xl font-semibold text-red-600">Error</h2>
@@ -123,10 +125,6 @@ export default function ContractDetail() {
       </div>
     );
   }
-
-  // Find the specific contract from the list
-  const contractsList = data?.data || [];
-  const contract = contractsList.find((c: any) => c.id === contractId) || {};
   
   // Since we've simplified the API, we aren't loading obligations and clauses
   // in this initial implementation
