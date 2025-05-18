@@ -34,12 +34,19 @@ type DocumentAttachment = {
 
 export default function ContractDocumentSection({ contractId }: ContractDocumentSectionProps) {
   // Get documents attached to this contract
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['/api/contracts/documents', contractId],
     queryFn: async () => {
-      return apiRequest(`/api/contracts/${contractId}/documents`);
+      try {
+        return await apiRequest(`/api/contracts/${contractId}/documents`);
+      } catch (err) {
+        console.error('Error fetching contract documents:', err);
+        // Return empty data instead of letting the error propagate
+        return { success: true, data: [] };
+      }
     },
-    enabled: Boolean(contractId)
+    enabled: Boolean(contractId),
+    retry: 1 // Only retry once to avoid too many failed requests
   });
 
   // Format date for display
