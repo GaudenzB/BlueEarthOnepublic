@@ -339,35 +339,43 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
           {contractData.id ? 'Edit Contract' : 'New Contract'}
         </h2>
         
-        {/* Interactive Stepper */}
-        <div className="flex justify-between mt-6 mb-6">
+        {/* New Stepper Implementation */}
+        <div className="flex justify-between items-center mt-6 mb-6 relative">
+          {/* Connection lines */}
+          <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -translate-y-1/2 z-0"></div>
+          
           {steps.map((step, index) => (
             <div 
-              key={index} 
-              className={`text-center p-2 border rounded-md flex-1 mx-1 cursor-pointer transition-colors ${
-                index === activeStep 
-                  ? 'border-2 border-blue-500' 
-                  : 'border-gray-200 hover:border-blue-300'
-              } ${
-                index < activeStep ? 'bg-blue-50' : 'bg-white'
-              }`}
+              key={index}
+              className="flex flex-col items-center relative z-10 cursor-pointer"
               onClick={() => {
-                // Only allow navigation to steps that come before the current step
-                // or the current step itself
+                // Only allow going back to previous steps or staying on current
                 if (index <= activeStep) {
                   setActiveStep(index);
                 }
               }}
             >
+              {/* Step number bubble */}
               <div 
-                className={`w-8 h-8 rounded-full ${
-                  index <= activeStep ? 'bg-blue-500' : 'bg-gray-200'
-                } text-white flex items-center justify-center mx-auto mb-2`}
+                className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 border-2 transition-colors
+                  ${index < activeStep 
+                    ? 'bg-blue-500 border-blue-500 text-white' 
+                    : index === activeStep 
+                      ? 'bg-white border-blue-500 text-blue-500' 
+                      : 'bg-white border-gray-300 text-gray-400'
+                  }
+                `}
               >
-                {index + 1}
+                <span className="text-lg font-semibold">{index + 1}</span>
               </div>
-              <div className="font-bold">{step.title}</div>
-              <div className="text-sm text-gray-600">{step.description}</div>
+              
+              {/* Step title and description */}
+              <div className={`text-center max-w-[150px] transition-colors
+                ${index <= activeStep ? 'text-blue-900' : 'text-gray-400'}
+              `}>
+                <div className="font-bold text-sm">{step.title}</div>
+                <div className="text-xs mt-1">{step.description}</div>
+              </div>
             </div>
           ))}
         </div>
