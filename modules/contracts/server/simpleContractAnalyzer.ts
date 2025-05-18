@@ -403,23 +403,83 @@ async function performSimpleAnalysis(text: string, documentTitle: string) {
 
 /**
  * Simple fallback analysis that uses regex and basic text patterns
+ * Used when OpenAI is not available or fails
  */
 function useFallbackAnalysis(text: string, documentTitle: string) {
-  logger.info('Using fallback contract analysis');
+  logger.info('Using fallback contract analysis with regex patterns');
   
-  // Extract vendor name
+  // Extract vendor name using various patterns
   let vendor = extractVendorName(text, documentTitle);
   
-  // Extract dates
-  const dates = extractDates(text);
-  let effectiveDate = dates.length > 0 ? dates[0] : null;
-  let terminationDate = dates.length > 1 ? dates[dates.length - 1] : null;
+  // Extract dates with better prioritization for effective/termination dates
+  const allDates = extractDates(text);
   
-  // Determine document type
+  // Try to find specific date references
+  let effectiveDate = null;
+  let terminationDate = null;
+  
+  // Look for effective date patterns first
+  const effectiveDateSections = [
+    extractSection(text, /effective\s+date/i, 100),
+    extractSection(text, /commencement\s+date/i, 100),
+    extractSection(text, /start\s+date/i, 100),
+    extractSection(text, /begins\s+on/i, 100)
+  ].filter(Boolean);
+  
+  // Look for termination date patterns
+  const terminationDateSections = [
+    extractSection(text, /termination\s+date/i, 100),
+    extractSection(text, /expiration\s+date/i, 100),
+    extractSection(text, /end\s+date/i, 100),
+    extractSection(text, /expires\s+on/i, 100)
+  ].filter(Boolean);
+  
+  // Try to extract dates from these specific sections first
+  for (const section of effectiveDateSections) {
+    if (section) {
+      const sectionDates = extractDates(section);
+      if (sectionDates.length > 0) {
+        effectiveDate = sectionDates[0];
+        break;
+      }
+    }
+  }
+  
+  for (const section of terminationDateSections) {
+    if (section) {
+      const sectionDates = extractDates(section);
+      if (sectionDates.length > 0) {
+        terminationDate = sectionDates[0];
+        break;
+      }
+    }
+  }
+  
+  // If we couldn't find specific date references, fall back to using the first/last dates
+  if (!effectiveDate && allDates.length > 0) {
+    effectiveDate = allDates[0];
+  }
+  
+  if (!terminationDate && allDates.length > 1) {
+    terminationDate = allDates[allDates.length - 1];
+  }
+  
+  // Determine document type with better pattern matching
   const docType = determineDocumentType(text, documentTitle);
   
-  // Use document title for contract title
-  const contractTitle = documentTitle || "Untitled Contract";
+  // Use document title for contract title, clean up common prefixes
+  let contractTitle = documentTitle || "Untitled Contract";
+  contractTitle = contractTitle
+    .replace(/^(agreement|contract|nda|msa|sow)\s*[-:]\s*/i, '')
+    .replace(/\.pdf$/i, '')
+    .trim();
+  
+  logger.info(`Fallback analysis complete for "${contractTitle}"`, {
+    vendor,
+    docType,
+    effectiveDate,
+    terminationDate
+  });
   
   return {
     vendor,
