@@ -78,15 +78,31 @@ export default function ContractDocumentSection({ contractId }: ContractDocument
   }, [data?.data]);
 
   // Order for document types
-  const typeOrder = ['MAIN', 'AMENDMENT', 'SIDE_LETTER', 'EXHIBIT', 'RENEWAL', 'TERMINATION', 'OTHER'];
+  const typeOrder = [
+    'MAIN', 
+    'AMENDMENT', 
+    'ADDENDUM',
+    'SIDE_LETTER', 
+    'EXHIBIT', 
+    'SCHEDULE', 
+    'STATEMENT_OF_WORK',
+    'CERTIFICATE',
+    'RENEWAL', 
+    'TERMINATION', 
+    'OTHER'
+  ];
   
   // Get user-friendly label for document type
   const getDocTypeLabel = (type: string) => {
     switch (type) {
       case 'MAIN': return 'Main Agreements';
       case 'AMENDMENT': return 'Amendments';
+      case 'ADDENDUM': return 'Addendums';
       case 'SIDE_LETTER': return 'Side Letters';
       case 'EXHIBIT': return 'Exhibits';
+      case 'SCHEDULE': return 'Schedules';
+      case 'STATEMENT_OF_WORK': return 'Statements of Work';
+      case 'CERTIFICATE': return 'Certificates';
       case 'RENEWAL': return 'Renewals';
       case 'TERMINATION': return 'Terminations';
       case 'OTHER': return 'Other Documents';

@@ -166,6 +166,92 @@ export default function ContractDetail() {
           {contract.contractStatus}
         </Badge>
       </div>
+      
+      {/* Contract Summary Card */}
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle>Contract Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Vendor Information */}
+            {contract.vendorId && (
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium text-muted-foreground">Vendor</h3>
+                <div className="flex items-center">
+                  <Building className="h-4 w-4 mr-2" />
+                  <Link href={`/vendors/${contract.vendorId}`}>
+                    <span className="text-blue-600 hover:underline">{contract.vendorName || 'View Vendor Details'}</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+            
+            {/* Contract Number */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Contract Number</h3>
+              <p>{contract.contractNumber || 'N/A'}</p>
+            </div>
+            
+            {/* Contract Type */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Type</h3>
+              <p>{contract.contractType || 'N/A'}</p>
+            </div>
+            
+            {/* Effective Date */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Effective Date</h3>
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                {formatDate(contract.effectiveDate)}
+              </div>
+            </div>
+            
+            {/* Expiry Date */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Expiry Date</h3>
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                {formatDate(contract.expiryDate)}
+                {isDateApproaching(contract.expiryDate) && (
+                  <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 border-amber-200">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Approaching
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            {/* Total Value */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Total Value</h3>
+              <p>{contract.totalValue ? `${contract.currency || '$'}${contract.totalValue.toLocaleString()}` : 'N/A'}</p>
+            </div>
+          </div>
+          
+          {/* Description if available */}
+          {contract.description && (
+            <div className="mt-4 pt-4 border-t">
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Description</h3>
+              <p className="text-sm">{contract.description}</p>
+            </div>
+          )}
+          
+          {/* Counterparty Information */}
+          <div className="mt-4 pt-4 border-t">
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">Counterparty</h3>
+            <p className="text-sm">{contract.counterpartyName || 'N/A'}</p>
+            {contract.counterpartyContactEmail && (
+              <p className="text-sm text-blue-600 hover:underline">
+                <a href={`mailto:${contract.counterpartyContactEmail}`}>
+                  {contract.counterpartyContactEmail}
+                </a>
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main contract details */}

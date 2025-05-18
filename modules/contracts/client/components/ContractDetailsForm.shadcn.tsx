@@ -28,18 +28,42 @@ import {
 
 // Form schema
 const formSchema = z.object({
+  // Required fields
   contractType: z.string().min(1, { message: 'Contract type is required' }),
-  contractNumber: z.string().optional(),
   counterpartyName: z.string().min(1, { message: 'Counterparty name is required' }),
+  
+  // Optional fields with validation
+  contractNumber: z.string().optional(),
   counterpartyAddress: z.string().optional(),
-  counterpartyContactEmail: z.string().email({ message: 'Must be a valid email' }).optional().or(z.literal('')),
+  counterpartyContactEmail: z.string()
+    .email({ message: 'Must be a valid email address' })
+    .optional()
+    .or(z.literal('')),
   vendorId: z.string().optional(),
   description: z.string().optional(),
+  
+  // Date fields with validation
   effectiveDate: z.date().optional(),
-  expiryDate: z.date().optional(),
+  expiryDate: z.date()
+    .optional()
+    .refine(
+      (date) => !date || !form?.getValues().effectiveDate || date > form?.getValues().effectiveDate,
+      { message: 'Expiry date must be after effective date' }
+    ),
   executionDate: z.date().optional(),
-  renewalDate: z.date().optional(),
-  totalValue: z.string().optional(),
+  renewalDate: z.date()
+    .optional()
+    .refine(
+      (date) => !date || !form?.getValues().expiryDate || date >= form?.getValues().expiryDate,
+      { message: 'Renewal date should be on or after the expiry date' }
+    ),
+    
+  // Other metadata
+  totalValue: z.string()
+    .optional()
+    .refine(val => !val || /^[\d,.]+$/.test(val), { 
+      message: 'Total value must be a number' 
+    }),
   currency: z.string().optional(),
 });
 
@@ -214,7 +238,7 @@ export default function ContractDetailsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Contract Type {showConfidence && renderConfidence(0.95)}
+                      Contract Type <span className="text-red-500 ml-1">*</span> {showConfidence && renderConfidence(0.95)}
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
