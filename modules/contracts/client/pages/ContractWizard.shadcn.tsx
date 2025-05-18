@@ -339,25 +339,32 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
           {contractData.id ? 'Edit Contract' : 'New Contract'}
         </h2>
         
-        {/* Simple Stepper */}
+        {/* Interactive Stepper */}
         <div className="flex justify-between mt-6 mb-6">
           {steps.map((step, index) => (
             <div 
               key={index} 
-              className={`text-center p-2 border rounded-md flex-1 mx-1 ${
+              className={`text-center p-2 border rounded-md flex-1 mx-1 cursor-pointer transition-colors ${
                 index === activeStep 
                   ? 'border-2 border-blue-500' 
-                  : 'border-gray-200'
+                  : 'border-gray-200 hover:border-blue-300'
               } ${
                 index < activeStep ? 'bg-blue-50' : 'bg-white'
               }`}
+              onClick={() => {
+                // Only allow navigation to steps that come before the current step
+                // or the current step itself
+                if (index <= activeStep) {
+                  setActiveStep(index);
+                }
+              }}
             >
               <div 
-                className={`w-6 h-6 rounded-full ${
+                className={`w-8 h-8 rounded-full ${
                   index <= activeStep ? 'bg-blue-500' : 'bg-gray-200'
                 } text-white flex items-center justify-center mx-auto mb-2`}
               >
-                {index < activeStep ? "✓" : index + 1}
+                {index + 1}
               </div>
               <div className="font-bold">{step.title}</div>
               <div className="text-sm text-gray-600">{step.description}</div>
