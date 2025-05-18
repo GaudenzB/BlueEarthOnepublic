@@ -774,41 +774,71 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
       });
     }
     
-    // Start the analysis process
+    // Start the analysis process - wrapping this in its own try-catch block
+    let analysisResult;
     try {
-      const analysisResult = await analyzeContractDocument(documentId, userId, tenantId);
+      // Log that we're about to call the analyzer
+      logger.info('Starting contract document analysis function', {
+        requestId,
+        documentId,
+        userId,
+        tenantId
+      });
       
+      // This is the call that might throw an error
+      analysisResult = await analyzeContractDocument(documentId, userId, tenantId);
+      
+      // Check if the result is valid
       if (!analysisResult || !analysisResult.id) {
-        throw new Error('Analysis did not return a valid result');
+        logger.error('Contract analyzer returned invalid result', {
+          requestId,
+          documentId,
+          result: JSON.stringify(analysisResult)
+        });
+        
+        // Always return a structured JSON error response
+        return res.status(500).json({
+          success: false,
+          message: 'Analysis engine returned invalid result',
+          error: 'INVALID_ANALYSIS_RESULT',
+          data: { documentId }
+        });
       }
       
+      // Log success
       logger.info('Contract analysis initiated successfully', {
         requestId,
         analysisId: analysisResult.id,
         status: analysisResult.status
       });
       
+      // Return success response
       return res.status(200).json({
         success: true,
         message: 'Document analysis started',
         data: analysisResult
       });
     } catch (analysisError) {
-      // Handle errors from the analyzer
-      logger.error('Error in contract document analysis', {
+      // Catch and properly handle any errors from the analyzer
+      const errorMessage = analysisError instanceof Error ? analysisError.message : String(analysisError);
+      const errorStack = analysisError instanceof Error ? analysisError.stack : undefined;
+      
+      // Log the detailed error
+      logger.error('Error in contract document analysis function', {
         requestId,
         documentId,
-        error: analysisError instanceof Error ? {
-          message: analysisError.message,
-          stack: analysisError.stack
-        } : 'Unknown error'
+        errorMessage,
+        errorStack,
+        errorType: analysisError instanceof Error ? analysisError.constructor.name : 'UnknownError'
       });
       
+      // Always return a structured JSON response
       return res.status(500).json({
         success: false,
         message: 'Failed to analyze document',
-        error: analysisError instanceof Error ? analysisError.message : 'Unknown analysis error',
-        errorType: 'ANALYSIS_FAILED'
+        error: errorMessage,
+        errorCode: 'ANALYSIS_FAILED',
+        data: { documentId }
       });
     }
   } catch (error) {
