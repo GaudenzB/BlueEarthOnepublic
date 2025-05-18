@@ -66,9 +66,12 @@ export default function ContractDetailsForm({
   onSubmit,
   attachedDocuments = []
 }: ContractDetailsFormProps) {
-  // Document attachment state
-  const [documents, setDocuments] = useState<DocumentAttachment[]>(attachedDocuments || []);
+  // State for document selection UI
+  const [hoveredField, setHoveredField] = useState<string | null>(null);
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
+  
+  // Document attachments state
+  const [documents, setDocuments] = useState<DocumentAttachment[]>(attachedDocuments || []);
   
   // Document form state
   const [documentForm, setDocumentForm] = useState<{
@@ -101,7 +104,27 @@ export default function ContractDetailsForm({
     queryFn: async () => apiRequest('/api/lookup/contract-types')
   });
   
-  // Document handling functions
+  // Set up form with default values
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      contractType: contractData.contractType || 'OTHER',
+      contractNumber: contractData.contractNumber || '',
+      counterpartyName: contractData.counterpartyName || '',
+      counterpartyAddress: contractData.counterpartyAddress || '',
+      counterpartyContactEmail: contractData.counterpartyContactEmail || '',
+      vendorId: contractData.vendorId || '',
+      description: contractData.description || '',
+      effectiveDate: contractData.effectiveDate ? new Date(contractData.effectiveDate) : undefined,
+      expiryDate: contractData.expiryDate ? new Date(contractData.expiryDate) : undefined,
+      executionDate: contractData.executionDate ? new Date(contractData.executionDate) : undefined,
+      renewalDate: contractData.renewalDate ? new Date(contractData.renewalDate) : undefined,
+      totalValue: contractData.totalValue || '',
+      currency: contractData.currency || '',
+    }
+  });
+  
+  // Document attachment handlers
   const handleAddDocument = () => {
     if (!documentForm.documentId) return;
     
@@ -156,96 +179,6 @@ export default function ContractDetailsForm({
     );
   };
 
-  // Set up form with default values
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      contractType: contractData.contractType || 'OTHER',
-      contractNumber: contractData.contractNumber || '',
-      counterpartyName: contractData.counterpartyName || '',
-      counterpartyAddress: contractData.counterpartyAddress || '',
-      counterpartyContactEmail: contractData.counterpartyContactEmail || '',
-      vendorId: contractData.vendorId || '',
-      description: contractData.description || '',
-      effectiveDate: contractData.effectiveDate ? new Date(contractData.effectiveDate) : undefined,
-      expiryDate: contractData.expiryDate ? new Date(contractData.expiryDate) : undefined,
-      executionDate: contractData.executionDate ? new Date(contractData.executionDate) : undefined,
-      renewalDate: contractData.renewalDate ? new Date(contractData.renewalDate) : undefined,
-      totalValue: contractData.totalValue || '',
-      currency: contractData.currency || '',
-    }
-  });
-
-  // Helper function to get confidence badge
-  const renderConfidence = (value: number) => {
-    if (!showConfidence) return null;
-    
-    let color = 'bg-red-100 text-red-800';
-    if (value >= 0.9) {
-      color = 'bg-green-100 text-green-800';
-    } else if (value >= 0.7) {
-      color = 'bg-yellow-100 text-yellow-800';
-    }
-    
-    return (
-      <Badge variant="outline" className={`ml-2 ${color}`}>
-        {Math.round(value * 100)}%
-      </Badge>
-    );
-  };
-
-  // Document attachment form
-  const [documentForm, setDocumentForm] = useState<{
-    documentId: string;
-    docType: string;
-    isPrimary: boolean;
-    notes: string;
-    effectiveDate?: Date;
-  }>({
-    documentId: '',
-    docType: 'MAIN',
-    isPrimary: false,
-    notes: ''
-  });
-
-  // Add document to attachments list
-  const handleAddDocument = () => {
-    if (!documentForm.documentId) return;
-    
-    // Find document details from query results
-    const selectedDoc = documentsQuery.data?.data?.find((doc: any) => doc.id === documentForm.documentId);
-    
-    if (!selectedDoc) return;
-    
-    // Create new document attachment
-    const newAttachment = {
-      ...documentForm,
-      documentTitle: selectedDoc.title || selectedDoc.originalFilename,
-      effectiveDate: documentForm.effectiveDate ? format(documentForm.effectiveDate, 'yyyy-MM-dd') : undefined
-    };
-    
-    // Add to documents list
-    setDocuments([...documents, newAttachment]);
-    
-    // Reset form
-    setDocumentForm({
-      documentId: '',
-      docType: 'MAIN',
-      isPrimary: false,
-      notes: ''
-    });
-    
-    // Hide document selector
-    setShowDocumentSelector(false);
-  };
-  
-  // Remove document from attachments list
-  const handleRemoveDocument = (index: number) => {
-    const updatedDocs = [...documents];
-    updatedDocs.splice(index, 1);
-    setDocuments(updatedDocs);
-  };
-
   // Handle form submission
   const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
     // Format dates for API
@@ -255,7 +188,7 @@ export default function ContractDetailsForm({
       expiryDate: values.expiryDate ? format(values.expiryDate, 'yyyy-MM-dd') : null,
       executionDate: values.executionDate ? format(values.executionDate, 'yyyy-MM-dd') : null,
       renewalDate: values.renewalDate ? format(values.renewalDate, 'yyyy-MM-dd') : null,
-      // Keep the ID and any other existing data
+      // Keep the ID if it exists
       id: contractData.id,
       // Include document attachments
       documents: documents
@@ -271,8 +204,9 @@ export default function ContractDetailsForm({
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+            {/* Contract Details Section */}
+            <div className="grid grid-cols-2 gap-4">
               {/* Contract Type */}
               <FormField
                 control={form.control}
@@ -282,28 +216,33 @@ export default function ContractDetailsForm({
                     <FormLabel>
                       Contract Type {showConfidence && renderConfidence(0.95)}
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select contract type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="NDA">Non-Disclosure Agreement</SelectItem>
-                        <SelectItem value="MSA">Master Service Agreement</SelectItem>
-                        <SelectItem value="SOW">Statement of Work</SelectItem>
-                        <SelectItem value="EMPLOYMENT">Employment Contract</SelectItem>
-                        <SelectItem value="LEASE">Lease Agreement</SelectItem>
-                        <SelectItem value="LICENSING">Licensing Agreement</SelectItem>
-                        <SelectItem value="VENDOR">Vendor Agreement</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
+                        {contractTypesQuery.data?.data?.map((type: any) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        )) || (
+                          <>
+                            <SelectItem value="INVESTMENT">Investment Agreement</SelectItem>
+                            <SelectItem value="LPA">Limited Partnership Agreement</SelectItem>
+                            <SelectItem value="SERVICE">Service Agreement</SelectItem>
+                            <SelectItem value="NDA">Non-Disclosure Agreement</SelectItem>
+                            <SelectItem value="OTHER">Other</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               {/* Contract Number */}
               <FormField
                 control={form.control}
@@ -314,13 +253,13 @@ export default function ContractDetailsForm({
                       Contract Number {showConfidence && renderConfidence(0.85)}
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Contract reference number" {...field} />
+                      <Input placeholder="ABC-12345" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               {/* Counterparty Name */}
               <FormField
                 control={form.control}
@@ -331,236 +270,51 @@ export default function ContractDetailsForm({
                       Counterparty Name {showConfidence && renderConfidence(0.92)}
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Company or individual name" {...field} />
+                      <Input placeholder="Acme Corp" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Counterparty Address */}
-              <FormField
-                control={form.control}
-                name="counterpartyAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Counterparty Address {showConfidence && renderConfidence(0.78)}
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Business address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Counterparty Contact Email */}
+              
+              {/* Counterparty Email */}
               <FormField
                 control={form.control}
                 name="counterpartyContactEmail"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Counterparty Email {showConfidence && renderConfidence(0.80)}
+                      Counterparty Email {showConfidence && renderConfidence(0.75)}
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="contact@company.com" {...field} />
+                      <Input type="email" placeholder="contact@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Effective Date */}
+              
+              {/* Counterparty Address */}
               <FormField
                 control={form.control}
-                name="effectiveDate"
+                name="counterpartyAddress"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem className="col-span-2">
                     <FormLabel>
-                      Effective Date {showConfidence && renderConfidence(0.88)}
-                    </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Expiry Date */}
-              <FormField
-                control={form.control}
-                name="expiryDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>
-                      Expiry Date {showConfidence && renderConfidence(0.86)}
-                    </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Execution Date */}
-              <FormField
-                control={form.control}
-                name="executionDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>
-                      Execution Date {showConfidence && renderConfidence(0.82)}
-                    </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Renewal Date */}
-              <FormField
-                control={form.control}
-                name="renewalDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>
-                      Renewal Date {showConfidence && renderConfidence(0.75)}
-                    </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Total Value */}
-              <FormField
-                control={form.control}
-                name="totalValue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Total Value {showConfidence && renderConfidence(0.79)}
+                      Counterparty Address {showConfidence && renderConfidence(0.80)}
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Contract value" 
-                        {...field} 
+                      <Textarea 
+                        placeholder="123 Main St, City, Country" 
+                        {...field}
+                        rows={2}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               {/* Vendor Selection */}
               <FormField
                 control={form.control}
@@ -640,6 +394,191 @@ export default function ContractDetailsForm({
                   </FormItem>
                 )}
               />
+              
+              {/* Contract Value */}
+              <FormField
+                control={form.control}
+                name="totalValue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Total Value {showConfidence && renderConfidence(0.88)}
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="10000.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Effective Date */}
+              <FormField
+                control={form.control}
+                name="effectiveDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>
+                      Effective Date {showConfidence && renderConfidence(0.90)}
+                    </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Expiry Date */}
+              <FormField
+                control={form.control}
+                name="expiryDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>
+                      Expiry Date {showConfidence && renderConfidence(0.85)}
+                    </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Execution Date */}
+              <FormField
+                control={form.control}
+                name="executionDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>
+                      Execution Date {showConfidence && renderConfidence(0.82)}
+                    </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Renewal Date */}
+              <FormField
+                control={form.control}
+                name="renewalDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>
+                      Renewal Date {showConfidence && renderConfidence(0.75)}
+                    </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             
             {/* Document Attachments Section */}
@@ -678,6 +617,7 @@ export default function ContractDetailsForm({
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleRemoveDocument(index)}
+                              type="button"
                             >
                               <Trash2 size={16} />
                             </Button>
@@ -754,6 +694,7 @@ export default function ContractDetailsForm({
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
+                            type="button"
                             variant="outline"
                             className="w-full justify-start text-left font-normal"
                           >

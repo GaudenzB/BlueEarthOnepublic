@@ -1,9 +1,33 @@
--- Migration: Contract Data Model Refactor
--- Purpose: Allow contracts without documents, support multiple attachments, and add vendor relationships
--- Date: 2025-05-18
+-- Migration: Contract Data Model Refactoring
+-- This migration adds support for:
+-- 1. Contracts without documents
+-- 2. Multiple document attachments
+-- 3. Vendor relationships
+-- 4. Document type categorization
 
--- Create contract_doc_type enum type if it doesn't exist
-DO $$ 
+-- Create vendors table
+CREATE TABLE IF NOT EXISTS "vendors" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "tenantId" UUID NOT NULL REFERENCES "tenants" ("id") ON DELETE CASCADE,
+  "name" TEXT NOT NULL,
+  "description" TEXT,
+  "website" TEXT,
+  "address" TEXT,
+  "contactName" TEXT,
+  "contactEmail" TEXT,
+  "contactPhone" TEXT,
+  "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "createdBy" UUID,
+  "updatedBy" UUID
+);
+
+-- Add index on tenant
+CREATE INDEX IF NOT EXISTS "vendors_tenantId_idx" ON "vendors" ("tenantId");
+
+-- Create contract document type enum
+DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'contract_doc_type') THEN
     CREATE TYPE contract_doc_type AS ENUM (
@@ -16,92 +40,39 @@ BEGIN
       'OTHER'
     );
   END IF;
-END $$;
+END
+$$;
 
--- Create vendors table
-CREATE TABLE IF NOT EXISTS vendors (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  
-  -- References
-  tenant_id UUID NOT NULL REFERENCES tenants(id),
-  
-  -- Auditing
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP NOT NULL DEFAULT now()
+-- Create contract_documents join table
+CREATE TABLE IF NOT EXISTS "contract_documents" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "contractId" UUID NOT NULL REFERENCES "contracts" ("id") ON DELETE CASCADE,
+  "documentId" UUID NOT NULL REFERENCES "documents" ("id") ON DELETE CASCADE,
+  "docType" contract_doc_type NOT NULL DEFAULT 'MAIN',
+  "isPrimary" BOOLEAN NOT NULL DEFAULT false,
+  "notes" TEXT,
+  "effectiveDate" DATE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes on vendors table
-CREATE INDEX IF NOT EXISTS vendor_name_idx ON vendors(name);
-CREATE INDEX IF NOT EXISTS vendor_tenant_id_idx ON vendors(tenant_id);
+-- Add unique constraint to ensure each document is only attached once
+CREATE UNIQUE INDEX IF NOT EXISTS "contract_documents_contract_document_idx" 
+  ON "contract_documents" ("contractId", "documentId");
 
--- Create contract_documents table
-CREATE TABLE IF NOT EXISTS contract_documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE RESTRICT,
-  
-  -- Document classification
-  doc_type contract_doc_type NOT NULL DEFAULT 'MAIN',
-  is_primary BOOLEAN DEFAULT false,
-  
-  -- Document metadata
-  effective_date DATE,
-  notes TEXT,
-  
-  -- References
-  tenant_id UUID NOT NULL REFERENCES tenants(id),
-  added_by UUID REFERENCES users(id),
-  
-  -- Auditing
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP NOT NULL DEFAULT now()
-);
+-- Add constraint to ensure only one primary document per contract
+CREATE UNIQUE INDEX IF NOT EXISTS "contract_documents_primary_idx" 
+  ON "contract_documents" ("contractId") 
+  WHERE "isPrimary" = true;
 
--- Create indexes on contract_documents table
-CREATE INDEX IF NOT EXISTS contract_doc_contract_id_idx ON contract_documents(contract_id);
-CREATE INDEX IF NOT EXISTS contract_doc_document_id_idx ON contract_documents(document_id);
-CREATE INDEX IF NOT EXISTS contract_doc_type_idx ON contract_documents(doc_type);
-CREATE INDEX IF NOT EXISTS contract_doc_tenant_id_idx ON contract_documents(tenant_id);
-CREATE INDEX IF NOT EXISTS contract_doc_is_primary_idx ON contract_documents(is_primary);
+-- Create indices for performance
+CREATE INDEX IF NOT EXISTS "contract_documents_contract_idx" ON "contract_documents" ("contractId");
+CREATE INDEX IF NOT EXISTS "contract_documents_document_idx" ON "contract_documents" ("documentId");
 
--- Migrate existing contract documents to the new table
-INSERT INTO contract_documents (
-  contract_id,
-  document_id,
-  doc_type,
-  is_primary,
-  tenant_id,
-  created_at,
-  updated_at
-)
-SELECT 
-  id, -- contract_id
-  document_id,
-  'MAIN', -- doc_type
-  true, -- is_primary
-  tenant_id,
-  created_at,
-  updated_at
-FROM contracts
-WHERE document_id IS NOT NULL;
+-- Modify contracts table to add vendor relationship and description
+ALTER TABLE "contracts" 
+  ADD COLUMN IF NOT EXISTS "vendorId" UUID REFERENCES "vendors" ("id") ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS "description" TEXT;
 
--- Add vendor_id and description columns to contracts table
-ALTER TABLE contracts
-  ADD COLUMN IF NOT EXISTS vendor_id UUID REFERENCES vendors(id),
-  ADD COLUMN IF NOT EXISTS description TEXT;
-
--- Create index for vendor_id
-CREATE INDEX IF NOT EXISTS contract_vendor_id_idx ON contracts(vendor_id);
-
--- Add temporary nullable flag to document_id column
-ALTER TABLE contracts 
-  ALTER COLUMN document_id DROP NOT NULL;
-
--- Update any code that relies on document_id to use the contract_documents table
--- (This is handled in application code)
-
--- Drop the document_id column after migrating all data
--- We're proceeding with this now since we've safely migrated all references
-ALTER TABLE contracts DROP COLUMN document_id;
+-- Create index on vendor relationship
+CREATE INDEX IF NOT EXISTS "contracts_vendorId_idx" ON "contracts" ("vendorId");
