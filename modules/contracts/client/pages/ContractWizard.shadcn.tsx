@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -113,10 +113,17 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
         console.log('Moving to next step:', activeStep + 1);
         setActiveStep(activeStep + 1);
       } else {
-        // Navigate to contract list page instead of detail page
-        // This ensures users can see all contracts after creation
+        // Forcefully invalidate the contracts query to ensure fresh data
+        queryClient.invalidateQueries({ queryKey: ['/api/contracts'] });
+        queryClient.refetchQueries({ queryKey: ['/api/contracts'] });
+        
+        // Navigate to contract list page with small delay to allow query invalidation
         console.log('Navigating to contract list');
-        setLocation('/contracts');
+        setTimeout(() => {
+          // Reset the component state before navigating
+          setActiveStep(0);
+          setLocation('/contracts');
+        }, 300);
       }
       
       // Invalidate queries
