@@ -1,0 +1,64 @@
+What is Working
+
+Document existence check is correctly implemented
+Initial DB write into contractUploadAnalysis (status: PENDING) is started
+Uses OpenAI if OPENAI_API_KEY is present
+Intended fallback structure is in place (though not fully implemented)
+🔥 What’s Missing or Blocking Analysis
+
+No actual text extraction from the PDF document is shown
+The file content is never loaded
+You likely need something like:
+const buffer = await loadDocumentFile(documentId);
+const text = await extractTextFromPdf(buffer);
+No call to openai.chat.completions.create(...) or openai.embeddings
+The OpenAI client is instantiated, but never used
+So no metadata extraction (e.g. title, party, dates, etc.) ever occurs
+No fallback metadata logic from document title
+Even though logging claims a fallback exists, there's no parsing logic in the extracted code
+No update of contractUploadAnalysis record
+You insert the record with status: 'PENDING'
+But no .update(...).set({ status: 'SUCCESS', ... }) ever follows
+✅ Recommendation: Minimal Fix Strategy
+
+1. Load and extract PDF text
+Inside the try block, after confirming the document exists:
+
+const buffer = await loadDocumentBuffer(document); // You’ll need to implement this if missing
+const text = await extractTextFromPdf(buffer);
+You can use a PDF parser like pdf-parse or pdf-lib.
+
+2. Send to OpenAI
+Then run something like:
+
+const result = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [
+    {
+      role: 'system',
+      content: 'Extract key contract metadata (title, vendor, effective date, termination date, type). Respond as JSON.'
+    },
+    {
+      role: 'user',
+      content: text.slice(0, 12000) // truncate if needed
+    }
+  ]
+});
+
+const analysis = JSON.parse(result.choices[0].message.content);
+3. Save results
+Update your contractUploadAnalysis record like:
+
+await db.update(contractUploadAnalysis)
+  .set({
+    status: 'SUCCESS',
+    vendor: analysis.vendor,
+    contractTitle: analysis.title,
+    effectiveDate: analysis.effectiveDate,
+    terminationDate: analysis.terminationDate,
+    docType: analysis.docType,
+    confidence: analysis.confidence ?? {},
+    rawAnalysisJson: result
+  })
+  .where(eq(contractUploadAnalysis.id, initialRecord.id));
+Handle errors similarly with status: 'FAILED'.

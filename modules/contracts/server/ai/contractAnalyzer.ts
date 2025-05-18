@@ -8,7 +8,12 @@ import { contractUploadAnalysis } from '../../../../shared/schema/contracts/cont
 
 // Simple OpenAI client instance for contract analysis
 // In production, would use the main openai instance from server services
+// Load OpenAI API key from environment
 const apiKey = process.env['OPENAI_API_KEY'];
+// Create OpenAI client instance with api key, with proper logging
+if (!apiKey) {
+  logger.warn('OPENAI_API_KEY environment variable is not set. AI contract analysis will use fallback methods');
+}
 const openai = apiKey ? new OpenAI({ apiKey }) : null;
 
 /**
@@ -129,16 +134,54 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
     // Get document details and content
     let documentText = '';
     try {
-      // First, start with document title
-      documentText = `Contract: ${document.title || 'Untitled Document'}\n`;
+      logger.info(`Downloading document content for ${documentId}`, { 
+        storageKey: document.storageKey, 
+        mimeType: document.mimeType 
+      });
       
-      // Add description if available
-      if (document.description) {
-        documentText += `\nDescription: ${document.description}\n`;
+      // Import necessary utilities
+      const { downloadFile } = await import('../../../../server/utils/storage');
+      const { extractTextFromDocument } = await import('../../../../server/utils/openai');
+      
+      // Download the file content
+      const fileBuffer = await downloadFile(document.storageKey);
+      
+      logger.info(`Document downloaded successfully, extracting text`, {
+        documentId,
+        bufferSize: fileBuffer.length
+      });
+      
+      // Extract text based on mime type
+      documentText = await extractTextFromDocument(
+        fileBuffer,
+        document.mimeType,
+        document.originalFilename
+      );
+      
+      logger.info(`Successfully extracted text from document`, {
+        documentId,
+        textLength: documentText.length,
+        textPreview: documentText.substring(0, 100) + '...'
+      });
+      
+      // If no text was extracted or it's very short, add document metadata
+      if (!documentText || documentText.length < 50) {
+        logger.warn(`Document text extraction returned limited content, adding metadata`, {
+          documentId,
+          extractedLength: documentText?.length || 0
+        });
+        
+        // Start with document title
+        documentText = (documentText || '') + `\nContract: ${document.title || 'Untitled Document'}\n`;
+        
+        // Add description if available
+        if (document.description) {
+          documentText += `\nDescription: ${document.description}\n`;
+        }
+        
+        // Add filename information that might contain useful clues
+        documentText += `\nFilename: ${document.originalFilename || document.filename}\n`;
       }
-      
-      // Add filename information that might contain useful clues
-      documentText += `\nFilename: ${document.originalFilename || document.filename}\n`;
       
       // Try to get content from aiMetadata if available
       if (document.aiMetadata) {
