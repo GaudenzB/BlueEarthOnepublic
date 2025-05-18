@@ -1,6 +1,6 @@
 import { logger } from '../../../../server/utils/logger';
 import { db } from '../../../../server/db';
-import { documents } from '../../../../shared/schema/documents';
+import { documents } from '../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
 import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
