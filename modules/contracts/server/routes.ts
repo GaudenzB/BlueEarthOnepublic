@@ -9,7 +9,7 @@ import {
   documents
 } from '../../../shared/schema';
 import { contractUploadAnalysis } from '../../../shared/schema/contracts/contract_upload_analysis';
-import { analyzeContractDocument, getAnalysisById, savePrefillData } from './ai/contractAnalyzer';
+import { analyzeContractDocument, getContractAnalysisStatus } from './ai/contractAnalyzer';
 import { sql, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import crypto from 'crypto';
