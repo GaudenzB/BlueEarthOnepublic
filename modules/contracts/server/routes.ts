@@ -636,7 +636,11 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/:id/documents', async (req: Request, res: Response) => {
   try {
     const contractId = req.params.id;
-    const tenantId = (req as any).tenantId;
+    
+    // Get tenant ID from request - in development, use a default if not available
+    const tenantId = process.env.NODE_ENV === 'development' 
+      ? '00000000-0000-0000-0000-000000000001' // Default tenant for development
+      : (req as any).tenantId;
     
     // Check if contract exists
     const contract = await db.query.contracts.findFirst({
@@ -663,6 +667,15 @@ router.get('/:id/documents', async (req: Request, res: Response) => {
         sql`${contractDocuments.effectiveDate} DESC NULLS LAST`
       ]
     });
+    
+    // If no documents are found, return an empty array
+    if (!attachedDocs || attachedDocs.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No documents found for this contract',
+        data: []
+      });
+    }
     
     res.json({
       success: true,
