@@ -113,10 +113,10 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
         console.log('Moving to next step:', activeStep + 1);
         setActiveStep(activeStep + 1);
       } else {
-        // Navigate to contract details page
-        const navTarget = `/contracts/${contractId || data?.id || contractData.id}`;
-        console.log('Navigating to:', navTarget);
-        setLocation(navTarget);
+        // Navigate to contract list page instead of detail page
+        // This ensures users can see all contracts after creation
+        console.log('Navigating to contract list');
+        setLocation('/contracts');
       }
       
       // Invalidate queries
