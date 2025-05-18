@@ -45,7 +45,7 @@ export const contractUploadAnalysis = pgTable('contract_upload_analysis', {
 });
 
 // Import documents schema
-import { documents } from '../../schema/documents';
+import { documents } from '../documents';
 
 // Define Zod schema for insertion
 export const insertContractUploadAnalysisSchema = createInsertSchema(contractUploadAnalysis)

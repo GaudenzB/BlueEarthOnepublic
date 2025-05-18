@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,8 @@ interface AssignOrCreateFormProps {
 
 export default function AssignOrCreateForm({ analysisResult, documentId, onReset }: AssignOrCreateFormProps) {
   const { toast } = useToast();
-  const [, navigate] = useNavigate();
+  // Using location for navigation
+  const [, setLocation] = useLocation();
   const [contractData, setContractData] = useState({
     title: analysisResult.contractTitle || '',
     vendor: analysisResult.vendor || '',

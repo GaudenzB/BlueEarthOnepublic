@@ -8,6 +8,8 @@ import {
   contractDocuments,
   documents
 } from '../../../shared/schema';
+import { contractUploadAnalysis } from '../../../shared/schema/contracts/contract_upload_analysis';
+import { analyzeContractDocument, getAnalysisById, savePrefillData } from './ai/contractAnalyzer';
 import { sql, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import crypto from 'crypto';
@@ -670,6 +672,205 @@ router.delete('/:contractId/documents/:attachmentId', async (req: Request, res: 
 });
 
 
+
+/**
+ * @route POST /api/contracts/upload/analyze/:documentId
+ * @desc Analyze a contract document and extract key details with AI
+ * @access Authenticated users
+ */
+router.post('/upload/analyze/:documentId', async (req: Request, res: Response) => {
+  try {
+    // Get document ID from params
+    const { documentId } = req.params;
+    
+    // Get user and tenant IDs from request
+    const user = (req as any).user;
+    const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+    const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000000';
+    
+    // Validate document ID
+    if (!documentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document ID is required'
+      });
+    }
+    
+    // Start the analysis process
+    const analysisResult = await analyzeContractDocument(documentId, userId, tenantId);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Document analysis started',
+      data: analysisResult
+    });
+  } catch (error) {
+    logger.error('Error analyzing document:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to analyze document'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/upload/analysis/:analysisId
+ * @desc Get status and results of a document analysis
+ * @access Authenticated users
+ */
+router.get('/upload/analysis/:analysisId', async (req: Request, res: Response) => {
+  try {
+    const { analysisId } = req.params;
+    
+    // Validate analysis ID
+    if (!analysisId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Analysis ID is required'
+      });
+    }
+    
+    // Get analysis result
+    const analysis = await getAnalysisById(analysisId);
+    
+    // Return the appropriate response based on analysis status
+    if (analysis.status === 'FAILED') {
+      return res.status(500).json({
+        success: false,
+        message: 'Document analysis failed',
+        error: analysis.error,
+        data: {
+          id: analysis.id,
+          status: analysis.status
+        }
+      });
+    }
+    
+    if (analysis.status === 'PENDING' || analysis.status === 'PROCESSING') {
+      return res.status(200).json({
+        success: true,
+        message: 'Document analysis in progress',
+        data: {
+          id: analysis.id,
+          status: analysis.status
+        }
+      });
+    }
+    
+    // Analysis is complete, return full results
+    return res.status(200).json({
+      success: true,
+      message: 'Document analysis complete',
+      data: {
+        id: analysis.id,
+        documentId: analysis.documentId,
+        vendor: analysis.vendor,
+        contractTitle: analysis.contractTitle,
+        docType: analysis.docType,
+        effectiveDate: analysis.effectiveDate,
+        terminationDate: analysis.terminationDate,
+        confidence: analysis.confidence,
+        suggestedContractId: analysis.suggestedContractId,
+        status: analysis.status
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting analysis result:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get analysis result'
+    });
+  }
+});
+
+/**
+ * @route POST /api/contracts/prefill
+ * @desc Save analysis data for use in contract creation
+ * @access Authenticated users
+ */
+router.post('/prefill', async (req: Request, res: Response) => {
+  try {
+    // Get user and tenant IDs from request
+    const user = (req as any).user;
+    const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000000';
+    
+    // Validate request body
+    const { documentId, title, vendor, docType, effectiveDate, terminationDate } = req.body;
+    
+    if (!documentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document ID is required'
+      });
+    }
+    
+    // Save the prefill data
+    const prefillData = await savePrefillData({
+      documentId,
+      title,
+      vendor,
+      docType,
+      effectiveDate,
+      terminationDate
+    }, tenantId);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Prefill data saved successfully',
+      data: {
+        id: prefillData.id
+      }
+    });
+  } catch (error) {
+    logger.error('Error saving prefill data:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to save prefill data'
+    });
+  }
+});
+
+/**
+ * @route GET /api/contracts/prefill/:prefillId
+ * @desc Get prefill data for contract creation
+ * @access Authenticated users
+ */
+router.get('/prefill/:prefillId', async (req: Request, res: Response) => {
+  try {
+    const { prefillId } = req.params;
+    
+    // Validate prefill ID
+    if (!prefillId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Prefill ID is required'
+      });
+    }
+    
+    // Get prefill data
+    const prefillData = await getAnalysisById(prefillId);
+    
+    // Return prefill data
+    return res.status(200).json({
+      success: true,
+      message: 'Prefill data retrieved successfully',
+      data: {
+        documentId: prefillData.documentId,
+        title: prefillData.contractTitle,
+        vendor: prefillData.vendor,
+        docType: prefillData.docType,
+        effectiveDate: prefillData.effectiveDate,
+        terminationDate: prefillData.terminationDate
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting prefill data:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get prefill data'
+    });
+  }
+});
 
 /**
  * @route GET /api/contracts/lookup/contract-types
