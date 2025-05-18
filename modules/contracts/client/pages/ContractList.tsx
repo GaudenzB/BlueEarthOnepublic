@@ -159,9 +159,14 @@ export default function ContractList() {
             <div className="p-8 text-center border border-dashed rounded-md">
               <FileText className="h-8 w-8 mx-auto mb-3 text-gray-400" />
               <p className="text-muted-foreground mb-4">No contracts found</p>
-              <Link href="/contracts/new">
-                <Button variant="outline">Create your first contract</Button>
-              </Link>
+              <div className="flex gap-2 justify-center">
+                <Link href="/contracts/upload">
+                  <Button variant="outline">Upload document first</Button>
+                </Link>
+                <Link href="/contracts/new">
+                  <Button>Create your first contract</Button>
+                </Link>
+              </div>
             </div>
           )}
         </CardContent>
