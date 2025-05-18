@@ -2,6 +2,7 @@ import { Express } from 'express';
 import { logger } from '../../../server/utils/logger';
 import { initializeContractEventHandlers } from './contractEventHandlers';
 import contractRoutes from './routes';
+import lookupRoutes from './lookupRoutes';
 
 /**
  * Check if contracts module is enabled
@@ -41,7 +42,7 @@ export function setupContractModule(app: Express) {
   app.use('/api/contracts', contractRoutes);
   
   // Register lookup routes for shared data
-  app.use('/api', contractRoutes);
+  app.use('/api/lookup', lookupRoutes);
   
   // Register vendor routes (separate endpoint)
   // Extract the vendors endpoint from our contract routes

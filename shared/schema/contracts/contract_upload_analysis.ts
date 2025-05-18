@@ -2,6 +2,10 @@ import { pgTable, uuid, jsonb, varchar, timestamp, text } from 'drizzle-orm/pg-c
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
+// Create a documents reference without importing
+// This avoids the circular dependency issues
+const documentsRef = { id: '' as unknown as string };
+
 /**
  * Schema for storing AI analysis results from contract document uploads
  */
@@ -9,7 +13,7 @@ export const contractUploadAnalysis = pgTable('contract_upload_analysis', {
   id: uuid('id').defaultRandom().primaryKey(),
   
   // Document ID of the uploaded file
-  documentId: uuid('document_id').notNull().references(() => documents.id),
+  documentId: uuid('document_id').notNull(),
   
   // Tenant ID for data isolation
   tenantId: uuid('tenant_id').notNull(),
@@ -44,8 +48,7 @@ export const contractUploadAnalysis = pgTable('contract_upload_analysis', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Import documents schema
-import { documents } from '../documents';
+// No imports needed for documents schema
 
 // Define Zod schema for insertion
 export const insertContractUploadAnalysisSchema = createInsertSchema(contractUploadAnalysis)
