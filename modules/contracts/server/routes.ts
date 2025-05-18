@@ -700,6 +700,9 @@ router.delete('/:contractId/documents/:attachmentId', async (req: Request, res: 
  * @access Authenticated users
  */
 router.post('/upload/analyze/:documentId', async (req: Request, res: Response) => {
+  // This ensures the response is always JSON, even if an error occurs
+  res.setHeader('Content-Type', 'application/json');
+  
   // Use a unique request ID for tracing this request through logs
   const requestId = crypto.randomUUID();
   
@@ -734,8 +737,8 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
       });
     }
     
-    // Verify document exists before starting analysis
     try {
+      // Check if document exists first
       const document = await db.query.documents.findFirst({
         where: eq(documents.id, documentId)
       });
@@ -758,88 +761,56 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
         mimeType: document.mimeType,
         title: document.title
       });
-    } catch (dbError) {
-      // Handle database errors looking up the document
-      logger.error('Database error looking up document', { 
-        requestId,
-        documentId, 
-        error: dbError instanceof Error ? dbError.message : String(dbError) 
-      });
       
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to verify document existence',
-        error: dbError instanceof Error ? dbError.message : 'Database error',
-        errorType: 'DATABASE_ERROR'
-      });
-    }
-    
-    // Start the analysis process - wrapping this in its own try-catch block
-    let analysisResult;
-    try {
-      // Log that we're about to call the analyzer
-      logger.info('Starting contract document analysis function', {
-        requestId,
-        documentId,
-        userId,
-        tenantId
-      });
+      // Simplified approach: Just try to analyze and handle any errors
+      const result = await analyzeContractDocument(documentId, userId, tenantId);
       
-      // This is the call that might throw an error
-      analysisResult = await analyzeContractDocument(documentId, userId, tenantId);
-      
-      // Check if the result is valid
-      if (!analysisResult || !analysisResult.id) {
-        logger.error('Contract analyzer returned invalid result', {
-          requestId,
-          documentId,
-          result: JSON.stringify(analysisResult)
-        });
-        
-        // Always return a structured JSON error response
-        return res.status(500).json({
-          success: false,
-          message: 'Analysis engine returned invalid result',
-          error: 'INVALID_ANALYSIS_RESULT',
-          data: { documentId }
-        });
-      }
-      
-      // Log success
-      logger.info('Contract analysis initiated successfully', {
-        requestId,
-        analysisId: analysisResult.id,
-        status: analysisResult.status
-      });
-      
-      // Return success response
+      // If we get here, everything worked
       return res.status(200).json({
         success: true,
         message: 'Document analysis started',
-        data: analysisResult
+        data: result
       });
-    } catch (analysisError) {
-      // Catch and properly handle any errors from the analyzer
-      const errorMessage = analysisError instanceof Error ? analysisError.message : String(analysisError);
-      const errorStack = analysisError instanceof Error ? analysisError.stack : undefined;
       
-      // Log the detailed error
-      logger.error('Error in contract document analysis function', {
+    } catch (err) {
+      // Guaranteed catch-all for ANY error
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      
+      // Log the detailed error information
+      logger.error('❌ AI document analysis failed:', {
         requestId,
         documentId,
-        errorMessage,
-        errorStack,
-        errorType: analysisError instanceof Error ? analysisError.constructor.name : 'UnknownError'
+        message: errorMessage,
+        stack: err instanceof Error ? err.stack : undefined
       });
       
-      // Always return a structured JSON response
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to analyze document',
-        error: errorMessage,
-        errorCode: 'ANALYSIS_FAILED',
-        data: { documentId }
-      });
+      // Failsafe error response - guaranteed to work even if errors happen in the error handler
+      try {
+        return res.status(500).json({
+          success: false,
+          message: 'AI document analysis failed',
+          error: errorMessage,
+          errorCode: 'ANALYSIS_ERROR',
+          details: err instanceof Error ? err.constructor.name : 'Unknown error type',
+          data: { documentId }
+        });
+      } catch (responseError) {
+        // Ultimate fallback - if even the JSON response fails
+        logger.error('Critical error: Failed to send JSON error response', {
+          requestId,
+          originalError: errorMessage,
+          responseError: responseError instanceof Error ? responseError.message : String(responseError)
+        });
+        
+        // Manual JSON string as a last resort
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({
+          success: false,
+          message: 'Fatal: Could not return JSON response',
+          error: 'SERVER_ERROR',
+          data: { documentId }
+        }));
+      }
     }
   } catch (error) {
     // Handle any unexpected errors in the route itself

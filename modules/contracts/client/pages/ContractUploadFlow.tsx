@@ -137,9 +137,43 @@ export default function ContractUploadFlow() {
       setIsAnalyzing(true);
       
       try {
-        const analysisResponse = await apiRequest(`/api/contracts/upload/analyze/${documentId}`, {
-          method: 'POST'
+        // Use fetch directly so we can handle raw response data if there's an error
+        const response = await fetch(`/api/contracts/upload/analyze/${documentId}`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
         });
+        
+        // If the response is not OK (status 200-299), handle the error
+        if (!response.ok) {
+          // Try to get the raw response text first for better diagnostics
+          const errorText = await response.text();
+          console.error("Server raw error response:", errorText);
+          
+          // Try to parse as JSON if possible
+          let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          let errorDetails = '';
+          
+          try {
+            // Check if the response is valid JSON
+            const isJson = errorText.trim().startsWith('{') && errorText.trim().endsWith('}');
+            if (isJson) {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.message || errorData.error || errorMessage;
+              errorDetails = errorData.details || '';
+            }
+          } catch (jsonError) {
+            console.error("Failed to parse error response as JSON:", jsonError);
+            // Keep the original error message from response.statusText
+          }
+          
+          throw new Error(`Analysis failed: ${errorMessage} ${errorDetails}`);
+        }
+        
+        // Parse the successful JSON response
+        const analysisResponse = await response.json();
         
         if (!analysisResponse.success) {
           throw new Error(analysisResponse.message || 'Failed to analyze document');
