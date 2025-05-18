@@ -45,20 +45,18 @@ export default function ContractDetail() {
   const params = useParams();
   const contractId = params?.id;
 
-  // Get contract data using a dedicated endpoint for contract details
+  // Get all contracts and find the correct one by ID
   const { data, isLoading, error } = useQuery({
-    queryKey: ['/api/contracts/detail', contractId],
+    queryKey: ['/api/contracts'],
     queryFn: async () => {
-      console.log('Fetching contract with ID:', contractId);
-      // Use a more reliable approach with query parameters
-      const result = await apiRequest(`/api/contracts/detail?id=${contractId}`);
-      console.log('Contract API response:', result);
-      return result;
-    },
-    enabled: Boolean(contractId),
-    retry: 1,
-    retryDelay: 1000
+      console.log('Loading all contracts');
+      return await apiRequest('/api/contracts');
+    }
   });
+  
+  // Find the specific contract in the list
+  const contractsList = data?.data || [];
+  const contract = contractsList.find((c: any) => c.id === contractId) || {};
 
   // Format date for display
   const formatDate = (dateString: string | null | undefined) => {
