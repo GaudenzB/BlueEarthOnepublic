@@ -44,17 +44,8 @@ const formSchema = z.object({
   currency: z.string().optional(),
 });
 
-// Document attachment form schema
-const documentAttachmentSchema = z.object({
-  documentId: z.string().min(1, { message: 'Document ID is required' }),
-  docType: z.string().min(1, { message: 'Document type is required' }),
-  isPrimary: z.boolean().default(false),
-  notes: z.string().optional(),
-});
-
 interface ContractDetailsFormProps {
   contractData: any;
-  documentData?: any;
   showConfidence?: boolean;
   onSubmit: (data: any) => void;
   attachedDocuments?: any[];
@@ -62,12 +53,34 @@ interface ContractDetailsFormProps {
 
 export default function ContractDetailsForm({
   contractData,
-  documentData,
   showConfidence = false,
   onSubmit,
   attachedDocuments = []
 }: ContractDetailsFormProps) {
-  const [documents, setDocuments] = useState(attachedDocuments || []);
+  // Document attachment state management
+  const [documents, setDocuments] = useState<Array<{
+    documentId: string;
+    documentTitle: string;
+    docType: string;
+    isPrimary: boolean;
+    notes?: string;
+    effectiveDate?: string;
+  }>>(attachedDocuments || []);
+  
+  // Document attachment form state
+  const [documentForm, setDocumentForm] = useState<{
+    documentId: string;
+    docType: string;
+    isPrimary: boolean;
+    notes: string;
+    effectiveDate?: Date;
+  }>({
+    documentId: '',
+    docType: 'MAIN',
+    isPrimary: false,
+    notes: ''
+  });
+  
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   
   // Get available documents for selection
@@ -78,13 +91,68 @@ export default function ContractDetailsForm({
     },
     enabled: showDocumentSelector
   });
-  // Query vendors for dropdown
+  
+  // Get vendors for selection
   const vendorsQuery = useQuery({
     queryKey: ['/api/vendors'],
     queryFn: async () => {
       return apiRequest('/api/vendors');
     }
   });
+
+  // Add document to attachments list
+  const handleAddDocument = () => {
+    if (!documentForm.documentId) return;
+    
+    // Find document details from query results
+    const selectedDoc = documentsQuery.data?.data?.find((doc: any) => doc.id === documentForm.documentId);
+    
+    if (!selectedDoc) return;
+    
+    // Create new document attachment
+    const newAttachment = {
+      documentId: documentForm.documentId,
+      documentTitle: selectedDoc.title || selectedDoc.originalFilename,
+      docType: documentForm.docType,
+      isPrimary: documentForm.isPrimary,
+      notes: documentForm.notes,
+      effectiveDate: documentForm.effectiveDate ? format(documentForm.effectiveDate, 'yyyy-MM-dd') : undefined
+    };
+    
+    // Add to documents list
+    setDocuments([...documents, newAttachment]);
+    
+    // Reset form
+    setDocumentForm({
+      documentId: '',
+      docType: 'MAIN',
+      isPrimary: false,
+      notes: ''
+    });
+    
+    // Hide document selector
+    setShowDocumentSelector(false);
+  };
+  
+  // Remove document from attachments list
+  const handleRemoveDocument = (index: number) => {
+    const updatedDocs = [...documents];
+    updatedDocs.splice(index, 1);
+    setDocuments(updatedDocs);
+  };
+  
+  // Helper function to render confidence indicators
+  const renderConfidence = (confidence: number) => {
+    const color = confidence > 0.8 ? 'bg-green-100 text-green-800' : 
+                 confidence > 0.5 ? 'bg-yellow-100 text-yellow-800' : 
+                 'bg-red-100 text-red-800';
+    
+    return (
+      <Badge variant="outline" className={`ml-2 ${color}`}>
+        {Math.round(confidence * 100)}%
+      </Badge>
+    );
+  };
 
   // Set up form with default values
   const form = useForm<z.infer<typeof formSchema>>({
