@@ -28,10 +28,12 @@ import {
   Clock, 
   Edit, 
   File, 
-  FileText
+  FileText,
+  Building
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import ContractDocumentSection from '../components/ContractDocumentSection';
 
 // Feature flag check
 const isContractsEnabled = () => {
@@ -270,14 +272,24 @@ export default function ContractDetail() {
                     </>
                   )}
 
-                  {contract.documentId && (
+                  {/* Vendor information if available */}
+                  {contract.vendorId && (
                     <div className="mt-6">
-                      <Link href={`/documents/${contract.documentId}`}>
-                        <Button variant="outline" className="flex items-center">
-                          <FileText className="h-4 w-4 mr-2" />
-                          View Source Document
-                        </Button>
-                      </Link>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Vendor</h3>
+                      <div className="flex items-center">
+                        <Building className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Link href={`/vendors/${contract.vendorId}`}>
+                          <span className="text-blue-600 hover:underline">{contract.vendorName || 'View Vendor Details'}</span>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Description field if provided */}
+                  {contract.description && (
+                    <div className="mt-6">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
+                      <p className="text-sm">{contract.description}</p>
                     </div>
                   )}
                 </TabsContent>
@@ -375,6 +387,11 @@ export default function ContractDetail() {
         
         {/* Sidebar */}
         <div>
+          {/* Contract Documents Section */}
+          <div className="mb-6">
+            <ContractDocumentSection contractId={contractId} />
+          </div>
+          
           {/* Upcoming Obligations Card */}
           <Card className="mb-6">
             <CardHeader>

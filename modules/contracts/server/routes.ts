@@ -4,9 +4,11 @@ import { db } from '../../../server/db';
 import { 
   contracts, 
   contractClauses, 
-  contractObligations
+  contractObligations,
+  contractDocuments,
+  documents
 } from '../../../shared/schema';
-import { sql } from 'drizzle-orm';
+import { sql, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import crypto from 'crypto';
 
