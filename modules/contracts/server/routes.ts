@@ -756,8 +756,11 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
       // Import the simpleContractAnalyzer for direct analysis
       const { analyzeContractDocumentSimple } = await import('./simpleContractAnalyzer');
       
+      // Get user ID from request if available
+      const userId = (req as any).userId;
+      
       // Use the simple analyzer for more reliable results
-      const analysisResult = await analyzeContractDocumentSimple(documentId);
+      const analysisResult = await analyzeContractDocumentSimple(documentId, userId);
       
       if (!analysisResult.success) {
         logger.error('Document analysis failed', { 
@@ -909,6 +912,9 @@ router.get('/upload/analysis/:analysisId', async (req: Request, res: Response) =
     }
     
     try {
+      // Import the function
+      const { getAnalysisById } = await import('./simpleContractAnalyzer');
+      
       // Get analysis result
       const analysis = await getAnalysisById(analysisId);
       

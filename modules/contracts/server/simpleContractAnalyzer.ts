@@ -9,7 +9,8 @@
 
 import { logger } from '../../../server/utils/logger';
 import { db } from '../../../server/db';
-import { documents, contractUploadAnalysis } from '../../../shared/schema';
+import { documents } from '../../../shared/schema';
+import { contractUploadAnalysis } from '../../../shared/schema/contracts/contract_upload_analysis';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import * as documentStorage from '../../../server/services/documentStorage';
@@ -28,11 +29,32 @@ const openai = apiKey ? new OpenAI({
 }) : null;
 
 /**
- * Simple function to analyze a contract document
- * This bypasses the complex database setup and directly returns analysis results
+ * Get contract analysis by ID
  */
-export async function analyzeContractDocumentSimple(documentId: string) {
-  logger.info(`Starting simple contract analysis for document ${documentId}`);
+export async function getAnalysisById(analysisId: string) {
+  try {
+    const analysis = await db.select()
+      .from(contractUploadAnalysis)
+      .where(eq(contractUploadAnalysis.id, analysisId))
+      .then(results => results[0]);
+    
+    if (!analysis) {
+      throw new Error(`Analysis record not found with ID: ${analysisId}`);
+    }
+    
+    return analysis;
+  } catch (error) {
+    logger.error(`Error retrieving analysis record ${analysisId}:`, error);
+    throw new Error(`Failed to retrieve analysis: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Analyze a contract document and store the results in the database
+ * This function handles both document text extraction and AI-powered analysis
+ */
+export async function analyzeContractDocumentSimple(documentId: string, userId?: string) {
+  logger.info(`Starting contract analysis for document ${documentId}`);
   
   try {
     // Check if document exists
@@ -46,45 +68,109 @@ export async function analyzeContractDocumentSimple(documentId: string) {
     
     logger.info(`Found document: ${document.title}`, { documentId });
     
-    // Get document content
-    let documentText = '';
+    // Get tenant ID from the document
+    const tenantId = document.tenantId;
+    
+    // Create initial analysis record in the database
+    const insertResult = await db.insert(contractUploadAnalysis)
+      .values({
+        documentId,
+        tenantId,
+        userId: userId || undefined,
+        status: 'PENDING'
+      })
+      .returning();
+    
+    const initialRecord = insertResult[0];
+    
+    logger.info(`Created analysis record ${initialRecord.id}`, { 
+      documentId, 
+      analysisId: initialRecord.id
+    });
+    
+    // Update the status to PROCESSING
+    await db.update(contractUploadAnalysis)
+      .set({ status: 'PROCESSING' })
+      .where(eq(contractUploadAnalysis.id, initialRecord.id));
+    
     try {
-      // Download the file content
-      const fileBuffer = await documentStorage.downloadFile(document.storageKey);
-      
-      // Extract text based on the document type
-      if (document.mimeType.includes('pdf')) {
-        // For PDFs use a simple text extraction from the first few pages
-        const textChunks = await extractTextFromBuffer(fileBuffer);
-        documentText = textChunks.join('\n');
-      } else if (document.mimeType.includes('text')) {
-        // For text files, just convert buffer to string
-        documentText = fileBuffer.toString('utf8');
-      } else {
-        // For other types, use document metadata
-        documentText = `Document title: ${document.title || 'Untitled'}\nFilename: ${document.originalFilename || document.filename}`;
-      }
-      
-      // If text extraction failed or produced minimal text, use document metadata
-      if (!documentText || documentText.length < 50) {
+      // Get document content
+      let documentText = '';
+      try {
+        // Download the file content
+        const fileBuffer = await documentStorage.downloadFile(document.storageKey);
+        
+        // Extract text based on the document type
+        if (document.mimeType.includes('pdf')) {
+          // For PDFs use proper text extraction
+          const textChunks = await extractTextFromBuffer(fileBuffer);
+          documentText = textChunks.join('\n');
+        } else if (document.mimeType.includes('text')) {
+          // For text files, just convert buffer to string
+          documentText = fileBuffer.toString('utf8');
+        } else {
+          // For other types, use document metadata
+          documentText = `Document title: ${document.title || 'Untitled'}\nFilename: ${document.originalFilename || document.filename}`;
+        }
+        
+        // If text extraction failed or produced minimal text, use document metadata
+        if (!documentText || documentText.length < 50) {
+          documentText = `Contract document: ${document.title || 'Untitled'}\nFilename: ${document.originalFilename || document.filename}`;
+        }
+        
+      } catch (error) {
+        logger.error(`Error extracting text from document ${documentId}:`, error);
+        // Fall back to using document metadata
         documentText = `Contract document: ${document.title || 'Untitled'}\nFilename: ${document.originalFilename || document.filename}`;
       }
       
-    } catch (error) {
-      logger.error(`Error extracting text from document ${documentId}:`, error);
-      // Fall back to using document metadata
-      documentText = `Contract document: ${document.title || 'Untitled'}\nFilename: ${document.originalFilename || document.filename}`;
+      // Analyze the document text
+      const analysisResult = await performSimpleAnalysis(documentText, document.title || 'Untitled Document');
+      
+      // Update the analysis record with the results
+      await db.update(contractUploadAnalysis)
+        .set({
+          status: 'SUCCESS',
+          vendor: analysisResult.vendor,
+          contractTitle: analysisResult.contractTitle,
+          docType: analysisResult.docType,
+          effectiveDate: analysisResult.effectiveDate,
+          terminationDate: analysisResult.terminationDate,
+          confidence: analysisResult.confidence,
+          rawAnalysisJson: JSON.stringify(analysisResult),
+          updatedAt: new Date()
+        })
+        .where(eq(contractUploadAnalysis.id, initialRecord.id));
+      
+      logger.info(`Analysis completed successfully for document ${documentId}`, {
+        analysisId: initialRecord.id,
+        docType: analysisResult.docType,
+        vendor: analysisResult.vendor
+      });
+      
+      // Return the analysis result
+      return {
+        success: true,
+        documentId,
+        documentTitle: document.title,
+        analysisId: initialRecord.id,
+        analysis: analysisResult
+      };
+      
+    } catch (analysisError) {
+      // Update the record with the error
+      await db.update(contractUploadAnalysis)
+        .set({
+          status: 'FAILED',
+          error: analysisError instanceof Error ? analysisError.message : String(analysisError),
+          updatedAt: new Date()
+        })
+        .where(eq(contractUploadAnalysis.id, initialRecord.id));
+      
+      logger.error(`Analysis failed for document ${documentId}:`, analysisError);
+      
+      throw analysisError;
     }
-    
-    // Analyze the document text
-    const analysisResult = await performSimpleAnalysis(documentText, document.title || 'Untitled Document');
-    
-    return {
-      success: true,
-      documentId,
-      documentTitle: document.title,
-      analysis: analysisResult
-    };
     
   } catch (error) {
     logger.error(`Error analyzing contract document ${documentId}:`, error);
