@@ -10,7 +10,7 @@
 import { logger } from '../../../server/utils/logger';
 import { db } from '../../../server/db';
 import { documents } from '../../../shared/schema';
-import { contractUploadAnalysis } from '../../../shared/schema/contracts/contract_upload_analysis';
+import { contractUploadAnalysis, ContractUploadAnalysisInsert } from '../../../shared/schema/contracts/contract_upload_analysis';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import * as documentStorage from '../../../server/services/documentStorage';
@@ -79,9 +79,15 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
     const tenantId = document.tenantId;
     
     // Prepare the insert data with proper types
+    // Ensure we have a valid tenantId (database requires this field)
+    if (!tenantId) {
+      throw new Error(`Cannot analyze document ${documentId}: missing tenant ID`);
+    }
+    
+    // Prepare the insert data with properly typed values
     const insertData: ContractUploadAnalysisInsert = {
       documentId,
-      tenantId,
+      tenantId,  // We've validated it's not null
       status: 'PENDING',
       ...(userId ? { userId } : {})
     };
@@ -174,7 +180,7 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
         .where(eq(contractUploadAnalysis.id, analysisId));
       
       logger.info(`Analysis completed successfully for document ${documentId}`, {
-        analysisId: initialRecord.id,
+        analysisId,
         docType: analysisResult.docType,
         vendor: analysisResult.vendor
       });
@@ -184,7 +190,7 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
         success: true,
         documentId,
         documentTitle: document.title,
-        analysisId: initialRecord.id,
+        analysisId,
         analysis: analysisResult
       };
       
@@ -196,7 +202,7 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
           error: analysisError instanceof Error ? analysisError.message : String(analysisError),
           updatedAt: new Date()
         })
-        .where(eq(contractUploadAnalysis.id, initialRecord.id));
+        .where(eq(contractUploadAnalysis.id, analysisId));
       
       logger.error(`Analysis failed for document ${documentId}:`, analysisError);
       
@@ -291,9 +297,10 @@ async function performSimpleAnalysis(text: string, documentTitle: string) {
       }
       `;
         
-      // Call OpenAI API for analysis
+      // Call OpenAI API for analysis with proper error handling and timeouts
+      logger.info('Calling OpenAI API for contract analysis');
       const completion = await openai.chat.completions.create({
-        // Use GPT-4 for better extraction if available, fallback to 3.5
+        // Use GPT-4 for better extraction if available, fallback to 3.5-turbo if not accessible
         model: "gpt-4",
         messages: [
           {
@@ -308,6 +315,37 @@ async function performSimpleAnalysis(text: string, documentTitle: string) {
         response_format: { type: "json_object" },
         max_tokens: 1000,
         temperature: 0.2  // Lower temperature for more deterministic extraction
+      }).catch(error => {
+        // Specific handling for OpenAI errors
+        logger.error(`OpenAI API error: ${error.message}`, { 
+          status: error.status, 
+          type: error.type,
+          code: error.code
+        });
+        
+        // If it's a model-related error, try fallback to 3.5-turbo
+        if (error.code === 'model_not_found' || error.message.includes('gpt-4')) {
+          logger.info('Falling back to GPT-3.5-turbo model');
+          return openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+              {
+                role: "system",
+                content: systemPrompt
+              },
+              {
+                role: "user", 
+                content: `Document title: ${documentTitle}\n\nDocument content: ${truncatedText}`
+              }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 1000,
+            temperature: 0.3
+          });
+        }
+        
+        // Re-throw if it's not a model-related error
+        throw error;
       });
       
       const content = completion.choices[0]?.message?.content;
@@ -316,17 +354,36 @@ async function performSimpleAnalysis(text: string, documentTitle: string) {
           // Parse and validate the response
           const parsedData = JSON.parse(content);
           
-          // Log successful analysis
+          // Add basic validation to ensure all required fields exist
+          if (!parsedData.vendor && !parsedData.contractTitle && !parsedData.docType) {
+            logger.warn('OpenAI response missing critical fields, using fallback analysis');
+            return useFallbackAnalysis(text, documentTitle);
+          }
+          
+          // If confidence scores are missing, add defaults
+          if (!parsedData.confidence) {
+            parsedData.confidence = {
+              vendor: parsedData.vendor ? 0.8 : 0.1,
+              contractTitle: parsedData.contractTitle ? 0.8 : 0.1,
+              docType: parsedData.docType ? 0.8 : 0.1,
+              effectiveDate: parsedData.effectiveDate ? 0.8 : 0.1,
+              terminationDate: parsedData.terminationDate ? 0.8 : 0.1
+            };
+          }
+          
+          // Log successful analysis with detailed information
           logger.info('Contract analysis successful', {
-            vendor: parsedData.vendor,
-            contractTitle: parsedData.contractTitle,
-            docType: parsedData.docType,
+            documentTitle,
+            extractedVendor: parsedData.vendor,
+            extractedTitle: parsedData.contractTitle,
+            extractedType: parsedData.docType,
             confidenceScores: parsedData.confidence
           });
           
           return parsedData;
         } catch (parseError) {
           logger.error('Error parsing OpenAI response:', parseError);
+          logger.debug('Raw OpenAI response content:', content);
           return useFallbackAnalysis(text, documentTitle);
         }
       } else {
