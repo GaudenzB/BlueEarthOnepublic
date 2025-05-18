@@ -43,7 +43,10 @@ const formSchema = z.object({
   description: z.string().optional(),
   
   // Date fields with validation
-  effectiveDate: z.date().optional(),
+  effectiveDate: z.date({
+    required_error: "Effective date is required",
+    invalid_type_error: "Effective date must be a valid date",
+  }).optional(),
   expiryDate: z.date()
     .optional()
     .superRefine((date, ctx) => {
@@ -58,7 +61,18 @@ const formSchema = z.object({
         });
       }
     }),
-  executionDate: z.date().optional(),
+  executionDate: z.date()
+    .optional()
+    .superRefine((date, ctx) => {
+      if (!date) return;
+      
+      // Auto-suggest this as the effective date if it's valid and effective date is not set
+      const parentData = (ctx as any).data;
+      if (!parentData?.effectiveDate && date) {
+        // This is just a suggestion that will be handled in the form setup
+        // We don't modify the schema validation itself
+      }
+    }),
   renewalDate: z.date()
     .optional()
     .superRefine((date, ctx) => {

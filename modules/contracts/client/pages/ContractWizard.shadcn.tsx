@@ -30,16 +30,17 @@ const steps = [
 
 interface ContractWizardProps {
   documentId?: string;
+  contractId?: string; // Added for direct contract editing
   showConfidence?: boolean; // Will be implemented in M3
 }
 
-export default function ContractWizard({ documentId, showConfidence = false }: ContractWizardProps) {
+export default function ContractWizard({ documentId, contractId, showConfidence = false }: ContractWizardProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // State for contract being created
-  const [contractData, setContractData] = useState<any>({
+  // Default contract state
+  const defaultContractData = {
     documentId: documentId || '',
     contractType: 'OTHER',
     contractStatus: 'DRAFT',
@@ -54,10 +55,33 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
     totalValue: '',
     currency: '',
     customMetadata: {}
-  });
+  };
+  
+  // State for contract being created/edited
+  const [contractData, setContractData] = useState<any>(defaultContractData);
   
   // Obligations state
   const [obligations, setObligations] = useState<any[]>([]);
+  
+  // Fetch existing contract if contractId is provided (for editing)
+  const contractQuery = useQuery({
+    queryKey: ['/api/contracts', contractId],
+    queryFn: async () => {
+      if (!contractId) return null;
+      try {
+        const result = await apiRequest(`/api/contracts/${contractId}`);
+        return result;
+      } catch (error) {
+        toast({
+          title: "Error fetching contract",
+          description: "Could not load contract data for editing.",
+          variant: "destructive"
+        });
+        return null;
+      }
+    },
+    enabled: !!contractId
+  });
   
   // Get document data if documentId is provided
   const documentQuery = useQuery({
@@ -66,8 +90,37 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
       if (!documentId) return null;
       return apiRequest(`/api/documents/${documentId}`);
     },
-    enabled: !!documentId
+    enabled: !!documentId && !contractId // Only fetch document if no contract is being edited
   });
+  
+  // Update contract data when contract is loaded
+  React.useEffect(() => {
+    if (contractQuery.data && contractId) {
+      // Format dates for form consumption
+      const contract = contractQuery.data.data || contractQuery.data;
+      
+      if (contract) {
+        setContractData({
+          ...contract,
+          // Ensure dates are properly formatted for form inputs
+          effectiveDate: contract.effectiveDate || null,
+          expiryDate: contract.expiryDate || null,
+          executionDate: contract.executionDate || null,
+          renewalDate: contract.renewalDate || null
+        });
+        
+        // If contract has obligations, load them
+        if (contract.obligations && Array.isArray(contract.obligations)) {
+          setObligations(contract.obligations);
+        }
+        
+        toast({
+          title: "Contract loaded",
+          description: "Contract details have been loaded for editing.",
+        });
+      }
+    }
+  }, [contractQuery.data, contractId, toast]);
   
   // Create contract mutation
   const createContractMutation = useMutation({
@@ -252,6 +305,33 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
     );
   }
   
+  // Add handleNextClick and handleReviewSubmit functions
+  const handleNextClick = () => {
+    // Trigger form submission through a hidden button
+    const submitButton = document.querySelector('.contract-form-submit') as HTMLButtonElement | null;
+    if (submitButton) {
+      submitButton.click();
+    } else {
+      // Fallback if no submit button is found
+      setActiveStep(Math.min(steps.length - 1, activeStep + 1));
+    }
+  };
+  
+  const handleReviewSubmit = () => {
+    // Trigger form submission for the review step
+    const submitButton = document.querySelector('.contract-form-submit') as HTMLButtonElement | null;
+    if (submitButton) {
+      submitButton.click();
+    } else {
+      // Fallback direct submission
+      createContractMutation.mutate(contractData);
+    }
+  };
+  
+  // Define loading state
+  const isLoading = contractQuery.isLoading || createContractMutation.isPending;
+  const isFinalStep = activeStep === steps.length - 1;
+  
   return (
     <div className="flex flex-col p-4">
       <div className="mb-6">
@@ -287,25 +367,69 @@ export default function ContractWizard({ documentId, showConfidence = false }: C
       </div>
       
       <div className="bg-white p-6 rounded-md border mb-4">
-        {renderStepContent()}
+        {contractQuery.isLoading ? (
+          <div className="p-6 flex items-center justify-center">
+            <div className="animate-spin h-6 w-6 border-4 border-blue-500 border-t-transparent rounded-full mr-3"></div>
+            <p>Loading contract details...</p>
+          </div>
+        ) : (
+          renderStepContent()
+        )}
       </div>
       
       <div className="flex justify-between mt-4">
         <button 
           onClick={handleCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+          disabled={isLoading}
+          className={`px-4 py-2 border border-gray-300 rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
         >
           Cancel
         </button>
-        {activeStep > 0 && (
-          <button 
-            onClick={handleBack}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Back
-          </button>
-        )}
-        {/* Next/Submit buttons are handled within each step component */}
+        
+        <div className="flex space-x-4">
+          {activeStep > 0 && (
+            <button 
+              onClick={handleBack}
+              disabled={isLoading}
+              className={`px-4 py-2 border border-gray-300 rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+            >
+              Back
+            </button>
+          )}
+          
+          {/* Always show Next/Submit button in the footer */}
+          {activeStep < steps.length - 1 ? (
+            <button 
+              onClick={handleNextClick}
+              disabled={isLoading}
+              className={`px-4 py-2 bg-blue-500 text-white rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  Processing...
+                </span>
+              ) : (
+                'Next'
+              )}
+            </button>
+          ) : (
+            <button 
+              onClick={handleReviewSubmit}
+              disabled={isLoading}
+              className={`px-4 py-2 bg-blue-500 text-white rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  Saving...
+                </span>
+              ) : (
+                contractData.id ? 'Save Changes' : 'Create Contract'
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
