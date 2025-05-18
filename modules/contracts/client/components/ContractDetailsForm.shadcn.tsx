@@ -1,19 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, FileText, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 
 // Form schema
 const formSchema = z.object({
@@ -22,6 +33,8 @@ const formSchema = z.object({
   counterpartyName: z.string().min(1, { message: 'Counterparty name is required' }),
   counterpartyAddress: z.string().optional(),
   counterpartyContactEmail: z.string().email({ message: 'Must be a valid email' }).optional().or(z.literal('')),
+  vendorId: z.string().optional(),
+  description: z.string().optional(),
   effectiveDate: z.date().optional(),
   expiryDate: z.date().optional(),
   executionDate: z.date().optional(),
@@ -30,19 +43,40 @@ const formSchema = z.object({
   currency: z.string().optional(),
 });
 
+// Document attachment form schema
+const documentAttachmentSchema = z.object({
+  documentId: z.string().min(1, { message: 'Document ID is required' }),
+  docType: z.string().min(1, { message: 'Document type is required' }),
+  isPrimary: z.boolean().default(false),
+  notes: z.string().optional(),
+});
+
 interface ContractDetailsFormProps {
   contractData: any;
   documentData?: any;
   showConfidence?: boolean;
   onSubmit: (data: any) => void;
+  attachedDocuments?: any[];
 }
 
 export default function ContractDetailsForm({
   contractData,
   documentData,
   showConfidence = false,
-  onSubmit
+  onSubmit,
+  attachedDocuments = []
 }: ContractDetailsFormProps) {
+  const [documents, setDocuments] = useState(attachedDocuments || []);
+  const [showDocumentSelector, setShowDocumentSelector] = useState(false);
+  
+  // Get available documents for selection
+  const documentsQuery = useQuery({
+    queryKey: ['/api/documents'],
+    queryFn: async () => {
+      return apiRequest('/api/documents');
+    },
+    enabled: showDocumentSelector
+  });
   // Set up form with default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

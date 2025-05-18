@@ -213,8 +213,8 @@ export async function postProcessContract(
       totalValue: findFinancialTermByType(contractData.financialTerms, 'TOTAL'),
       currency: findCurrency(contractData.financialTerms),
       
-      // Description for context - derived from contract type and any available metadata
-      description: `${contractData.metadata.contractType} Contract`,
+      // Description for context - derived from summary or contract type
+      description: contractData.metadata.summary || `${contractData.metadata.contractType} Contract`,
       
       // AI-related metadata
       confidenceLevel: mapConfidenceToLevel(contractData.metadata.confidenceScore) as any,
