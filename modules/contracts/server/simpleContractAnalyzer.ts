@@ -11,10 +11,10 @@ import { logger } from '../../../server/utils/logger';
 import { db } from '../../../server/db';
 import { documents } from '../../../shared/schema';
 import { contractUploadAnalysis } from '../../../shared/schema/contracts/contract_upload_analysis';
-import { sql } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import * as documentStorage from '../../../server/services/documentStorage';
+import { extractTextFromPDFBuffer } from '../../../server/utils/pdfUtils';
 
 // Create OpenAI client instance
 const apiKey = process.env['OPENAI_API_KEY'];
@@ -72,15 +72,22 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
     // Get tenant ID from the document
     const tenantId = document.tenantId;
     
-    // Create initial analysis record in the database
-    // Execute the insert with only the required fields
+    // Create initial analysis record in the database using typed values
+    // First create basic record structure
+    const analysisRecord: any = {
+      documentId,
+      tenantId,
+      status: 'PENDING'
+    };
+    
+    // Add optional userId if provided
+    if (userId) {
+      analysisRecord.userId = userId;
+    }
+    
+    // Execute the insert
     const insertResult = await db.insert(contractUploadAnalysis)
-      .values({
-        documentId,
-        tenantId,
-        ...(userId ? { userId } : {}),
-        status: 'PENDING'
-      })
+      .values(analysisRecord)
       .returning();
     
     if (!insertResult || insertResult.length === 0) {
@@ -104,11 +111,13 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
       let documentText = '';
       try {
         // Download the file content
-        const fileBuffer = await documentStorage.downloadFile(document.storageKey);
+        logger.info(`Downloading document ${documentId} with storage key ${document.storageKey}`);
+        const fileBuffer = await documentStorage.downloadFile(document);
         
         // Extract text based on the document type
         if (document.mimeType.includes('pdf')) {
           // For PDFs use proper text extraction
+          logger.info(`Extracting text from PDF document ${documentId}`);
           const textChunks = await extractTextFromBuffer(fileBuffer);
           documentText = textChunks.join('\n');
         } else if (document.mimeType.includes('text')) {
@@ -193,10 +202,7 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
  */
 async function extractTextFromBuffer(buffer: Buffer): Promise<string[]> {
   try {
-    // Import the PDF utility function
-    const { extractTextFromPDFBuffer } = await import('../../../server/utils/pdfUtils');
-    
-    // Use the proper PDF extraction utility
+    // Use the proper PDF extraction utility we've already imported
     const extractedText = await extractTextFromPDFBuffer(buffer);
     
     // If we got text, split it into manageable chunks
