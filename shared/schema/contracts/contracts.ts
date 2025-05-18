@@ -195,10 +195,6 @@ export const contractClauses = pgTable('contract_clauses', {
 });
 
 /**
- * Contract Obligations Table
- * Stores individual obligations and commitments extracted from contract clauses
- */
-/**
  * Contract Documents Table
  * Links documents to contracts with additional metadata about document role
  */
@@ -344,6 +340,49 @@ export const contractSearchSchema = z.object({
   toExpiryDate: z.string().optional(),
 });
 
+/**
+ * Schema for inserting a vendor
+ */
+export const insertVendorSchema = createInsertSchema(vendors)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  });
+
+/**
+ * Schema for selecting a vendor
+ */
+export const selectVendorSchema = createSelectSchema(vendors);
+
+/**
+ * Schema for inserting a contract document
+ */
+export const insertContractDocumentSchema = createInsertSchema(contractDocuments)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  });
+
+/**
+ * Schema for selecting a contract document
+ */
+export const selectContractDocumentSchema = createSelectSchema(contractDocuments);
+
+/**
+ * Schema for document type label
+ */
+export const contractDocTypeZod = z.enum([
+  'MAIN',
+  'AMENDMENT',
+  'SIDE_LETTER',
+  'EXHIBIT',
+  'TERMINATION',
+  'RENEWAL',
+  'OTHER'
+]);
+
 // Type definitions for better TypeScript support
 export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
@@ -352,6 +391,11 @@ export type InsertContractClause = z.infer<typeof insertContractClauseSchema>;
 export type ContractObligation = typeof contractObligations.$inferSelect;
 export type InsertContractObligation = z.infer<typeof insertContractObligationSchema>;
 export type ContractSearch = z.infer<typeof contractSearchSchema>;
+export type Vendor = typeof vendors.$inferSelect;
+export type InsertVendor = z.infer<typeof insertVendorSchema>;
+export type ContractDocument = typeof contractDocuments.$inferSelect;
+export type InsertContractDocument = z.infer<typeof insertContractDocumentSchema>;
+export type ContractDocType = z.infer<typeof contractDocTypeZod>;
 
 // Zod enums for type safety in application code
 export const contractStatusZod = z.enum([

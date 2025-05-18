@@ -248,11 +248,14 @@ import {
   contracts, 
   contractClauses, 
   contractObligations,
+  vendors,
+  contractDocuments,
   contractStatusEnum, 
   contractTypeEnum, 
   obligationStatusEnum,
   obligationTypeEnum,
-  confidenceLevelEnum
+  confidenceLevelEnum,
+  contractDocTypeEnum
 } from './schema/contracts/contracts';
 
 // Re-export for easy access
@@ -269,9 +272,12 @@ export {
   contracts,
   contractClauses,
   contractObligations,
+  vendors,
+  contractDocuments,
   contractStatusEnum,
   contractTypeEnum,
   obligationStatusEnum,
   obligationTypeEnum,
-  confidenceLevelEnum
+  confidenceLevelEnum,
+  contractDocTypeEnum
 };
