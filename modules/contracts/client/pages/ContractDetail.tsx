@@ -52,8 +52,8 @@ export default function ContractDetail() {
     enabled: !!contractId
   });
   
-  // Extract contract data from response
-  const contract = data;
+  // Extract contract data from response - which includes success and data properties
+  const contract = data?.data;
 
   // Format date for display
   const formatDate = (dateString: string | null | undefined) => {
