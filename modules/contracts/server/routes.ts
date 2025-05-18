@@ -839,66 +839,135 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
  * @access Authenticated users
  */
 router.get('/upload/analysis/:analysisId', async (req: Request, res: Response) => {
+  // Use a unique request ID for tracing this request through logs
+  const requestId = crypto.randomUUID();
+  
   try {
     const { analysisId } = req.params;
     
+    // Log request information
+    logger.info('Getting contract analysis status', {
+      requestId,
+      analysisId,
+      path: req.path
+    });
+    
     // Validate analysis ID
     if (!analysisId) {
+      logger.warn('Missing analysis ID in request', { requestId });
       return res.status(400).json({
         success: false,
-        message: 'Analysis ID is required'
+        message: 'Analysis ID is required',
+        error: 'MISSING_ANALYSIS_ID'
       });
     }
     
-    // Get analysis result
-    const analysis = await getAnalysisById(analysisId);
-    
-    // Return the appropriate response based on analysis status
-    if (analysis.status === 'FAILED') {
-      return res.status(500).json({
+    // Validate UUID format
+    if (!analysisId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      logger.warn('Invalid analysis ID format', { requestId, analysisId });
+      return res.status(400).json({
         success: false,
-        message: 'Document analysis failed',
-        error: analysis.error,
-        data: {
-          id: analysis.id,
-          status: analysis.status
-        }
+        message: 'Invalid analysis ID format',
+        error: 'INVALID_ANALYSIS_ID'
       });
     }
     
-    if (analysis.status === 'PENDING' || analysis.status === 'PROCESSING') {
+    try {
+      // Get analysis result
+      const analysis = await getAnalysisById(analysisId);
+      
+      // Log for debugging
+      logger.info('Retrieved analysis record', {
+        requestId,
+        analysisId,
+        status: analysis?.status || 'unknown',
+        hasError: !!analysis?.error
+      });
+      
+      // Ensure we have a valid analysis result
+      if (!analysis) {
+        logger.error('Analysis not found', { requestId, analysisId });
+        return res.status(404).json({
+          success: false,
+          message: `Analysis not found with ID: ${analysisId}`,
+          error: 'ANALYSIS_NOT_FOUND'
+        });
+      }
+      
+      // Return the appropriate response based on analysis status
+      if (analysis.status === 'FAILED') {
+        return res.status(500).json({
+          success: false,
+          message: 'Document analysis failed',
+          error: analysis.error || 'Unknown error during analysis',
+          errorType: 'ANALYSIS_FAILED',
+          data: {
+            id: analysis.id,
+            status: analysis.status
+          }
+        });
+      }
+      
+      if (analysis.status === 'PENDING' || analysis.status === 'PROCESSING') {
+        return res.status(200).json({
+          success: true,
+          message: 'Document analysis in progress',
+          data: {
+            id: analysis.id,
+            status: analysis.status
+          }
+        });
+      }
+      
+      // Analysis is complete, return full results with type safety
       return res.status(200).json({
         success: true,
-        message: 'Document analysis in progress',
+        message: 'Document analysis complete',
         data: {
           id: analysis.id,
-          status: analysis.status
+          documentId: analysis.documentId || null,
+          vendor: analysis.vendor || null,
+          contractTitle: analysis.contractTitle || null,
+          docType: analysis.docType || null,
+          effectiveDate: analysis.effectiveDate || null,
+          terminationDate: analysis.terminationDate || null,
+          confidence: analysis.confidence || {},
+          suggestedContractId: analysis.suggestedContractId || null,
+          status: analysis.status || 'UNKNOWN'
         }
       });
+    } catch (analysisError) {
+      // Handle errors getting the analysis
+      logger.error('Error retrieving analysis', {
+        requestId,
+        analysisId, 
+        error: analysisError instanceof Error ? analysisError.message : String(analysisError)
+      });
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve analysis',
+        error: analysisError instanceof Error ? analysisError.message : 'Unknown database error',
+        errorType: 'DATABASE_ERROR'
+      });
     }
-    
-    // Analysis is complete, return full results
-    return res.status(200).json({
-      success: true,
-      message: 'Document analysis complete',
-      data: {
-        id: analysis.id,
-        documentId: analysis.documentId,
-        vendor: analysis.vendor,
-        contractTitle: analysis.contractTitle,
-        docType: analysis.docType,
-        effectiveDate: analysis.effectiveDate,
-        terminationDate: analysis.terminationDate,
-        confidence: analysis.confidence,
-        suggestedContractId: analysis.suggestedContractId,
-        status: analysis.status
-      }
-    });
   } catch (error) {
-    logger.error('Error getting analysis result:', error);
+    // Handle any completely unexpected errors in the route itself
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    logger.error('Unhandled error in analysis route', {
+      requestId,
+      route: 'GET /upload/analysis/:analysisId',
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
+    // Always return a structured JSON response
     return res.status(500).json({
       success: false,
-      message: 'Failed to get analysis result'
+      message: 'Failed to get analysis result',
+      error: errorMessage,
+      errorType: 'ROUTE_ERROR'
     });
   }
 });
