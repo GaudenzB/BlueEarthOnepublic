@@ -912,7 +912,7 @@ router.get('/upload/analysis/:analysisId', async (req: Request, res: Response) =
     }
     
     try {
-      // Import the function
+      // Import the analyzer functions
       const { getAnalysisById } = await import('./simpleContractAnalyzer');
       
       // Get analysis result

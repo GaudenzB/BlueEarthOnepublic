@@ -11,6 +11,7 @@ import { logger } from '../../../server/utils/logger';
 import { db } from '../../../server/db';
 import { documents } from '../../../shared/schema';
 import { contractUploadAnalysis } from '../../../shared/schema/contracts/contract_upload_analysis';
+import { sql } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import * as documentStorage from '../../../server/services/documentStorage';
@@ -72,14 +73,19 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
     const tenantId = document.tenantId;
     
     // Create initial analysis record in the database
+    // Execute the insert with only the required fields
     const insertResult = await db.insert(contractUploadAnalysis)
       .values({
         documentId,
         tenantId,
-        userId: userId || undefined,
+        ...(userId ? { userId } : {}),
         status: 'PENDING'
       })
       .returning();
+    
+    if (!insertResult || insertResult.length === 0) {
+      throw new Error('Failed to create analysis record');
+    }
     
     const initialRecord = insertResult[0];
     
@@ -131,12 +137,12 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
       await db.update(contractUploadAnalysis)
         .set({
           status: 'SUCCESS',
-          vendor: analysisResult.vendor,
-          contractTitle: analysisResult.contractTitle,
-          docType: analysisResult.docType,
-          effectiveDate: analysisResult.effectiveDate,
-          terminationDate: analysisResult.terminationDate,
-          confidence: analysisResult.confidence,
+          vendor: analysisResult.vendor || null,
+          contractTitle: analysisResult.contractTitle || null,
+          docType: analysisResult.docType || null,
+          effectiveDate: analysisResult.effectiveDate || null,
+          terminationDate: analysisResult.terminationDate || null,
+          confidence: analysisResult.confidence || null,
           rawAnalysisJson: JSON.stringify(analysisResult),
           updatedAt: new Date()
         })
