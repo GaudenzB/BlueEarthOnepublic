@@ -332,7 +332,7 @@ export default function ContractDetailsForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {vendorsQuery.data?.data?.map((vendor: any) => (
                           <SelectItem key={vendor.id} value={vendor.id}>
                             {vendor.name}
