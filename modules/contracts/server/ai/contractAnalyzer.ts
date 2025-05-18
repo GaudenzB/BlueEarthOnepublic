@@ -1,9 +1,10 @@
 import { logger } from '../../../../server/utils/logger';
 import { db } from '../../../../server/db';
-import { documents, contractUploadAnalysis } from '../../../../shared/schema';
+import { documents } from '../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
 import { contracts } from '../../../../shared/schema/contracts/contracts';
+import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
 
 // Simple OpenAI client instance for contract analysis
 // In production, would use the main openai instance from server services
@@ -222,9 +223,12 @@ async function runAiAnalysis(text: string, documentTitle: string) {
  */
 export async function getAnalysisById(analysisId: string) {
   try {
-    const analysis = await db.query.contractUploadAnalysis.findFirst({
-      where: eq(contractUploadAnalysis.id, analysisId)
-    });
+    // Query directly instead of using the query builder
+    const [analysis] = await db
+      .select()
+      .from(contractUploadAnalysis)
+      .where(eq(contractUploadAnalysis.id, analysisId))
+      .limit(1);
     
     if (!analysis) {
       throw new Error(`Analysis not found: ${analysisId}`);
