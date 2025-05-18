@@ -669,32 +669,7 @@ router.delete('/:contractId/documents/:attachmentId', async (req: Request, res: 
   }
 });
 
-/**
- * @route GET /api/vendors
- * @desc Get a list of all vendors
- * @access Authenticated users
- */
-router.get('/vendors', async (req: Request, res: Response) => {
-  try {
-    // For now, return a sample list of vendors until we implement the vendors table
-    return res.json({
-      success: true,
-      data: [
-        { id: 'vendor-001', name: 'Acme Corporation' },
-        { id: 'vendor-002', name: 'Globex Industries' },
-        { id: 'vendor-003', name: 'Initech LLC' },
-        { id: 'vendor-004', name: 'Umbrella Corporation' },
-        { id: 'vendor-005', name: 'Stark Industries' }
-      ]
-    });
-  } catch (error) {
-    logger.error('Error fetching vendors:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch vendors'
-    });
-  }
-});
+
 
 /**
  * @route GET /api/contracts/lookup/contract-types

@@ -40,6 +40,30 @@ export function setupContractModule(app: Express) {
   // Register routes
   app.use('/api/contracts', contractRoutes);
   
+  // Register vendor routes (separate endpoint)
+  // Extract the vendors endpoint from our contract routes
+  app.get('/api/vendors', async (req, res) => {
+    try {
+      // Return vendor list
+      return res.json({
+        success: true,
+        data: [
+          { id: 'vendor-001', name: 'Acme Corporation' },
+          { id: 'vendor-002', name: 'Globex Industries' },
+          { id: 'vendor-003', name: 'Initech LLC' },
+          { id: 'vendor-004', name: 'Umbrella Corporation' },
+          { id: 'vendor-005', name: 'Stark Industries' }
+        ]
+      });
+    } catch (error) {
+      logger.error('Error fetching vendors:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch vendors'
+      });
+    }
+  });
+  
   logger.info('Contracts module initialized successfully');
   
   // Return module instance
