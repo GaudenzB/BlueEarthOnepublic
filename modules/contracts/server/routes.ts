@@ -55,7 +55,7 @@ router.get('/', async (req: Request, res: Response) => {
     // Handle case where the table might not exist yet - return empty array
     try {
       const contractList = await db.query.contracts.findMany({
-        where: sql`${contracts.tenantId} = ${tenantId} AND ${contracts.documentId} IS NOT NULL`,
+        where: sql`${contracts.tenantId} = ${tenantId}`,
         orderBy: [sql`${contracts.updatedAt} DESC`],
         limit: 100
       });
