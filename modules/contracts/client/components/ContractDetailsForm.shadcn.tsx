@@ -77,6 +77,14 @@ export default function ContractDetailsForm({
     },
     enabled: showDocumentSelector
   });
+  // Query vendors for dropdown
+  const vendorsQuery = useQuery({
+    queryKey: ['/api/vendors'],
+    queryFn: async () => {
+      return apiRequest('/api/vendors');
+    }
+  });
+
   // Set up form with default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,6 +94,8 @@ export default function ContractDetailsForm({
       counterpartyName: contractData.counterpartyName || '',
       counterpartyAddress: contractData.counterpartyAddress || '',
       counterpartyContactEmail: contractData.counterpartyContactEmail || '',
+      vendorId: contractData.vendorId || '',
+      description: contractData.description || '',
       effectiveDate: contractData.effectiveDate ? new Date(contractData.effectiveDate) : undefined,
       expiryDate: contractData.expiryDate ? new Date(contractData.expiryDate) : undefined,
       executionDate: contractData.executionDate ? new Date(contractData.executionDate) : undefined,
@@ -113,6 +123,58 @@ export default function ContractDetailsForm({
     );
   };
 
+  // Document attachment form
+  const [documentForm, setDocumentForm] = useState<{
+    documentId: string;
+    docType: string;
+    isPrimary: boolean;
+    notes: string;
+    effectiveDate?: Date;
+  }>({
+    documentId: '',
+    docType: 'MAIN',
+    isPrimary: false,
+    notes: ''
+  });
+
+  // Add document to attachments list
+  const handleAddDocument = () => {
+    if (!documentForm.documentId) return;
+    
+    // Find document details from query results
+    const selectedDoc = documentsQuery.data?.data?.find((doc: any) => doc.id === documentForm.documentId);
+    
+    if (!selectedDoc) return;
+    
+    // Create new document attachment
+    const newAttachment = {
+      ...documentForm,
+      documentTitle: selectedDoc.title || selectedDoc.originalFilename,
+      effectiveDate: documentForm.effectiveDate ? format(documentForm.effectiveDate, 'yyyy-MM-dd') : undefined
+    };
+    
+    // Add to documents list
+    setDocuments([...documents, newAttachment]);
+    
+    // Reset form
+    setDocumentForm({
+      documentId: '',
+      docType: 'MAIN',
+      isPrimary: false,
+      notes: ''
+    });
+    
+    // Hide document selector
+    setShowDocumentSelector(false);
+  };
+  
+  // Remove document from attachments list
+  const handleRemoveDocument = (index: number) => {
+    const updatedDocs = [...documents];
+    updatedDocs.splice(index, 1);
+    setDocuments(updatedDocs);
+  };
+
   // Handle form submission
   const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
     // Format dates for API
@@ -122,9 +184,10 @@ export default function ContractDetailsForm({
       expiryDate: values.expiryDate ? format(values.expiryDate, 'yyyy-MM-dd') : null,
       executionDate: values.executionDate ? format(values.executionDate, 'yyyy-MM-dd') : null,
       renewalDate: values.renewalDate ? format(values.renewalDate, 'yyyy-MM-dd') : null,
-      // Keep the document ID and any other existing data
-      documentId: contractData.documentId,
+      // Keep the ID and any other existing data
       id: contractData.id,
+      // Include document attachments
+      documents: documents
     };
     
     onSubmit(formattedData);
@@ -420,6 +483,55 @@ export default function ContractDetailsForm({
                         type="number" 
                         placeholder="Contract value" 
                         {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Vendor Selection */}
+              <FormField
+                control={form.control}
+                name="vendorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vendor (Optional)</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a vendor" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {vendorsQuery.data?.data?.map((vendor: any) => (
+                          <SelectItem key={vendor.id} value={vendor.id}>
+                            {vendor.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Description */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Contract Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter a description for this contract" 
+                        {...field}
+                        rows={3}
                       />
                     </FormControl>
                     <FormMessage />
