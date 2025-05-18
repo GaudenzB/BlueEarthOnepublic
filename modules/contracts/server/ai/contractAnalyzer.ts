@@ -40,7 +40,15 @@ export async function analyzeContractDocument(documentId: string, userId: string
           documentId,
           userId,
           tenantId,
-          status: 'PENDING'
+          status: 'PENDING',
+          vendor: null,
+          contractTitle: null,
+          docType: null,
+          effectiveDate: null,
+          terminationDate: null,
+          confidence: {},
+          suggestedContractId: null,
+          rawAnalysisJson: null
         })
         .returning();
       
@@ -121,13 +129,6 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
     // Get document details and content
     let documentText = '';
     try {
-      // For PDF documents, we need to extract the text from the file
-      logger.info(`Retrieving document content for ${documentId}`, { 
-        filename: document.filename,
-        mimeType: document.mimeType 
-      });
-      
-      // In this implementation, let's use what we have available about the document
       // First, start with document title
       documentText = `Contract: ${document.title || 'Untitled Document'}\n`;
       
@@ -154,17 +155,11 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
           logger.warn(`Could not parse AI metadata for ${documentId}`);
         }
       }
-      }
     } catch (textError) {
       logger.error(`Error retrieving document text for ${documentId}:`, textError);
       // Non-fatal, use document title as fallback
       documentText = `Contract document: ${document.title || 'Untitled Document'}`;
     }
-
-    // Extract text content from the document
-    // In a real implementation with very large files, we'd limit the text
-    // but for now let's analyze the full content to improve extraction quality
-    const text = documentText;
 
     // Run AI analysis - wrap in try/catch to handle analysis errors
     let analysisResult;
@@ -172,7 +167,7 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
       logger.info(`Starting AI analysis for document ${documentId}`);
       
       // Always use AI analysis in development for testing
-      analysisResult = await runAiAnalysis(text, document.title || 'Untitled Document');
+      analysisResult = await runAiAnalysis(documentText, document.title || 'Untitled Document');
       
       if (!analysisResult) {
         throw new Error('AI analysis returned null result');
@@ -232,13 +227,7 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
     logger.error(`Error processing document ${documentId}:`, error);
     
     // Update the analysis record with error
-    await db.update(contractUploadAnalysis)
-      .set({
-        status: 'FAILED',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        updatedAt: new Date()
-      })
-      .where(eq(contractUploadAnalysis.id, analysisId));
+    await updateAnalysisWithError(analysisId, error);
   }
 }
 
@@ -268,7 +257,7 @@ async function runAiAnalysis(text: string, documentTitle: string) {
               content: `You are an expert contract analyst AI. Extract and analyze the following information from the contract:
               1. Vendor/counterparty name
               2. Contract title/subject
-              3. Document type (e.g., MAIN, AMENDMENT, ADDENDUM, SIDE_LETTER, etc.)
+              3. Document type (e.g., MAIN_AGREEMENT, AMENDMENT, ADDENDUM, SIDE_LETTER, etc.)
               4. Effective date (in YYYY-MM-DD format)
               5. Termination date (in YYYY-MM-DD format)
               
@@ -361,7 +350,7 @@ async function runAiAnalysis(text: string, documentTitle: string) {
     const fallbackResult = {
       vendor: extractedVendor,
       contractTitle: extractedTitle,
-      docType: "MAIN",
+      docType: "MAIN_AGREEMENT",
       effectiveDate: effectiveDate,
       terminationDate: terminationDate.toISOString().split('T')[0],
       confidence: {
@@ -437,14 +426,13 @@ async function updateAnalysisWithError(analysisId: string, error: unknown) {
     await db.update(contractUploadAnalysis)
       .set({
         status: 'FAILED',
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : 'Unknown error',
         updatedAt: new Date()
       })
       .where(eq(contractUploadAnalysis.id, analysisId));
-    logger.info(`Updated analysis ${analysisId} with error status`);
   } catch (dbError) {
-    logger.error(`Failed to update analysis ${analysisId} with error status:`, dbError);
-    // We don't throw here as this is a utility function that shouldn't fail the caller
+    logger.error(`Error updating analysis record ${analysisId} with error:`, dbError);
+    // This is a best-effort update, we don't want to throw from here
   }
 }
 
@@ -453,34 +441,18 @@ async function updateAnalysisWithError(analysisId: string, error: unknown) {
  */
 export async function getAnalysisById(analysisId: string) {
   try {
-    // Validate input
-    if (!analysisId) {
-      throw new Error('Analysis ID is required');
+    const result = await db.query.contractUploadAnalysis.findFirst({
+      where: eq(contractUploadAnalysis.id, analysisId)
+    });
+    
+    if (!result) {
+      throw new Error(`Analysis not found with ID: ${analysisId}`);
     }
     
-    // Query directly instead of using the query builder
-    const [analysis] = await db
-      .select()
-      .from(contractUploadAnalysis)
-      .where(eq(contractUploadAnalysis.id, analysisId))
-      .limit(1);
-    
-    if (!analysis) {
-      throw new Error(`Analysis not found: ${analysisId}`);
-    }
-    
-    return analysis;
+    return result;
   } catch (error) {
-    logger.error(`Error getting analysis ${analysisId}:`, error);
-    
-    // Return a valid structured response even on error
-    return {
-      id: analysisId,
-      status: 'FAILED',
-      error: error instanceof Error ? error.message : String(error),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    logger.error(`Error retrieving analysis with ID ${analysisId}:`, error);
+    throw new Error(`Failed to retrieve analysis: ${error instanceof Error ? error.message : 'Database error'}`);
   }
 }
 
@@ -489,24 +461,17 @@ export async function getAnalysisById(analysisId: string) {
  */
 export async function savePrefillData(data: any, tenantId: string) {
   try {
-    // We'll reuse the contractUploadAnalysis table to store prefill data
-    const [prefillRecord] = await db.insert(contractUploadAnalysis)
-      .values({
-        documentId: data.documentId,
-        tenantId,
-        vendor: data.vendor,
-        contractTitle: data.title,
-        docType: data.docType,
-        effectiveDate: data.effectiveDate,
-        terminationDate: data.terminationDate,
-        status: 'PREFILL',
-        updatedAt: new Date()
-      })
-      .returning();
-      
-    return prefillRecord;
+    // Here we would typically save this to a database table
+    // For now, we'll just log it
+    logger.info(`Saving prefill data for tenant ${tenantId}:`, data);
+    
+    // Return a mock ID for now
+    return {
+      id: `prefill-${Date.now()}`,
+      data
+    };
   } catch (error) {
-    logger.error('Error saving prefill data:', error);
-    throw error;
+    logger.error(`Error saving prefill data for tenant ${tenantId}:`, error);
+    throw new Error(`Failed to save prefill data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
