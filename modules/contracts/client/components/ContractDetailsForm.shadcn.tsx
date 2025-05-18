@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, FileText, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Table, 
   TableBody, 
@@ -548,7 +549,7 @@ export default function ContractDetailsForm({
                     <FormLabel>
                       Currency {showConfidence && renderConfidence(0.90)}
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select currency" />
@@ -570,8 +571,188 @@ export default function ContractDetailsForm({
                 )}
               />
             </div>
+            
+            {/* Document Attachments Section */}
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-lg font-medium mb-4">Attached Documents</h3>
+              
+              {/* Current document attachments */}
+              {documents.length > 0 ? (
+                <div className="mb-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Document</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Primary</TableHead>
+                        <TableHead>Effective Date</TableHead>
+                        <TableHead>Notes</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {documents.map((doc, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <FileText size={16} />
+                              {doc.documentTitle}
+                            </div>
+                          </TableCell>
+                          <TableCell>{doc.docType}</TableCell>
+                          <TableCell>{doc.isPrimary ? "Yes" : "No"}</TableCell>
+                          <TableCell>{doc.effectiveDate || "—"}</TableCell>
+                          <TableCell>{doc.notes || "—"}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleRemoveDocument(index)}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center p-6 bg-gray-50 rounded-lg mb-6">
+                  <p className="text-muted-foreground">No documents attached yet. Contracts can exist without documents or can have multiple attachments.</p>
+                </div>
+              )}
+              
+              {/* Add document button */}
+              {!showDocumentSelector ? (
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => setShowDocumentSelector(true)}
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Attach Document
+                </Button>
+              ) : (
+                <div className="space-y-4 border p-4 rounded-lg">
+                  <h4 className="font-medium">Attach Document</h4>
+                  
+                  {/* Document selector */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Select Document</label>
+                      <Select
+                        value={documentForm.documentId}
+                        onValueChange={(value) => setDocumentForm({...documentForm, documentId: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a document" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {documentsQuery.data?.data?.map((doc: any) => (
+                            <SelectItem key={doc.id} value={doc.id}>
+                              {doc.title || doc.originalFilename}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Document Type</label>
+                      <Select
+                        value={documentForm.docType}
+                        onValueChange={(value) => setDocumentForm({...documentForm, docType: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MAIN">Main Agreement</SelectItem>
+                          <SelectItem value="AMENDMENT">Amendment</SelectItem>
+                          <SelectItem value="SIDE_LETTER">Side Letter</SelectItem>
+                          <SelectItem value="EXHIBIT">Exhibit</SelectItem>
+                          <SelectItem value="TERMINATION">Termination</SelectItem>
+                          <SelectItem value="RENEWAL">Renewal</SelectItem>
+                          <SelectItem value="OTHER">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Effective Date</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            {documentForm.effectiveDate ? (
+                              format(documentForm.effectiveDate, "PPP")
+                            ) : (
+                              <span className="text-muted-foreground">Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={documentForm.effectiveDate}
+                            onSelect={(date) => setDocumentForm({...documentForm, effectiveDate: date as Date})}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="space-y-2 flex items-end">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="isPrimary"
+                          checked={documentForm.isPrimary}
+                          onChange={(e) => setDocumentForm({...documentForm, isPrimary: e.target.checked})}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <label htmlFor="isPrimary" className="text-sm font-medium">
+                          Primary Document
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className="col-span-2 space-y-2">
+                      <label className="text-sm font-medium">Notes</label>
+                      <Textarea
+                        value={documentForm.notes}
+                        onChange={(e) => setDocumentForm({...documentForm, notes: e.target.value})}
+                        placeholder="Add notes about this document"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setShowDocumentSelector(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleAddDocument}
+                      disabled={!documentForm.documentId}
+                    >
+                      Add Document
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
 
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
               <Button type="submit" className="px-4 py-2">
                 Save and Continue
               </Button>
