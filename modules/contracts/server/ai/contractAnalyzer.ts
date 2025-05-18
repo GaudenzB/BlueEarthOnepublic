@@ -1,10 +1,10 @@
-import { logger } from '../../../server/utils/logger';
-import { db } from '../../../server/db';
-import { documents } from '../../../shared/schema/documents';
+import { logger } from '../../../../server/utils/logger';
+import { db } from '../../../../server/db';
+import { documents } from '../../../../shared/schema/documents';
 import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
-import { contractUploadAnalysis } from '../../../shared/schema/contracts/contract_upload_analysis';
-import { contracts } from '../../../shared/schema/contracts/contracts';
+import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
+import { contracts } from '../../../../shared/schema/contracts/contracts';
 
 // Simple OpenAI client instance for contract analysis
 // In production, would use the main openai instance from server services

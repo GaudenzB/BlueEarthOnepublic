@@ -89,7 +89,7 @@ export default function AssignOrCreateForm({ analysisResult, documentId, onReset
         });
         
         // Redirect to the contract creation form with the prefill ID
-        navigate(`/contracts/new?prefillId=${prefillResponse.data.id}`);
+        setLocation(`/contracts/new?prefillId=${prefillResponse.data.id}`);
       }
     } catch (error) {
       console.error('Error creating contract:', error);
@@ -137,7 +137,7 @@ export default function AssignOrCreateForm({ analysisResult, documentId, onReset
         });
         
         // Redirect to the contract detail page
-        navigate(`/contracts/${selectedExistingContractId}`);
+        setLocation(`/contracts/${selectedExistingContractId}`);
       }
     } catch (error) {
       console.error('Error attaching document:', error);

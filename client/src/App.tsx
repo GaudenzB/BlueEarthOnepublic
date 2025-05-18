@@ -32,6 +32,7 @@ import { ROUTES, AUTH_ROUTES, ADMIN_ROUTES } from "@/lib/routes";
 const ContractList = React.lazy(() => import("../../modules/contracts/client/pages/ContractList"));
 const ContractDetail = React.lazy(() => import("../../modules/contracts/client/pages/ContractDetail"));
 const ContractWizard = React.lazy(() => import("../../modules/contracts/client/pages/ContractWizard.shadcn"));
+const ContractUploadFlow = React.lazy(() => import("../../modules/contracts/client/pages/ContractUploadFlow"));
 
 // Router configuration with separate auth and protected routes
 function AppRoutes() {
@@ -121,6 +122,13 @@ function AppRoutes() {
       
       {/* Contract Routes - with Suspense loading */}
       {/* Specific routes must come before the dynamic id routes to prevent swallowing */}
+      <ProtectedRoute path="/contracts/upload" component={() => (
+        <MainLayout>
+          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <ContractUploadFlow />
+          </React.Suspense>
+        </MainLayout>
+      )} />
       <ProtectedRoute path="/contracts/new" component={() => (
         <MainLayout>
           <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>

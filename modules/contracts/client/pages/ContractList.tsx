@@ -95,12 +95,20 @@ export default function ContractList() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Contract Management</h1>
-        <Link href="/contracts/new">
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            New Contract
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/contracts/upload">
+            <Button variant="outline" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Upload Document First
+            </Button>
+          </Link>
+          <Link href="/contracts/new">
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              New Contract
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>
