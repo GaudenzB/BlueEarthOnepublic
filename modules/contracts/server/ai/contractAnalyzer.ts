@@ -88,25 +88,6 @@ export async function analyzeContractDocument(documentId: string, userId: string
 }
 
 /**
- * Utility function to update analysis record with error details
- */
-async function updateAnalysisWithError(analysisId: string, error: unknown) {
-  try {
-    await db.update(contractUploadAnalysis)
-      .set({
-        status: 'FAILED',
-        error: error instanceof Error ? error.message : String(error),
-        updatedAt: new Date()
-      })
-      .where(eq(contractUploadAnalysis.id, analysisId));
-    logger.info(`Updated analysis ${analysisId} with error status`);
-  } catch (dbError) {
-    logger.error(`Failed to update analysis ${analysisId} with error status:`, dbError);
-    // We don't throw here as this is a utility function that shouldn't fail the caller
-  }
-}
-
-/**
  * Process the document asynchronously
  */
 async function processDocumentAsync(documentId: string, analysisId: string, tenantId: string) {
