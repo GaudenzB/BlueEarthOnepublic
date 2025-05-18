@@ -4,7 +4,7 @@ import { documents } from '../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
 import { contracts } from '../../../../shared/schema/contracts/contracts';
-import { contractUploadAnalysis } from '../../../../shared/schema';
+import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
 import * as documentStorage from '../../../../server/services/documentStorage';
 import * as openaiUtils from '../../../../server/utils/openai';
 
@@ -475,10 +475,15 @@ async function runAiAnalysis(text: string, documentTitle: string) {
  */
 async function updateAnalysisWithError(analysisId: string, error: unknown) {
   try {
+    // Use direct query with explicit type handling
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    logger.info(`Updating analysis ${analysisId} with error status: ${errorMessage}`);
+    
     await db.update(contractUploadAnalysis)
       .set({
         status: 'FAILED',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
         updatedAt: new Date()
       })
       .where(eq(contractUploadAnalysis.id, analysisId));
@@ -493,9 +498,10 @@ async function updateAnalysisWithError(analysisId: string, error: unknown) {
  */
 export async function getAnalysisById(analysisId: string) {
   try {
-    const result = await db.query.contractUploadAnalysis.findFirst({
-      where: eq(contractUploadAnalysis.id, analysisId)
-    });
+    // Use direct query with prepared statement instead of query builder
+    const result = await db.select().from(contractUploadAnalysis).where(
+      eq(contractUploadAnalysis.id, analysisId)
+    ).limit(1).then(rows => rows[0]);
     
     if (!result) {
       throw new Error(`Analysis not found with ID: ${analysisId}`);
