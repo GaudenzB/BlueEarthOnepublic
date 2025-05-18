@@ -34,15 +34,21 @@ const openai = apiKey ? new OpenAI({
  */
 export async function getAnalysisById(analysisId: string) {
   try {
-    const analysis = await db.select()
+    logger.info(`Looking up analysis with ID ${analysisId}`);
+    
+    // Query the database for the analysis record
+    const results = await db.select()
       .from(contractUploadAnalysis)
-      .where(eq(contractUploadAnalysis.id, analysisId))
-      .then(results => results[0]);
+      .where(eq(contractUploadAnalysis.id, analysisId));
+    
+    const analysis = results[0];
     
     if (!analysis) {
+      logger.warn(`Analysis record not found with ID: ${analysisId}`);
       throw new Error(`Analysis record not found with ID: ${analysisId}`);
     }
     
+    logger.info(`Found analysis for document ${analysis.documentId}, status: ${analysis.status}`);
     return analysis;
   } catch (error) {
     logger.error(`Error retrieving analysis record ${analysisId}:`, error);
@@ -72,47 +78,57 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
     // Get tenant ID from the document
     const tenantId = document.tenantId;
     
-    // Create initial analysis record in the database using typed values
-    // First create basic record structure
-    const analysisRecord: any = {
-      documentId,
-      tenantId,
-      status: 'PENDING'
+    // Prepare the insert data with proper types
+    const insertData = {
+      documentId: documentId,
+      tenantId: tenantId,
+      status: 'PENDING' as const,
+      ...(userId ? { userId: userId } : {})
     };
     
-    // Add optional userId if provided
-    if (userId) {
-      analysisRecord.userId = userId;
-    }
+    // Execute the insert with proper error handling
+    logger.debug(`Creating analysis record for document ${documentId}`, insertData);
     
-    // Execute the insert
     const insertResult = await db.insert(contractUploadAnalysis)
-      .values(analysisRecord)
-      .returning();
+      .values(insertData)
+      .returning({ 
+        id: contractUploadAnalysis.id,
+        documentId: contractUploadAnalysis.documentId,
+        status: contractUploadAnalysis.status
+      });
     
     if (!insertResult || insertResult.length === 0) {
       throw new Error('Failed to create analysis record');
     }
     
-    const initialRecord = insertResult[0];
+    // Get the record ID
+    const analysisId = insertResult[0]?.id;
+    if (!analysisId) {
+      throw new Error('Failed to get analysis record ID');
+    }
     
-    logger.info(`Created analysis record ${initialRecord.id}`, { 
-      documentId, 
-      analysisId: initialRecord.id
+    logger.info(`Created analysis record ${analysisId}`, { 
+      documentId,
+      analysisId
     });
     
     // Update the status to PROCESSING
+    logger.debug(`Updating analysis record ${analysisId} status to PROCESSING`);
     await db.update(contractUploadAnalysis)
       .set({ status: 'PROCESSING' })
-      .where(eq(contractUploadAnalysis.id, initialRecord.id));
+      .where(eq(contractUploadAnalysis.id, analysisId));
     
     try {
       // Get document content
       let documentText = '';
       try {
-        // Download the file content
+        // Download the file content using the correct storage key
+        if (!document.storageKey) {
+          throw new Error(`Document ${documentId} has no storage key`);
+        }
+        
         logger.info(`Downloading document ${documentId} with storage key ${document.storageKey}`);
-        const fileBuffer = await documentStorage.downloadFile(document);
+        const fileBuffer = await documentStorage.downloadFile(document.storageKey);
         
         // Extract text based on the document type
         if (document.mimeType.includes('pdf')) {
