@@ -1,1 +1,48 @@
-This is a test document for upload functionality testing.
+
+PROFESSIONAL SERVICES AGREEMENT
+
+This Professional Services Agreement (the "Agreement") is made and entered into as of July 15, 2025 (the "Effective Date"), by and between:
+
+BlueEarth Capital LLC, a Delaware limited liability company with its principal place of business at 123 Finance Street, New York, NY 10001 ("Client")
+
+AND
+
+Acme Consulting Group, Inc., a California corporation with its principal place of business at 456 Advisory Lane, San Francisco, CA 94105 ("Consultant")
+
+RECITALS:
+
+WHEREAS, Client desires to engage Consultant to provide certain professional services; and
+WHEREAS, Consultant desires to provide such services to Client;
+
+NOW, THEREFORE, in consideration of the mutual covenants and agreements hereinafter set forth, the parties agree as follows:
+
+1. SERVICES
+1.1 Services. Consultant will provide to Client the services ("Services") described in one or more statements of work signed by both parties (each, a "Statement of Work" or "SOW").
+1.2 Statements of Work. Each SOW will include, at a minimum: (a) a description of the Services to be performed; (b) the timeline for performance; (c) the fees for the Services; and (d) any other relevant terms and conditions.
+
+2. TERM AND TERMINATION
+2.1 Term. This Agreement shall commence on the Effective Date and shall continue until December 31, 2027, unless earlier terminated as provided herein (the "Term").
+2.2 Termination for Convenience. Either party may terminate this Agreement or any SOW for convenience upon thirty (30) days' prior written notice to the other party.
+
+3. COMPENSATION
+3.1 Fees. Client shall pay Consultant the fees set forth in each SOW.
+3.2 Expenses. Client shall reimburse Consultant for reasonable and documented expenses incurred in connection with the Services, provided such expenses are approved by Client in advance.
+
+4. CONFIDENTIALITY
+4.1 Confidential Information. Each party acknowledges that it may have access to certain confidential and proprietary information of the other party.
+4.2 Non-Disclosure. Each party agrees to maintain the confidentiality of the other party's confidential information and not to disclose such information to any third party.
+
+5. GOVERNING LAW
+This Agreement shall be governed by and construed in accordance with the laws of the State of New York, without giving effect to any choice of law principles.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+BlueEarth Capital LLC
+By: _______________________
+Name: Jane Smith
+Title: Chief Operating Officer
+
+Acme Consulting Group, Inc.
+By: _______________________
+Name: John Doe
+Title: President
