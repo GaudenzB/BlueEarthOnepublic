@@ -1,0 +1,65 @@
+New Feature Brief: Upload-First Contract Creation with AI Extraction
+
+Goal: Improve user experience by letting users upload documents first (without creating a contract manually), then guiding them to create or assign a contract based on AI-extracted metadata.
+
+🧩 Summary of the new process
+User uploads a PDF
+AI auto-analyzes the document:
+Extracts: docType, vendor, effectiveDate, terminationDate, contract title, and clauses (optional)
+UI presents:
+Suggested values (with confidence indicators)
+Option to assign to existing contract or create new contract
+If “Create New” is selected:
+Pre-fill Contract Wizard with AI-extracted metadata
+🔧 Implementation Steps
+
+1. Add new upload route & UI
+New route: /contracts/upload
+New component: ContractUploadFlow.tsx
+This page should:
+
+Allow PDF upload (drag/drop or browse)
+Trigger analyzeDocument(file) upon upload
+Show progress/loading while analysis runs
+2. Extend the AI contract analyzer
+Update contractProcessor.ts or analyzeContractDocument(file) to return:
+{
+  vendor: string | null,
+  contractTitle: string | null,
+  docType: 'MAIN' | 'AMENDMENT' | ...,
+  effectiveDate: string | null,
+  terminationDate: string | null,
+  confidence: Record<string, number>,
+  suggestedContractId?: string  // optional, if AI finds likely existing match
+}
+Reuse existing Azure Document Intelligence + GPT-4o setup
+Store results in a contract_upload_ai_analysis table for traceability (optional)
+3. Build “Review & Assign” UI
+After AI completes, display a form with:
+Suggested contract metadata (editable)
+Confidence color-coding (red/yellow/green)
+Option to:
+“Link to Existing Contract” (dropdown or search)
+“Create New Contract” (button)
+4. Hook into Contract Wizard with pre-fill
+If “Create New Contract” is selected:
+Redirect to /contracts/new?prefillId={id}
+Update Contract Wizard to accept prefillId
+Load AI data from DB or memory
+Pre-fill Step 1 fields and highlight them
+5. Bonus: auto-assign to contract if suggestedContractId is 100% confident
+📂 Folder Suggestions
+
+File	Purpose
+modules/contracts/client/pages/ContractUploadFlow.tsx	Upload flow UI
+modules/contracts/client/components/AssignOrCreateForm.tsx	Suggestion review UI
+modules/contracts/server/ai/contractAnalyzer.ts	Core AI extraction logic
+modules/contracts/server/routes.ts	Add POST /api/contracts/upload/analyze and GET /prefill/:id
+shared/schema/contracts/contract_upload_analysis.ts	Optional table to store extractions per upload
+✅ Acceptance Criteria
+
+User can upload a PDF without creating a contract manually
+System shows suggested contract metadata based on AI
+User can choose to link to existing or create new contract
+If new, Contract Wizard pre-fills the form with AI-extracted data
+All document uploads are saved and linked to the final contract record
