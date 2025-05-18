@@ -83,14 +83,21 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
     enabled: !!contractId
   });
   
-  // Get document data if documentId is provided
+  // Get document data if documentId is provided - with improved error handling
   const documentQuery = useQuery({
     queryKey: ['/api/documents', documentId],
     queryFn: async () => {
       if (!documentId) return null;
-      return apiRequest(`/api/documents/${documentId}`);
+      try {
+        return await apiRequest(`/api/documents/${documentId}`);
+      } catch (error) {
+        console.warn('Document not found, continuing with wizard anyway:', error);
+        // Return empty data so the wizard can continue
+        return { data: { id: documentId, title: "Document not found" } };
+      }
     },
-    enabled: !!documentId && !contractId // Only fetch document if no contract is being edited
+    enabled: !!documentId && !contractId, // Only fetch document if no contract is being edited
+    retry: false // Don't keep retrying on error
   });
   
   // Update contract data when contract is loaded
