@@ -1,0 +1,89 @@
+next errors:
+
+API Request Error: /api/contracts/upload/analyze/5e2b4f63-f886-4b89-8073-2fe06c05512c 
+ApiError {name: "ApiError", status: 500, errors: undefined}
+
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Upload error: 
+ApiError {name: "ApiError", status: 500, errors: undefined}
+errors: undefined
+name: "ApiError"
+status: 500
+message: "Failed to analyze document"
+stack: "ApiError: Failed to analyze document↵ at HttpClient.processResponse (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/lib/httpClient.ts:88:13)↵ at async HttpClient.executeFetch (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/lib/httpClient.ts:127:14)↵ at async apiRequest (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/src/lib/queryClient.ts:15:20)↵ at async uploadFile (https://4a86baee-e3a1-478d-b1ac-6878c0349055-00-2xgjw3xp7szld.janeway.replit.dev/@fs/home/runner/workspace/modules/contracts/client/pages/ContractUploadFlow.tsx?t=1747563501453:123:32)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+ChatGPT said:
+This new error confirms that the backend AI document analysis failed internally. You're now past the upload/parsing phase — but your analyzeContract() logic (likely GPT or PDF handling) is throwing a 500 on:
+
+POST /api/contracts/upload/analyze/:uploadId
+✅ What we know
+
+Error	Meaning
+ApiError: Failed to analyze document	Your route handler is catching an exception thrown by the AI analysis layer
+status: 500	Internal server error — not a frontend issue
+errors: undefined	Error wasn't structured (e.g. no specific cause or details returned)
+Stack trace	Points to contractAnalyzer.ts inside HttpClient.processResponse and ContractUploadFlow.tsx during uploadFile()
+🔍 Likely root causes
+
+Here’s what usually triggers this on analyzeDocument(file):
+
+🔴 1. AI API failure (e.g. OpenAI, Azure Form Recognizer)
+Missing or incorrect API key
+Timeout
+File too large or unreadable
+Invalid MIME type or encoding
+🔴 2. PDF parsing failure
+Binary buffer not extracted correctly
+Upload not persisted or accessible by AI function
+file.buffer or file.path undefined
+🔴 3. Missing try/catch around analyzeContract(file)
+If your analyzer function doesn’t gracefully catch upstream exceptions, the route will throw a 500 with no structured error.
+
+✅ How to fix
+
+1. Update the backend route to log full errors
+In your /api/contracts/upload/analyze/:id route, wrap analysis in a detailed try/catch:
+
+router.post("/contracts/upload/analyze/:id", async (req, res) => {
+  try {
+    const result = await analyzeContractUpload(req.params.id);
+    return res.json(result);
+  } catch (err: any) {
+    console.error("❌ AI analysis failed:", err);
+    return res.status(500).json({
+      error: "Failed to analyze document",
+      detail: err.message,
+      stack: err.stack,
+    });
+  }
+});
+That will help surface what’s really going wrong.
+
+2. Log/check inside your contractAnalyzer.ts
+You probably have a line like:
+
+const aiResponse = await callOpenAIorAzure(pdfText);
+Make sure you:
+
+Log the raw file path, filename, and size
+Catch GPT/API errors and retry or report message
+Check if the document was actually fetched successfully from storage or buffer
+3. Add client-side fallback messaging
+In ContractUploadFlow.tsx, improve the feedback:
+
+try {
+  const result = await analyzeDocument(uploadId);
+  setAnalysis(result);
+} catch (err) {
+  console.error("Upload error:", err);
+  toast.error("Upload failed: " + (err.message || "Unknown error"));
+}
+🧪 Quick test to debug:
+Go to the terminal in Replit
+Run console.log("Analyzing", file.name, file.size) inside contractAnalyzer.ts
+Add fallback res.json({ success: false, reason: ... }) to confirm execution path
