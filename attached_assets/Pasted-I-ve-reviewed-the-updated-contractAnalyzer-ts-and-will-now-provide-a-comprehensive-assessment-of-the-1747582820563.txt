@@ -1,0 +1,95 @@
+I’ve reviewed the updated contractAnalyzer.ts and will now provide a comprehensive assessment of the entire contract module across:
+
+✅ CONTRACT MODULE REVIEW
+
+1. ✅ Routing & API Integration
+/contracts/upload/analyze/:documentId endpoint exists and is correctly routed.
+Route now uses try/catch and sends JSON response → ✅ fixed.
+Uses analyzeContractDocument(...) as the backend entry point.
+✅ Status: Correctly wired and error-handled.
+
+2. ⚠️ Analyzer Functionality: analyzeContractDocument
+Current behavior:
+
+Checks if document exists (✅ good).
+Inserts a record into contract_upload_analysis (status: PENDING) ✅.
+Does not extract text from the uploaded file ❌.
+Instantiates OpenAI client, but never sends a prompt or gets response ❌.
+Does not parse metadata from fallback (title/filename) ❌.
+Does not update analysis result (no status: SUCCESS/FAILED) ❌.
+⚠️ Status: Incomplete — analyzer logic is 10% implemented
+
+3. ❌ Missing Core Steps
+a. Missing PDF text extraction
+
+const buffer = await documentStorage.loadBuffer(document.storageKey);
+const text = await extractTextFromPdf(buffer);
+→ You need to either write extractTextFromPdf() or use a library (e.g. pdf-parse).
+
+b. Missing OpenAI chat/completion call
+
+const response = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [...],
+  temperature: 0.2
+});
+c. Missing update to contractUploadAnalysis:
+
+await db.update(contractUploadAnalysis)
+  .set({ status: 'SUCCESS', vendor, docType, ... })
+  .where(eq(contractUploadAnalysis.id, initialRecord.id));
+✅ Fallback if AI fails: update with status: 'FAILED', and log error.
+
+4. ✅ Schema Coverage
+contractUploadAnalysis table is referenced and used.
+Expected fields (status, vendor, documentId) are present.
+Drizzle ORM is used consistently.
+✅ Status: Schema correctly supports intended behavior
+
+5. ⚠️ Frontend Support
+ContractUploadFlow.tsx exists and sends request
+Error response is now captured and shown (✅)
+Prefill behavior depends on AI output — currently nonfunctional because backend doesn’t respond with vendor, docType, etc.
+⚠️ Status: Frontend ready — blocked only by missing analyzer output.
+
+✅ NEXT ACTIONS (Concrete)
+
+Implement this in contractAnalyzer.ts to finish the module:
+import { extractTextFromPdf } from '../../../../server/utils/pdf'; // You must implement this
+
+// 1. Load and extract text
+const buffer = await documentStorage.loadBuffer(document.storageKey);
+const text = await extractTextFromPdf(buffer);
+
+// 2. Call OpenAI
+const prompt = `Extract contract metadata as JSON with the following keys: vendor, contractTitle, effectiveDate, terminationDate, docType.`;
+
+const response = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [
+    { role: 'system', content: prompt },
+    { role: 'user', content: text.slice(0, 12000) }
+  ],
+  temperature: 0.2
+});
+
+// 3. Parse result
+let metadata;
+try {
+  metadata = JSON.parse(response.choices[0].message.content);
+} catch (e) {
+  throw new Error("Failed to parse AI response as JSON");
+}
+
+// 4. Update DB
+await db.update(contractUploadAnalysis)
+  .set({
+    status: 'SUCCESS',
+    vendor: metadata.vendor,
+    contractTitle: metadata.contractTitle,
+    effectiveDate: metadata.effectiveDate,
+    terminationDate: metadata.terminationDate,
+    docType: metadata.docType,
+    rawAnalysisJson: response
+  })
+  .where(eq(contractUploadAnalysis.documentId, documentId));
