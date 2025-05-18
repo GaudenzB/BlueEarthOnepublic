@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import { OpenAI } from 'openai';
 import { contracts } from '../../../../shared/schema/contracts/contracts';
 import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
+import * as documentStorage from '../../../../server/services/documentStorage';
+import * as textExtractor from '../../../../server/utils/openai';
 
 // Simple OpenAI client instance for contract analysis
 // In production, would use the main openai instance from server services
@@ -139,12 +141,10 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
         mimeType: document.mimeType 
       });
       
-      // Import necessary utilities
-      const { downloadFile } = await import('../../../../server/utils/storage');
-      const { extractTextFromDocument } = await import('../../../../server/utils/openai');
+      // We already have the imports at the top, no need to re-import them
       
       // Download the file content
-      const fileBuffer = await downloadFile(document.storageKey);
+      const fileBuffer = await documentStorage.downloadFile(document.storageKey);
       
       logger.info(`Document downloaded successfully, extracting text`, {
         documentId,
@@ -152,7 +152,7 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
       });
       
       // Extract text based on mime type
-      documentText = await extractTextFromDocument(
+      documentText = await textExtractor.extractTextFromDocument(
         fileBuffer,
         document.mimeType,
         document.originalFilename
@@ -260,7 +260,7 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
         confidence: analysisResult.confidence,
         suggestedContractId,
         status: 'COMPLETED',
-        rawAnalysisJson: analysisResult,
+        rawAnalysisJson: JSON.stringify(analysisResult),
         updatedAt: new Date()
       })
       .where(eq(contractUploadAnalysis.id, analysisId));
