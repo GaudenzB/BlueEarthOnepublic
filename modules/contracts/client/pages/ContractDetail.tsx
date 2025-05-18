@@ -45,7 +45,7 @@ export default function ContractDetail() {
   const params = useParams();
   const contractId = params.id;
 
-  // Get contract data (single query for contract data)
+  // Get contract data using the standard path parameter approach
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/contracts', contractId],
     queryFn: async () => {
@@ -54,7 +54,9 @@ export default function ContractDetail() {
       console.log('Contract API response:', result);
       return result;
     },
-    enabled: Boolean(contractId)
+    enabled: Boolean(contractId),
+    retry: 1,
+    retryDelay: 1000
   });
 
   // Format date for display

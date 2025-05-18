@@ -92,14 +92,22 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const contractId = req.params.id;
     
+    if (!contractId || !contractId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid contract ID format'
+      });
+    }
+    
     // Get tenant ID from request - in development, use a default if not available
     const user = (req as any).user;
     const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000001';
     
     logger.info('Fetching contract detail', { contractId, tenantId });
     
+    // Use a simpler query approach
     const contract = await db.query.contracts.findFirst({
-      where: sql`${contracts.id} = ${contractId} AND ${contracts.tenantId} = ${tenantId}`,
+      where: eq(contracts.id, contractId)
     });
     
     if (!contract) {
@@ -112,13 +120,13 @@ router.get('/:id', async (req: Request, res: Response) => {
     
     // Return just the contract data - don't try to load clauses or obligations
     // as these endpoints need to be separated for better performance
-    res.json({
+    return res.json({
       success: true,
       data: contract
     });
   } catch (error) {
-    logger.error('Error getting contract', { error, id: req.params.id });
-    res.status(500).json({
+    logger.error('Error getting contract', { error: String(error), contractId: req.params.id });
+    return res.status(500).json({
       success: false,
       message: 'Server error retrieving contract'
     });
