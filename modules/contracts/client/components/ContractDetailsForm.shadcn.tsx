@@ -49,8 +49,9 @@ const formSchema = z.object({
     .superRefine((date, ctx) => {
       if (!date) return;
       
-      const effectiveDate = ctx.parent?.effectiveDate;
-      if (effectiveDate && date <= effectiveDate) {
+      // Get the parent data - cast to any to access parent data regardless of type
+      const parentData = (ctx as any).data;
+      if (parentData?.effectiveDate && date <= parentData.effectiveDate) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Expiry date must be after effective date'
@@ -63,8 +64,9 @@ const formSchema = z.object({
     .superRefine((date, ctx) => {
       if (!date) return;
       
-      const expiryDate = ctx.parent?.expiryDate;
-      if (expiryDate && date < expiryDate) {
+      // Get the parent data - cast to any to access parent data regardless of type
+      const parentData = (ctx as any).data;
+      if (parentData?.expiryDate && date < parentData.expiryDate) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Renewal date should be on or after the expiry date'

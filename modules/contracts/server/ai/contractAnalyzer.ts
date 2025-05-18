@@ -2,16 +2,18 @@ import { logger } from '../../../../server/utils/logger';
 import { db } from '../../../../server/db';
 import { documents } from '../../../../shared/schema';
 import { eq } from 'drizzle-orm';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 import { contracts } from '../../../../shared/schema/contracts/contracts';
 import { contractUploadAnalysis } from '../../../../shared/schema/contracts/contract_upload_analysis';
 import * as documentStorage from '../../../../server/services/documentStorage';
 import * as openaiUtils from '../../../../server/utils/openai';
 
-// Use the shared OpenAI client from server/utils/openai instead of creating a new one
-// This ensures we use the same correctly configured client throughout the application
-import { getOpenAIClient } from '../../../../server/utils/openai';
-const openai = getOpenAIClient();
+// Create a simple OpenAI client for contract analysis
+const apiKey = process.env['OPENAI_API_KEY'];
+if (!apiKey) {
+  logger.warn('OPENAI_API_KEY environment variable is not set. AI contract analysis will use fallback methods');
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 
 /**
  * Analyze a contract document and extract key information

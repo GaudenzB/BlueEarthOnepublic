@@ -4,6 +4,21 @@ import { logger } from "./logger";
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
 
+/**
+ * Gets the configured OpenAI client
+ * @returns The OpenAI client instance
+ */
+export function getOpenAIClient(): OpenAI {
+  const apiKey = process.env['OPENAI_API_KEY'];
+  
+  if (!apiKey) {
+    logger.warn('OPENAI_API_KEY environment variable is not set. AI features will use fallback methods');
+  }
+  
+  // Return the singleton instance
+  return openai;
+}
+
 // Using GPT-4o (released May 13, 2024) as it's now widely available in 2025
 const DEFAULT_MODEL = "gpt-4o";
 
