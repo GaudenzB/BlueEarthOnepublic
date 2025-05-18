@@ -394,9 +394,9 @@ router.post('/', async (req: Request, res: Response) => {
       tenantId: tenantId.toString(), 
       // The documentId needs to be a valid UUID
       documentId: processedContractData.documentId,
-      // User IDs should be UUIDs
-      createdBy: userId,
-      updatedBy: userId,
+      // User IDs should be UUIDs or null
+      createdBy: userId || null,
+      updatedBy: userId || null,
       // Set confidence level explicitly to avoid type issues
       confidenceLevel: 'UNVERIFIED',
       // Making sure fields that might cause errors are explicitly null
