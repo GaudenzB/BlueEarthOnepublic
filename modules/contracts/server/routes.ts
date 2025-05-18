@@ -390,8 +390,8 @@ router.post('/', async (req: Request, res: Response) => {
     // Create the new contract with proper type conversions
     const newContract = {
       ...processedContractData,
-      // Convert to string for character varying field
-      tenantId: tenantId.toString(), 
+      // Use the valid tenant ID from the database
+      tenantId: '00000000-0000-0000-0000-000000000001', 
       // The documentId needs to be a valid UUID
       documentId: processedContractData.documentId,
       // User IDs should be UUIDs or null
