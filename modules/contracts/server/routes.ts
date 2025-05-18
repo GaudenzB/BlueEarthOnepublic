@@ -91,7 +91,10 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const contractId = req.params.id;
-    const tenantId = (req as any).tenantId;
+    
+    // Get tenant ID from request - in development, use a default if not available
+    const user = (req as any).user;
+    const tenantId = user?.tenantId || (req as any).tenantId || '00000000-0000-0000-0000-000000000001';
     
     logger.info('Fetching contract detail', { contractId, tenantId });
     

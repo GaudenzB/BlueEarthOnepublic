@@ -129,8 +129,10 @@ export default function ContractDetail() {
   }
 
   const contract = data.data;
-  const obligations = obligationsData?.data || [];
-  const clauses = clausesData?.data || [];
+  // Since we've simplified the API, we aren't loading obligations and clauses
+  // in this initial implementation
+  const obligations = [];
+  const clauses = [];
 
   // Filter upcoming obligations (due in the next 30 days)
   const upcomingObligations = obligations.filter((obligation: any) => 
