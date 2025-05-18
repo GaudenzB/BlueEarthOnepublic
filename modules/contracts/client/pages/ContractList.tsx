@@ -91,7 +91,8 @@ export default function ContractList() {
     );
   }
 
-  const contracts = data?.data || [];
+  // Extract contracts from the nested response structure
+  const contracts = (data && Array.isArray(data.data)) ? data.data : [];
 
   return (
     <div className="container mx-auto p-6">
