@@ -292,7 +292,10 @@ function extractDates(text: string): string[] {
     try {
       const date = new Date(dateStr);
       if (!isNaN(date.getTime())) {
-        parsedDates.push(date.toISOString().split('T')[0]);
+        const isoDate = date.toISOString().split('T')[0];
+        if (isoDate) {
+          parsedDates.push(isoDate);
+        }
       }
     } catch (e) {
       // Ignore parsing errors

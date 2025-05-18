@@ -374,19 +374,8 @@ router.post('/', async (req: Request, res: Response) => {
     // Extract the validated data
     const contractData = validationResult.data;
 
-    // Ensure tenant ID is set
-    // Convert userId to integer if available since the DB column is integer type
-    let parsedUserId = null;
-    if (userId) {
-      try {
-        parsedUserId = parseInt(userId, 10);
-        if (isNaN(parsedUserId)) {
-          parsedUserId = null;
-        }
-      } catch (e) {
-        logger.warn('Could not parse userId as integer', { userId });
-      }
-    }
+    // No additional processing needed for userId
+    // The user ID is already in the correct format or null
     
     // Create the contract object with proper types
     // Handle date fields - convert to null if they're empty strings
@@ -405,11 +394,13 @@ router.post('/', async (req: Request, res: Response) => {
       tenantId: tenantId.toString(), 
       // The documentId needs to be a valid UUID
       documentId: processedContractData.documentId,
-      // User IDs need integer conversion
-      createdBy: parsedUserId,
-      updatedBy: parsedUserId,
+      // User IDs should be UUIDs
+      createdBy: userId,
+      updatedBy: userId,
       // Set confidence level explicitly to avoid type issues
-      confidenceLevel: 'UNVERIFIED'
+      confidenceLevel: 'UNVERIFIED',
+      // Making sure fields that might cause errors are explicitly null
+      vendorId: null
     };
 
     // Log the full contract data for debugging
