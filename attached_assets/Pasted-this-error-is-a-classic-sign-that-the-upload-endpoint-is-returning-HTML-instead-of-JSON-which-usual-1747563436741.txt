@@ -1,0 +1,63 @@
+this error is a classic sign that the upload endpoint is returning HTML instead of JSON, which usually means:
+
+🚨 You're getting an HTML error page (like a 404 or 500), but your frontend is trying to parse() it as JSON.
+🔍 Why it's happening
+
+This error:
+
+SyntaxError: Unexpected token '<', "<!DOCTYPE "...
+…means the browser received something like this as a response:
+
+<!DOCTYPE html>
+<html><head><title>Error</title>...</head><body>Not found</body></html>
+But your frontend did:
+
+const res = await fetch('/api/contracts/upload/analyze', ...);
+const json = await res.json();  // <-- fails here
+✅ How to fix it
+
+1. Inspect the actual response in the browser:
+Open DevTools → Network tab → find the failed request (likely to /api/contracts/upload/analyze) → check:
+
+Status code (e.g. 404, 500?)
+Response body (likely contains an HTML error page)
+Request method (should be POST or PUT, not GET)
+Headers (Content-Type should be application/json on response)
+2. Add error handling on the frontend:
+Update your upload code to guard against non-JSON errors:
+
+const res = await fetch('/api/contracts/upload/analyze', {
+  method: 'POST',
+  body: formData,
+});
+
+let result;
+try {
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new Error(`Server returned non-JSON: ${text.slice(0, 200)}`);
+  }
+
+  result = await res.json();
+} catch (err) {
+  console.error("Upload failed:", err);
+  alert("Upload failed: " + err.message);
+}
+3. Check your backend route
+Make sure the backend route:
+
+Exists (POST /api/contracts/upload/analyze)
+Accepts multipart/form-data
+Returns JSON with correct Content-Type: application/json
+If it’s Express, confirm something like:
+
+router.post("/contracts/upload/analyze", upload.single("file"), async (req, res) => {
+  try {
+    const result = await analyzeContract(req.file);
+    res.json(result); // ✅ must be JSON
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });  // ✅ not HTML
+  }
+});
