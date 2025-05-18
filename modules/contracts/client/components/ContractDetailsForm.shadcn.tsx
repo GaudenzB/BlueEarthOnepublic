@@ -473,7 +473,7 @@ export default function ContractDetailsForm({
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>
-                      Effective Date {showConfidence && renderConfidence(0.90)}
+                      Effective Date <span className="text-red-500 ml-1">*</span> {showConfidence && renderConfidence(0.90)}
                     </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -488,7 +488,7 @@ export default function ContractDetailsForm({
                             {field.value ? (
                               format(field.value, "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>YYYY-MM-DD (Required)</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -500,6 +500,11 @@ export default function ContractDetailsForm({
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          footer={
+                            <div className="px-4 pb-2 pt-0 text-xs text-muted-foreground">
+                              Select when this contract becomes active
+                            </div>
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -530,7 +535,7 @@ export default function ContractDetailsForm({
                             {field.value ? (
                               format(field.value, "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>YYYY-MM-DD</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -542,6 +547,12 @@ export default function ContractDetailsForm({
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          footer={
+                            <div className="px-4 pb-2 pt-0 text-xs text-muted-foreground">
+                              Select when this contract expires
+                            </div>
+                          }
+                          fromDate={form.getValues().effectiveDate ? new Date(form.getValues().effectiveDate.getTime() + 86400000) : undefined}
                         />
                       </PopoverContent>
                     </Popover>
@@ -572,7 +583,7 @@ export default function ContractDetailsForm({
                             {field.value ? (
                               format(field.value, "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>YYYY-MM-DD (Date contract was signed)</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -582,8 +593,21 @@ export default function ContractDetailsForm({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            // Auto-suggest this as effective date if not already set
+                            const effectiveDate = form.getValues().effectiveDate;
+                            if (!effectiveDate && date) {
+                              // Default to today if execution date is set and effective date isn't
+                              form.setValue('effectiveDate', date);
+                            }
+                          }}
                           initialFocus
+                          footer={
+                            <div className="px-4 pb-2 pt-0 text-xs text-muted-foreground">
+                              Date the contract was signed/executed
+                            </div>
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -614,7 +638,7 @@ export default function ContractDetailsForm({
                             {field.value ? (
                               format(field.value, "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>YYYY-MM-DD (Optional)</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -626,6 +650,11 @@ export default function ContractDetailsForm({
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          footer={
+                            <div className="px-4 pb-2 pt-0 text-xs text-muted-foreground">
+                              Select when this contract will renew
+                            </div>
+                          }
                         />
                       </PopoverContent>
                     </Popover>
