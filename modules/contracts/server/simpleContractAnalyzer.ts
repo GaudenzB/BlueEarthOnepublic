@@ -79,18 +79,18 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
     const tenantId = document.tenantId;
     
     // Prepare the insert data with proper types
-    const insertData = {
-      documentId: documentId,
-      tenantId: tenantId,
-      status: 'PENDING' as const,
-      ...(userId ? { userId: userId } : {})
+    const insertData: ContractUploadAnalysisInsert = {
+      documentId,
+      tenantId,
+      status: 'PENDING',
+      ...(userId ? { userId } : {})
     };
     
     // Execute the insert with proper error handling
     logger.debug(`Creating analysis record for document ${documentId}`, insertData);
     
     const insertResult = await db.insert(contractUploadAnalysis)
-      .values(insertData)
+      .values([insertData]) // Note the array wrapper to match the expected type
       .returning({ 
         id: contractUploadAnalysis.id,
         documentId: contractUploadAnalysis.documentId,
@@ -171,7 +171,7 @@ export async function analyzeContractDocumentSimple(documentId: string, userId?:
           rawAnalysisJson: JSON.stringify(analysisResult),
           updatedAt: new Date()
         })
-        .where(eq(contractUploadAnalysis.id, initialRecord.id));
+        .where(eq(contractUploadAnalysis.id, analysisId));
       
       logger.info(`Analysis completed successfully for document ${documentId}`, {
         analysisId: initialRecord.id,
