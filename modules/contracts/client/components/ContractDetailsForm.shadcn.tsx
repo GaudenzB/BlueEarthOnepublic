@@ -47,14 +47,20 @@ const formSchema = z.object({
   expiryDate: z.date()
     .optional()
     .refine(
-      (date) => !date || !form?.getValues().effectiveDate || date > form?.getValues().effectiveDate,
+      (date, ctx) => {
+        const effectiveDate = ctx.path ? (ctx as any).parent?.effectiveDate : null;
+        return !date || !effectiveDate || date > effectiveDate;
+      },
       { message: 'Expiry date must be after effective date' }
     ),
   executionDate: z.date().optional(),
   renewalDate: z.date()
     .optional()
     .refine(
-      (date) => !date || !form?.getValues().expiryDate || date >= form?.getValues().expiryDate,
+      (date, ctx) => {
+        const expiryDate = ctx.path ? (ctx as any).parent?.expiryDate : null;
+        return !date || !expiryDate || date >= expiryDate;
+      },
       { message: 'Renewal date should be on or after the expiry date' }
     ),
     
@@ -291,7 +297,7 @@ export default function ContractDetailsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Counterparty Name {showConfidence && renderConfidence(0.92)}
+                      Counterparty Name <span className="text-red-500 ml-1">*</span> {showConfidence && renderConfidence(0.92)}
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="Acme Corp" {...field} />
@@ -704,8 +710,12 @@ export default function ContractDetailsForm({
                         <SelectContent>
                           <SelectItem value="MAIN">Main Agreement</SelectItem>
                           <SelectItem value="AMENDMENT">Amendment</SelectItem>
+                          <SelectItem value="ADDENDUM">Addendum</SelectItem>
                           <SelectItem value="SIDE_LETTER">Side Letter</SelectItem>
                           <SelectItem value="EXHIBIT">Exhibit</SelectItem>
+                          <SelectItem value="SCHEDULE">Schedule</SelectItem>
+                          <SelectItem value="STATEMENT_OF_WORK">Statement of Work</SelectItem>
+                          <SelectItem value="CERTIFICATE">Certificate</SelectItem>
                           <SelectItem value="TERMINATION">Termination</SelectItem>
                           <SelectItem value="RENEWAL">Renewal</SelectItem>
                           <SelectItem value="OTHER">Other</SelectItem>
