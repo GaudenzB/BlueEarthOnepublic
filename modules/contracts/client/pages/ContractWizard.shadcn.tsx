@@ -305,35 +305,19 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
     );
   }
   
-  // Improved handlers for the wizard navigation
+  // Simplified direct handlers for the wizard navigation
   const handleNextClick = () => {
-    // Find and submit the active form
-    const activeForm = document.querySelector('.contract-wizard-form') as HTMLFormElement | null;
-    
-    if (activeForm) {
-      // Create and dispatch a submit event
-      const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-      activeForm.dispatchEvent(submitEvent);
-    } else {
-      // If no form is found, manually advance to next step
-      console.log('No form found, manually advancing to next step');
-      setActiveStep(Math.min(steps.length - 1, activeStep + 1));
-    }
+    // Skip form submission and just advance to the next step directly
+    // This is a temporary workaround to make the wizard navigable
+    const nextStep = Math.min(steps.length - 1, activeStep + 1);
+    console.log(`Moving from step ${activeStep} to step ${nextStep}`);
+    setActiveStep(nextStep);
   };
   
   const handleReviewSubmit = () => {
-    // Find and submit the review form
-    const reviewForm = document.querySelector('.contract-wizard-form') as HTMLFormElement | null;
-    
-    if (reviewForm) {
-      // Create and dispatch a submit event
-      const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-      reviewForm.dispatchEvent(submitEvent);
-    } else {
-      // Direct submission as fallback
-      console.log('No review form found, submitting directly');
-      createContractMutation.mutate(contractData);
-    }
+    // Direct submission - skips form validation temporarily
+    console.log('Submitting contract directly:', contractData);
+    createContractMutation.mutate(contractData);
   };
   
   // Define loading state
