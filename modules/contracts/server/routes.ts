@@ -762,14 +762,58 @@ router.post('/upload/analyze/:documentId', async (req: Request, res: Response) =
         title: document.title
       });
       
-      // Simplified approach: Just try to analyze and handle any errors
-      const result = await analyzeContractDocument(documentId, userId, tenantId);
+      // Import the simpleContractAnalyzer for direct analysis
+      const { analyzeContractDocumentSimple } = await import('./simpleContractAnalyzer');
       
-      // If we get here, everything worked
+      // Use the simple analyzer for more reliable results
+      const analysisResult = await analyzeContractDocumentSimple(documentId);
+      
+      if (!analysisResult.success) {
+        logger.error('Document analysis failed', { 
+          requestId, 
+          documentId,
+          error: analysisResult.error 
+        });
+        
+        return res.status(500).json({
+          success: false,
+          message: 'Document analysis failed',
+          error: analysisResult.error
+        });
+      }
+      
+      // Extract the analysis data
+      const { analysis } = analysisResult;
+      
+      // Store the results in the database
+      try {
+        await db.insert(contractUploadAnalysis).values({
+          documentId,
+          tenantId,
+          userId,
+          vendor: analysis.vendor,
+          contractTitle: analysis.contractTitle,
+          docType: analysis.docType,
+          effectiveDate: analysis.effectiveDate,
+          terminationDate: analysis.terminationDate,
+          confidence: analysis.confidence,
+          status: 'COMPLETED',
+          rawAnalysisJson: analysis
+        });
+        
+        logger.info(`Successfully stored analysis results for document ${documentId}`, { requestId });
+      } catch (dbError) {
+        logger.error(`Error storing analysis results for document ${documentId}:`, dbError, { requestId });
+        // Continue even if DB storage fails
+      }
+      
+      // Return the analysis results
       return res.status(200).json({
         success: true,
-        message: 'Document analysis started',
-        data: result
+        documentId,
+        documentTitle: analysisResult.documentTitle,
+        analysis: analysis,
+        status: 'COMPLETED'
       });
       
     } catch (err) {
