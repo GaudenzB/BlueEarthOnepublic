@@ -11,7 +11,7 @@ import * as openaiUtils from '../../../../server/utils/openai';
 // Create a properly configured OpenAI client for contract analysis
 const apiKey = process.env['OPENAI_API_KEY'];
 if (!apiKey) {
-  logger.warn('OPENAI_API_KEY environment variable is not set. AI contract analysis will use smart fallback methods');
+  logger.warn('OPENAI_API_KEY environment variable is not set. AI contract analysis will use fallback methods');
 }
 
 // Create the OpenAI client with proper configuration
@@ -288,13 +288,16 @@ async function processDocumentAsync(documentId: string, analysisId: string, tena
 
 /**
  * Run the AI analysis on the document text
+ * @param text Document text content
+ * @param documentTitle Document title
+ * @returns Analysis result with extracted contract data
  */
 async function runAiAnalysis(text: string, documentTitle: string) {
   try {
     // Log details about what we're analyzing
     logger.info('Analyzing document for contract details', {
-      titleLength: documentTitle.length,
-      textLength: text.length,
+      titleLength: documentTitle?.length || 0,
+      textLength: text?.length || 0,
       hasOpenAI: !!openai,
       openAIKeyPresent: !!process.env['OPENAI_API_KEY']
     });
@@ -305,14 +308,14 @@ async function runAiAnalysis(text: string, documentTitle: string) {
         logger.info('Attempting OpenAI analysis of contract document');
         
         // Truncate text if it's too long - OpenAI has token limits
-        const maxTextLength = 20000; // Approximate limit to avoid token issues
+        const maxTextLength = 15000; // Limit to avoid token issues
         const truncatedText = text.length > maxTextLength 
           ? text.substring(0, maxTextLength) + "... [content truncated for length]" 
           : text;
           
         // Make the OpenAI API call with error handling
         const completion = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo", // Fallback to more widely available model
+          model: "gpt-3.5-turbo", // Using widely available model
           messages: [
             {
               role: "system",
@@ -344,12 +347,12 @@ async function runAiAnalysis(text: string, documentTitle: string) {
             },
             {
               role: "user", 
-              content: `Document title: ${documentTitle}\n\nDocument content: ${truncatedText}`
+              content: `Document title: ${documentTitle || 'Untitled'}\n\nDocument content: ${truncatedText}`
             }
           ],
           response_format: { type: "json_object" },
-          max_tokens: 1000, // Limit token usage
-          temperature: 0.3 // Lower temperature for more focused, deterministic outputs
+          max_tokens: 1000,
+          temperature: 0.3
         });
         
         // Parse the AI response
@@ -390,11 +393,13 @@ async function runAiAnalysis(text: string, documentTitle: string) {
         // Continue to fallback
       }
     } else {
-      logger.info('OpenAI client not available, falling back to test data');
+      logger.info('OpenAI client not available, using fallback extraction');
     }
     
+    // Fallback extraction when OpenAI isn't available or fails
+    logger.info('Using fallback extraction for contract document');
+    
     // Extract data from document title as fallback
-    // Try to intelligently guess vendor and contract title from the document title
     let extractedVendor = "Unknown Vendor";
     let extractedTitle = documentTitle || "Untitled Contract";
     
@@ -424,80 +429,96 @@ async function runAiAnalysis(text: string, documentTitle: string) {
       }
     }
     
-    // Create a realistic date range (1 year from today)
-    const today = new Date();
-    const effectiveDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    // Look for date patterns in the text
+    let extractedEffectiveDate = null;
+    let extractedTerminationDate = null;
     
-    const terminationDate = new Date(today);
-    terminationDate.setFullYear(today.getFullYear() + 1);
+    // Simple regex for dates in various formats
+    const datePatterns = [
+      /\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12]\d|3[01])[\/\-](19|20)\d{2}\b/g, // MM/DD/YYYY
+      /\b(19|20)\d{2}[\/\-](0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12]\d|3[01])\b/g, // YYYY/MM/DD
+      /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+(19|20)\d{2}\b/gi // Month DD, YYYY
+    ];
     
-    // For testing purposes when OpenAI isn't available or fails
-    // This provides some realistic data based on the document title
-    const fallbackResult = {
+    // Try to find dates
+    const foundDates = [];
+    for (const pattern of datePatterns) {
+      let match;
+      const regex = new RegExp(pattern);
+      let textToSearch = text || '';
+      
+      while ((match = regex.exec(textToSearch)) !== null) {
+        foundDates.push(match[0]);
+      }
+    }
+    
+    // If dates were found, use first as effective and last as termination
+    if (foundDates.length > 0) {
+      // Try to parse dates into standard YYYY-MM-DD format
+      const parsedDates = foundDates.map(dateStr => {
+        try {
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+          }
+          return null;
+        } catch (e) {
+          // Ignore parsing errors
+          return null;
+        }
+      }).filter(Boolean);
+      
+      if (parsedDates.length > 0) {
+        extractedEffectiveDate = parsedDates[0];
+        extractedTerminationDate = parsedDates.length > 1 ? parsedDates[parsedDates.length - 1] : null;
+      }
+    }
+    
+    // Determine document type based on keywords in title and text
+    let extractedDocType = "MAIN_AGREEMENT"; // Default
+    const textToSearch = (text || '') + ' ' + (documentTitle || '');
+    
+    // Check for document type indicators
+    if (textToSearch.toLowerCase().includes("amendment")) {
+      extractedDocType = "AMENDMENT";
+    } else if (textToSearch.toLowerCase().includes("addendum")) {
+      extractedDocType = "ADDENDUM";
+    } else if (textToSearch.toLowerCase().includes("exhibit")) {
+      extractedDocType = "EXHIBIT";
+    } else if (textToSearch.toLowerCase().includes("side letter")) {
+      extractedDocType = "SIDE_LETTER";
+    }
+    
+    // Return fallback extraction results
+    return {
       vendor: extractedVendor,
       contractTitle: extractedTitle,
-      docType: "MAIN_AGREEMENT",
-      effectiveDate: effectiveDate,
-      terminationDate: terminationDate.toISOString().split('T')[0],
+      docType: extractedDocType,
+      effectiveDate: extractedEffectiveDate,
+      terminationDate: extractedTerminationDate,
       confidence: {
-        vendor: 0.65,
-        contractTitle: 0.70,
-        docType: 0.75,
-        effectiveDate: 0.60,
-        terminationDate: 0.60
+        vendor: 0.5,
+        contractTitle: 0.7,
+        docType: 0.6,
+        effectiveDate: extractedEffectiveDate ? 0.6 : 0.1,
+        terminationDate: extractedTerminationDate ? 0.4 : 0.1
       }
     };
-    
-    logger.info('Using fallback contract analysis data', { fallbackResult });
-    return fallbackResult;
-    
   } catch (error) {
-    logger.error('Unhandled error in AI analysis:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    logger.error(`Error in AI analysis:`, error);
     
-    // Always return a valid result even in error cases to avoid breaking the upload flow
-    // Extract potential dates from the document title if possible
-    let potentialDate = null;
-    if (documentTitle) {
-      // Look for date patterns like YYYY-MM-DD or Mon DD, YYYY
-      const dateMatch = documentTitle.match(/\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|[A-Z][a-z]{2,8} \d{1,2},? \d{4}/);
-      if (dateMatch) {
-        try {
-          potentialDate = new Date(dateMatch[0]).toISOString().split('T')[0];
-        } catch(e) {
-          // Date parsing failed, use today's date
-          potentialDate = new Date().toISOString().split('T')[0];
-        }
-      }
-    }
-    
-    // Extract potential vendor name from title if possible
-    let potentialVendor = "Unknown Vendor";
-    if (documentTitle) {
-      // Look for common patterns like "Contract with X", "X Agreement", etc.
-      const withMatch = documentTitle.match(/with\s+([A-Za-z0-9\s\.]+)(?:$|\s+|,)/i);
-      const agreementMatch = documentTitle.match(/([A-Za-z0-9\s\.]+)\s+Agreement/i);
-      
-      if (withMatch && withMatch[1]) {
-        potentialVendor = withMatch[1].trim();
-      } else if (agreementMatch && agreementMatch[1]) {
-        potentialVendor = agreementMatch[1].trim();
-      }
-    }
-    
+    // Return minimal fallback data to avoid breaking the process
     return {
-      vendor: potentialVendor,
+      vendor: "Unknown Vendor",
       contractTitle: documentTitle || "Untitled Contract",
       docType: "MAIN_AGREEMENT",
-      effectiveDate: potentialDate || new Date().toISOString().split('T')[0],
+      effectiveDate: null,
       terminationDate: null,
       confidence: {
-        vendor: 0.4,
-        contractTitle: 0.6,
-        docType: 0.7,
-        effectiveDate: potentialDate ? 0.5 : 0.3,
+        vendor: 0.1,
+        contractTitle: 0.5,
+        docType: 0.3,
+        effectiveDate: 0.1,
         terminationDate: 0.1
       }
     };
@@ -505,65 +526,60 @@ async function runAiAnalysis(text: string, documentTitle: string) {
 }
 
 /**
- * Utility function to update analysis record with error details
+ * Update analysis record with error status
  */
-async function updateAnalysisWithError(analysisId: string, error: unknown) {
+async function updateAnalysisWithError(analysisId: string, error: any) {
   try {
-    // Use direct query with explicit type handling
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    logger.info(`Updating analysis ${analysisId} with error status: ${errorMessage}`);
     
     await db.update(contractUploadAnalysis)
       .set({
         status: 'FAILED',
-        error: errorMessage,
+        rawAnalysisJson: JSON.stringify({ error: errorMessage }),
         updatedAt: new Date()
       })
       .where(eq(contractUploadAnalysis.id, analysisId));
+    
+    logger.info(`Updated analysis record ${analysisId} with error status`);
   } catch (dbError) {
-    logger.error(`Error updating analysis record ${analysisId} with error:`, dbError);
-    // This is a best-effort update, we don't want to throw from here
+    // Just log - this is best effort
+    logger.error(`Failed to update analysis record ${analysisId} with error:`, dbError);
   }
 }
 
 /**
- * Get the analysis result by ID
+ * Get analysis status for a document
  */
-export async function getAnalysisById(analysisId: string) {
+export async function getContractAnalysisStatus(documentId: string) {
   try {
-    // Use direct query with prepared statement instead of query builder
-    const result = await db.select().from(contractUploadAnalysis).where(
-      eq(contractUploadAnalysis.id, analysisId)
-    ).limit(1).then(rows => rows[0]);
+    const analysisRecord = await db.query.contractUploadAnalysis.findFirst({
+      where: eq(contractUploadAnalysis.documentId, documentId),
+      orderBy: (analysis, { desc }) => [desc(analysis.createdAt)]
+    });
     
-    if (!result) {
-      throw new Error(`Analysis not found with ID: ${analysisId}`);
+    if (!analysisRecord) {
+      return { 
+        status: 'NOT_FOUND',
+        documentId 
+      };
     }
     
-    return result;
-  } catch (error) {
-    logger.error(`Error retrieving analysis with ID ${analysisId}:`, error);
-    throw new Error(`Failed to retrieve analysis: ${error instanceof Error ? error.message : 'Database error'}`);
-  }
-}
-
-/**
- * Save pre-filled contract data for later use in the contract wizard
- */
-export async function savePrefillData(data: any, tenantId: string) {
-  try {
-    // Here we would typically save this to a database table
-    // For now, we'll just log it
-    logger.info(`Saving prefill data for tenant ${tenantId}:`, data);
-    
-    // Return a mock ID for now
     return {
-      id: `prefill-${Date.now()}`,
-      data
+      id: analysisRecord.id,
+      status: analysisRecord.status,
+      documentId,
+      vendor: analysisRecord.vendor,
+      contractTitle: analysisRecord.contractTitle,
+      docType: analysisRecord.docType,
+      effectiveDate: analysisRecord.effectiveDate,
+      terminationDate: analysisRecord.terminationDate,
+      confidence: analysisRecord.confidence,
+      suggestedContractId: analysisRecord.suggestedContractId,
+      createdAt: analysisRecord.createdAt,
+      updatedAt: analysisRecord.updatedAt
     };
   } catch (error) {
-    logger.error(`Error saving prefill data for tenant ${tenantId}:`, error);
-    throw new Error(`Failed to save prefill data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    logger.error(`Error retrieving analysis status for document ${documentId}:`, error);
+    throw new Error(`Failed to retrieve analysis status: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
