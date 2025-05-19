@@ -1,0 +1,74 @@
+i received the following error when i tried to push to github from replit the last time:
+Invalid workflow file: .github/workflows/ci-cd.yml#L71
+The workflow is not valid. .github/workflows/ci-cd.yml (Line: 71, Col: 16): Unrecognized named-value: 'env'. Located at position 1 within expression: env.POSTGRES_VERSION .github/workflows/ci-cd.yml (Line: 119, Col: 16): Unrecognized named-value: 'env'. Located at position 1 within expression: env.POSTGRES_VERSION
+
+Edit
+This error is related to your GitHub Actions workflow file, specifically with how you're trying to use environment variables in your CI/CD pipeline. Let me analyze what's happening and provide a solution.
+
+The Issue
+The error indicates two problems in your .github/workflows/ci-cd.yml file:
+
+Line 71: Unrecognized named-value: 'env'. Located at position 1 within expression: env.POSTGRES_VERSION
+Line 119: Same error, also trying to use env.POSTGRES_VERSION
+GitHub Actions is not recognizing the env context when you're using it in certain locations within your workflow file. This typically happens when you're trying to reference environment variables in places where the expression syntax isn't supported or is being used incorrectly.
+
+How to Fix This
+There are a few approaches to resolving this issue:
+
+Option 1: Define the environment variable correctly
+GitHub Actions has specific contexts in which you can reference variables. The correct way to reference environment variables depends on where in the workflow you're using them:
+
+yaml
+# Define env variables at the top level of the workflow
+env:
+  POSTGRES_VERSION: '14'
+
+jobs:
+  build:
+    # Now you can reference it like this
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use Postgres
+        run: echo "Using Postgres ${{ env.POSTGRES_VERSION }}"
+Option 2: Use inputs or defaults instead
+If you're trying to use this variable in places like container: definitions, you might need to use a different approach:
+
+yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: postgres:14  # Use the version directly where needed instead of a variable
+Option 3: Use strategy matrix
+If you need to run the job with different Postgres versions:
+
+yaml
+jobs:
+  test:
+    strategy:
+      matrix:
+        postgres-version: ['13', '14']
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use Postgres ${{ matrix.postgres-version }}
+        run: echo "Using Postgres ${{ matrix.postgres-version }}"
+Looking at the Specific Lines
+Without seeing your entire workflow file, I assume lines 71 and 119 are likely places where you're trying to use env.POSTGRES_VERSION in a location where the expression syntax isn't supported or needs to be formatted differently.
+
+For example, if you have something like:
+
+yaml
+services:
+  postgres:
+    image: postgres:env.POSTGRES_VERSION  # This won't work
+You should change it to:
+
+yaml
+services:
+  postgres:
+    image: postgres:${{ env.POSTGRES_VERSION }}  # Correct expression syntax
+Next Steps
+Review your .github/workflows/ci-cd.yml file, focusing on lines 71 and 119
+Check how you're defining and using the POSTGRES_VERSION variable
+Make sure you're using proper expression syntax (${{ env.POSTGRES_VERSION }}) in supported contexts
+Consider hardcoding the value where expressions aren't supported
