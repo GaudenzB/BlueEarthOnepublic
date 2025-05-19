@@ -1,88 +1,69 @@
-/**
- * Document search service for semantic search functionality
- */
-import { apiRequest } from '../lib/queryClient';
+import { apiRequest } from '@/lib/queryClient';
 
 /**
- * Search result interface
+ * Represents search parameters for semantic document search
  */
-export interface SearchResult {
-  id: string;
-  title: string;
-  content: string | null;
-  score: number;
+export interface SearchParams {
+  query: string;
   documentType?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  uploadedBy?: string;
-}
-
-/**
- * Search filter options
- */
-export interface SearchFilters {
-  documentType?: string | null;
-  dateRange?: {
-    from: Date | null;
-    to: Date | null;
-  } | null;
-  sortBy?: 'relevance' | 'date' | 'title';
+  minSimilarity?: number;
   limit?: number;
 }
 
 /**
- * Perform semantic search on documents
- * 
- * @param query - Search query text
- * @param filters - Optional search filters
- * @returns Promise with search results
+ * Represents a search result from semantic document search
  */
-export const semanticSearch = async (
-  query: string,
-  filters?: SearchFilters
-): Promise<SearchResult[]> => {
-  try {
-    if (!query.trim()) {
-      return [];
-    }
-
-    const response = await apiRequest('/api/documents/search', {
-      method: 'POST',
-      body: JSON.stringify({
-        query,
-        filters
-      })
-    });
-
-    return response.data || [];
-  } catch (error) {
-    console.error('Error performing semantic search:', error);
-    throw error;
-  }
-};
+export interface SearchResult {
+  id: string;
+  title: string;
+  content: string;
+  documentType?: string;
+  score: number;
+  createdAt?: string;
+  chunkIndex?: number;
+}
 
 /**
- * Get document search suggestions based on partial input
- * 
- * @param partialQuery - Partial query to get suggestions for
- * @returns Promise with suggested search terms
+ * Performs a semantic search of documents 
+ * @param params Search parameters
+ * @returns Promise with search results
  */
-export const getSearchSuggestions = async (
-  partialQuery: string
-): Promise<string[]> => {
+export const semanticSearch = async (params: SearchParams): Promise<{ results: SearchResult[] }> => {
   try {
-    if (!partialQuery || partialQuery.length < 2) {
-      return [];
-    }
-
-    const response = await apiRequest('/api/documents/search/suggestions', {
+    // Convert the params to a proper request body
+    const requestBody = {
+      query: params.query,
+      documentType: params.documentType || undefined,
+      minSimilarity: params.minSimilarity || 0.7,
+      limit: params.limit || 10
+    };
+    
+    // Use our custom apiRequest function from queryClient
+    const response = await apiRequest<any>('/api/documents/search/semantic', {
       method: 'POST',
-      body: JSON.stringify({ query: partialQuery })
+      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
-    return response.data || [];
+    if (!response.data?.results) {
+      return { results: [] };
+    }
+
+    return { 
+      results: response.data.results.map((result: any) => ({
+        id: result.documentId || result.id,
+        title: result.title || 'Untitled Document',
+        content: result.chunkText || result.textChunk || result.excerpt || '',
+        documentType: result.documentType,
+        score: result.similarity || result.relevanceScore || 0,
+        createdAt: result.createdAt,
+        chunkIndex: result.chunkIndex
+      }))
+    };
   } catch (error) {
-    console.error('Error getting search suggestions:', error);
-    return [];
+    console.error('Error performing semantic search:', error);
+    return { results: [] };
   }
 };

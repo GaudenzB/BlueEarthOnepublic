@@ -18,9 +18,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
-import { semanticSearch, type SearchResult } from '../services/documentSearchService';
-import { formatDate } from '../utils/formatting';
-import { cn } from '../lib/utils';
+import { semanticSearch, type SearchResult } from '@/services/documentSearchService';
+import { formatDate } from '@/utils/formatting';
+import { cn } from '@/lib/utils';
 
 interface SemanticSearchBarProps {
   onResultClick?: (result: SearchResult) => void;
