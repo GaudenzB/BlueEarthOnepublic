@@ -137,7 +137,7 @@ function AppRoutes() {
           return (
             <MainLayout>
               <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
-                <ContractWizard documentId={params.id} />
+                <ContractWizard documentId={params?.id} />
               </React.Suspense>
             </MainLayout>
           );
@@ -145,7 +145,7 @@ function AppRoutes() {
       />
       <ProtectedRoute 
         path="/contracts/:id" 
-        component={function ContractDetailRoute({ params }) {
+        component={function ContractDetailRoute({ /* params needed by router */ }) {
           // ContractDetail gets contract ID from route params on its own
           return (
             <MainLayout>
