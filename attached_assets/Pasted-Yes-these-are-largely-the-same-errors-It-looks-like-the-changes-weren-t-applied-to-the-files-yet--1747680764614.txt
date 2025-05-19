@@ -1,0 +1,164 @@
+Yes, these are largely the same errors. It looks like the changes weren't applied to the files yet. I understand it can be challenging to apply all these fixes, especially without direct access to the codebase.
+Let's take a more strategic approach to fix these errors one by one, starting with the most critical ones that are likely blocking your CI/CD pipeline.
+Strategic Fix Plan - One File at a Time
+Let's get this fixed methodically:
+1. First, Fix the Configuration Files
+The linting errors for .eslintrc.js and .lintstagedrc.js need to be addressed first since they affect how all other files are linted.
+For .eslintrc.js:
+javascript/* eslint-env node */
+/* global module process */
+
+// Rest of your existing .eslintrc.js content
+module.exports = {
+  // Your existing configuration
+}
+For .lintstagedrc.js:
+javascript/* eslint-env node */
+/* global module */
+
+// Rest of your existing .lintstagedrc.js content
+module.exports = {
+  // Your existing configuration
+}
+2. Fix the Missing Module Errors in SemanticSearchBar.tsx
+It seems the imports in SemanticSearchBar.tsx are pointing to non-existent files. Let's create those files:
+client/src/utils/formatting.ts:
+typescript// Basic text formatting utilities
+export const formatText = (text: string): string => {
+  return text?.trim() || '';
+};
+
+export const capitalizeFirst = (text: string): string => {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+client/src/services/documentSearchService.ts:
+typescript// Document search service
+export interface SearchResult {
+  id: string;
+  title: string;
+  content: string;
+  score: number;
+}
+
+export const searchDocuments = async (query: string): Promise<SearchResult[]> => {
+  // Implementation would go here in a real app
+  console.log(`Searching for: ${query}`);
+  return [];
+};
+3. Fix Unused Variables
+For simple variable name issues:
+In client/src/App.tsx (line 153):
+typescript// Change from:
+const params = someValue;
+
+// To:
+const _params = someValue; // Prefix with underscore
+In client/src/components/documents/DocumentUpload.tsx (line 184):
+typescript// Change from:
+const createUUID = () => { /* ... */ };
+
+// To:
+const _createUUID = () => { /* ... */ };
+In client/tests/components/Auth/AuthGuard.test.tsx (line 4):
+typescript// Change from:
+import { Router } from 'react-router-dom';
+
+// To:
+import { Router as _Router } from 'react-router-dom';
+4. Fix StatusType Issues
+First, we need to find out what the StatusType enum looks like in your code:
+typescript// This should be defined somewhere in your shared types, like:
+export enum StatusType {
+  ACTIVE = 'active',
+  RESTRICTED = 'restricted',
+  ARCHIVED = 'archived'
+  // other possible values
+}
+Then update your component files to use this enum:
+In client/src/components/documents/DocumentStatusBadge.tsx (line 66):
+typescript// Change from:
+const status: StatusType = 'string';
+
+// To:
+const status: StatusType = StatusType.ACTIVE; // Or appropriate enum value
+In client/src/components/documents/DocumentHeader.tsx (lines 70, 84, 92):
+typescript// Line 70: Change from:
+const status: StatusType = 'string';
+// To:
+const status: StatusType = StatusType.ACTIVE;
+
+// Line 84: Change from:
+const status: StatusType = "active" | "restricted";
+// To:
+const status: StatusType = isRestricted ? StatusType.RESTRICTED : StatusType.ACTIVE;
+
+// Line 92: Change from:
+const status: StatusType = "archived";
+// To:
+const status: StatusType = StatusType.ARCHIVED;
+5. Fix Type Errors in DocumentUpload
+For the SelectProps issues in DocumentUploadFixed.tsx and DocumentUpload.tsx:
+typescript// Change from:
+type Props = {
+  children: Element[];
+  onValueChange: (...event: any[]) => void;
+  defaultValue: string | undefined;
+};
+
+// To:
+type Props = {
+  children?: Element[] | undefined;
+  onValueChange?: (...event: any[]) => void;
+  defaultValue?: string | undefined;
+};
+6. Fix React Hook Dependency Issues
+These require more context to fix precisely, but here's a general pattern:
+For useEffect missing dependencies:
+typescript// Change from:
+useEffect(() => {
+  // Code that uses someVar
+}, []);
+
+// To:
+useEffect(() => {
+  // Code that uses someVar
+}, [someVar]);
+For functions causing dependency changes:
+typescript// Change from:
+const someFunction = () => {
+  // Implementation
+};
+
+useEffect(() => {
+  // Code that uses someFunction
+}, [someFunction]); // This causes re-renders as someFunction is recreated
+
+// To:
+const someFunction = useCallback(() => {
+  // Implementation
+}, []); // Empty dependency array or dependencies used inside
+
+useEffect(() => {
+  // Code that uses someFunction
+}, [someFunction]); // Now this is stable
+7. Fix Test Files
+For the require() style imports in test files, you need to:
+typescript// Change from:
+const styles = require('./DocumentUploader.module.css');
+
+// To:
+import styles from './DocumentUploader.module.css';
+
+// OR if that doesn't work, mock it:
+jest.mock('./DocumentUploader.module.css', () => ({
+  container: 'mock-container',
+  // other class names...
+}));
+Efficient Implementation Approach
+Here's what I recommend:
+
+Create one pull request that focuses just on the config files (.eslintrc.js and .lintstagedrc.js)
+Create a second pull request for the missing modules and type fixes (formatting.ts, documentSearchService.ts, and status type fixes)
+Create a third pull request for React hook dependency issues
+Create a final pull request for test files

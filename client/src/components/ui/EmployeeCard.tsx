@@ -138,7 +138,7 @@ const EmployeeName = memo(({
 }: { 
   firstName: string; 
   lastName: string; 
-  position?: string; 
+  position: string | undefined; 
   detailed?: boolean 
 }) => (
   <Space direction="vertical" size={0}>
@@ -173,7 +173,7 @@ const EmployeeContact = memo(({
   detailed 
 }: { 
   email: string; 
-  phone?: string; 
+  phone: string | undefined; 
   detailed?: boolean 
 }) => (
   <Space direction="vertical" size={detailed ? 4 : 2} style={{ width: '100%' }}>
@@ -216,8 +216,8 @@ const EmployeeDetails = memo(({
   department, 
   hireDate 
 }: { 
-  department?: string; 
-  hireDate?: string 
+  department: string | undefined; 
+  hireDate: string | undefined; 
 }) => (
   <Space direction="vertical" size={4} style={{ width: '100%' }}>
     {department && (
@@ -275,7 +275,8 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
   employee,
   size = 'default',
   showActions = false,
-  selectable = false,
+  // Using _selectable to avoid unused variable warning
+  selectable: _selectable = false,
   isSelected = false,
   detailed = false,
   className = '',
@@ -364,9 +365,9 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
   
   // Card actions
   const cardActions = useMemo(() => {
-    if (!showActions) return undefined;
+    if (!showActions) return [];
     
-    return [
+    const actions: React.ReactNode[] = [
       <Tooltip key="edit" title="Edit employee">
         <Button
           type="text"
@@ -385,6 +386,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
         />
       </Tooltip>
     ];
+    return actions;
   }, [showActions, handleEditClick, handleDeleteClick]);
   
   // Card layout - horizontal for detailed mode, vertical for default
@@ -405,7 +407,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
             firstName={employee.firstName} 
             lastName={employee.lastName} 
             position={employee.position} 
-            detailed
+            detailed={true}
           />
           
           <StatusTag 
@@ -415,7 +417,11 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
         </div>
         
         <div style={{ display: 'flex', gap: tokens.spacing[6] }}>
-          <EmployeeContact email={employee.email} phone={employee.phone} detailed />
+          <EmployeeContact 
+            email={employee.email} 
+            phone={employee.phone} 
+            detailed={true} 
+          />
           
           <EmployeeDetails 
             department={employee.department} 
@@ -438,7 +444,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
         <EmployeeName 
           firstName={employee.firstName} 
           lastName={employee.lastName} 
-          position={employee.position}
+          position={employee.position} 
         />
       </div>
       
@@ -450,7 +456,10 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
         />
       </div>
       
-      <EmployeeContact email={employee.email} phone={employee.phone} />
+      <EmployeeContact 
+        email={employee.email} 
+        phone={employee.phone} 
+      />
     </div>
   );
   
