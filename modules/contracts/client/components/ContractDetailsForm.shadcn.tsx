@@ -129,6 +129,25 @@ export default function ContractDetailsForm({
   // Document attachments state
   const [documents, setDocuments] = useState<DocumentAttachment[]>(attachedDocuments || []);
   
+  // Auto-attach document if provided from extraction
+  React.useEffect(() => {
+    if (documents.length === 0 && documentData && documentData.id) {
+      const docTitle = documentData.title || documentData.originalFilename || 'Uploaded Document';
+      console.log('Auto-attaching document:', docTitle);
+      
+      const newDoc: DocumentAttachment = {
+        documentId: documentData.id,
+        documentTitle: docTitle,
+        docType: 'MAIN',
+        isPrimary: true,
+        notes: 'Auto-attached from document extraction',
+        effectiveDate: documentData.extractedData?.effectiveDate,
+      };
+      
+      setDocuments([newDoc]);
+    }
+  }, [documentData, documents.length]);
+  
   // Document form state
   const [documentForm, setDocumentForm] = useState<{
     documentId: string;
