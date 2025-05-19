@@ -1,7 +1,6 @@
 import React from 'react';
 import { Spin, Skeleton, Result } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
-import { theme } from '@/lib/theme';
 
 /**
  * Props for the LoadingState component

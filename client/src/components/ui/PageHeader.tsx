@@ -97,22 +97,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               style={{ 
                 padding: 0, 
                 height: 'auto',
-                marginBottom: theme.spacing.sm,
+                marginBottom: '0.75rem',
                 display: 'flex',
                 alignItems: 'center',
               }}
             >
-              <ArrowLeftOutlined style={{ marginRight: theme.spacing.xs }} />
+              <ArrowLeftOutlined style={{ marginRight: '0.5rem' }} />
               {backLabel}
             </Button>
           )}
           
           {/* Title */}
           <h1 style={{ 
-            fontSize: theme.typography.fontSizes['2xl'],
-            fontWeight: theme.typography.fontWeights.bold,
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
             margin: 0,
-            color: theme.colors.text.primary
+            color: '#1e293b'
           }}>
             {title}
           </h1>
