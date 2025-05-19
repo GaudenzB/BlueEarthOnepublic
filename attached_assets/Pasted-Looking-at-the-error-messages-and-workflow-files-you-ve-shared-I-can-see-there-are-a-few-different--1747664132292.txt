@@ -1,0 +1,62 @@
+Looking at the error messages and workflow files you've shared, I can see there are a few different issues to address. Let me break them down:
+1. GitHub Actions Workflow Error (Original Error Message)
+Your initial error about invalid workflow on lines 71 and 119 with env.POSTGRES_VERSION wasn't visible in the screenshots, but this is a syntax issue. In GitHub Actions, environment variables must be referenced with proper expression syntax: ${{ env.POSTGRES_VERSION }} rather than just env.POSTGRES_VERSION.
+2. Code Issues Found During CI Checks
+Based on the screenshots, your push was rejected because your CI checks are failing:
+a) TypeScript Error
+
+In Image 2, there's a TypeScript error in client/src/pages/document-detail-backup.tsx (line 1257)
+Error: Expected corresponding JSX closing tag for 'div'
+This means you have an unclosed <div> tag in that file
+
+b) ESLint Configuration Issue
+
+In Image 3, ESLint is failing because:
+
+It can't find an ESLint configuration file (eslint.config.js)
+ESLint v9.26.0 is looking for a config file in the newer format
+This appears to be a migration issue as ESLint changed its default configuration file format
+
+
+
+Steps to Fix:
+1. Fix the TypeScript Error
+
+Open client/src/pages/document-detail-backup.tsx
+Go to line 1257 (approximately) and find the unclosed <div> tag
+Add the missing closing </div> tag or fix any mismatched tags
+
+2. Fix the ESLint Configuration
+You have two options:
+
+Option A: Create a new ESLint config file in the new format (recommended)
+
+Create a file named eslint.config.js in your project root
+Migrate your ESLint rules to the new format per the migration guide (https://eslint.org/docs/latest/use/configure/migration-guide)
+
+
+Option B: Downgrade ESLint to a version that supports the older config format
+
+Update your package.json to specify an earlier version of ESLint (e.g., "eslint": "^8.56.0")
+Run npm install to apply the change
+
+
+
+3. Fix the GitHub Actions Workflow File
+For the original error with env.POSTGRES_VERSION:
+
+Find lines 71 and 119 in .github/workflows/ci-cd.yml
+Replace env.POSTGRES_VERSION with ${{ env.POSTGRES_VERSION }}
+
+4. Update Your CI Configuration
+Based on Image 1, your CI-CD workflow is being modified:
+
+Some steps for code formatting and linting are being removed or changed
+The command is changing from npm run typecheck to npm run check
+
+Make sure these modifications are intentional and consistent with your project's setup.
+Recommendation:
+
+Fix the TypeScript error first (unclosed div tag)
+Then address the ESLint configuration issue
+Finally, fix the GitHub Actions workflow syntax
