@@ -180,15 +180,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       // The schema.ts file shows the database uses gen_random_uuid() SQL function
       // which generates RFC4122 v4 UUIDs
       
-      // We'll create a proper UUID v4 format here
-      const _createUUID = () => {
-        // Implementation of RFC4122 v4 UUID
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-          const r = Math.random() * 16 | 0;
-          const v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      };
+      // UUID generation is handled server-side
       
       // Always use a valid UUID format for uploadedBy regardless of user ID
       // This ensures compatibility with the database's UUID column type
@@ -807,7 +799,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                     <FormLabel>Document Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value || "OTHER"}
+                      value={field.value || "OTHER"}
                     >
                       <FormControl>
                         <SelectTrigger>
