@@ -349,7 +349,7 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({
   maxToasts = 5,
   defaultDuration = TOAST_DURATION.MEDIUM,
-  defaultVariant = 'info',
+  // defaultVariant = 'info', // Unused variable
   position = 'top-right',
   children
 }) => {
