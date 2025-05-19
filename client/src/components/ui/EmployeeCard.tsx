@@ -317,26 +317,26 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
     }
   }, [size, detailed]);
   
-  // Click handlers
-  const handleCardClick = () => {
+  // Click handlers with useCallback to prevent unnecessary re-renders
+  const handleCardClick = useCallback(() => {
     if (onClick) {
       onClick(employee);
     }
-  };
+  }, [onClick, employee]);
   
-  const handleEditClick = (e: React.MouseEvent) => {
+  const handleEditClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (onEdit) {
       onEdit(employee);
     }
-  };
+  }, [onEdit, employee]);
   
-  const handleDeleteClick = (e: React.MouseEvent) => {
+  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
       onDelete(employee);
     }
-  };
+  }, [onDelete, employee]);
   
   // Generate description for screen readers
   const ariaDescription = useMemo(() => {

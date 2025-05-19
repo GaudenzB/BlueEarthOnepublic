@@ -46,14 +46,14 @@ export const tokens = {
     
     // Semantic colors for states, feedback, and notifications
     semantic: {
-      success: '#4caf50',       // Green for success states
-      warning: '#ff9800',       // Orange for warning states
-      error: '#f44336',         // Red for error states
+      success: '#3468a5',       // Blue for success states
+      warning: '#64748b',       // Grey for warning states
+      error: '#1e293b',         // Dark grey for error states
       info: '#2196f3',          // Blue for informational states
-      pending: '#8e44ad',       // Purple for pending states
+      pending: '#94a3b8',       // Light grey for pending states
       locked: '#34495e',        // Dark slate for locked items
-      verified: '#27ae60',      // Emerald green for verified items
-      premium: '#d4af37',       // Gold for premium features
+      verified: '#1a3f6d',      // Deep blue for verified items
+      premium: '#0f172a',       // Dark blue for premium features
     },
     
     // Neutral colors for text, backgrounds, and borders
@@ -74,14 +74,14 @@ export const tokens = {
     // Chart and data visualization colors
     data: {
       blue: '#2196f3',
-      green: '#4caf50',
-      red: '#f44336',
-      orange: '#ff9800',
-      purple: '#9c27b0',
-      teal: '#009688',
-      indigo: '#3f51b5',
-      lime: '#cddc39',
-      brown: '#795548',
+      darkBlue: '#1a3f6d',
+      lightBlue: '#3468a5',
+      navy: '#102a4c',
+      slate: '#5d7994',
+      grey: '#64748b',
+      darkGrey: '#334155',
+      black: '#0f172a',
+      white: '#f8fafc',
       blueGray: '#607d8b',
     },
     
@@ -92,40 +92,40 @@ export const tokens = {
         default: '#2196f3',
         dark: '#1565c0',
       },
-      green: {
-        light: '#e8f5e9',
-        default: '#4caf50',
-        dark: '#2e7d32',
+      navy: {
+        light: '#3468a5',
+        default: '#1a3f6d',
+        dark: '#102a4c',
       },
-      red: {
-        light: '#ffebee',
-        default: '#f44336',
-        dark: '#c62828',
+      slate: {
+        light: '#94a3b8',
+        default: '#64748b',
+        dark: '#334155',
       },
-      yellow: {
-        light: '#fffde7',
-        default: '#ffeb3b',
-        dark: '#f9a825',
+      grey: {
+        light: '#f1f5f9',
+        default: '#94a3b8',
+        dark: '#475569',
       },
-      orange: {
-        light: '#fff3e0',
-        default: '#ff9800',
-        dark: '#ef6c00',
+      dark: {
+        light: '#334155',
+        default: '#1e293b',
+        dark: '#0f172a',
       },
-      teal: {
-        light: '#e0f2f1',
-        default: '#009688',
-        dark: '#00695c',
+      lightBlue: {
+        light: '#bfd1e5',
+        default: '#5d7994',
+        dark: '#3468a5',
       },
-      purple: {
-        light: '#f3e5f5',
-        default: '#9c27b0',
-        dark: '#6a1b9a',
+      blueGrey: {
+        light: '#cbd5e1',
+        default: '#607d8b',
+        dark: '#475569',
       },
-      indigo: {
-        light: '#e8eaf6',
-        default: '#3f51b5',
-        dark: '#283593',
+      white: {
+        light: '#ffffff',
+        default: '#f8fafc',
+        dark: '#f1f5f9',
       },
     },
     
@@ -134,19 +134,19 @@ export const tokens = {
     // Status colors with light, default, and dark variants
     status: {
       success: {
-        light: '#e8f5e9',
-        default: '#4caf50',
-        dark: '#2e7d32',
+        light: '#e3f2fd',
+        default: '#2196f3',
+        dark: '#1565c0',
       },
       warning: {
-        light: '#fff8e1',
-        default: '#ff9800',
-        dark: '#ef6c00',
+        light: '#f1f5f9',
+        default: '#64748b',
+        dark: '#475569',
       },
       error: {
-        light: '#ffebee',
-        default: '#f44336',
-        dark: '#c62828',
+        light: '#e2e8f0',
+        default: '#1e293b',
+        dark: '#0f172a',
       },
       info: {
         light: '#e3f2fd',
@@ -154,26 +154,26 @@ export const tokens = {
         dark: '#1565c0',
       },
       pending: {
-        light: '#f3e5f5',
-        default: '#8e44ad',
-        dark: '#6a1b9a',
+        light: '#cbd5e1',
+        default: '#94a3b8',
+        dark: '#64748b',
       },
       verified: {
-        light: '#e0f2f1',
-        default: '#27ae60',
-        dark: '#00695c',
+        light: '#3468a5',
+        default: '#1a3f6d',
+        dark: '#102a4c',
       },
     },
     
     // Financial-specific colors
     financial: {
-      profit: '#27ae60',        // Green for positive values
-      loss: '#e74c3c',          // Red for negative values
-      neutral: '#3498db',       // Blue for neutral values
-      premium: '#d4af37',       // Gold for premium indicators
-      secure: '#2c3e50',        // Dark blue for security features
-      transaction: '#16a085',   // Teal for transaction success
-      alert: '#d35400',         // Orange for financial alerts
+      profit: '#3468a5',        // Blue for positive values
+      loss: '#1e293b',          // Dark gray for negative values
+      neutral: '#64748b',       // Gray for neutral values
+      premium: '#0f172a',       // Dark blue for premium indicators
+      secure: '#102a4c',        // Dark blue for security features
+      transaction: '#2196f3',   // Blue for transaction success
+      alert: '#475569',         // Dark gray for financial alerts
     },
   },
   
