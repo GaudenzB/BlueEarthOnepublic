@@ -36,7 +36,8 @@ export interface WindowSize {
  * ```
  */
 export function useWindowSize(): WindowSize {
-  // Parse breakpoint values from tokens
+  // Create a stable reference for breakpoints
+  // These values will be stable across renders since tokens is imported at module level
   const breakpoints = {
     xs: parseInt(tokens.breakpoints.xs, 10),
     sm: parseInt(tokens.breakpoints.sm, 10),
@@ -107,7 +108,7 @@ export function useWindowSize(): WindowSize {
     
     // Remove event listener on cleanup
     return () => window.removeEventListener('resize', handleResize);
-  }, [breakpoints.md, breakpoints.sm, breakpoints.lg, breakpoints.xl, breakpoints['2xl']]);
+  }, []); // Breakpoints are defined inside the component and won't change
   
   return windowSize;
 }

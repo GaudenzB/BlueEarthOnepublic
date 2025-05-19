@@ -1,0 +1,194 @@
+Complete Error Fix Guide
+1. React useEffect Dependency Array Issues
+These errors occur when React's exhaustive-deps ESLint rule detects dependencies that should be included in useEffect dependency arrays.
+Fix for Missing Dependencies (core/src/hooks/useLocalStorage.ts, employee-detail.tsx, etc.)
+typescript// BEFORE:
+useEffect(() => {
+  // some code that uses readValue
+}, []); // Missing 'readValue' in dependency array
+
+// AFTER:
+useEffect(() => {
+  // some code that uses readValue
+}, [readValue]); // Add the missing dependency
+For useWindowSize.ts Complex Expression:
+typescript// BEFORE:
+useEffect(() => {
+  // Code using window.matchMedia('(min-width: 768px)').matches
+}, [window.matchMedia('(min-width: 768px)').matches]); // Complex expression in array
+
+// AFTER:
+// Extract to a variable first
+const matches = window.matchMedia('(min-width: 768px)').matches;
+useEffect(() => {
+  // Code using matches
+}, [matches]); // Use the extracted variable
+2. useMemo Dependency Issues with Handler Functions
+For the EmployeeCard.tsx issues with handleDeleteClick and handleEditClick:
+typescript// BEFORE:
+const MyComponent = () => {
+  const handleDeleteClick = () => { /* implementation */ };
+  
+  // This causes the error because handleDeleteClick is recreated on every render
+  const memoizedValue = useMemo(() => {
+    // Code that uses handleDeleteClick
+  }, [handleDeleteClick]);
+}
+
+// AFTER - Option 1: Move the function inside useMemo:
+const MyComponent = () => {
+  const memoizedValue = useMemo(() => {
+    const handleDeleteClick = () => { /* implementation */ };
+    // Use handleDeleteClick here
+    return someValue;
+  }, []); // No need for handleDeleteClick in deps
+}
+
+// AFTER - Option 2: Use useCallback for the handler:
+const MyComponent = () => {
+  const handleDeleteClick = useCallback(() => {
+    /* implementation */
+  }, []); // Empty dependency array or include actual dependencies
+  
+  const memoizedValue = useMemo(() => {
+    // Code that uses handleDeleteClick
+  }, [handleDeleteClick]); // Now this is stable
+}
+3. React useCallback Missing Dependencies
+For KeyboardNavigableMenu.tsx and EmployeeDirectory.tsx:
+typescript// BEFORE:
+const callback = useCallback(() => {
+  // Code that uses findNextEnabledIndex or filteredEmployees
+}, []); // Missing dependency
+
+// AFTER:
+const callback = useCallback(() => {
+  // Code that uses findNextEnabledIndex or filteredEmployees
+}, [findNextEnabledIndex]); // Add the missing dependency
+4. Type 'string' is not assignable to type 'StatusType'
+For DocumentStatusBadge.tsx, DocumentList.tsx, and DocumentHeader.tsx:
+typescript// First, ensure you have the correct StatusType enum defined:
+// In shared/types.ts or similar
+export enum StatusType {
+  ACTIVE = 'active',
+  RESTRICTED = 'restricted',
+  ARCHIVED = 'archived',
+  // Add other status types as needed
+}
+
+// Then in your components:
+// BEFORE:
+const status: StatusType = "active"; // Error: string not assignable to StatusType
+
+// AFTER:
+import { StatusType } from '../shared/types'; // Import the enum
+const status: StatusType = StatusType.ACTIVE; // Use the enum value
+5. SelectProps Type Issue in DocumentUpload.tsx and DocumentUploadFixed.tsx
+typescript// BEFORE:
+type Props = {
+  children: Element[];
+  onValueChange: (...event: any[]) => void;
+  defaultValue: string | undefined;
+}
+
+// AFTER:
+type Props = {
+  children?: Element[];
+  onValueChange?: (...event: any[]) => void;
+  defaultValue?: string | undefined;
+}
+
+// Or better, if using a component from a library like Radix UI:
+import type { SelectProps } from '@radix-ui/react-select';
+
+type CustomSelectProps = SelectProps & {
+  // Your additional props here
+};
+6. Unused Variables
+For 'createUUID', 'params', 'Router', etc:
+typescript// BEFORE:
+const createUUID = () => { /* ... */ }; // Declared but never used
+
+// AFTER - Option 1: Remove it if not needed:
+// (delete the entire declaration)
+
+// AFTER - Option 2: Prefix with underscore to ignore:
+const _createUUID = () => { /* ... */ };
+
+// AFTER - Option 3: Use it somewhere:
+const createUUID = () => { /* ... */ };
+const id = createUUID(); // Now it's used
+7. Required Style Import Issues in Tests
+For DocumentUploader.test.tsx:
+typescript// BEFORE:
+import styles from './DocumentUploader.module.css'; // Using require() style import
+
+// AFTER - Option 1: Use import statement:
+import styles from './DocumentUploader.module.css';
+
+// AFTER - Option 2: Mock the styles in tests:
+// In your test file:
+jest.mock('./DocumentUploader.module.css', () => ({
+  container: 'mock-container',
+  // other class names...
+}));
+8. Module Not Found Issues
+For SemanticSearchBar.tsx:
+typescript// BEFORE:
+import { formatText } from '../utils/formatting'; // Path error
+
+// AFTER - Fix the import path:
+import { formatText } from '../../utils/formatting'; // Adjust path
+
+// OR - Create the missing module:
+// Create file at client/src/utils/formatting.ts with:
+export const formatText = (text: string): string => {
+  // Implementation
+  return text;
+};
+9. ESLint Configuration Issues
+For .eslintrc.js issues:
+javascript// If you need to define 'module' or 'process':
+// At the top of .eslintrc.js:
+/* global module, process */
+
+// Or convert to modern ESLint config format:
+// Create eslint.config.js:
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+
+export default [
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      // Your rules here
+    },
+  },
+];
+Implementation Steps:
+
+First, fix configuration files:
+
+Fix ESLint configuration issues
+Create proper TypeScript types for StatusType
+
+
+Then fix component-specific issues:
+
+Fix useEffect dependency arrays
+Fix SelectProps type issues
+Fix useMemo/useCallback issues
+Fix unused variables
+
+
+Fix test-specific issues:
+
+Fix required style imports
+Fix missing modules
+
+
+Run tests locally to verify fixes before pushing:
+bashnpm run lint
+npm run typecheck
