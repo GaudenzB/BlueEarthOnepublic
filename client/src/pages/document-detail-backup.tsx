@@ -1255,6 +1255,7 @@ export default function DocumentDetail() {
           </TabPanels>
         </Tabs>
       </Container>
+    </div>
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
