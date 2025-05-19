@@ -83,21 +83,25 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
     enabled: !!contractId
   });
   
-  // Get document data if documentId is provided - with improved error handling
+  // Document query for pre-population if documentId is provided
+  // Only triggered when documentId exists and is valid
   const documentQuery = useQuery({
     queryKey: ['/api/documents', documentId],
     queryFn: async () => {
+      // No document ID = no fetch needed (manual creation flow)
       if (!documentId) return null;
+      
       try {
         return await apiRequest(`/api/documents/${documentId}`);
       } catch (error) {
-        console.warn('Document not found, continuing with wizard anyway:', error);
-        // Return empty data so the wizard can continue
-        return { data: { id: documentId, title: "Document not found" } };
+        // Silently continue with the wizard without error messages
+        console.log('Creating contract without document pre-population');
+        return null;
       }
     },
-    enabled: !!documentId && !contractId, // Only fetch document if no contract is being edited
-    retry: false // Don't keep retrying on error
+    enabled: !!documentId && !contractId, // Only fetch document if: has documentId AND not editing existing contract
+    retry: false, // Don't retry failed requests
+    staleTime: Infinity // Cache result to prevent repeated fetches
   });
   
   // Update contract data when contract is loaded
@@ -265,7 +269,8 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
         return (
           <ContractDetailsForm 
             contractData={contractData}
-            documentData={documentQuery.data?.data}
+            // Only pass document data if it actually exists
+            documentData={documentQuery.data?.data || null}
             showConfidence={showConfidence}
             onSubmit={handleNext}
           />

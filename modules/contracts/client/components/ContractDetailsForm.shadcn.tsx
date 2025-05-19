@@ -109,6 +109,7 @@ type DocumentAttachment = {
 
 interface ContractDetailsFormProps {
   contractData: any;
+  documentData?: any; // Optional document data for pre-population
   showConfidence?: boolean;
   onSubmit: (data: any) => void;
   attachedDocuments?: DocumentAttachment[];
@@ -116,6 +117,7 @@ interface ContractDetailsFormProps {
 
 export default function ContractDetailsForm({
   contractData,
+  documentData = null, // Default to null for manual creation flow
   showConfidence = false,
   onSubmit,
   attachedDocuments = []
