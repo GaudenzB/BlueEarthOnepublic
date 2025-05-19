@@ -900,10 +900,6 @@ export default function ContractDetailsForm({
               <Button 
                 type="submit" 
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
-                onClick={(e) => {
-                  console.log('Save button clicked, submitting form');
-                  // The form will handle the submission via onSubmit
-                }}
               >
                 Save and Continue
               </Button>
