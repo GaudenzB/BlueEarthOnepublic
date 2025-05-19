@@ -897,7 +897,14 @@ export default function ContractDetailsForm({
             </div>
 
             <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
-              <Button type="submit" className="px-4 py-2">
+              <Button 
+                type="submit" 
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                onClick={(e) => {
+                  console.log('Save button clicked, submitting form');
+                  // The form will handle the submission via onSubmit
+                }}
+              >
                 Save and Continue
               </Button>
             </div>
