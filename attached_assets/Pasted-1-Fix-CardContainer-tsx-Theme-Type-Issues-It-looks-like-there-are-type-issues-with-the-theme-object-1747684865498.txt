@@ -1,0 +1,177 @@
+1. Fix CardContainer.tsx Theme Type Issues
+It looks like there are type issues with the theme object in CardContainer.tsx:
+typescript// Lines 96, 107, 110, 111 have theme property access issues
+// The theme object structure is:
+// theme = {
+//   fontFamily: string,
+//   fontWeights: { regular, medium, semibold, bold },
+//   fontSizes: { xs, sm, base, lg, xl, '2xl', '3xl', '4xl' },
+//   lineHeights: {...}
+// }
+
+// Fix lines 110-111 where fontWeight and fontSize are incorrectly accessed:
+// Change:
+theme.fontSize.base
+theme.fontWeight.medium
+// To:
+theme.fontSizes.base
+theme.fontWeights.medium
+
+// Fix line 96 with invalid index '2xl':
+// Change:
+theme.borderRadius["2xl"]
+// To:
+// Either use a valid index from the theme.borderRadius object:
+theme.borderRadius.xl
+// Or use a string literal type with bracket notation:
+theme.borderRadius["xl" as keyof typeof theme.borderRadius]
+
+// Fix line 107 with invalid numeric index:
+// Change:
+theme.spacing[1]
+// To:
+// Use a valid string key:
+theme.spacing.sm
+// Or if you need to use a numeric key, ensure it's properly typed:
+theme.spacing[1 as keyof typeof theme.spacing]
+2. Fix Unused Import Variables
+typescript// In PageLayout.tsx line 4:
+// Change:
+import { Layout, Content } from 'antd';
+// To:
+import { Layout, Content as _Content } from 'antd';
+// Or simply remove Content if it's not needed:
+import { Layout } from 'antd';
+
+// In SearchFilters.tsx line 5:
+// Change:
+import { UserOutlined } from '@ant-design/icons';
+// To:
+import { UserOutlined as _UserOutlined } from '@ant-design/icons';
+// Or remove it if not used
+3. Fix EmployeeDirectory.tsx Function Call Issues
+Lines 507 and 539 have overload issues. Without seeing the exact code, it's hard to know the specific function signatures, but here's a general approach:
+typescript// Line 507 and 539: "No overload matches this call"
+// This typically means the arguments passed to a function don't match its expected parameters
+
+// For example, if a function expects:
+function someFunction(id: string, data: { name: string }): void;
+
+// But is called like:
+someFunction(123, { label: "test" });
+
+// You would fix it by ensuring the arguments match the expected types:
+someFunction("123", { name: "test" });
+
+// Check the function definition and make sure the types match
+4. Fix DocumentUploadFixed.tsx SelectProps
+typescript// Line 712: Update the props type to include undefined
+// Change:
+type Props = {
+  children: Element[];
+  onValueChange: (...event: any[]) => void;
+  defaultValue: string | undefined;
+};
+
+// To:
+type Props = {
+  children?: Element[] | undefined;
+  onValueChange?: (...event: any[]) => void;
+  defaultValue?: string | undefined;
+};
+5. Fix Test Files
+typescript// EmployeeList.test.tsx line 2:
+// Change:
+import { fireEvent } from '@testing-library/react';
+// To:
+import { fireEvent as _fireEvent } from '@testing-library/react';
+
+// DocumentUploader.test.tsx - Fix all require style imports:
+// Change:
+const styles = require('./DocumentUploader.module.css');
+// To:
+import styles from './DocumentUploader.module.css';
+// Or mock it:
+jest.mock('./DocumentUploader.module.css', () => ({
+  container: 'mock-container',
+  // other needed class names
+}));
+
+// AuthGuard.test.tsx line 4:
+// Change:
+import { Router } from 'react-router-dom';
+// To:
+import { Router as _Router } from 'react-router-dom';
+6. Fix React Hook Dependencies
+These are all warnings about missing dependencies in React hooks:
+typescript// In modules/employees/client/EmployeeDirectory.tsx:
+// Move employees definition inside useMemo:
+const memoizedValue = useMemo(() => {
+  const employees = someCondition ? valueA : valueB;
+  // Code using employees
+  return result;
+}, [someCondition, valueA, valueB]);
+
+// In core/src/hooks/useMediaQuery.ts and useLocalStorage.ts:
+// Wrap functions in useCallback:
+const getMatches = useCallback(() => {
+  // Implementation
+}, [/* dependencies */]);
+
+const readValue = useCallback(() => {
+  // Implementation
+}, [/* dependencies */]);
+
+// In employee-detail.tsx and employee-detail-new.tsx:
+// Add missing dependencies:
+useEffect(() => {
+  // Code using refreshData
+}, [refreshData]);
+
+// In useWindowSize.ts:
+// Add missing dependencies:
+useEffect(() => {
+  // Code using breakpoints
+}, [breakpoints]);
+
+// In client/src/components/employee/EmployeeDirectory.tsx:
+// Add all missing dependencies:
+const callback = useCallback(() => {
+  // Implementation
+}, [
+  filteredEmployees,
+  onEmployeeDelete,
+  onEmployeeEdit,
+  onEmployeeSelect,
+  selectableCards,
+  selectedEmployeeId,
+  showCardActions,
+  cardSize // for line 522
+]);
+Implementation Strategy
+
+Focus on TypeScript errors first:
+
+Fix CardContainer.tsx theme property issues
+Fix the unused imports
+Fix EmployeeDirectory.tsx function call overload issues
+Fix DocumentUploadFixed.tsx SelectProps
+
+
+Then address test files:
+
+Fix unused variables with underscore prefix
+Fix require style imports
+
+
+Finally fix React Hook warnings:
+
+Address missing dependencies in useEffect and useCallback
+
+
+
+Some general guidelines for debugging the issues:
+
+For type errors like "No overload matches this call," examine the function definition to understand what parameters it expects
+For theme property access issues, check the theme object structure and make sure you're accessing valid properties
+For React hook dependencies, always include all external variables used inside the hook in the dependency array

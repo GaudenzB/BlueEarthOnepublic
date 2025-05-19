@@ -93,7 +93,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
       case 'md': return theme.borderRadius.md;
       case 'lg': return theme.borderRadius.lg;
       case 'xl': return theme.borderRadius.xl;
-      case '2xl': return theme.borderRadius['2xl'];
+      case '2xl': return theme.borderRadius['xl']; // Corrected since '2xl' isn't available
       default: return theme.borderRadius.xl;
     }
   };
@@ -107,8 +107,8 @@ export const CardContainer: React.FC<CardContainerProps> = ({
           gap: theme.spacing[1],
         }}>
           <div style={{ 
-            fontSize: size === 'small' ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
-            fontWeight: theme.typography.fontWeight.semibold,
+            fontSize: size === 'small' ? theme.typography.fontSizes.lg : theme.typography.fontSizes.xl,
+            fontWeight: theme.typography.fontWeights.semibold,
             color: theme.gray[800],
           }}>
             {title}
