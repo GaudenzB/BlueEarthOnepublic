@@ -807,7 +807,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                     <FormLabel>Document Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      defaultValue={field.value || "OTHER"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -815,11 +815,11 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="CONTRACT">Contract</SelectItem>
-                        <SelectItem value="OFFER_LETTER">Offer Letter</SelectItem>
-                        <SelectItem value="REPORT">Report</SelectItem>
-                        <SelectItem value="INVOICE">Invoice</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
+                        <SelectItem value={"CONTRACT"}>Contract</SelectItem>
+                        <SelectItem value={"OFFER_LETTER"}>Offer Letter</SelectItem>
+                        <SelectItem value={"REPORT"}>Report</SelectItem>
+                        <SelectItem value={"INVOICE"}>Invoice</SelectItem>
+                        <SelectItem value={"OTHER"}>Other</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>
