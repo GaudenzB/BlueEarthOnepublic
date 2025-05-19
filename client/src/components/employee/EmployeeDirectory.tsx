@@ -2,12 +2,11 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { FixedSizeGrid, FixedSizeList, areEqual } from 'react-window';
 import { Col, Row, Input, Select, Empty, Typography, Space, Button } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Employee, EmployeeCard, SkipLink, LoadingState } from '@/components/ui';
-// import { useWindowSize } from '@/hooks/useWindowSize'; - Not currently needed
+import { Employee, EmployeeCard, LoadingState } from '@/components/ui';
 import { useDebounce } from '@/hooks/useDebounce';
 import { tokens } from '@/theme/tokens';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 /**
@@ -480,7 +479,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         {GridItemRenderer}
       </FixedSizeGrid>
     );
-  }, [filteredEmployees.length, filteredEmployees, gridDimensions, columnCount, rowCount, onEmployeeSelect, onEmployeeEdit, onEmployeeDelete, selectedEmployeeId, showCardActions, cardSize, selectableCards]);
+  }, [filteredEmployees, gridDimensions, onEmployeeSelect, onEmployeeEdit, onEmployeeDelete, selectedEmployeeId, showCardActions, cardSize, selectableCards]);
   
   // Render list of employee cards (virtualized)
   const renderVirtualizedList = useCallback(() => {
@@ -741,12 +740,13 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   // Render the component
   return (
     <div className={`employee-directory ${className}`} ref={containerRef}>
-      <SkipLink targetId="directory-content" text="Skip to employee list" />
+      {/* Accessibility skip navigation */}
+      <a href="#directory-content" className="sr-only focus:not-sr-only">Skip to employee list</a>
       
       <header style={{ marginBottom: tokens.spacing[4] }}>
         <Row justify="space-between" align="middle">
           <Col>
-            <Title level={3}>{title}</Title>
+            <Typography.Title level={3}>{title}</Typography.Title>
           </Col>
           
           <Col>
