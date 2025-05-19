@@ -1,0 +1,225 @@
+I'll create a step-by-step fix for all your remaining errors, organized by file type and issue, with code examples you can directly implement.
+Complete Fix Guide - Remaining Errors
+1. Fix Missing Module Issues in SemanticSearchBar.tsx
+The component is trying to import from non-existent paths:
+typescript// Create the missing utility file
+// client/src/utils/formatting.ts
+export const formatText = (text: string): string => {
+  return text.trim();
+};
+
+// Create the missing service file
+// client/src/services/documentSearchService.ts
+export interface SearchResult {
+  id: string;
+  title: string;
+  content: string;
+  score: number;
+}
+
+export const searchDocuments = async (query: string): Promise<SearchResult[]> => {
+  // Implementation
+  return [];
+};
+2. Fix SelectProps Type Issues in DocumentUpload and DocumentUploadFixed
+typescript// In DocumentUpload.tsx and DocumentUploadFixed.tsx
+// Before:
+type Props = {
+  children: Element[];
+  onValueChange: (...event: any[]) => void;
+  defaultValue: string | undefined;
+};
+
+// After:
+type Props = {
+  children?: Element[] | undefined;
+  onValueChange?: (...event: any[]) => void;
+  defaultValue?: string | undefined;
+};
+3. Fix StatusType Issues in Document Components
+First, ensure you have the StatusType enum properly defined:
+typescript// In shared/types.ts or similar
+export enum StatusType {
+  ACTIVE = 'active',
+  RESTRICTED = 'restricted',
+  ARCHIVED = 'archived',
+  // Add other status types as needed
+}
+Then update your components:
+typescript// In DocumentStatusBadge.tsx
+import { StatusType } from '../../shared/types';
+
+// Change from:
+const status: StatusType = 'string'; // Error
+
+// To:
+const status: StatusType = StatusType.ACTIVE; // Use enum value
+
+// Same for DocumentHeader.tsx
+// Change from:
+const status: StatusType = "active"; // or "archived" or "restricted"
+
+// To:
+const status: StatusType = StatusType.ACTIVE; // or StatusType.ARCHIVED or StatusType.RESTRICTED
+4. Fix Unused Variables
+typescript// In DocumentUpload.tsx, line 184
+// Before:
+const createUUID = () => {
+  // Implementation
+};
+// After (if not used):
+// Remove completely or prefix with underscore:
+const _createUUID = () => {
+  // Implementation
+};
+
+// In App.tsx, line 153
+// Before:
+const params = someValue;
+// After (if not used):
+// Remove or rename to:
+const _params = someValue;
+5. Fix React Hook Dependencies
+typescript// In useMediaQuery.ts
+// Before:
+useEffect(() => {
+  // Code using getMatches
+}, []); // Missing dependency
+
+// After:
+useEffect(() => {
+  // Code using getMatches
+}, [getMatches]); // Add the dependency
+
+// In useLocalStorage.ts
+// Before:
+useEffect(() => {
+  // Code using readValue
+}, []); // Missing dependency
+
+// After:
+useEffect(() => {
+  // Code using readValue
+}, [readValue]); // Add the dependency
+
+// In employee-detail.tsx and employee-detail-new.tsx
+// Before:
+useEffect(() => {
+  // Code using refreshData
+}, []); // Missing dependency
+
+// After:
+useEffect(() => {
+  // Code using refreshData
+}, [refreshData]); // Add the dependency
+6. Fix useMemo/useCallback Dependencies in Components
+typescript// In EmployeeCard.tsx
+// Before:
+const handleDeleteClick = () => {
+  // Implementation
+};
+const memoizedValue = useMemo(() => {
+  // Use handleDeleteClick
+}, [/* missing handleDeleteClick */]);
+
+// After - Option 1: Use useCallback
+const handleDeleteClick = useCallback(() => {
+  // Implementation
+}, [/* dependencies */]);
+const memoizedValue = useMemo(() => {
+  // Use handleDeleteClick
+}, [handleDeleteClick]);
+
+// After - Option 2: Move inside useMemo
+const memoizedValue = useMemo(() => {
+  const handleDeleteClick = () => {
+    // Implementation
+  };
+  // Use handleDeleteClick here
+  return result;
+}, [/* other dependencies */]);
+7. Fix Test Files Issues
+For the DocumentUploader.test.tsx files with "require() style import is forbidden":
+typescript// Before:
+const styles = require('./DocumentUploader.module.css');
+
+// After:
+import styles from './DocumentUploader.module.css';
+
+// If that doesn't work, create a mock:
+jest.mock('./DocumentUploader.module.css', () => ({
+  container: 'mock-container',
+  // other class names...
+}));
+For AuthGuard.test.tsx with 'Router' unused variable:
+typescript// Before:
+import { Router } from 'react-router-dom';
+// Code not using Router
+
+// After:
+// Option 1: Remove the import
+// Option 2: Rename with underscore
+import { Router as _Router } from 'react-router-dom';
+8. Fix ESLint Configuration Files
+For .lintstagecrc.js, .eslintrc.js:
+javascript// Add at the top of these files:
+/* eslint-env node */
+/* global module, process */
+
+// Or for ESLint configuration, update to the modern format:
+// eslint.config.js
+import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
+
+export default [
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    // Your custom configuration
+  }
+];
+9. Fix EmployeeDirectory useMemo/useCallback Dependencies
+typescript// Before:
+const fetchFilteredEmployees = useCallback(() => {
+  // Implementation using filteredEmployees
+}, [/* missing filteredEmployees */]);
+
+// After:
+const fetchFilteredEmployees = useCallback(() => {
+  // Implementation using filteredEmployees
+}, [filteredEmployees]);
+Implementation Process:
+
+First fix configuration files:
+
+Fix .eslintrc.js and .lintstagecrc.js
+Create/update the StatusType enum in shared/types.ts
+
+
+Create missing modules:
+
+Create utils/formatting.ts
+Create services/documentSearchService.ts
+
+
+Fix components:
+
+Update DocumentUpload.tsx and DocumentUploadFixed.tsx (SelectProps)
+Update StatusType usage in all document components
+Fix useEffect dependencies in hooks
+Fix useMemo and useCallback in EmployeeCard and EmployeeDirectory
+
+
+Fix tests:
+
+Fix style imports in DocumentUploader.test.tsx
+Fix unused Router variable in AuthGuard.test.tsx
+
+
+Run the linting and tests locally:
+bashnpm run lint
+npm run typecheck
+
+Push to GitHub only after all issues are fixed
+
+This systematic approach should resolve all your current errors. Start with the configuration issues, then fix the missing modules, and finally address the component issues. Let me know if you need clarification on any specific fix.

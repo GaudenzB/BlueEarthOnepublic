@@ -1,104 +1,88 @@
 /**
- * Document Search Service for client-side
- * 
- * Handles interaction with document search API endpoints
+ * Document search service for semantic search functionality
  */
-
 import { apiRequest } from '../lib/queryClient';
 
-export interface SearchParams {
-  query: string;
-  documentType?: string;
-  limit?: number;
-  minSimilarity?: number;
-}
-
+/**
+ * Search result interface
+ */
 export interface SearchResult {
   id: string;
-  title: string | null;
-  description: string | null;
-  documentType: string;
-  createdAt: string;
-  isConfidential: boolean;
-  textChunk: string;
-  relevanceScore: number;
+  title: string;
+  content: string | null;
+  score: number;
+  documentType?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  uploadedBy?: string;
 }
 
 /**
- * Perform a semantic search for documents
+ * Search filter options
+ */
+export interface SearchFilters {
+  documentType?: string | null;
+  dateRange?: {
+    from: Date | null;
+    to: Date | null;
+  } | null;
+  sortBy?: 'relevance' | 'date' | 'title';
+  limit?: number;
+}
+
+/**
+ * Perform semantic search on documents
  * 
- * @param params Search parameters
+ * @param query - Search query text
+ * @param filters - Optional search filters
  * @returns Promise with search results
  */
-export async function semanticSearch(params: SearchParams): Promise<SearchResult[]> {
+export const semanticSearch = async (
+  query: string,
+  filters?: SearchFilters
+): Promise<SearchResult[]> => {
   try {
-    const response = await apiRequest<SearchResult[]>('/api/documents/search/semantic', {
+    if (!query.trim()) {
+      return [];
+    }
+
+    const response = await apiRequest('/api/documents/search', {
       method: 'POST',
-      body: JSON.stringify(params),
+      body: JSON.stringify({
+        query,
+        filters
+      })
     });
-    
+
     return response.data || [];
   } catch (error) {
     console.error('Error performing semantic search:', error);
-    return [];
+    throw error;
   }
-}
+};
 
 /**
- * Get similar documents to a specific document
+ * Get document search suggestions based on partial input
  * 
- * @param documentId Document ID to find similar documents for
- * @param limit Maximum number of results to return
- * @returns Promise with similar documents
+ * @param partialQuery - Partial query to get suggestions for
+ * @returns Promise with suggested search terms
  */
-export async function getSimilarDocuments(
-  documentId: string,
-  limit: number = 5
-): Promise<SearchResult[]> {
+export const getSearchSuggestions = async (
+  partialQuery: string
+): Promise<string[]> => {
   try {
-    const response = await apiRequest<SearchResult[]>(
-      `/api/documents/${documentId}/similar?limit=${limit}`
-    );
-    
+    if (!partialQuery || partialQuery.length < 2) {
+      return [];
+    }
+
+    const response = await apiRequest('/api/documents/search/suggestions', {
+      method: 'POST',
+      body: JSON.stringify({ query: partialQuery })
+    });
+
     return response.data || [];
   } catch (error) {
-    console.error('Error getting similar documents:', error);
+    console.error('Error getting search suggestions:', error);
     return [];
   }
-}
-
-/**
- * Parse search query for advanced search options
- * 
- * @param query Raw search query
- * @returns Parsed search parameters
- */
-export function parseSearchQuery(query: string): {
-  baseQuery: string;
-  documentType?: string;
-  tags?: string[];
-} {
-  const result = {
-    baseQuery: query,
-    documentType: undefined as string | undefined,
-    tags: undefined as string[] | undefined,
-  };
-  
-  // Extract document type filter (type:X)
-  const typeMatch = query.match(/type:([a-zA-Z_]+)/i);
-  if (typeMatch) {
-    result.documentType = typeMatch[1].toUpperCase();
-    result.baseQuery = result.baseQuery.replace(typeMatch[0], '').trim();
-  }
-  
-  // Extract tag filters (tag:X)
-  const tagMatches = [...query.matchAll(/tag:([a-zA-Z0-9_-]+)/gi)];
-  if (tagMatches.length > 0) {
-    result.tags = tagMatches.map(match => match[1]);
-    tagMatches.forEach(match => {
-      result.baseQuery = result.baseQuery.replace(match[0], '').trim();
-    });
-  }
-  
-  return result;
-}
+};

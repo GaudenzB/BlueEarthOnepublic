@@ -146,7 +146,9 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
         ? (nextIndex + 1) % items.length 
         : (nextIndex - 1 + items.length) % items.length;
         
-      if (nextIndex >= 0 && nextIndex < items.length && items[nextIndex] && !items[nextIndex].disabled) {
+      if (nextIndex >= 0 && nextIndex < items.length) {
+          const item = items[nextIndex];
+          if (item && !item.disabled) {
         return nextIndex;
       }
       
@@ -201,8 +203,8 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
       case 'Enter':
       case ' ':
         e.preventDefault();
-        if (currentIndex >= 0 && currentIndex < items.length && items[currentIndex] && !items[currentIndex].disabled) {
-          onItemSelect(items[currentIndex]);
+        if (currentIndex >= 0 && currentIndex < items.length && items[currentIndex] && items[currentIndex].disabled !== true) {
+          onItemSelect(items[currentIndex]!);
         }
         break;
         
