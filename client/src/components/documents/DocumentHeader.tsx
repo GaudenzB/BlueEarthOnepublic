@@ -81,7 +81,7 @@ const DocumentTags = memo(({ document }: { document: Document }) => {
       )}
       {document.visibility && (
         <StatusTag 
-          status={document.visibility.toString().toLowerCase() === 'public' ? 'active' : 'restricted'}
+          status={document.visibility.toString().toLowerCase() === 'public' ? 'active' : 'custom'}
           text={document.visibility}
           size="small"
         />
@@ -89,7 +89,7 @@ const DocumentTags = memo(({ document }: { document: Document }) => {
       {document.tags?.map((tag, index) => (
         <StatusTag 
           key={index} 
-          status="archived" 
+          status="custom" 
           text={tag}
           size="small"
         />

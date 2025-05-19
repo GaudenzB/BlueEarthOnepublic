@@ -1,0 +1,151 @@
+Great progress! We've reduced the errors significantly. Let's tackle the remaining issues:
+1. First, let's fix the EmployeeDirectory.tsx issues
+typescript// For lines 161 and 154: Add null checks for employee
+// Change:
+const selectedEmployee = employee;
+// To:
+const selectedEmployee = employee || null;
+
+// And add type guards before using employee properties:
+if (employee) {
+  // Now use employee safely
+}
+
+// For lines 3, 4, and 9: Unused imports
+// Remove these unused imports:
+import { Spin } from 'antd'; // Line 3
+import { FilterOutlined } from '@ant-design/icons'; // Line 4
+import { useQuery } from '@tanstack/react-query'; // Line 9
+
+// Or prefix them with underscore:
+import { Spin as _Spin } from 'antd';
+import { FilterOutlined as _FilterOutlined } from '@ant-design/icons';
+import { useQuery as _useQuery } from '@tanstack/react-query';
+2. Fix the remaining DocumentUpload.tsx issues
+typescript// For DocumentUpload.tsx line 184:
+// Change:
+const createUUID = () => { /* implementation */ };
+// To:
+const _createUUID = () => { /* implementation */ };
+// Or remove it if not used at all
+
+// For DocumentUpload.tsx and DocumentUploadFixed.tsx SelectProps type:
+// Change the type definition to:
+type Props = {
+  children?: Element[] | undefined;
+  onValueChange?: (...event: any[]) => void;
+  defaultValue?: string | undefined;
+};
+3. Fix the StatusType issues in DocumentHeader.tsx
+typescript// Assuming StatusType is an enum like:
+export enum StatusType {
+  ACTIVE = 'active',
+  RESTRICTED = 'restricted',
+  ARCHIVED = 'archived'
+}
+
+// Change line 84:
+// From:
+const status: StatusType = "active" | "restricted";
+// To:
+const status: StatusType = isRestricted ? StatusType.RESTRICTED : StatusType.ACTIVE;
+
+// Change line 92:
+// From:
+const status: StatusType = "archived";
+// To:
+const status: StatusType = StatusType.ARCHIVED;
+4. Fix test file issues
+All the test file errors are about:
+
+Require style imports in DocumentUploader.test.tsx
+Unused variables in EmployeeList.test.tsx and AuthGuard.test.tsx
+
+typescript// For DocumentUploader.test.tsx:
+// Change all instances of:
+const styles = require('./DocumentUploader.module.css');
+// To:
+import styles from './DocumentUploader.module.css';
+
+// For EmployeeList.test.tsx:
+// Change:
+import { fireEvent } from '@testing-library/react';
+// To:
+import { fireEvent as _fireEvent } from '@testing-library/react';
+
+// For AuthGuard.test.tsx:
+// Change:
+import { Router } from 'react-router-dom';
+// To:
+import { Router as _Router } from 'react-router-dom';
+5. Fix React Hook dependency issues
+These are all warnings about missing dependencies in various React hooks:
+typescript// For modules/employees/client/EmployeeDirectory.tsx (lines 173 & 178):
+useEffect(() => {
+  // Code that uses updateQueryParams
+}, [updateQueryParams]); // Add the missing dependency
+
+// For modules/employees/client/EmployeeDirectory.tsx (line 61):
+// Current:
+const employees = someCondition ? valueA : valueB;
+// Later used in useMemo
+
+// Fix option 1: Move inside useMemo
+const memoizedValue = useMemo(() => {
+  const employees = someCondition ? valueA : valueB;
+  // Code using employees
+  return result;
+}, [someCondition, valueA, valueB]);
+
+// Fix option 2: Use separate useMemo
+const employees = useMemo(() => {
+  return someCondition ? valueA : valueB;
+}, [someCondition, valueA, valueB]);
+
+// For hooks with function dependencies:
+// In useMediaQuery.ts, useLocalStorage.ts - wrap functions in useCallback
+const getMatches = useCallback(() => {
+  // Implementation
+}, []); // Empty array or actual dependencies
+
+const readValue = useCallback(() => {
+  // Implementation
+}, []); // Empty array or actual dependencies
+
+// In employee-detail.tsx and employee-detail-new.tsx:
+useEffect(() => {
+  // Code using refreshData
+}, [refreshData]); // Add the missing dependency
+
+// In useWindowSize.ts:
+useEffect(() => {
+  // Code using breakpoints
+}, [breakpoints]); // Add the missing dependency
+
+// In client/src/components/employee/EmployeeDirectory.tsx:
+const callback = useCallback(() => {
+  // Code using filteredEmployees
+}, [filteredEmployees]); // Add the missing dependency
+Implementation Approach:
+
+Prioritize TypeScript errors over ESLint warnings - The errors will block your build, while warnings typically won't.
+Start with simple fixes:
+
+First fix unused imports/variables (just prefix with underscore)
+Then fix null checks/type guards
+
+
+Then address the structural issues:
+
+Fix StatusType enum usage
+Fix React Hook dependencies
+Fix test imports
+
+
+Finally handle complex type issues:
+
+Modify component props types for DocumentUpload
+
+
+
+For best results, make these changes in small batches and commit often. That way if a particular fix doesn't work, you can easily identify and correct it.

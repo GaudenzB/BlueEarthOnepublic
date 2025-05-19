@@ -181,7 +181,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
       // which generates RFC4122 v4 UUIDs
       
       // We'll create a proper UUID v4 format here
-      const createUUID = () => {
+      const _createUUID = () => {
         // Implementation of RFC4122 v4 UUID
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
           const r = Math.random() * 16 | 0;

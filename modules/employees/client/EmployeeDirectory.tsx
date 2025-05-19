@@ -170,12 +170,12 @@ export function EmployeeDirectory() {
   useEffect(() => {
     setCurrentPage(1)
     setTimeout(updateQueryParams, 0)
-  }, [searchTerm, department, activeOnly, sortBy])
+  }, [searchTerm, department, activeOnly, sortBy, updateQueryParams])
   
   // Sync URL params to state when the component mounts or location changes
   useEffect(() => {
     updateQueryParams()
-  }, [location, searchTerm, department, activeOnly, sortBy, sortDirection, currentPage])
+  }, [location, searchTerm, department, activeOnly, sortBy, sortDirection, currentPage, updateQueryParams])
 
   // Loading skeleton
   if (isLoading) {
