@@ -317,13 +317,21 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
     );
   }
   
-  // Simplified direct handlers for the wizard navigation
+  // Handlers for wizard navigation with manual submission
   const handleNextClick = () => {
-    // Skip form submission and just advance to the next step directly
-    // This is a temporary workaround to make the wizard navigable
-    const nextStep = Math.min(steps.length - 1, activeStep + 1);
-    console.log(`Moving from step ${activeStep} to step ${nextStep}`);
-    setActiveStep(nextStep);
+    console.log('Next button clicked in wizard');
+    
+    // Find and programmatically submit the active form
+    const formElement = document.querySelector('.contract-wizard-form') as HTMLFormElement;
+    if (formElement) {
+      console.log('Found form, submitting programmatically');
+      formElement.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    } else {
+      // Fallback direct navigation if no form is found
+      console.log('No form found, manually advancing step');
+      const nextStep = Math.min(steps.length - 1, activeStep + 1);
+      setActiveStep(nextStep);
+    }
   };
   
   const handleReviewSubmit = () => {
@@ -429,38 +437,32 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
             </button>
           )}
           
-          {/* Always show Next/Submit button in the footer */}
-          {activeStep < steps.length - 1 ? (
+          {/* Simplified navigation buttons */}
+          <div className="flex justify-between w-full">
+            {/* Back button (if not on first step) */}
+            {activeStep > 0 && (
+              <button 
+                onClick={() => setActiveStep(activeStep - 1)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+              >
+                Back
+              </button>
+            )}
+            
+            {/* Spacer when Back button isn't shown */}
+            {activeStep === 0 && <div></div>}
+            
+            {/* Next/Submit button */}
             <button 
-              onClick={handleNextClick}
+              onClick={activeStep < steps.length - 1 ? handleNextClick : handleReviewSubmit}
               disabled={isLoading}
-              className={`px-4 py-2 bg-blue-500 text-white rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
             >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  Processing...
-                </span>
-              ) : (
-                'Next'
-              )}
+              {isLoading ? "Processing..." : 
+               activeStep < steps.length - 1 ? "Continue" : 
+               (contractData.id ? "Save Changes" : "Create Contract")}
             </button>
-          ) : (
-            <button 
-              onClick={handleReviewSubmit}
-              disabled={isLoading}
-              className={`px-4 py-2 bg-blue-500 text-white rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  Saving...
-                </span>
-              ) : (
-                contractData.id ? 'Save Changes' : 'Create Contract'
-              )}
-            </button>
-          )}
+          </div>
         </div>
       </div>
     </div>
