@@ -348,10 +348,10 @@ function ComponentsSection() {
               <Text strong>Tags</Text>
               <div>
                 <Tag color="blue">Blue Tag</Tag>
-                <Tag color="green">Green Tag</Tag>
-                <Tag color="orange">Orange Tag</Tag>
-                <Tag color="red">Red Tag</Tag>
-                <Tag color="purple">Purple Tag</Tag>
+                <Tag color="geekblue">Dark Blue Tag</Tag>
+                <Tag color="cyan">Light Blue Tag</Tag>
+                <Tag color="default">Grey Tag</Tag>
+                <Tag color="#1a3f6d">Navy Tag</Tag>
               </div>
             </Space>
           </Col>
