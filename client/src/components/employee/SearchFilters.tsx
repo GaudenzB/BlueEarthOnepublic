@@ -2,7 +2,6 @@ import React from "react"
 import { Input, Select, Button, Card, Radio } from "antd"
 import { 
   SearchOutlined, 
-  UserOutlined, 
   SortAscendingOutlined, 
   SortDescendingOutlined, 
   BankOutlined,

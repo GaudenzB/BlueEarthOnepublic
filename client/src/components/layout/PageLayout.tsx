@@ -1,7 +1,6 @@
 import React, { ReactNode } from "react";
 import { Layout, Typography } from "antd";
 
-const { Content } = Layout;
 const { Title } = Typography;
 
 interface PageLayoutProps {
