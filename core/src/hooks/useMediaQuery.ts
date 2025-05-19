@@ -39,7 +39,7 @@ export function useMediaQuery(query: string): boolean {
     return () => {
       mediaQueryList.removeEventListener('change', handleChange);
     };
-  }, [query]); // Re-run if query changes
+  }, [query, getMatches]); // Re-run if query or getMatches changes
 
   return matches;
 }
