@@ -2,11 +2,11 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { FixedSizeGrid, FixedSizeList, areEqual } from 'react-window';
 import { Col, Row, Input, Select, Empty, Typography, Space, Button } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Employee, EmployeeCard, LoadingState } from '@/components/ui';
+import { Employee, EmployeeCard, LoadingState, SkipLink } from '@/components/ui';
 import { useDebounce } from '@/hooks/useDebounce';
 import { tokens } from '@/theme/tokens';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { Option } = Select;
 
 /**
@@ -740,13 +740,12 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   // Render the component
   return (
     <div className={`employee-directory ${className}`} ref={containerRef}>
-      {/* Accessibility skip navigation */}
-      <a href="#directory-content" className="sr-only focus:not-sr-only">Skip to employee list</a>
+      <SkipLink targetId="directory-content" text="Skip to employee list" />
       
       <header style={{ marginBottom: tokens.spacing[4] }}>
         <Row justify="space-between" align="middle">
           <Col>
-            <Typography.Title level={3}>{title}</Typography.Title>
+            <Title level={3}>{title}</Title>
           </Col>
           
           <Col>
