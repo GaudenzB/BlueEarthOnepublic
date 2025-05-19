@@ -1,0 +1,22 @@
+Annotations
+10 errors
+Lint & Format Check: client/src/hooks/use-auth.tsx#L199
+Type 'NonNullable<TQueryFnData> | null' is not assignable to type 'MicrosoftAuthStatus | null'.
+Lint & Format Check: client/src/hooks/use-auth.tsx#L56
+No overload matches this call.
+Lint & Format Check: client/src/hooks/use-auth.tsx#L8
+'apiRequest' is declared but its value is never read.
+Lint & Format Check: client/src/hooks/use-auth.tsx#L7
+'insertUserSchema' is declared but its value is never read.
+Lint & Format Check: client/src/components/ui/menubar.tsx#L152
+Type '{ children: (ReactNode | Element)[]; key?: Key | null | undefined; id?: string | undefined; title?: string | undefined; slot?: string | undefined; style?: CSSProperties | undefined; ... 264 more ...; checked: CheckedState | undefined; }' is not assignable to type 'MenubarCheckboxItemProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: client/src/components/ui/dropdown-menu.tsx#L97
+Type '{ children: (ReactNode | Element)[]; key?: Key | null | undefined; id?: string | undefined; title?: string | undefined; slot?: string | undefined; style?: CSSProperties | undefined; ... 264 more ...; checked: CheckedState | undefined; }' is not assignable to type 'DropdownMenuCheckboxItemProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: client/src/components/ui/context-menu.tsx#L94
+Type '{ children: (ReactNode | Element)[]; key?: Key | null | undefined; id?: string | undefined; title?: string | undefined; slot?: string | undefined; style?: CSSProperties | undefined; ... 264 more ...; checked: CheckedState | undefined; }' is not assignable to type 'ContextMenuCheckboxItemProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: client/src/components/ui/chart.tsx#L212
+Argument of type '{ "h-2.5 w-2.5": boolean; "w-1": boolean; "w-0 border-[1.5px] border-dashed bg-transparent": boolean; "my-0.5": boolean; }' is not assignable to parameter of type 'string | boolean | undefined'.
+Lint & Format Check: client/src/components/ui/Toast.tsx#L352
+'defaultVariant' is declared but its value is never read.
+Lint & Format Check: client/src/components/documents/DocumentUploadFixed.tsx#L712
+Type '{ children: Element[]; onValueChange: (...event: any[]) => void; defaultValue: string | undefined; }' is not assignable to type 'SelectProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
