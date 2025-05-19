@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tooltip } from 'antd';
-import { DocumentProcessingStatus } from '@/types/document';
-import StatusTag from '@/components/ui/StatusTag';
+import { DocumentProcessingStatus } from '@shared/types';
+import StatusTag, { StatusType } from '@/components/ui/StatusTag';
 
 interface DocumentStatusBadgeProps {
   status?: DocumentProcessingStatus | string | undefined;
@@ -10,7 +10,7 @@ interface DocumentStatusBadgeProps {
 
 type StatusConfigType = {
   [key in DocumentProcessingStatus]: {
-    statusValue: string;  // Maps to our StatusTag component status values
+    statusValue: StatusType;  // Maps to our StatusTag component status values
     text: string;
     tooltip: string;
   };
@@ -27,29 +27,39 @@ export function DocumentStatusBadge({
   // Define status configurations with mapping to StatusTag statuses
   const statusConfig: StatusConfigType = {
     COMPLETED: { 
-      statusValue: 'completed', 
+      statusValue: 'completed' as StatusType, 
       text: 'Completed',
       tooltip: 'Document has been processed successfully'
     },
     PROCESSING: { 
-      statusValue: 'in_review', 
+      statusValue: 'in_review' as StatusType, 
       text: 'Processing',
       tooltip: 'Document is currently being processed'
     },
     FAILED: { 
-      statusValue: 'rejected', 
+      statusValue: 'rejected' as StatusType, 
       text: 'Failed',
       tooltip: 'Document processing has failed'
     },
     WARNING: { 
-      statusValue: 'expired', 
+      statusValue: 'expired' as StatusType, 
       text: 'Warning',
       tooltip: 'Document processed with warnings'
     },
     PENDING: { 
-      statusValue: 'pending', 
+      statusValue: 'pending' as StatusType, 
       text: 'Pending',
       tooltip: 'Document is waiting to be processed'
+    },
+    QUEUED: { 
+      statusValue: 'in_review' as StatusType, 
+      text: 'Queued',
+      tooltip: 'Document is queued for processing'
+    },
+    ERROR: { 
+      statusValue: 'rejected' as StatusType, 
+      text: 'Error',
+      tooltip: 'An error occurred during document processing'
     }
   };
   
@@ -64,7 +74,7 @@ export function DocumentStatusBadge({
       <div style={{ display: 'inline-block' }}>
         <StatusTag 
           status={config.statusValue} 
-          text={showText ? config.text : undefined}
+          text={showText ? config.text : ""}
           size="medium"
         />
       </div>
