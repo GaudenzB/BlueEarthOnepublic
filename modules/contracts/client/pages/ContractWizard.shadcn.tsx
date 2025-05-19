@@ -427,23 +427,14 @@ export default function ContractWizard({ documentId, contractId, showConfidence 
         </button>
         
         <div className="flex space-x-4">
-          {activeStep > 0 && (
-            <button 
-              onClick={handleBack}
-              disabled={isLoading}
-              className={`px-4 py-2 border border-gray-300 rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
-            >
-              Back
-            </button>
-          )}
-          
           {/* Simplified navigation buttons */}
           <div className="flex justify-between w-full">
             {/* Back button (if not on first step) */}
             {activeStep > 0 && (
               <button 
-                onClick={() => setActiveStep(activeStep - 1)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                onClick={handleBack}
+                disabled={isLoading}
+                className={`px-4 py-2 border border-gray-300 rounded-md ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
               >
                 Back
               </button>
