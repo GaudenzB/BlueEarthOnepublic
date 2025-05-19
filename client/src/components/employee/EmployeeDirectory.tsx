@@ -1,12 +1,11 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { FixedSizeGrid, FixedSizeList, areEqual } from 'react-window';
-import { Col, Row, Input, Select, Empty, Typography, Space, Button, Spin } from 'antd';
-import { SearchOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Col, Row, Input, Select, Empty, Typography, Space, Button } from 'antd';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Employee, EmployeeCard, SkipLink, LoadingState } from '@/components/ui';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { useDebounce } from '@/hooks/useDebounce';
 import { tokens } from '@/theme/tokens';
-import { useQuery } from '@tanstack/react-query';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -335,12 +334,13 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   // Calculate initial grid dimensions
   const [gridDimensions, setGridDimensions] = useState(getGridDimensions());
   
+  // Create memoized update function that references current getGridDimensions
+  const updateDimensions = useCallback(() => {
+    setGridDimensions(getGridDimensions());
+  }, [getGridDimensions]);
+  
   // Update grid dimensions when window or container resizes
   useEffect(() => {
-    const updateDimensions = () => {
-      setGridDimensions(getGridDimensions());
-    };
-    
     // Initial calculation
     updateDimensions();
     
@@ -351,7 +351,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     return () => {
       window.removeEventListener('resize', updateDimensions);
     };
-  }, [getGridDimensions, windowWidth]);
+  }, [updateDimensions]);
   
   // Filter employees based on search query and filters
   const filteredEmployees = useMemo(() => {
@@ -539,12 +539,12 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           <Col key={employee.id} xs={24} sm={12} md={8} lg={6} xl={6} xxl={4} style={{ display: 'flex', justifyContent: 'center' }}>
             <EmployeeCard
               employee={employee}
-              onClick={onEmployeeSelect}
-              onEdit={onEmployeeEdit}
-              onDelete={onEmployeeDelete}
-              showActions={showCardActions}
-              size={cardSize}
-              selectable={selectableCards}
+              onClick={onEmployeeSelect || undefined}
+              onEdit={onEmployeeEdit || undefined}
+              onDelete={onEmployeeDelete || undefined}
+              showActions={showCardActions || false}
+              size={cardSize || 'default'}
+              selectable={selectableCards || false}
               isSelected={selectedEmployeeId === employee.id}
             />
           </Col>
@@ -576,13 +576,13 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           <EmployeeCard
             key={employee.id}
             employee={employee}
-            onClick={onEmployeeSelect}
-            onEdit={onEmployeeEdit}
-            onDelete={onEmployeeDelete}
-            showActions={showCardActions}
+            onClick={onEmployeeSelect || undefined}
+            onEdit={onEmployeeEdit || undefined}
+            onDelete={onEmployeeDelete || undefined}
+            showActions={showCardActions || false}
             size="large"
             detailed
-            selectable={selectableCards}
+            selectable={selectableCards || false}
             isSelected={selectedEmployeeId === employee.id}
           />
         ))}
