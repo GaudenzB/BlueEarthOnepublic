@@ -3,7 +3,7 @@ import { FixedSizeGrid, FixedSizeList, areEqual } from 'react-window';
 import { Col, Row, Input, Select, Empty, Typography, Space, Button } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Employee, EmployeeCard, SkipLink, LoadingState } from '@/components/ui';
-import { useWindowSize } from '@/hooks/useWindowSize';
+// import { useWindowSize } from '@/hooks/useWindowSize'; - Not currently needed
 import { useDebounce } from '@/hooks/useDebounce';
 import { tokens } from '@/theme/tokens';
 
@@ -298,7 +298,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   
   // Window size for responsive calculations
-  const { width: windowWidth } = useWindowSize();
+  // We're using containerRef.current.offsetWidth instead of window width for calculations
   
   // Calculate grid dimensions based on container width and card size
   const getGridDimensions = useCallback(() => {
@@ -536,7 +536,15 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         width={1200}
         itemCount={filteredEmployees.length}
         itemSize={120}
-        itemData={listItemData}
+        itemData={{
+          employees: filteredEmployees,
+          onEmployeeSelect: onEmployeeSelect || undefined,
+          onEmployeeEdit: onEmployeeEdit || undefined,
+          onEmployeeDelete: onEmployeeDelete || undefined,
+          selectedEmployeeId,
+          showCardActions: showCardActions || false,
+          selectableCards: selectableCards || false
+        }}
       >
         {ListItemRenderer}
       </FixedSizeList>

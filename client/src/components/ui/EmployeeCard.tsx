@@ -114,17 +114,17 @@ export interface EmployeeCardProps {
   /**
    * Click handler for the entire card
    */
-  onClick?: (employee: Employee) => void;
+  onClick?: ((employee: Employee) => void) | undefined;
   
   /**
    * Edit button click handler
    */
-  onEdit?: (employee: Employee) => void;
+  onEdit?: ((employee: Employee) => void) | undefined;
   
   /**
    * Delete button click handler
    */
-  onDelete?: (employee: Employee) => void;
+  onDelete?: ((employee: Employee) => void) | undefined;
 }
 
 /**
