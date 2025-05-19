@@ -36,7 +36,7 @@ export function EmployeeDirectory() {
   const itemsPerPage = 8
   
   // Update URL whenever filters change
-  const updateQueryParams = () => {
+  const updateQueryParams = useCallback(() => {
     const params = new URLSearchParams();
     if (searchTerm) params.set('search', searchTerm);
     if (department) params.set('department', department);
@@ -50,7 +50,7 @@ export function EmployeeDirectory() {
     
     // Update URL without causing full page reload
     window.history.replaceState(null, '', newUrl);
-  };
+  }, [searchTerm, department, activeOnly, sortBy, sortDirection, currentPage, location]);
 
   // Query to fetch employees
   const { data: apiResponse, isLoading, isError } = useQuery<ApiResponse<Employee[]>>({

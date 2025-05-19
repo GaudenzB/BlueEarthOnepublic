@@ -133,6 +133,30 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
     }
   }, [selectedId, items]);
   
+  // Function to find next enabled menu item index
+  const findNextEnabledIndex = useCallback((currentIndex: number, direction: 'up' | 'down'): number => {
+    if (items.length === 0) return -1;
+    
+    let nextIndex = currentIndex;
+    let count = 0;
+    
+    // Prevent infinite loop
+    while (count < items.length) {
+      nextIndex = direction === 'down' 
+        ? (nextIndex + 1) % items.length 
+        : (nextIndex - 1 + items.length) % items.length;
+        
+      if (nextIndex >= 0 && nextIndex < items.length && !items[nextIndex].disabled) {
+        return nextIndex;
+      }
+      
+      count++;
+    }
+    
+    // If all items are disabled, return original index
+    return currentIndex;
+  }, [items]);
+  
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     const activeElement = document.activeElement;
@@ -171,7 +195,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
       case 'End':
         e.preventDefault();
         // Find last non-disabled item
-        newIndex = findNextEnabledIndex(items.length, 'up');
+        newIndex = findNextEnabledIndex(items.length - 1, 'up');
         break;
         
       case 'Enter':
@@ -217,7 +241,9 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
     // Update focused index if it changed
     if (newIndex !== currentIndex) {
       setFocusedIndex(newIndex);
-      itemRefs.current[newIndex]?.focus();
+      if (itemRefs.current[newIndex]) {
+        itemRefs.current[newIndex]?.focus();
+      }
     }
   }, [focusedIndex, items, onItemSelect, typeaheadBuffer, typeaheadTimeout, enableTypeahead, findNextEnabledIndex]);
   
