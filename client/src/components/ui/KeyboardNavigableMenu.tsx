@@ -219,7 +219,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
       setFocusedIndex(newIndex);
       itemRefs.current[newIndex]?.focus();
     }
-  }, [focusedIndex, items, onItemSelect, typeaheadBuffer, typeaheadTimeout, enableTypeahead]);
+  }, [focusedIndex, items, onItemSelect, typeaheadBuffer, typeaheadTimeout, enableTypeahead, findNextEnabledIndex]);
   
   // Clean up timeout on unmount
   useEffect(() => {
