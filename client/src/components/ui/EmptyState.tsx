@@ -84,18 +84,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           <div>
             {title && (
               <h3 style={{ 
-                fontSize: theme.typography.fontSizes.lg,
-                fontWeight: theme.typography.fontWeights.medium,
-                color: theme.colors.text.primary,
-                marginBottom: theme.spacing.sm,
+                fontSize: '1.125rem',
+                fontWeight: 500,
+                color: '#1e293b',
+                marginBottom: '0.75rem',
               }}>
                 {title}
               </h3>
             )}
             
             <p style={{ 
-              fontSize: theme.typography.fontSizes.base,
-              color: theme.colors.text.secondary,
+              fontSize: '1rem',
+              color: '#64748b',
               maxWidth: '500px',
               margin: '0 auto',
             }}>
