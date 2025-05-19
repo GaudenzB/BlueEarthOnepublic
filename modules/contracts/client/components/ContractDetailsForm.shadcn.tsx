@@ -896,14 +896,7 @@ export default function ContractDetailsForm({
               )}
             </div>
 
-            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
-              <Button 
-                type="submit" 
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                Save and Continue
-              </Button>
-            </div>
+            {/* Navigation buttons are handled by the parent ContractWizard component */}
           </form>
         </Form>
       </CardContent>
