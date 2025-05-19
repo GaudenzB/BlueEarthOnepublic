@@ -1,3 +1,6 @@
+/* eslint-env node */
+/* global module */
+
 /**
  * Lint-staged Configuration
  * 

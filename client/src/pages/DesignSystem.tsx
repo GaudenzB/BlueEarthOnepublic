@@ -4,7 +4,6 @@ import {
   Card, 
   Row, 
   Col, 
-  Divider, 
   Space, 
   Button, 
   Input, 
@@ -33,8 +32,6 @@ import {
   FontWeightShowcase,
   LineHeightShowcase,
   BorderRadiusShowcase,
-  ShadowShowcase,
-  TokenSection,
   ComponentShowcase
 } from '@/components/design/DesignTokens';
 
