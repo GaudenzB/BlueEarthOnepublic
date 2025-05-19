@@ -107,13 +107,13 @@ const GridItemRenderer = React.memo(({
   data: {
     employees: Employee[];
     columnCount: number;
-    onEmployeeSelect?: (employee: Employee) => void;
-    onEmployeeEdit?: (employee: Employee) => void;
-    onEmployeeDelete?: (employee: Employee) => void;
-    selectedEmployeeId?: string;
-    showCardActions?: boolean;
-    cardSize?: 'small' | 'default' | 'large';
-    selectableCards?: boolean;
+    onEmployeeSelect?: ((employee: Employee) => void) | undefined;
+    onEmployeeEdit?: ((employee: Employee) => void) | undefined;
+    onEmployeeDelete?: ((employee: Employee) => void) | undefined;
+    selectedEmployeeId?: string | undefined;
+    showCardActions: boolean;
+    cardSize: 'small' | 'default' | 'large';
+    selectableCards: boolean;
   };
   columnIndex: number;
   rowIndex: number;
@@ -175,12 +175,12 @@ const ListItemRenderer = React.memo(({
 }: { 
   data: {
     employees: Employee[];
-    onEmployeeSelect?: (employee: Employee) => void;
-    onEmployeeEdit?: (employee: Employee) => void;
-    onEmployeeDelete?: (employee: Employee) => void;
-    selectedEmployeeId?: string;
-    showCardActions?: boolean;
-    selectableCards?: boolean;
+    onEmployeeSelect?: ((employee: Employee) => void) | undefined;
+    onEmployeeEdit?: ((employee: Employee) => void) | undefined;
+    onEmployeeDelete?: ((employee: Employee) => void) | undefined;
+    selectedEmployeeId?: string | undefined;
+    showCardActions: boolean;
+    selectableCards: boolean;
   };
   index: number;
   style: React.CSSProperties;

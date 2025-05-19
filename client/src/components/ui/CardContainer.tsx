@@ -104,20 +104,20 @@ export const CardContainer: React.FC<CardContainerProps> = ({
         <div style={{ 
           display: 'flex', 
           flexDirection: 'column',
-          gap: theme.spacing[1],
+          gap: theme.spacing.sm, // Using string key instead of numeric index
         }}>
           <div style={{ 
             fontSize: size === 'small' ? theme.typography.fontSizes.lg : theme.typography.fontSizes.xl,
             fontWeight: theme.typography.fontWeights.semibold,
-            color: theme.gray[800],
+            color: theme.colors.text.primary, // Using correct path in theme object
           }}>
             {title}
           </div>
           
           {description && (
             <div style={{ 
-              fontSize: theme.typography.fontSize.sm,
-              color: theme.gray[600],
+              fontSize: theme.typography.fontSizes.sm,
+              color: theme.colors.text.secondary,
             }}>
               {description}
             </div>
@@ -139,9 +139,9 @@ export const CardContainer: React.FC<CardContainerProps> = ({
       
       {footer && (
         <div className="card-footer" style={{ 
-          marginTop: theme.spacing[4],
-          paddingTop: theme.spacing[4],
-          borderTop: `1px solid ${theme.gray[100]}`,
+          marginTop: theme.spacing.md,
+          paddingTop: theme.spacing.md,
+          borderTop: `1px solid ${theme.colors.border.light}`,
         }}>
           {footer}
         </div>
