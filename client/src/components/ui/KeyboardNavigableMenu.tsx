@@ -201,7 +201,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
       case 'Enter':
       case ' ':
         e.preventDefault();
-        if (currentIndex >= 0 && currentIndex < items.length && !items[currentIndex].disabled) {
+        if (currentIndex >= 0 && currentIndex < items.length && items[currentIndex] && !items[currentIndex].disabled) {
           onItemSelect(items[currentIndex]);
         }
         break;

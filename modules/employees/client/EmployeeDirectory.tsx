@@ -10,7 +10,7 @@ import { Employee } from "@blueearth/core/schemas"
 import { ApiResponse } from "@/lib/types"
 
 export function EmployeeDirectory() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   
   // Parse existing query params from URL
   const getQueryParams = () => {
