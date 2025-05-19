@@ -112,7 +112,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
   id: providedId
 }) => {
   // Generate a unique ID if not provided
-  const id = useRef(providedId || createAccessibleId('menu', Math.random().toString(36).substring(2, 9))).current;
+  const id = useRef(providedId || createAccessibleId('menu')).current;
   
   // Refs for keyboard navigation
   const menuRef = useRef<HTMLUListElement>(null);
@@ -146,7 +146,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
         ? (nextIndex + 1) % items.length 
         : (nextIndex - 1 + items.length) % items.length;
         
-      if (nextIndex >= 0 && nextIndex < items.length && !items[nextIndex].disabled) {
+      if (nextIndex >= 0 && nextIndex < items.length && items[nextIndex] && !items[nextIndex].disabled) {
         return nextIndex;
       }
       
@@ -256,30 +256,6 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
     };
   }, [typeaheadTimeout]);
   
-  // Function to find next enabled menu item index
-  const findNextEnabledIndex = (currentIndex: number, direction: 'up' | 'down'): number => {
-    if (items.length === 0) return -1;
-    
-    let nextIndex = currentIndex;
-    let count = 0;
-    
-    // Prevent infinite loop
-    while (count < items.length) {
-      nextIndex = direction === 'down' 
-        ? (nextIndex + 1) % items.length 
-        : (nextIndex - 1 + items.length) % items.length;
-        
-      if (!items[nextIndex].disabled) {
-        return nextIndex;
-      }
-      
-      count++;
-    }
-    
-    // If all items are disabled, return original index
-    return currentIndex;
-  };
-  
   // Handle menu item click
   const handleItemClick = useCallback((item: MenuItem, index: number) => {
     if (!item.disabled) {
@@ -289,7 +265,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
   }, [onItemSelect]);
   
   // Default render for menu items
-  const defaultRenderItem = (item: MenuItem, isSelected: boolean, index: number) => (
+  const defaultRenderItem = (item: MenuItem, isSelected: boolean, _index: number) => (
     <div className={`px-4 py-2 text-sm flex items-center ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700'} ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'}`}>
       {item.icon && <span className="mr-2">{item.icon}</span>}
       {item.label}

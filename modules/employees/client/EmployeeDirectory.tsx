@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useLocation } from "wouter"
 import { SearchFilters } from "./SearchFilters"
