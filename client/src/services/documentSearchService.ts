@@ -5,9 +5,9 @@ import { apiRequest } from '@/lib/queryClient';
  */
 export interface SearchParams {
   query: string;
-  documentType?: string;
-  minSimilarity?: number;
-  limit?: number;
+  documentType?: string | undefined;
+  minSimilarity?: number | undefined;
+  limit?: number | undefined;
 }
 
 /**
@@ -19,8 +19,12 @@ export interface SearchResult {
   content: string;
   documentType?: string;
   score: number;
+  similarity?: number;
+  relevanceScore?: number;
   createdAt?: string;
+  updatedAt?: string;
   chunkIndex?: number;
+  textChunk?: string;
 }
 
 /**

@@ -230,7 +230,7 @@ const EmployeeDetails = memo(({
     {hireDate && (
       <Space align="center">
         <CalendarOutlined style={{ color: tokens.colors.neutral[500] }} />
-        <Typography.Text>Joined {formatDate(hireDate, 'medium')}</Typography.Text>
+        <Typography.Text>Joined {formatDate(hireDate)}</Typography.Text>
       </Space>
     )}
   </Space>
@@ -357,7 +357,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
     }
     
     if (employee.hireDate) {
-      parts.push(`Hire date: ${formatDate(employee.hireDate, 'short')}`);
+      parts.push(`Hire date: ${formatDate(employee.hireDate)}`);
     }
     
     return parts.join(', ');

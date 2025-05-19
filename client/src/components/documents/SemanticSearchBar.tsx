@@ -55,7 +55,8 @@ export function SemanticSearchBar({ onResultClick, className }: SemanticSearchBa
     queryFn: () => semanticSearch({ 
       query, 
       documentType: documentType || undefined,
-      minSimilarity: 0.6
+      minSimilarity: 0.6,
+      limit: 10
     }),
     enabled: searchActive && query.length > 2,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
@@ -154,13 +155,15 @@ export function SemanticSearchBar({ onResultClick, className }: SemanticSearchBa
                         {result.documentType}
                       </Badge>
                       <Badge variant="secondary" className="text-xs">
-                        {Math.round(result.similarity * 100)}% match
+                        {Math.round((result.similarity || result.score) * 100)}% match
                       </Badge>
                     </div>
                   </div>
                   
                   <div className="text-xs text-muted-foreground mt-1">
-                    {formatDate(new Date(result.updatedAt))}
+                    {result.updatedAt || result.createdAt ? 
+                      formatDate(new Date(result.updatedAt || result.createdAt)) : 
+                      'No date available'}
                   </div>
                   
                   <div className="mt-2 text-sm text-foreground/70 line-clamp-3">
