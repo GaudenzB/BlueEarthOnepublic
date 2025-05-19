@@ -1,7 +1,6 @@
 import * as React from "react"
 import * as ContextMenuPrimitive from "@radix-ui/react-context-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
-import type { CheckedState } from "@radix-ui/react-checkbox"
 
 import { cn } from "@/lib/utils"
 
@@ -88,12 +87,9 @@ const ContextMenuItem = React.forwardRef<
 ))
 ContextMenuItem.displayName = ContextMenuPrimitive.Item.displayName
 
-type ContextMenuCheckboxItemProps = Omit<
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.CheckboxItem>,
-  "checked"
-> & {
-  checked?: CheckedState
-}
+type ContextMenuCheckboxItemProps = React.ComponentPropsWithoutRef<
+  typeof ContextMenuPrimitive.CheckboxItem
+>
 
 const ContextMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.CheckboxItem>,

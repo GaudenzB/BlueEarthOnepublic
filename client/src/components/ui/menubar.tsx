@@ -3,7 +3,6 @@
 import * as React from "react"
 import * as MenubarPrimitive from "@radix-ui/react-menubar"
 import { Check, ChevronRight, Circle } from "lucide-react"
-import type { CheckedState } from "@radix-ui/react-checkbox"
 
 import { cn } from "@/lib/utils"
 
@@ -146,12 +145,9 @@ const MenubarItem = React.forwardRef<
 ))
 MenubarItem.displayName = MenubarPrimitive.Item.displayName
 
-type MenubarCheckboxItemProps = Omit<
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem>,
-  "checked"
-> & {
-  checked?: CheckedState
-}
+type MenubarCheckboxItemProps = React.ComponentPropsWithoutRef<
+  typeof MenubarPrimitive.CheckboxItem
+>
 
 const MenubarCheckboxItem = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.CheckboxItem>,

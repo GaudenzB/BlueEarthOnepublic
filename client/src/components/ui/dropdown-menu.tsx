@@ -1,7 +1,6 @@
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
-import type { CheckedState } from "@radix-ui/react-checkbox"
 
 import { cn } from "@/lib/utils"
 
@@ -91,12 +90,9 @@ const DropdownMenuItem = React.forwardRef<
 ))
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 
-type DropdownMenuCheckboxItemProps = Omit<
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>,
-  "checked"
-> & {
-  checked?: CheckedState
-}
+type DropdownMenuCheckboxItemProps = React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.CheckboxItem
+>
 
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
