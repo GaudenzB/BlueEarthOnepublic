@@ -136,20 +136,31 @@ function AppRoutes() {
           </React.Suspense>
         </MainLayout>
       )} />
-      <ProtectedRoute path="/contracts/:id/edit" component={(props: { params: { id: string } }) => (
-        <MainLayout>
-          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
-            <ContractWizard documentId={props.params.id} />
-          </React.Suspense>
-        </MainLayout>
-      )} />
-      <ProtectedRoute path="/contracts/:id" component={(props: { params: { id: string } }) => (
-        <MainLayout>
-          <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
-            <ContractDetail />
-          </React.Suspense>
-        </MainLayout>
-      )} />
+      <ProtectedRoute 
+        path="/contracts/:id/edit" 
+        component={function ContractEditRoute({ params }) {
+          return (
+            <MainLayout>
+              <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+                <ContractWizard documentId={params.id} />
+              </React.Suspense>
+            </MainLayout>
+          );
+        }}
+      />
+      <ProtectedRoute 
+        path="/contracts/:id" 
+        component={function ContractDetailRoute({ params }) {
+          // ContractDetail gets contract ID from route params on its own
+          return (
+            <MainLayout>
+              <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+                <ContractDetail />
+              </React.Suspense>
+            </MainLayout>
+          );
+        }}
+      />
       <ProtectedRoute path="/contracts" component={() => (
         <MainLayout>
           <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
