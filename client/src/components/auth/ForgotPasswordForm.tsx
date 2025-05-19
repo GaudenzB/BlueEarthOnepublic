@@ -47,7 +47,7 @@ export function ForgotPasswordForm() {
         description: "If that email exists in our system, a password reset link has been sent.",
       });
     },
-    onError: (error) => {
+    onError: (_error) => {
       toast({
         title: "Error",
         description: "Failed to process request. Please try again.",
