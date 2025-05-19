@@ -178,15 +178,18 @@ export const getQueryFn = <T>(options?: { on401?: UnauthorizedBehavior }): Query
             console.log("Document found in double-nested response:", {
               nestedDataExists: !!response.data.data,
               nestedDataType: typeof response.data.data,
-              docId: response.data.data?.id
+              docId: response.data.data && typeof response.data.data === 'object' ? 
+                (response.data.data as Record<string, any>)?.id : undefined
             });
             return response.data.data as T;
           }
           
           console.log("Document found in response wrapper:", {
-            docId: response.data?.id,
-            docTitle: response.data?.title || response.data?.originalFilename,
-            docStatus: response.data?.processingStatus
+            docId: response.data && typeof response.data === 'object' ? (response.data as any).id : undefined,
+            docTitle: response.data && typeof response.data === 'object' ? 
+              ((response.data as any).title || (response.data as any).originalFilename) : undefined,
+            docStatus: response.data && typeof response.data === 'object' ? 
+              (response.data as any).processingStatus : undefined
           });
           return response.data as T;
         }
