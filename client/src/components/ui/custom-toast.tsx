@@ -80,7 +80,7 @@ export interface ToastOptions {
 /**
  * Props for individual Toast component
  */
-interface ToastProps extends ToastOptions {
+interface CustomToastProps extends ToastOptions {
   /**
    * Callback for removing the toast
    */
@@ -90,7 +90,7 @@ interface ToastProps extends ToastOptions {
 /**
  * Individual Toast component
  */
-const Toast: React.FC<ToastProps> = ({
+const CustomToast: React.FC<CustomToastProps> = ({
   id,
   message,
   description,
@@ -273,7 +273,7 @@ const Toast: React.FC<ToastProps> = ({
 /**
  * Context for toast provider
  */
-interface ToastContextValue {
+interface CustomToastContextValue {
   /**
    * Add a toast to the queue
    */
@@ -308,12 +308,12 @@ interface ToastContextValue {
 /**
  * Create the toast context
  */
-export const ToastContext = React.createContext<ToastContextValue | undefined>(undefined);
+export const CustomToastContext = React.createContext<CustomToastContextValue | undefined>(undefined);
 
 /**
- * Props for ToastProvider component
+ * Props for CustomToastProvider component
  */
-interface ToastProviderProps {
+interface CustomToastProviderProps {
   /**
    * Maximum number of toasts to show at once
    */
@@ -341,15 +341,14 @@ interface ToastProviderProps {
 }
 
 /**
- * ToastProvider component
+ * CustomToastProvider component
  * 
  * Provides a context for managing toast notifications throughout the application.
  * Handles creating, displaying, and dismissing toasts with proper accessibility.
  */
-export const ToastProvider: React.FC<ToastProviderProps> = ({
+export const CustomToastProvider: React.FC<CustomToastProviderProps> = ({
   maxToasts = 5,
   defaultDuration = TOAST_DURATION.MEDIUM,
-  // defaultVariant = 'info', // Unused variable
   position = 'top-right',
   children
 }) => {
@@ -461,7 +460,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
         {/* Container for toasts with pointer events re-enabled */}
         <div style={{ pointerEvents: 'auto' }}>
           {toasts.map(toast => (
-            <Toast
+            <CustomToast
               key={toast.id}
               {...toast}
               remove={removeToast}
@@ -474,21 +473,21 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
   };
   
   return (
-    <ToastContext.Provider value={contextValue}>
+    <CustomToastContext.Provider value={contextValue}>
       {children}
       {renderPortal()}
-    </ToastContext.Provider>
+    </CustomToastContext.Provider>
   );
 };
 
 /**
- * Custom hook for using the toast API
+ * Custom hook for using the custom toast API
  * 
- * @returns Toast context value or throws an error if used outside a ToastProvider
+ * @returns Toast context value or throws an error if used outside a CustomToastProvider
  * 
  * @example
  * ```tsx
- * const { success, error } = useToast();
+ * const { success, error } = useCustomToast();
  * 
  * const handleSubmit = async () => {
  *   try {
@@ -503,15 +502,15 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
  * };
  * ```
  */
-export const useToast = (): ToastContextValue => {
-  const context = React.useContext(ToastContext);
+export const useCustomToast = (): CustomToastContextValue => {
+  const context = React.useContext(CustomToastContext);
   
   if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider');
+    throw new Error('useCustomToast must be used within a CustomToastProvider');
   }
   
   return context;
 };
 
 // Default export for convenience
-export default { ToastProvider, useToast };
+export default { CustomToastProvider, useCustomToast };

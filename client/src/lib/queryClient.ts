@@ -179,17 +179,17 @@ export const getQueryFn = <T>(options?: { on401?: UnauthorizedBehavior }): Query
               nestedDataExists: !!response.data.data,
               nestedDataType: typeof response.data.data,
               docId: response.data.data && typeof response.data.data === 'object' ? 
-                (response.data.data as Record<string, any>)?.id : undefined
+                (response.data.data as Record<string, any>)['id'] : undefined
             });
             return response.data.data as T;
           }
           
           console.log("Document found in response wrapper:", {
-            docId: response.data && typeof response.data === 'object' ? (response.data as any).id : undefined,
+            docId: response.data && typeof response.data === 'object' ? (response.data as Record<string, any>)['id'] : undefined,
             docTitle: response.data && typeof response.data === 'object' ? 
-              ((response.data as any).title || (response.data as any).originalFilename) : undefined,
+              ((response.data as Record<string, any>)['title'] || (response.data as Record<string, any>)['originalFilename']) : undefined,
             docStatus: response.data && typeof response.data === 'object' ? 
-              (response.data as any).processingStatus : undefined
+              (response.data as Record<string, any>)['processingStatus'] : undefined
           });
           return response.data as T;
         }
