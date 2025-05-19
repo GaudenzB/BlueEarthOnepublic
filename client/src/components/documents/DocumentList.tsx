@@ -27,7 +27,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { queryClient } from "@/lib/queryClient";
-import StatusTag from "@/components/ui/StatusTag";
+import StatusTag, { StatusType } from "@/components/ui/StatusTag";
 
 interface DocumentListProps {
   documents: any[];
@@ -128,8 +128,9 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
 
   const getProcessingStatusBadge = (status: string) => {
     // Map the document processing status to our StatusTag component status values
-    let statusValue;
-    let tooltipText;
+    // Using valid StatusType values from the StatusType type
+    let statusValue: StatusType;
+    let tooltipText: string;
     
     switch (status) {
       case "COMPLETED":
@@ -229,7 +230,8 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
       key: 'documentType',
       render: (documentType: string | undefined) => {
         // Map document types to relevant statuses for styling purposes
-        let statusType = "draft"; // Default styling
+        // Using the imported StatusType to ensure type safety
+        let statusType: StatusType = "draft"; // Default styling
         
         if (documentType === "CONTRACT") statusType = "approved";
         else if (documentType === "POLICY") statusType = "pending";
