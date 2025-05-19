@@ -2,7 +2,6 @@
 
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-import tseslint from 'typescript-eslint';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -14,14 +13,15 @@ const compat = new FlatCompat({
   recommendedConfig: js.configs.recommended,
 });
 
-export default tseslint.config(
+export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '.git/**', 'coverage/**']
+    ignores: ['dist/**', 'node_modules/**', '.git/**', 'coverage/**', '**/*.bak']
   },
   js.configs.recommended,
   ...compat.extends(
     'plugin:react/recommended',
-    'plugin:react-hooks/recommended'
+    'plugin:react-hooks/recommended',
+    'plugin:@typescript-eslint/recommended'
   ),
   {
     languageOptions: {
@@ -35,7 +35,15 @@ export default tseslint.config(
     },
     rules: {
       'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off'
+      'react/prop-types': 'off',
+      'no-unused-vars': ['error', { 
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_' 
+      }],
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_' 
+      }]
     }
   }
-);
+];

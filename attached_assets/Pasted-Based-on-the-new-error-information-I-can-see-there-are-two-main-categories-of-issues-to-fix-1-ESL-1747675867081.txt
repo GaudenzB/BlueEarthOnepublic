@@ -1,0 +1,89 @@
+Based on the new error information, I can see there are two main categories of issues to fix:
+1. ESLint Configuration Issue
+From Image 2, there's an error with your ESLint setup:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'typescript-eslint' imported from /home/runner/work/BlueEarthOnepublic/BlueEarthOnepublic/eslint.config.js
+2. TypeScript Type Errors
+From Image 1, there are several TypeScript type errors, primarily with:
+
+StatusType compatibility issues
+Unused variables
+Props type definitions in DocumentUpload.tsx
+
+Let's address these one by one:
+Step 1: Fix the ESLint Configuration
+The error shows you're missing the typescript-eslint package. Here's how to fix it:
+
+Install the missing package:
+
+bashnpm install --save-dev @typescript-eslint/eslint-plugin @typescript-eslint/parser
+
+Then check your eslint.config.js file - it seems to be using the newer ESLint v9 format. Make sure you have the correct import:
+
+javascript// Change from
+import typescriptEslint from 'typescript-eslint';
+
+// To
+import typescriptEslint from '@typescript-eslint/eslint-plugin';
+Step 2: Fix the StatusType Issues
+Multiple components are trying to use string values with a StatusType enum or type. You need to:
+
+Find your StatusType definition (likely in a types file)
+Update your components to use the proper enum values
+
+Here's what to do:
+typescript// First, locate your StatusType definition (might be in shared/types.ts or similar)
+// It probably looks like:
+enum StatusType {
+  ACTIVE = 'active',
+  RESTRICTED = 'restricted',
+  ARCHIVED = 'archived',
+  // other status types...
+}
+
+// Then in your components like DocumentList.tsx, DocumentHeader.tsx:
+// Change from:
+const status: StatusType = "active"; // This is causing the error
+
+// To:
+const status: StatusType = StatusType.ACTIVE; // Use the enum value
+Step 3: Fix the DocumentUpload.tsx Props Issues
+For DocumentUpload.tsx (line 808), you need to fix the component props type definition:
+typescript// Before:
+type Props = {
+  children: Element[];
+  onValueChange: (...event: any[]) => void;
+  defaultValue: string | undefined;
+  // other props...
+}
+
+// After (adding undefined to the types):
+type Props = {
+  children?: Element[]; // Make children optional
+  onValueChange?: (...event: any[]) => void; // Make callback optional
+  defaultValue?: string | undefined;
+  // other props...
+}
+Step 4: Remove Unused Variables
+For all errors like "'createUUID' is declared but its value is never read" and "'params' is declared but its value is never read", either:
+
+Use these variables in your code, or
+Remove them, or
+Prefix them with underscore to indicate they're intentionally unused:
+
+typescript// Before:
+const createUUID = () => {...};  // Not used
+
+// After (Option 1 - prefix with underscore):
+const _createUUID = () => {...};  // ESLint will ignore variables that start with _
+
+// After (Option 2 - remove entirely if not needed)
+// Just delete the declaration
+Step 5: Fix the ForgotPasswordForm Error Variable
+In auth/ForgotPasswordForm.tsx (line 50), there's an unused 'error' variable. Either use it or remove it:
+typescript// Before:
+const error = someFunction();  // Declared but never used
+
+// After (if you need to keep the function call but don't use the result):
+someFunction();  // Don't assign to a variable
+// or
+const _error = someFunction();  // Prefix with underscore
