@@ -442,47 +442,8 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   }, [filteredEmployees, layout]);
   
-  // Item data for grid virtualization
-  const gridItemData = useMemo(() => ({
-    employees: filteredEmployees || [],
-    columnCount: gridDimensions.columnCount,
-    onEmployeeSelect,
-    onEmployeeEdit,
-    onEmployeeDelete,
-    selectedEmployeeId,
-    showCardActions,
-    cardSize,
-    selectableCards
-  }), [
-    filteredEmployees,
-    gridDimensions.columnCount,
-    onEmployeeSelect,
-    onEmployeeEdit,
-    onEmployeeDelete,
-    selectedEmployeeId,
-    showCardActions,
-    cardSize,
-    selectableCards
-  ]);
-  
-  // Item data for list virtualization
-  const listItemData = useMemo(() => ({
-    employees: filteredEmployees || [],
-    onEmployeeSelect,
-    onEmployeeEdit,
-    onEmployeeDelete,
-    selectedEmployeeId,
-    showCardActions,
-    selectableCards
-  }), [
-    filteredEmployees,
-    onEmployeeSelect,
-    onEmployeeEdit,
-    onEmployeeDelete,
-    selectedEmployeeId,
-    showCardActions,
-    selectableCards
-  ]);
+  // Note: We're using inline data objects in renderVirtualizedGrid and renderVirtualizedList
+  // instead of separate variables to ensure direct access to current props and state
   
   // Render grid of employee cards (virtualized)
   const renderVirtualizedGrid = useCallback(() => {

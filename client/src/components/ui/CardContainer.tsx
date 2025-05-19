@@ -93,7 +93,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
       case 'md': return theme.borderRadius.md;
       case 'lg': return theme.borderRadius.lg;
       case 'xl': return theme.borderRadius.xl;
-      case '2xl': return theme.borderRadius['xl']; // Corrected since '2xl' isn't available
+      case '2xl': return theme.borderRadius.xl; // Using xl since 2xl isn't available
       default: return theme.borderRadius.xl;
     }
   };
