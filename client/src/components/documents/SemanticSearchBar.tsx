@@ -162,12 +162,12 @@ export function SemanticSearchBar({ onResultClick, className }: SemanticSearchBa
                   
                   <div className="text-xs text-muted-foreground mt-1">
                     {result.updatedAt || result.createdAt ? 
-                      formatDate(new Date(result.updatedAt || result.createdAt)) : 
+                      formatDate(result.updatedAt || result.createdAt) : 
                       'No date available'}
                   </div>
                   
                   <div className="mt-2 text-sm text-foreground/70 line-clamp-3">
-                    {result.textChunk}
+                    {result.textChunk || result.content || "No content available"}
                   </div>
                 </li>
               ))}

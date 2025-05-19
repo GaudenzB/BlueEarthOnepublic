@@ -20,15 +20,20 @@ export const capitalizeFirst = (text: string): string => {
 /**
  * Formats a date to a readable string
  */
-export const formatDate = (date: Date | string): string => {
+export const formatDate = (date: Date | string | undefined): string => {
   if (!date) return '';
   
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return '';
+  }
 };
 
 /**

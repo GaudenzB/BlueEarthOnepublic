@@ -16,7 +16,7 @@ import {
 } from '@ant-design/icons';
 import { Link } from 'wouter';
 import { Document } from '@/types/document';
-import StatusTag from '@/components/ui/StatusTag';
+import StatusTag, { StatusType } from '@/components/ui/StatusTag';
 
 const { Title } = Typography;
 
@@ -50,8 +50,8 @@ interface DocumentHeaderProps {
  */
 const DocumentTags = memo(({ document }: { document: Document }) => {
   // Map document categories to relevant status values for consistent styling
-  const mapCategoryToStatus = (category: string) => {
-    const categoryMap: {[key: string]: string} = {
+  const mapCategoryToStatus = (category: string): StatusType => {
+    const categoryMap: {[key: string]: StatusType} = {
       'Financial': 'approved',
       'Legal': 'completed',
       'HR': 'active',
