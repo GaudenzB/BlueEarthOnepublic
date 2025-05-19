@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route, useLocation, Redirect } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 // Using shadcn UI, not Chakra
@@ -36,7 +36,7 @@ const ContractUploadFlow = React.lazy(() => import("../../modules/contracts/clie
 
 // Router configuration with separate auth and protected routes
 function AppRoutes() {
-  const { user, isLoading } = useAuth();
+  const { isLoading } = useAuth(); // Removed unused 'user' variable
   
   // Show loader while auth state is being determined
   if (isLoading) {
@@ -136,14 +136,14 @@ function AppRoutes() {
           </React.Suspense>
         </MainLayout>
       )} />
-      <ProtectedRoute path="/contracts/:id/edit" component={({params}) => (
+      <ProtectedRoute path="/contracts/:id/edit" component={(props: { params: { id: string } }) => (
         <MainLayout>
           <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
-            <ContractWizard documentId={params.id} />
+            <ContractWizard documentId={props.params.id} />
           </React.Suspense>
         </MainLayout>
       )} />
-      <ProtectedRoute path="/contracts/:id" component={({params}) => (
+      <ProtectedRoute path="/contracts/:id" component={(props: { params: { id: string } }) => (
         <MainLayout>
           <React.Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
             <ContractDetail />

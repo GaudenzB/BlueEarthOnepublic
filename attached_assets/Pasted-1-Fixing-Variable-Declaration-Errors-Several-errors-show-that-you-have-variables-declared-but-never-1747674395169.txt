@@ -1,0 +1,85 @@
+1. Fixing Variable Declaration Errors
+Several errors show that you have variables declared but never used. This is a common linting issue that's easy to fix:
+For UserDetails.tsx (Line 9)
+typescript// Error: 'Badge' is declared but its value is never read.
+You have two options:
+
+Use the Badge variable if it's needed
+Remove or comment out the Badge import if it's not needed
+Prefix with underscore to indicate intentionally unused: _Badge
+
+For App.tsx (Multiple locations)
+You have similar issues with params, user, and useLocation variables:
+typescript// Error: 'params' is declared but its value is never read.
+// Error: 'user' is declared but its value is never read.
+// Error: 'useLocation' is declared but its value is never read.
+Apply the same solutions: either use these variables, remove them, or prefix with underscore.
+2. Fixing TypeScript Type Issues in App.tsx
+You have type compatibility issues:
+typescript// Error: Type '{{ params }: { params: any; }} => Element' is not assignable to type '() => Element'.
+This typically happens when you're using props incorrectly in a component. Here's how to fix it:
+typescript// Change from:
+const Component = ({ params }: { params: any }) => { ... }
+
+// To either:
+// Option 1: If params is needed
+const Component: React.FC<{ params: any }> = ({ params }) => { ... }
+
+// Option 2: If params is not needed
+const Component = () => { ... }
+3. Testing Library Issue
+typescript// Error: Cannot find module '@testing-library/react' or its corresponding type declarations.
+You need to install the missing package:
+bashnpm install --save-dev @testing-library/react
+4. Query Observer Type Issue
+typescript// Error: Object literal may only specify known properties, and 'cacheTime' does not exist in type...
+This is likely because cacheTime has been renamed to gcTime in a newer version of React Query. Update your code:
+typescript// Change from:
+useQuery({
+  cacheTime: 1000,
+  // other options
+})
+
+// To:
+useQuery({
+  gcTime: 1000,
+  // other options
+})
+Step-by-Step Approach to Fix All Issues
+
+Start with App.tsx since it has the most errors:
+
+Fix the params type errors on lines 146 and 139
+Remove unused declarations for params, user, and useLocation
+
+
+Fix UserDetails.tsx:
+
+Remove or use the Badge variable
+
+
+Fix tests:
+
+Install @testing-library/react if missing
+Update the React Query options in useAuth.test.tsx
+
+
+
+Here's a more specific fix for the App.tsx params errors:
+typescript// If you don't need the params at all:
+// Before:
+const SomeComponent = ({ params }: { params: any }) => <div>...</div>;
+
+// After:
+const SomeComponent = () => <div>...</div>;
+
+// OR if you need to keep the params:
+// Before:
+const SomeComponent = ({ params }: { params: any }) => <div>...</div>;
+
+// After:
+interface ComponentProps {
+  params?: any; // Make it optional if it might not always be provided
+}
+
+const SomeComponent: React.FC<ComponentProps> = ({ params }) => <div>...</div>;
