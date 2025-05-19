@@ -29,9 +29,9 @@ export interface EmptyStateProps {
   image?: React.ReactNode;
   
   /**
-   * Optional icon to display
+   * Optional custom styling
    */
-  icon?: React.ReactNode;
+  style?: React.CSSProperties;
   
   /**
    * Whether to use a compact layout
@@ -65,7 +65,6 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionText,
   onAction,
   image,
-  icon,
   compact = false,
   className = '',
 }) => {
@@ -73,9 +72,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <div 
       className={`empty-state ${className}`}
       style={{
-        padding: compact ? theme.spacing[4] : theme.spacing[8],
+        padding: compact ? theme.spacing.md : theme.spacing.xl,
         textAlign: 'center',
-        backgroundColor: theme.gray[50],
+        backgroundColor: theme.colors.background.subtle,
         borderRadius: theme.borderRadius.lg,
       }}
     >
@@ -85,18 +84,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           <div>
             {title && (
               <h3 style={{ 
-                fontSize: theme.typography.fontSize.lg,
-                fontWeight: theme.typography.fontWeight.medium,
-                color: theme.gray[800],
-                marginBottom: theme.spacing[2],
+                fontSize: theme.typography.fontSizes.lg,
+                fontWeight: theme.typography.fontWeights.medium,
+                color: theme.colors.text.primary,
+                marginBottom: theme.spacing.sm,
               }}>
                 {title}
               </h3>
             )}
             
             <p style={{ 
-              fontSize: theme.typography.fontSize.base,
-              color: theme.gray[600],
+              fontSize: theme.typography.fontSizes.base,
+              color: theme.colors.text.secondary,
               maxWidth: '500px',
               margin: '0 auto',
             }}>
@@ -110,9 +109,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             type="primary" 
             onClick={onAction}
             style={{
-              marginTop: theme.spacing[4],
-              backgroundColor: theme.brand[500],
-              borderColor: theme.brand[500],
+              marginTop: theme.spacing.md,
+              backgroundColor: theme.colors.primary.base,
+              borderColor: theme.colors.primary.base,
             }}
           >
             {actionText}
