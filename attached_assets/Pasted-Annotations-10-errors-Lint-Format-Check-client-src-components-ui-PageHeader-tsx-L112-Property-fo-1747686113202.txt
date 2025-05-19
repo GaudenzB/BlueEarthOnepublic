@@ -1,0 +1,22 @@
+Annotations
+10 errors
+Lint & Format Check: client/src/components/ui/PageHeader.tsx#L112
+Property 'fontSize' does not exist on type '{ fontFamily: string; fontWeights: { regular: number; medium: number; semibold: number; bold: number; }; fontSizes: { xs: string; sm: string; base: string; lg: string; xl: string; '2xl': string; '3xl': string; '4xl': string; }; lineHeights: { ...; }; }'. Did you mean 'fontSizes'?
+Lint & Format Check: client/src/components/ui/PageHeader.tsx#L105
+Element implicitly has an 'any' type because expression of type '1' can't be used to index type '{ xs: string; sm: string; md: string; lg: string; xl: string; '2xl': string; '3xl': string; }'.
+Lint & Format Check: client/src/components/ui/PageHeader.tsx#L100
+Element implicitly has an 'any' type because expression of type '2' can't be used to index type '{ xs: string; sm: string; md: string; lg: string; xl: string; '2xl': string; '3xl': string; }'.
+Lint & Format Check: client/src/components/ui/PageHeader.tsx#L89
+Element implicitly has an 'any' type because expression of type '2' can't be used to index type '{ xs: string; sm: string; md: string; lg: string; xl: string; '2xl': string; '3xl': string; }'.
+Lint & Format Check: client/src/components/ui/PageHeader.tsx#L77
+Element implicitly has an 'any' type because expression of type '3' can't be used to index type '{ xs: string; sm: string; md: string; lg: string; xl: string; '2xl': string; '3xl': string; }'.
+Lint & Format Check: client/src/components/ui/PageHeader.tsx#L71
+Element implicitly has an 'any' type because expression of type '6' can't be used to index type '{ xs: string; sm: string; md: string; lg: string; xl: string; '2xl': string; '3xl': string; }'.
+Lint & Format Check: client/src/components/ui/LoadingState.tsx#L97
+Not all code paths return a value.
+Lint & Format Check: client/src/components/layout/PageLayout.tsx#L4
+'Content' is declared but its value is never read.
+Lint & Format Check: client/src/components/employee/SearchFilters.tsx#L5
+'UserOutlined' is declared but its value is never read.
+Lint & Format Check: client/src/components/documents/DocumentUploadFixed.tsx#L712
+Type '{ children: Element[]; onValueChange: (...event: any[]) => void; defaultValue: string | undefined; }' is not assignable to type 'SelectProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.

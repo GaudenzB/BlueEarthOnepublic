@@ -68,13 +68,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <div 
       className={`page-header ${className}`}
       style={{
-        marginBottom: theme.spacing[6],
+        marginBottom: theme.spacing.xl,
       }}
     >
       {/* Breadcrumbs */}
       {breadcrumbItems.length > 0 && (
         <Breadcrumb 
-          style={{ marginBottom: theme.spacing[3] }}
+          style={{ marginBottom: theme.spacing.md }}
           items={breadcrumbItems.map((item, index) => ({
             title: item.href ? <a href={item.href}>{item.label}</a> : item.label,
             key: index
@@ -86,7 +86,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'flex-start',
-        marginBottom: description ? theme.spacing[2] : 0
+        marginBottom: description ? theme.spacing.sm : 0
       }}>
         <div>
           {/* Back button */}
@@ -97,22 +97,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               style={{ 
                 padding: 0, 
                 height: 'auto',
-                marginBottom: theme.spacing[2],
+                marginBottom: theme.spacing.sm,
                 display: 'flex',
                 alignItems: 'center',
               }}
             >
-              <ArrowLeftOutlined style={{ marginRight: theme.spacing[1] }} />
+              <ArrowLeftOutlined style={{ marginRight: theme.spacing.xs }} />
               {backLabel}
             </Button>
           )}
           
           {/* Title */}
           <h1 style={{ 
-            fontSize: theme.typography.fontSize['2xl'],
-            fontWeight: theme.typography.fontWeight.bold,
+            fontSize: theme.typography.fontSizes['2xl'],
+            fontWeight: theme.typography.fontWeights.bold,
             margin: 0,
-            color: theme.gray[900]
+            color: theme.colors.text.primary
           }}>
             {title}
           </h1>
@@ -129,10 +129,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       {/* Description */}
       {description && (
         <p style={{ 
-          fontSize: theme.typography.fontSize.base,
-          color: theme.gray[600],
+          fontSize: theme.typography.fontSizes.base,
+          color: theme.colors.text.secondary,
           margin: 0,
-          marginTop: theme.spacing[1]
+          marginTop: theme.spacing.xs
         }}>
           {description}
         </p>
