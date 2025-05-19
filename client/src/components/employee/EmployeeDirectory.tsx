@@ -519,7 +519,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         {GridItemRenderer}
       </FixedSizeGrid>
     );
-  }, [filteredEmployees.length, gridDimensions, gridItemData]);
+  }, [filteredEmployees.length, filteredEmployees, gridDimensions, columnCount, rowCount, onEmployeeSelect, onEmployeeEdit, onEmployeeDelete, selectedEmployeeId, showCardActions, cardSize, selectableCards]);
   
   // Render list of employee cards (virtualized)
   const renderVirtualizedList = useCallback(() => {
@@ -549,7 +549,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         {ListItemRenderer}
       </FixedSizeList>
     );
-  }, [filteredEmployees.length, listItemData]);
+  }, [filteredEmployees.length, filteredEmployees, onEmployeeSelect, onEmployeeEdit, onEmployeeDelete, selectedEmployeeId, showCardActions, selectableCards]);
   
   // Render grid of employee cards (non-virtualized)
   const renderStaticGrid = useCallback(() => {
