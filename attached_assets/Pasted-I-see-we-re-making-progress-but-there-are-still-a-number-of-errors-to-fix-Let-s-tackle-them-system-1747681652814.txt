@@ -1,0 +1,157 @@
+I see we're making progress, but there are still a number of errors to fix. Let's tackle them systematically:
+1. First, let's fix the SemanticSearchBar.tsx issues
+This component has missing imports and type issues that need to be addressed:
+Create missing utility file:
+typescript// client/src/lib/utils.ts
+export const cn = (...classes: (string | undefined | boolean)[]) => {
+  return classes.filter(Boolean).join(' ');
+};
+
+export const debounce = <F extends (...args: any[]) => any>(
+  func: F,
+  waitFor: number
+) => {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<F>): Promise<ReturnType<F>> => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    return new Promise(resolve => {
+      timeout = setTimeout(() => {
+        resolve(func(...args));
+      }, waitFor);
+    });
+  };
+};
+Create formatting utility file:
+typescript// client/src/utils/formatting.ts
+export const formatText = (text: string): string => {
+  return text?.trim() || '';
+};
+
+export const capitalizeFirst = (text: string): string => {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+Fix SemanticSearchBar.tsx type issues:
+typescript// For line 55: Update the SearchParams interface to accept undefined values
+interface SearchParams {
+  query: string;
+  documentType?: string | undefined;
+  minSimilarity?: number;
+}
+
+// For line 146: Add chunkIndex to SearchResult interface
+interface SearchResult {
+  id: string;
+  title: string;
+  content: string;
+  score: number;
+  chunkIndex?: number; // Add this property
+}
+2. Fix the DocumentUpload.tsx issues
+Fix createUUID variable:
+typescript// Line 184: Prefix with underscore or remove
+const _createUUID = () => { /* ... */ };
+// Or remove entirely if not used
+Fix SelectProps in DocumentUpload.tsx and DocumentUploadFixed.tsx:
+typescript// Change the props to include undefined values
+type Props = {
+  children?: Element[] | undefined;
+  onValueChange?: (...event: any[]) => void;
+  defaultValue?: string | undefined;
+};
+3. Fix StatusType issues in DocumentHeader.tsx
+First, verify the StatusType enum in your codebase:
+typescript// This should be defined somewhere in your shared types
+export enum StatusType {
+  ACTIVE = 'active',
+  RESTRICTED = 'restricted',
+  ARCHIVED = 'archived'
+  // other possible values
+}
+Then update DocumentHeader.tsx:
+typescript// Line 70:
+const status: StatusType = StatusType.ACTIVE;
+
+// Line 84:
+const status: StatusType = isRestricted ? StatusType.RESTRICTED : StatusType.ACTIVE;
+
+// Line 92:
+const status: StatusType = StatusType.ARCHIVED;
+4. Fix test file issues
+Fix unused fireEvent:
+typescript// In EmployeeList.test.tsx line 2:
+// Change from:
+import { fireEvent } from '@testing-library/react';
+
+// To either:
+import { fireEvent as _fireEvent } from '@testing-library/react';
+// OR
+// Remove fireEvent from the import if not used
+Fix Router usage in AuthGuard.test.tsx:
+typescript// Line 4:
+// Change from:
+import { Router } from 'react-router-dom';
+
+// To:
+import { Router as _Router } from 'react-router-dom';
+Fix require() style imports in DocumentUploader.test.tsx:
+typescript// Change all instances of:
+const styles = require('./DocumentUploader.module.css');
+
+// To:
+import styles from './DocumentUploader.module.css';
+
+// OR if that doesn't work, mock it:
+jest.mock('./DocumentUploader.module.css', () => ({
+  container: 'mock-container',
+  // other needed class names
+}));
+5. Fix React Hook dependencies
+In EmployeeDirectory.tsx:
+typescript// Lines 173 and 178:
+useEffect(() => {
+  // Code that uses updateQueryParams
+}, [updateQueryParams]); // Add missing dependency
+
+// Line 61:
+const memoizedValue = useMemo(() => {
+  const employees = someCondition ? valueA : valueB;
+  // Code using employees
+  return result;
+}, [someCondition, valueA, valueB, /* other dependencies */]);
+In useMediaQuery.ts and useLocalStorage.ts:
+typescript// In useMediaQuery.ts:
+const getMatches = useCallback(() => {
+  // Original implementation
+}, []); // Empty array or add dependencies used inside
+
+// In useLocalStorage.ts:
+const readValue = useCallback(() => {
+  // Original implementation
+}, []); // Empty array or add dependencies used inside
+In employee-detail.tsx and employee-detail-new.tsx:
+typescript// Add refreshData to dependency array:
+useEffect(() => {
+  // Code that uses refreshData
+}, [refreshData]);
+In useWindowSize.ts:
+typescript// Add breakpoints to dependency array:
+useEffect(() => {
+  // Code that uses breakpoints
+}, [breakpoints]);
+In EmployeeDirectory.tsx component files:
+typescript// Add filteredEmployees to dependency arrays:
+const callback = useCallback(() => {
+  // Original implementation
+}, [filteredEmployees]);
+Implementation Strategy
+Since there are still quite a few errors to fix, I suggest prioritizing them as follows:
+
+First fix the SemanticSearchBar.tsx issues - creating missing modules and fixing type issues
+Then fix DocumentHeader.tsx StatusType issues - these are straightforward type corrections
+Fix test file issues - these are mostly unused variable warnings
+Finally fix React Hook dependencies - these require more context to fix correctly
