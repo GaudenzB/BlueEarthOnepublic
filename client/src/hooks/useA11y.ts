@@ -104,6 +104,9 @@ export function useFocusTrap(
     const firstFocusable = focusable[0];
     const lastFocusable = focusable[focusable.length - 1];
     
+    // Safety check to ensure elements exist
+    if (!firstFocusable || !lastFocusable) return;
+    
     // If shift + tab on first element, move to last element
     if (e.shiftKey && document.activeElement === firstFocusable) {
       e.preventDefault();
