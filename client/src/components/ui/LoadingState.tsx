@@ -1,7 +1,7 @@
 import React from 'react';
 import { Spin, Skeleton, Result } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
-import { tokens } from '@/theme/tokens';
+import { theme } from '@/lib/theme';
 
 /**
  * Props for the LoadingState component
@@ -89,7 +89,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   children
 }) => {
   // Custom spinner icon using primary color
-  const spinIcon = <LoadingOutlined style={{ fontSize: size, color: tokens.colors.primary.base }} spin />;
+  const spinIcon = <LoadingOutlined style={{ fontSize: size, color: theme.colors.primary.base }} spin />;
   
   // Delay the display of the loading state if needed
   const [show, setShow] = React.useState(!delay);
