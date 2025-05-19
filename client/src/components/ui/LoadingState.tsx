@@ -88,8 +88,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   title = true,
   children
 }) => {
-  // Custom spinner icon using brand primary color
-  const spinIcon = <LoadingOutlined style={{ fontSize: size, color: tokens.colors.brand.primary }} spin />;
+  // Custom spinner icon using primary color
+  const spinIcon = <LoadingOutlined style={{ fontSize: size, color: tokens.colors.primary.base }} spin />;
   
   // Delay the display of the loading state if needed
   const [show, setShow] = React.useState(!delay);
@@ -102,6 +102,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       
       return () => clearTimeout(timer);
     }
+    return undefined; // Explicitly return for the case where delay is falsy
   }, [delay]);
   
   // Don't show anything during the delay period

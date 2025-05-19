@@ -1,0 +1,22 @@
+Annotations
+10 errors
+Lint & Format Check: client/src/components/ui/input-otp.tsx#L36
+Property 'isActive' does not exist on type 'SlotProps | undefined'.
+Lint & Format Check: client/src/components/ui/input-otp.tsx#L36
+Property 'hasFakeCaret' does not exist on type 'SlotProps | undefined'.
+Lint & Format Check: client/src/components/ui/input-otp.tsx#L36
+Property 'char' does not exist on type 'SlotProps | undefined'.
+Lint & Format Check: client/src/components/ui/index.ts#L22
+File name '/home/runner/work/BlueEarthOnepublic/BlueEarthOnepublic/client/src/components/ui/Toast.tsx' differs from already included file name '/home/runner/work/BlueEarthOnepublic/BlueEarthOnepublic/client/src/components/ui/toast.tsx' only in casing.
+Lint & Format Check: client/src/components/ui/dropdown-menu.tsx#L97
+Type '{ children: (ReactNode | Element)[]; key?: Key | null | undefined; id?: string | undefined; title?: string | undefined; slot?: string | undefined; style?: CSSProperties | undefined; ... 264 more ...; checked: CheckedState | undefined; }' is not assignable to type 'DropdownMenuCheckboxItemProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: client/src/components/ui/context-menu.tsx#L94
+Type '{ children: (ReactNode | Element)[]; key?: Key | null | undefined; id?: string | undefined; title?: string | undefined; slot?: string | undefined; style?: CSSProperties | undefined; ... 264 more ...; checked: CheckedState | undefined; }' is not assignable to type 'ContextMenuCheckboxItemProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: client/src/components/ui/chart.tsx#L212
+Argument of type '{ "h-2.5 w-2.5": boolean; "w-1": boolean; "w-0 border-[1.5px] border-dashed bg-transparent": boolean; "my-0.5": boolean; }' is not assignable to parameter of type 'string | boolean | undefined'.
+Lint & Format Check: client/src/components/ui/Toast.tsx#L352
+'defaultVariant' is declared but its value is never read.
+Lint & Format Check: client/src/components/ui/LoadingState.tsx#L97
+Not all code paths return a value.
+Lint & Format Check: client/src/components/documents/DocumentUploadFixed.tsx#L712
+Type '{ children: Element[]; onValueChange: (...event: any[]) => void; defaultValue: string | undefined; }' is not assignable to type 'SelectProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
