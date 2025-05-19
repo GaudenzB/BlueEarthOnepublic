@@ -139,7 +139,11 @@ const GridItemRenderer = React.memo(({
     return <div style={style} />;
   }
   
+  // Get employee and verify it exists
   const employee = employees[index];
+  if (!employee) {
+    return <div style={style} />;
+  }
   
   return (
     <div style={{
@@ -151,12 +155,12 @@ const GridItemRenderer = React.memo(({
     }}>
       <EmployeeCard
         employee={employee}
-        onClick={onEmployeeSelect}
-        onEdit={onEmployeeEdit}
-        onDelete={onEmployeeDelete}
-        showActions={showCardActions}
-        size={cardSize}
-        selectable={selectableCards}
+        onClick={onEmployeeSelect || undefined}
+        onEdit={onEmployeeEdit || undefined}
+        onDelete={onEmployeeDelete || undefined}
+        showActions={showCardActions || false}
+        size={cardSize || 'default'}
+        selectable={selectableCards || false}
         isSelected={selectedEmployeeId === employee.id}
       />
     </div>
@@ -191,7 +195,11 @@ const ListItemRenderer = React.memo(({
     selectableCards
   } = data;
   
+  // Get employee and verify it exists
   const employee = employees[index];
+  if (!employee) {
+    return <div style={style} />;
+  }
   
   return (
     <div style={{
@@ -202,13 +210,13 @@ const ListItemRenderer = React.memo(({
     }}>
       <EmployeeCard
         employee={employee}
-        onClick={onEmployeeSelect}
-        onEdit={onEmployeeEdit}
-        onDelete={onEmployeeDelete}
-        showActions={showCardActions}
+        onClick={onEmployeeSelect || undefined}
+        onEdit={onEmployeeEdit || undefined}
+        onDelete={onEmployeeDelete || undefined}
+        showActions={showCardActions || false}
         size="large"
         detailed
-        selectable={selectableCards}
+        selectable={selectableCards || false}
         isSelected={selectedEmployeeId === employee.id}
       />
     </div>
@@ -496,7 +504,17 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         rowHeight={rowHeight}
         height={600}
         width={1200}
-        itemData={gridItemData}
+        itemData={{
+          employees: filteredEmployees,
+          columnCount,
+          onEmployeeSelect: onEmployeeSelect || undefined,
+          onEmployeeEdit: onEmployeeEdit || undefined,
+          onEmployeeDelete: onEmployeeDelete || undefined,
+          selectedEmployeeId,
+          showCardActions: showCardActions || false,
+          cardSize: cardSize || 'default',
+          selectableCards: selectableCards || false
+        }}
       >
         {GridItemRenderer}
       </FixedSizeGrid>
