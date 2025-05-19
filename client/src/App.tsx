@@ -20,7 +20,6 @@ import Documents from "@/pages/documents";
 import DocumentDetail from "@/pages/document-detail-consolidated";
 import DesignTesting from "@/pages/design-testing";
 import DesignSystem from "@/pages/DesignSystem";
-import ThemeShowcasePage from "@/pages/ThemeShowcasePage";
 import AuthPage from "@/pages/auth-page";
 import MainLayout from "@/components/layouts/MainLayout";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
@@ -102,11 +101,7 @@ function AppRoutes() {
         </MainLayout>
       )} />
       
-      <ProtectedRoute path={ROUTES.THEME_SHOWCASE} component={() => (
-        <MainLayout>
-          <ThemeShowcasePage />
-        </MainLayout>
-      )} />
+
       
       <ProtectedRoute path={ADMIN_ROUTES.USERS} component={() => (
         <MainLayout>
