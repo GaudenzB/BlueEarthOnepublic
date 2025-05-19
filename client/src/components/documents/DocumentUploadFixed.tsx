@@ -711,7 +711,7 @@ export default function DocumentUpload({ isOpen, onClose, onSuccess }: DocumentU
                     <FormLabel>Document Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>

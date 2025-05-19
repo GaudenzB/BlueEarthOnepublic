@@ -4,8 +4,8 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
-import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
+import { User as SelectUser } from "@shared/schema";
+import { getQueryFn, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 // Type for Microsoft auth status
@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
-        microsoftAuthStatus: microsoftAuthStatus || null,
+        microsoftAuthStatus: microsoftAuthStatus as MicrosoftAuthStatus | null,
         isMicrosoftAuthStatusLoading,
         refetchUser,
         isAdmin,
