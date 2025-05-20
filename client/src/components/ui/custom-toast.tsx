@@ -16,6 +16,12 @@ const tokens = {
       error: '#ff4d4f',
       warning: '#faad14',
       info: '#1890ff',
+    },
+    semantic: {
+      success: '#52c41a',
+      error: '#ff4d4f',
+      warning: '#faad14',
+      info: '#1890ff',
     }
   }
 };
@@ -119,18 +125,17 @@ export function CustomToast({
   // Get the appropriate icon based on variant
   const renderIcon = () => {
     switch (variant) {
-      case 'success': // Fall through
-       return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.success }} />;
-      case 'error': // Fall through
-       return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.error }} />;
-      case 'warning': // Fall through
-       return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.warning }} />;
-      case 'info': // Fall through
-       // Fall through
+      case 'success':
+        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.success }} />;
+      case 'error':
+        return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.error }} />;
+      case 'warning':
+        return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.status.warning }} />;
+      case 'info':
       default:
-        return <InfoCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.info }} />;
-    };
+        return <InfoCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.info }} />;
     }
+  }
   };
 
   return (
