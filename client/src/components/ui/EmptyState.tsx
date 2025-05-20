@@ -85,8 +85,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             {title && (
               <h3 style={{ 
                 fontSize: '1.125rem',
-                fontWeight: 500,
-                color: '#1e293b',
+                fontWeight: 500 as number,
+                color: '#1e293b' as string,
                 marginBottom: '0.75rem',
               }}>
                 {title}
@@ -95,7 +95,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             
             <p style={{ 
               fontSize: '1rem',
-              color: '#64748b',
+              color: '#64748b' as string,
               maxWidth: '500px',
               margin: '0 auto',
             }}>

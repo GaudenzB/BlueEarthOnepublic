@@ -112,7 +112,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             fontSize: '1.5rem',
             fontWeight: 'bold',
             margin: 0,
-            color: '#1e293b'
+            color: '#1e293b' as string as string
           }}>
             {title}
           </h1>

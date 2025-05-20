@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Router } from 'wouter';
+import TestRouter from '../../utils/TestRouter';
 // Create a mock component for testing
 const EmployeeList = ({ 
   filterStatus, 
@@ -98,13 +99,13 @@ describe('EmployeeList Component', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="all" 
             filterDepartment="all" 
             searchTerm="" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -123,13 +124,13 @@ describe('EmployeeList Component', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="all" 
             filterDepartment="all" 
             searchTerm="" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -151,13 +152,13 @@ describe('EmployeeList Component', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="all" 
             filterDepartment="all" 
             searchTerm="" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -177,13 +178,13 @@ describe('EmployeeList Component', () => {
 
     const { rerender } = render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="all" 
             filterDepartment="all" 
             searchTerm="John" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -194,13 +195,13 @@ describe('EmployeeList Component', () => {
     // Update search term to show Jane
     rerender(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="all" 
             filterDepartment="all" 
             searchTerm="Jane" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -220,13 +221,13 @@ describe('EmployeeList Component', () => {
 
     const { rerender } = render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="all" 
             filterDepartment="engineering" 
             searchTerm="" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -237,13 +238,13 @@ describe('EmployeeList Component', () => {
     // Update filter to product department
     rerender(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="all" 
             filterDepartment="product" 
             searchTerm="" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -277,13 +278,13 @@ describe('EmployeeList Component', () => {
 
     const { rerender } = render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="active" 
             filterDepartment="all" 
             searchTerm="" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
@@ -295,13 +296,13 @@ describe('EmployeeList Component', () => {
     // Update filter to inactive status
     rerender(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <TestRouter>
           <EmployeeList 
             filterStatus="inactive" 
             filterDepartment="all" 
             searchTerm="" 
           />
-        </MemoryRouter>
+        </TestRouter>
       </QueryClientProvider>
     );
 
