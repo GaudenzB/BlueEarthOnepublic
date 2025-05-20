@@ -677,16 +677,18 @@ export default function DocumentDetail() {
 // Helper function to get timeline icon
 function getTimelineIcon(type: string) {
   switch (type) {
-    case 'create': // Fall through
-       return <FileOutlined style={{ fontSize: 16 }} />;
-    case 'edit': // Fall through
-       return <EditOutlined style={{ fontSize: 16 }} />;
-    case 'status': // Fall through
-       return <InfoCircleOutlined style={{ fontSize: 16 }} />;
-    case 'share': // Fall through
-       return <LinkOutlined style={{ fontSize: 16 }} />;
+    case 'create':
+      return <FileOutlined style={{ fontSize: 16 }} />;
+    case 'edit':
+      return <EditOutlined style={{ fontSize: 16 }} />;
+    case 'status':
+      return <InfoCircleOutlined style={{ fontSize: 16 }} />;
+    case 'share':
+      return <LinkOutlined style={{ fontSize: 16 }} />;
+    case 'download':
+      return <DownloadOutlined style={{ fontSize: 16 }} />;
     default:
-      return undefined; // Default fallback case
+      return <CalendarOutlined style={{ fontSize: 16 }} />;
   }
 }
 

@@ -123,13 +123,13 @@ export function CustomToast({
   // Get the appropriate icon based on variant
   const renderIcon = () => {
     switch (variant) {
-      case 'success': // Fall through
-       return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.success }} />;
-      case 'error': // Fall through
-       return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.error }} />;
-      case 'warning': // Fall through
-       return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.status.warning }} />;
-      case 'info': // Fall through
+      case 'success':
+        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.success }} />;
+      case 'error':
+        return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.error }} />;
+      case 'warning':
+        return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.status.warning }} />;
+      case 'info':
       default:
         return <InfoCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.info }} />;
     }
@@ -138,22 +138,22 @@ export function CustomToast({
   // Get variant-specific styles for the toast
   const getVariantStyles = () => {
     switch (variant) {
-      case 'success': // Fall through
-       return {
+      case 'success':
+        return {
           backgroundColor: tokens.colors.background.toast,
           borderColor: tokens.colors.status.success,
         };
-      case 'error': // Fall through
-       return {
+      case 'error':
+        return {
           backgroundColor: tokens.colors.background.toast,
           borderColor: tokens.colors.status.error,
         };
-      case 'warning': // Fall through
-       return {
+      case 'warning':
+        return {
           backgroundColor: tokens.colors.background.toast,
           borderColor: tokens.colors.status.warning,
         };
-      case 'info': // Fall through
+      case 'info':
       default:
         return {
           backgroundColor: tokens.colors.background.toast,
@@ -163,20 +163,25 @@ export function CustomToast({
   };
 
   // Get appropriate ARIA attributes for accessibility
+  // Use type-safe aria attributes that React expects
   const getAriaAttrs = () => {
+    // Base attributes for all toasts
     const baseAttrs = {
-      role: 'alert',
-      'aria-live': 'polite',
+      role: 'alert' as React.AriaRole,
     };
 
+    // Add aria-live based on variant
     if (variant === 'error') {
       return {
         ...baseAttrs,
-        'aria-live': 'assertive',
+        'aria-live': 'assertive' as 'assertive',
       };
     }
 
-    return baseAttrs;
+    return {
+      ...baseAttrs,
+      'aria-live': 'polite' as 'polite',
+    };
   };
 
   return (
