@@ -80,14 +80,7 @@ export function usePermissions(userId?: number) {
     },
   });
 
-  // Check if user has a specific permission
-  const checkPermission = useQuery({
-    queryKey: ['/api/check-permission', user?.id],
-    queryFn: async () => {
-      return {};
-    },
-    enabled: false, // Don't run automatically
-  });
+  // Removed unused checkPermission query
 
   // Function to check specific permission - handles case-insensitive area names
   const hasPermission = async (area: string, action: 'view' | 'edit' | 'delete'): Promise<boolean> => {

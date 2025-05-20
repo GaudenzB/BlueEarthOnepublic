@@ -78,7 +78,7 @@ export function borderRadius(size: ThemeBorderRadiusKey): string {
  * @returns The combined class string
  */
 export function themeClass(...classes: any[]): string {
-  return cn(...classes);
+  return cn(...classes as any[]);
 }
 
 /**
