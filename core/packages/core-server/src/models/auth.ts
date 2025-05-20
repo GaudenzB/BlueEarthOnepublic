@@ -6,14 +6,8 @@
  */
 
 import { z } from 'zod';
-import { createInsertSchema } from 'drizzle-zod';
 import { 
-  userSchema, 
-  userBaseSchema,
-  userRoleEnum,
-  functionalAreaEnum, 
-  permissionLevelEnum,
-  permissionSchema 
+  userBaseSchema
 } from '@blueearth/core-common';
 
 /**

@@ -115,10 +115,10 @@ export function trapFocus(container: HTMLElement, event: KeyboardEvent): void {
   const firstElement = focusableElements[0];
   const lastElement = focusableElements[focusableElements.length - 1];
   
-  if (event.shiftKey && document.activeElement === firstElement) {
+  if (event.shiftKey && document.activeElement === firstElement && lastElement) {
     lastElement.focus();
     event.preventDefault();
-  } else if (!event.shiftKey && document.activeElement === lastElement) {
+  } else if (!event.shiftKey && document.activeElement === lastElement && firstElement) {
     firstElement.focus();
     event.preventDefault();
   }
@@ -143,8 +143,11 @@ export function setupFocusTrap(container: HTMLElement): () => void {
  */
 export function focusFirstElement(container: HTMLElement): void {
   const focusableElements = getFocusableElements(container);
+  // Check if the array has elements before accessing
   if (focusableElements.length > 0) {
-    focusableElements[0].focus();
+    // Now we know this element exists
+    const firstElement = focusableElements[0];
+    firstElement.focus();
   }
 }
 
