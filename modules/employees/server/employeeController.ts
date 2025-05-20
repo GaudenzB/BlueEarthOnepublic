@@ -104,11 +104,13 @@ export async function getAllEmployees(req: Request, res: Response) {
     logger.debug({
       employeeCount: employees?.length || 0,
       isArray: Array.isArray(employees),
-      sampleEmployee: employees && employees.length > 0 ? { 
-        id: employees[0].id,
-        name: employees[0].name,
-        department: employees[0].department
-      } : null
+      sampleEmployee: employees && Array.isArray(employees) && employees.length > 0 
+        ? { 
+            id: typeof employees[0]?.id === 'string' ? employees[0].id : 'unknown',
+            name: typeof employees[0]?.name === 'string' ? employees[0].name : 'unknown',
+            department: typeof employees[0]?.department === 'string' ? employees[0].department : 'unknown'
+          } 
+        : null
     }, 'Employee data retrieved');
     
     return sendSuccess(res, employees, "Employees retrieved successfully");
@@ -239,7 +241,21 @@ export async function updateEmployee(req: Request, res: Response) {
       fields: Object.keys(validatedData),
     });
     
-    const employee = await storage.updateEmployee(id, validatedData);
+    // Create a type-safe cleaned up version of the data for storage
+    const cleanedData = {
+      ...(validatedData.name !== undefined && { name: validatedData.name }),
+      ...(validatedData.status !== undefined && { status: validatedData.status }),
+      ...(validatedData.email !== undefined && { email: validatedData.email }),
+      ...(validatedData.location !== undefined && { location: validatedData.location }),
+      ...(validatedData.position !== undefined && { position: validatedData.position }),
+      ...(validatedData.department !== undefined && { department: validatedData.department }),
+      ...(validatedData.phone !== undefined && { phone: validatedData.phone }),
+      ...(validatedData.avatarUrl !== undefined && { avatarUrl: validatedData.avatarUrl }),
+      ...(validatedData.bio !== undefined && { bio: validatedData.bio }),
+      ...(validatedData.responsibilities !== undefined && { responsibilities: validatedData.responsibilities })
+    };
+    
+    const employee = await storage.updateEmployee(id, cleanedData);
     
     if (!employee) {
       return sendNotFound(res, "Employee not found");
