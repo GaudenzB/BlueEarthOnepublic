@@ -1,4 +1,25 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(js|jsx|ts|tsx)$")
+
+if [ -n "$STAGED_FILES" ]; then
+  echo "Checking TypeScript type errors..."
+  # Only check staged TypeScript/JavaScript files
+  npx tsc --noEmit --project tsconfig.strict.json
+
+  echo "Running ESLint on staged files..."
+  npx eslint --fix $STAGED_FILES
+  
+  # Re-stage files that might have been fixed by eslint
+  echo "Re-staging files that may have been auto-fixed..."
+  for FILE in $STAGED_FILES; do
+    if [ -f "$FILE" ]; then
+      git add "$FILE"
+    fi
+  done
+fi
+
+# Run lint-staged for additional checks
 npx lint-staged
