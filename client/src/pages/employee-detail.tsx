@@ -56,7 +56,7 @@ export default function EmployeeDetail() {
   // Get employee ID from URL
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<string>("1");
+  const [activeTabKey, setActiveTabKey] = useState<string>("1");
   const { hasPermissionCached } = usePermissionsContext();
   
   // Check permissions
@@ -146,7 +146,7 @@ export default function EmployeeDetail() {
             )}
           </div>
           
-          <Tabs defaultActiveKey="1" onChange={setActiveTab}>
+          <Tabs defaultActiveKey="1" onChange={setActiveTabKey}>
             <Tabs.TabPane tab="Profile" key="1">
               <Descriptions bordered column={1}>
                 <Descriptions.Item label="Email">
@@ -216,34 +216,6 @@ export default function EmployeeDetail() {
       {renderEmployeeDetails()}
     </PermissionGuard>
   );
-        };
-    }
-  };
-
-  const goBack = () => {
-    setLocation(ROUTES.HOME);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center mb-6">
-          <Button
-            type="link"
-            onClick={goBack}
-            className="mr-4 flex items-center px-0"
-          >
-            <ArrowLeftOutlined className="mr-2" />
-            Back
-          </Button>
-          <Skeleton.Input active style={{ width: 180 }} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="md:col-span-1">
-            <div className="px-6 pt-6 pb-4 text-center">
-              <Skeleton.Avatar active size={128} shape="circle" style={{ margin: '0 auto' }} />
-              <Skeleton.Input active size="small" style={{ width: 150, margin: '12px auto 4px' }} />
-              <Skeleton.Input active size="small" style={{ width: 100, margin: '0 auto' }} />
             </div>
             <div className="px-6 py-4">
               <Skeleton active paragraph={{ rows: 3 }} title={false} />
