@@ -88,12 +88,16 @@ export default function ContractDetail() {
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'ACTIVE': // Fall through
+       // Fall through
        return 'bg-green-100 text-green-800';
       case 'PENDING': // Fall through
        // Fall through
+       // Fall through
       case 'DRAFT': // Fall through
+       // Fall through
        return 'bg-yellow-100 text-yellow-800';
       case 'EXPIRED': // Fall through
+       // Fall through
        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';

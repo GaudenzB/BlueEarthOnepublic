@@ -311,15 +311,16 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     let rowHeight: number;
     
     switch (cardSize) {
-      case 'small':
-        cardWidth = 240;
+      case 'small': // Fall through
+      cardWidth = 240;
         rowHeight = 300;
         break;
-      case 'large':
-        cardWidth = 320;
+      case 'large': // Fall through
+      cardWidth = 320;
         rowHeight = 400;
         break;
-      case 'default':{},
+      case 'default': // Fall through
+       // Fall through
       default:
         cardWidth = 280;
         rowHeight = 350;

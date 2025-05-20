@@ -40,10 +40,13 @@ const { TabPane } = Tabs;
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'active': // Fall through
+       // Fall through
        return 'green';
     case 'inactive': // Fall through
+       // Fall through
        return 'red';
     case 'pending': // Fall through
+       // Fall through
        return 'orange';
     default:
       return undefined; // Default fallback case
@@ -53,10 +56,13 @@ const getStatusColor = (status: string) => {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'active': // Fall through
+       // Fall through
        return 'Active';
     case 'inactive': // Fall through
+       // Fall through
        return 'Inactive';
     case 'pending': // Fall through
+       // Fall through
        return 'Pending';
     default:
       return undefined; // Default fallback case

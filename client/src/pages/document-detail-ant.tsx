@@ -83,18 +83,25 @@ function getStatusBadge(status: string | undefined) {
   
   switch (status) {
     case "COMPLETED": // Fall through
+       // Fall through
        return <Badge status="success" text="Completed" />;
     case "APPROVED": // Fall through
+       // Fall through
        return <Badge status="success" text="Approved" />;
     case "PROCESSING": // Fall through
+       // Fall through
        return <Badge status="processing" text="Processing" />;
     case "PENDING": // Fall through
+       // Fall through
        return <Badge status="warning" text="Pending" />;
     case "QUEUED": // Fall through
+       // Fall through
        return <Badge status="warning" text="Queued" />;
     case "REJECTED": // Fall through
+       // Fall through
        return <Badge status="error" text="Rejected" />;
     case "ERROR": // Fall through
+       // Fall through
        return <Badge status="error" text="Error" />;
     default:
       return <Badge status="default" text={status || "Unknown"} />;
@@ -107,10 +114,13 @@ function getProcessingStatusText(status: string | undefined): string {
   
   switch (status) {
     case "PROCESSING": // Fall through
+       // Fall through
        return "Your document is currently being processed. This may take a few minutes.";
     case "PENDING": // Fall through
+       // Fall through
        return "Your document is pending processing. It will be processed shortly.";
     case "QUEUED": // Fall through
+       // Fall through
        return "Your document is in the processing queue. Processing will begin soon.";
     default:
       return "Document status is being updated...";
@@ -123,10 +133,13 @@ function getProcessingProgress(status: string | undefined): number {
   
   switch (status) {
     case "PROCESSING": // Fall through
+       // Fall through
        return 75;
     case "PENDING": // Fall through
+       // Fall through
        return 25;
     case "QUEUED": // Fall through
+       // Fall through
        return 10;
     default:
       return 0;
@@ -664,14 +677,14 @@ export default function DocumentDetail() {
 // Helper function to get timeline icon
 function getTimelineIcon(type: string) {
   switch (type) {
-    case 'create':
-      return <FileOutlined style={{ fontSize: 16 }} />;
-    case 'edit':
-      return <EditOutlined style={{ fontSize: 16 }} />;
-    case 'status':
-      return <InfoCircleOutlined style={{ fontSize: 16 }} />;
-    case 'share':
-      return <LinkOutlined style={{ fontSize: 16 }} />;
+    case 'create': // Fall through
+       return <FileOutlined style={{ fontSize: 16 }} />;
+    case 'edit': // Fall through
+       return <EditOutlined style={{ fontSize: 16 }} />;
+    case 'status': // Fall through
+       return <InfoCircleOutlined style={{ fontSize: 16 }} />;
+    case 'share': // Fall through
+       return <LinkOutlined style={{ fontSize: 16 }} />;
     default:
       return undefined; // Default fallback case
   }

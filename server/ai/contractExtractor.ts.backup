@@ -235,7 +235,7 @@ function prepareContractPrompt(
   
   // Add contract-type specific instructions
   switch(contractType) {
-    case 'LPA':
+    case 'LPA': // Fall through
       prompt += `
         For this Limited Partnership Agreement, pay special attention to:
         - General Partner and Limited Partner details
@@ -246,7 +246,7 @@ function prepareContractPrompt(
       `;
       break;
       
-    case 'SUBSCRIPTION_AGREEMENT':
+    case 'SUBSCRIPTION_AGREEMENT': // Fall through
       prompt += `
         For this Subscription Agreement, pay special attention to:
         - Investor details and commitment amount
@@ -256,7 +256,7 @@ function prepareContractPrompt(
       `;
       break;
       
-    case 'SIDE_LETTER':
+    case 'SIDE_LETTER': // Fall through
       prompt += `
         For this Side Letter, pay special attention to:
         - Special terms or exemptions granted

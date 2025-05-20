@@ -35,20 +35,20 @@ export async function apiRequest<T = any>(
     let response: ApiResponse<T>;
     
     switch (method) {
-      case 'GET':
-        response = await httpClient.get<T>(url, options);
+      case 'GET': // Fall through
+      response = await httpClient.get<T>(url, options);
         break;
-      case 'POST':
-        response = await httpClient.post<T>(url, body, options);
+      case 'POST': // Fall through
+      response = await httpClient.post<T>(url, body, options);
         break;
-      case 'PUT':
-        response = await httpClient.put<T>(url, body, options);
+      case 'PUT': // Fall through
+      response = await httpClient.put<T>(url, body, options);
         break;
-      case 'PATCH':
-        response = await httpClient.patch<T>(url, body, options);
+      case 'PATCH': // Fall through
+      response = await httpClient.patch<T>(url, body, options);
         break;
-      case 'DELETE':
-        response = await httpClient.delete<T>(url, options);
+      case 'DELETE': // Fall through
+      response = await httpClient.delete<T>(url, options);
         break;
       default:
       // Exhaustive type check

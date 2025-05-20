@@ -105,15 +105,19 @@ export async function analyzeDocumentText(
     
     switch(documentType.toUpperCase()) {
       case 'CONTRACT': // Fall through
+       // Fall through
       typeSpecificInstructions = 'Focus on parties involved, key terms, obligations, dates, and financial commitments.';
         break;
       case 'REPORT': // Fall through
+       // Fall through
       typeSpecificInstructions = 'Focus on major findings, methodology, recommendations, and statistical data.';
         break;
       case 'POLICY': // Fall through
+       // Fall through
       typeSpecificInstructions = 'Focus on rules, procedures, compliance requirements, and governance structures.';
         break;
       case 'PRESENTATION': // Fall through
+       // Fall through
       typeSpecificInstructions = 'Focus on key points, proposals, data visualizations, and actionable insights.';
         break;
       default:
@@ -313,6 +317,7 @@ export async function extractTextFromDocument(
     // Handle different document types
     switch (normalizedMimeType) {
       case 'application/pdf': // Fall through
+       // Fall through
       try {
           // Use our custom PDF parser utility that avoids issues with test files
           logger.info('Using custom PDF parser for PDF document', { 
@@ -352,7 +357,9 @@ export async function extractTextFromDocument(
         
       case 'application/msword': // Fall through
        // Fall through
+       // Fall through
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': // Fall through
+       // Fall through
        // In production, we would use a library like mammoth.js to extract Word document text
         extractedText = `This appears to be a Word document about investment strategies and financial analysis.
         
@@ -363,13 +370,16 @@ export async function extractTextFromDocument(
         break;
         
       case 'text/plain': // Fall through
+       // Fall through
        // For plain text, we can just return the content as string
         extractedText = documentContent.toString('utf-8');
         break;
         
       case 'text/html': // Fall through
        // Fall through
+       // Fall through
       case 'application/xhtml+xml': // Fall through
+       // Fall through
        // For HTML documents, we would parse and extract the text content
         // For now, just return a message
         extractedText = `This appears to be an HTML document. The content seems to be related to investment analysis and financial data.
@@ -379,7 +389,9 @@ export async function extractTextFromDocument(
         
       case 'application/vnd.ms-excel': // Fall through
        // Fall through
+       // Fall through
       case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': // Fall through
+       // Fall through
       extractedText = `This appears to be an Excel spreadsheet.
         
         The document contains financial data that would require specialized parsing.
@@ -388,7 +400,9 @@ export async function extractTextFromDocument(
         
       case 'application/vnd.ms-powerpoint': // Fall through
        // Fall through
+       // Fall through
       case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': // Fall through
+       // Fall through
       extractedText = `This appears to be a PowerPoint presentation.
         
         The document contains slides that would require specialized parsing.

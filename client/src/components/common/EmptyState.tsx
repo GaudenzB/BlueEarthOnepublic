@@ -32,8 +32,10 @@ export function EmptyState({
   const getEmptyStyles = () => {
     switch (size) {
       case 'small': // Fall through
+       // Fall through
        return { padding: '16px 0' };
       case 'large': // Fall through
+       // Fall through
        return { padding: '48px 0' };
       default:
         return { padding: '32px 0' };
@@ -44,8 +46,10 @@ export function EmptyState({
   const getEmptyImage = () => {
     switch (type) {
       case 'compact': // Fall through
+       // Fall through
        return Empty.PRESENTED_IMAGE_SIMPLE;
       case 'info': // Fall through
+       // Fall through
        return undefined; // No image for info type
       default:
         return props.image;

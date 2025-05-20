@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Space, notification } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined, WarningOutlined } from '@ant-design/icons';
+
 // Define tokens as a local object since the import is not working
 const tokens = {
   colors: {
@@ -12,12 +13,6 @@ const tokens = {
       toast: '#ffffff',
     },
     status: {
-      success: '#52c41a',
-      error: '#ff4d4f',
-      warning: '#faad14',
-      info: '#1890ff',
-    },
-    semantic: {
       success: '#52c41a',
       error: '#ff4d4f',
       warning: '#faad14',
@@ -97,7 +92,10 @@ export function CustomToast({
   const [remainingTime, setRemainingTime] = useState(duration);
   
   const handleClose = () => {
-    notification.close(id);
+    if (id) {
+      // @ts-ignore - the type definition is incorrect, but this method exists
+      notification.destroy(id);
+    }
     if (onClose) {
       onClose();
     }
@@ -120,22 +118,65 @@ export function CustomToast({
     return () => {
       clearTimeout(timer);
     };
-  }, [duration, handleClose, isPaused]);
+  }, [duration, handleClose, isPaused, remainingTime]);
   
   // Get the appropriate icon based on variant
   const renderIcon = () => {
     switch (variant) {
-      case 'success':
-        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.success }} />;
-      case 'error':
-        return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.error }} />;
-      case 'warning':
-        return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.status.warning }} />;
-      case 'info':
+      case 'success': // Fall through
+       return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.success }} />;
+      case 'error': // Fall through
+       return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.error }} />;
+      case 'warning': // Fall through
+       return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.status.warning }} />;
+      case 'info': // Fall through
       default:
         return <InfoCircleOutlined style={{ fontSize: '20px', color: tokens.colors.status.info }} />;
     }
-  }
+  };
+
+  // Get variant-specific styles for the toast
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'success': // Fall through
+       return {
+          backgroundColor: tokens.colors.background.toast,
+          borderColor: tokens.colors.status.success,
+        };
+      case 'error': // Fall through
+       return {
+          backgroundColor: tokens.colors.background.toast,
+          borderColor: tokens.colors.status.error,
+        };
+      case 'warning': // Fall through
+       return {
+          backgroundColor: tokens.colors.background.toast,
+          borderColor: tokens.colors.status.warning,
+        };
+      case 'info': // Fall through
+      default:
+        return {
+          backgroundColor: tokens.colors.background.toast,
+          borderColor: tokens.colors.status.info,
+        };
+    }
+  };
+
+  // Get appropriate ARIA attributes for accessibility
+  const getAriaAttrs = () => {
+    const baseAttrs = {
+      role: 'alert',
+      'aria-live': 'polite',
+    };
+
+    if (variant === 'error') {
+      return {
+        ...baseAttrs,
+        'aria-live': 'assertive',
+      };
+    }
+
+    return baseAttrs;
   };
 
   return (

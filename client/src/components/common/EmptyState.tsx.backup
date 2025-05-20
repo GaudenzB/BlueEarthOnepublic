@@ -31,10 +31,10 @@ export function EmptyState({
   // Calculate styles based on size
   const getEmptyStyles = () => {
     switch (size) {
-      case 'small':
-        return { padding: '16px 0' };
-      case 'large':
-        return { padding: '48px 0' };
+      case 'small': // Fall through
+       return { padding: '16px 0' };
+      case 'large': // Fall through
+       return { padding: '48px 0' };
       default:
         return { padding: '32px 0' };
     }
@@ -43,10 +43,10 @@ export function EmptyState({
   // Different visualization based on type
   const getEmptyImage = () => {
     switch (type) {
-      case 'compact':
-        return Empty.PRESENTED_IMAGE_SIMPLE;
-      case 'info':
-        return undefined; // No image for info type
+      case 'compact': // Fall through
+       return Empty.PRESENTED_IMAGE_SIMPLE;
+      case 'info': // Fall through
+       return undefined; // No image for info type
       default:
         return props.image;
     }

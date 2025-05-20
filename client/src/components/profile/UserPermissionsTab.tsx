@@ -20,12 +20,16 @@ export function UserPermissionsTab({ userId, userName, userRole }: UserPermissio
   const getRoleBadgeColor = (role: string): string => {
     switch (role) {
       case 'superadmin': // Fall through
+       // Fall through
        return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'admin': // Fall through
+       // Fall through
        return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'manager': // Fall through
+       // Fall through
        return 'bg-green-100 text-green-800 border-green-300';
       case 'user': // Fall through
+       // Fall through
        return 'bg-gray-100 text-gray-800 border-gray-300';
       default:
       return undefined; // Default fallback case
@@ -35,12 +39,16 @@ export function UserPermissionsTab({ userId, userName, userRole }: UserPermissio
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'superadmin': // Fall through
+       // Fall through
        return <Star className="h-5 w-5 text-purple-600" />;
       case 'admin': // Fall through
+       // Fall through
        return <ShieldCheck className="h-5 w-5 text-blue-600" />;
       case 'manager': // Fall through
+       // Fall through
        return <Shield className="h-5 w-5 text-green-600" />;
       case 'user': // Fall through
+       // Fall through
        return <SquareUserRound className="h-5 w-5 text-gray-600" />;
       default:
       return undefined; // Default fallback case

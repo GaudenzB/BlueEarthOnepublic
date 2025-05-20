@@ -103,26 +103,37 @@ export default function ContractDocumentSection({ contractId }: ContractDocument
   const getDocTypeLabel = (type: string) => {
     switch (type) {
       case 'MAIN': // Fall through
+       // Fall through
        return 'Main Agreements';
       case 'AMENDMENT': // Fall through
+       // Fall through
        return 'Amendments';
       case 'ADDENDUM': // Fall through
+       // Fall through
        return 'Addendums';
       case 'SIDE_LETTER': // Fall through
+       // Fall through
        return 'Side Letters';
       case 'EXHIBIT': // Fall through
+       // Fall through
        return 'Exhibits';
       case 'SCHEDULE': // Fall through
+       // Fall through
        return 'Schedules';
       case 'STATEMENT_OF_WORK': // Fall through
+       // Fall through
        return 'Statements of Work';
       case 'CERTIFICATE': // Fall through
+       // Fall through
        return 'Certificates';
       case 'RENEWAL': // Fall through
+       // Fall through
        return 'Renewals';
       case 'TERMINATION': // Fall through
+       // Fall through
        return 'Terminations';
       case 'OTHER': // Fall through
+       // Fall through
        return 'Other Documents';
       default: return type;
     }

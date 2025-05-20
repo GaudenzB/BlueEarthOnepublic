@@ -85,14 +85,14 @@ export default function EmployeeDetail() {
   // Get status color
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 hover:bg-green-100';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
-      case 'on_leave':
-        return 'bg-amber-100 text-amber-800 hover:bg-amber-100';
-      case 'remote':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
+      case 'active': // Fall through
+       return 'bg-green-100 text-green-800 hover:bg-green-100';
+      case 'inactive': // Fall through
+       return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+      case 'on_leave': // Fall through
+       return 'bg-amber-100 text-amber-800 hover:bg-amber-100';
+      case 'remote': // Fall through
+       return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
       default:
         return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
     }

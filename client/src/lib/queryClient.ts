@@ -36,18 +36,23 @@ export async function apiRequest<T = any>(
     
     switch (method) {
       case 'GET': // Fall through
+       // Fall through
       response = await httpClient.get<T>(url, options);
         break;
       case 'POST': // Fall through
+       // Fall through
       response = await httpClient.post<T>(url, body, options);
         break;
       case 'PUT': // Fall through
+       // Fall through
       response = await httpClient.put<T>(url, body, options);
         break;
       case 'PATCH': // Fall through
+       // Fall through
       response = await httpClient.patch<T>(url, body, options);
         break;
       case 'DELETE': // Fall through
+       // Fall through
       response = await httpClient.delete<T>(url, options);
         break;
       default:

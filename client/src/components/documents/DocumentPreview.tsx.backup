@@ -116,24 +116,30 @@ export function DocumentPreview({
     const iconProps = { style: { fontSize: 64, color: '#1890ff' as string } };
     
     switch (ext) {
-      case 'pdf':
-        return <FilePdfOutlined {...iconProps} />;
-      case 'doc':{},
-      case 'docx':
-        return <FileWordOutlined {...iconProps} />;
-      case 'xls':{},
-      case 'xlsx':
-        return <FileExcelOutlined {...iconProps} />;
-      case 'ppt':{},
-      case 'pptx':
-        return <FilePptOutlined {...iconProps} />;
-      case 'jpg':{},
-      case 'jpeg':{},
-      case 'png':{},
-      case 'gif':
-        return <FileImageOutlined {...iconProps} />;
-      case 'txt':
-        return <FileTextOutlined {...iconProps} />;
+      case 'pdf': // Fall through
+       return <FilePdfOutlined {...iconProps} />;
+      case 'doc': // Fall through
+       // Fall through
+      case 'docx': // Fall through
+       return <FileWordOutlined {...iconProps} />;
+      case 'xls': // Fall through
+       // Fall through
+      case 'xlsx': // Fall through
+       return <FileExcelOutlined {...iconProps} />;
+      case 'ppt': // Fall through
+       // Fall through
+      case 'pptx': // Fall through
+       return <FilePptOutlined {...iconProps} />;
+      case 'jpg': // Fall through
+       // Fall through
+      case 'jpeg': // Fall through
+       // Fall through
+      case 'png': // Fall through
+       // Fall through
+      case 'gif': // Fall through
+       return <FileImageOutlined {...iconProps} />;
+      case 'txt': // Fall through
+       return <FileTextOutlined {...iconProps} />;
       default:
         return <FileUnknownOutlined {...iconProps} />;
     }

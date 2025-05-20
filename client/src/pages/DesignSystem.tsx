@@ -365,10 +365,13 @@ function ComponentsSection() {
               render: (status) => {
                 switch(status) {
                   case 'active': // Fall through
+       // Fall through
        return <Badge status="success" text="Active" />;
                   case 'inactive': // Fall through
+       // Fall through
        return <Badge status="default" text="Inactive" />;
                   case 'pending': // Fall through
+       // Fall through
        return <Badge status="processing" text="Pending" />;
                   default: return <Badge status="default" text={status} />;
                 }

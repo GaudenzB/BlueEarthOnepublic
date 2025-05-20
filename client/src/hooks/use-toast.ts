@@ -75,10 +75,12 @@ const addToRemoveQueue = (toastId: string) => {
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST": // Fall through
+       // Fall through
        return {
         ...state,
         toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
       };case "UPDATE_TOAST": // Fall through
+       // Fall through
        return {
         ...state,
         toasts: state.toasts.map((t) =>
@@ -86,6 +88,7 @@ export const reducer = (state: State, action: Action): State => {
         ),
       }
     case "DISMISS_TOAST": // Fall through
+       // Fall through
        {
       const { toastId } = action
 
@@ -112,6 +115,7 @@ export const reducer = (state: State, action: Action): State => {
       }
     }
     case "REMOVE_TOAST": // Fall through
+       // Fall through
       if (action.toastId === undefined) {
         return {
           ...state,

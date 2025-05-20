@@ -161,12 +161,18 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
   // Get area badge color
   const getAreaBadgeColor = (area: string): string => {
     switch (area) {
-      case 'finance': return 'bg-green-100 text-green-800 border-green-300';
-      case 'hr': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'it': return 'bg-purple-100 text-purple-800 border-purple-300';
-      case 'legal': return 'bg-red-100 text-red-800 border-red-300';
-      case 'operations': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'documents': return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+      case 'finance': // Fall through
+       return 'bg-green-100 text-green-800 border-green-300';
+      case 'hr': // Fall through
+       return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'it': // Fall through
+       return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'legal': // Fall through
+       return 'bg-red-100 text-red-800 border-red-300';
+      case 'operations': // Fall through
+       return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'documents': // Fall through
+       return 'bg-indigo-100 text-indigo-800 border-indigo-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300'; // Proper fallback
     }
   };

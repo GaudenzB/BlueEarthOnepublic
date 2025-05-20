@@ -42,35 +42,35 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     
     // Using Ant Design icons based on the icon name from routes
     switch (item.icon) {
-      case 'Users':
-        icon = <TeamOutlined style={iconStyle} />;
+      case 'Users': // Fall through
+      icon = <TeamOutlined style={iconStyle} />;
         break;
-      case 'LayoutDashboard':
-        icon = <DashboardOutlined style={iconStyle} />;
+      case 'LayoutDashboard': // Fall through
+      icon = <DashboardOutlined style={iconStyle} />;
         break;
-      case 'Calendar':
-        icon = <CalendarOutlined style={iconStyle} />;
+      case 'Calendar': // Fall through
+      icon = <CalendarOutlined style={iconStyle} />;
         break;
-      case 'FileText':
-        icon = <FileTextOutlined style={iconStyle} />;
+      case 'FileText': // Fall through
+      icon = <FileTextOutlined style={iconStyle} />;
         break;
-      case 'FileContract':
-        icon = <FileProtectOutlined style={iconStyle} />;
+      case 'FileContract': // Fall through
+      icon = <FileProtectOutlined style={iconStyle} />;
         break;
-      case 'GanttChart':
-        icon = <BarChartOutlined style={iconStyle} />;
+      case 'GanttChart': // Fall through
+      icon = <BarChartOutlined style={iconStyle} />;
         break;
-      case 'MessageSquare':
-        icon = <MessageOutlined style={iconStyle} />;
+      case 'MessageSquare': // Fall through
+      icon = <MessageOutlined style={iconStyle} />;
         break;
-      case 'Palette':
-        icon = <PieChartOutlined style={iconStyle} />;
+      case 'Palette': // Fall through
+      icon = <PieChartOutlined style={iconStyle} />;
         break;
-      case 'UserCog':
-        icon = <UserSwitchOutlined style={iconStyle} />;
+      case 'UserCog': // Fall through
+      icon = <UserSwitchOutlined style={iconStyle} />;
         break;
-      case 'Link':
-        icon = <LinkOutlined style={iconStyle} />;
+      case 'Link': // Fall through
+      icon = <LinkOutlined style={iconStyle} />;
         break;
       default:
         icon = <div style={{ width: '20px', height: '20px' }} />;

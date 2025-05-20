@@ -388,10 +388,13 @@ export default function DocumentDetail() {
   const getProcessingStatusText = (status: string): string => {
     switch(status) {
       case "PROCESSING": // Fall through
+       // Fall through
        return "Processing document...";
       case "PENDING": // Fall through
+       // Fall through
        return "Pending processing...";
       case "QUEUED": // Fall through
+       // Fall through
        return "Queued for processing...";
       default:
         return "Waiting to process...";
@@ -402,10 +405,13 @@ export default function DocumentDetail() {
   const getProcessingProgress = (status: string): number => {
     switch(status) {
       case "PROCESSING": // Fall through
+       // Fall through
        return 65;
       case "PENDING": // Fall through
+       // Fall through
        return 25;
       case "QUEUED": // Fall through
+       // Fall through
        return 15;
       default:
         return 5;
@@ -419,6 +425,7 @@ export default function DocumentDetail() {
     
     switch (status) {
       case "COMPLETED": // Fall through
+       // Fall through
        return (
           <Tooltip label="Document processed successfully">
             <Badge variant="subtle" colorScheme="green" display="flex" alignItems="center">
@@ -428,6 +435,7 @@ export default function DocumentDetail() {
           </Tooltip>
         );
       case "PROCESSING": // Fall through
+       // Fall through
        return (
           <Tooltip label="Document is being processed">
             <Badge variant="subtle" colorScheme="yellow" display="flex" alignItems="center">
@@ -438,7 +446,9 @@ export default function DocumentDetail() {
         );
       case "PENDING": // Fall through
        // Fall through
+       // Fall through
       case "QUEUED": // Fall through
+       // Fall through
        return (
           <Tooltip label="Document is waiting for processing">
             <Badge variant="subtle" colorScheme="blue" display="flex" alignItems="center">
@@ -449,7 +459,9 @@ export default function DocumentDetail() {
         );
       case "FAILED": // Fall through
        // Fall through
+       // Fall through
       case "ERROR": // Fall through
+       // Fall through
        return (
           <Tooltip label="Document processing failed">
             <Badge variant="subtle" colorScheme="red" display="flex" alignItems="center">

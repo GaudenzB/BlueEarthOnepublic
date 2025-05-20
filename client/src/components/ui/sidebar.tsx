@@ -43,33 +43,43 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     // Using Ant Design icons based on the icon name from routes
     switch (item.icon) {
       case 'Users': // Fall through
+       // Fall through
       icon = <TeamOutlined style={iconStyle} />;
         break;
       case 'LayoutDashboard': // Fall through
+       // Fall through
       icon = <DashboardOutlined style={iconStyle} />;
         break;
       case 'Calendar': // Fall through
+       // Fall through
       icon = <CalendarOutlined style={iconStyle} />;
         break;
       case 'FileText': // Fall through
+       // Fall through
       icon = <FileTextOutlined style={iconStyle} />;
         break;
       case 'FileContract': // Fall through
+       // Fall through
       icon = <FileProtectOutlined style={iconStyle} />;
         break;
       case 'GanttChart': // Fall through
+       // Fall through
       icon = <BarChartOutlined style={iconStyle} />;
         break;
       case 'MessageSquare': // Fall through
+       // Fall through
       icon = <MessageOutlined style={iconStyle} />;
         break;
       case 'Palette': // Fall through
+       // Fall through
       icon = <PieChartOutlined style={iconStyle} />;
         break;
       case 'UserCog': // Fall through
+       // Fall through
       icon = <UserSwitchOutlined style={iconStyle} />;
         break;
       case 'Link': // Fall through
+       // Fall through
       icon = <LinkOutlined style={iconStyle} />;
         break;
       default:

@@ -107,20 +107,20 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
 
   const getDocumentTypeIcon = (type: string | null | undefined) => {
     switch (type) {
-      case "CONTRACT":
-        return <FileOutlined />;
-      case "AGREEMENT":
-        return <CheckCircleOutlined />;
-      case "REPORT":
-        return <InfoCircleOutlined />;
-      case "POLICY":
-        return <InfoCircleOutlined />;
-      case "INVOICE":
-        return <FileOutlined />;
-      case "PRESENTATION":
-        return <InfoCircleOutlined />;
-      case "CORRESPONDENCE":
-        return <InfoCircleOutlined />;
+      case "CONTRACT": // Fall through
+       return <FileOutlined />;
+      case "AGREEMENT": // Fall through
+       return <CheckCircleOutlined />;
+      case "REPORT": // Fall through
+       return <InfoCircleOutlined />;
+      case "POLICY": // Fall through
+       return <InfoCircleOutlined />;
+      case "INVOICE": // Fall through
+       return <FileOutlined />;
+      case "PRESENTATION": // Fall through
+       return <InfoCircleOutlined />;
+      case "CORRESPONDENCE": // Fall through
+       return <InfoCircleOutlined />;
       default:
         return <FileOutlined />;
     }
@@ -133,22 +133,24 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     let tooltipText: string;
     
     switch (status) {
-      case "COMPLETED":
-        statusValue = "completed";
+      case "COMPLETED": // Fall through
+      statusValue = "completed";
         tooltipText = "Document processed successfully";
         break;
-      case "PROCESSING":
-        statusValue = "in_review";
+      case "PROCESSING": // Fall through
+      statusValue = "in_review";
         tooltipText = "Document is being processed";
         break;
       case "PENDING": // Fall through
-      case "QUEUED":
-        statusValue = "pending";
+       // Fall through
+      case "QUEUED": // Fall through
+      statusValue = "pending";
         tooltipText = "Document is waiting for processing";
         break;
-      case "FAILED":{},
-      case "ERROR":
-        statusValue = "rejected";
+      case "FAILED": // Fall through
+       // Fall through
+      case "ERROR": // Fall through
+      statusValue = "rejected";
         tooltipText = "Document processing failed";
         break;
       default:

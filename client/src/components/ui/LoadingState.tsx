@@ -110,6 +110,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   // Render different variants
   switch (variant) {
     case 'spinner': // Fall through
+       // Fall through
        return (
         <div 
           className={`flex flex-col items-center justify-center py-6 ${className}`}
@@ -125,6 +126,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       );
       
     case 'skeleton': // Fall through
+       // Fall through
        return (
         <div 
           className={className}
@@ -144,6 +146,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       );
       
     case 'result': // Fall through
+       // Fall through
        return (
         <div 
           className={className}
@@ -159,6 +162,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       );
       
     case 'inline': // Fall through
+       // Fall through
        return (
         <span 
           className={`inline-flex items-center ${className}`}

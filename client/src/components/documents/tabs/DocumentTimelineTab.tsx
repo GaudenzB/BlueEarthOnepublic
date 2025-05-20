@@ -28,16 +28,22 @@ const { Title, Text } = Typography;
 function getTimelineIcon(type: string) {
   switch (type) {
     case 'create': // Fall through
+       // Fall through
        return <FileOutlined style={{ fontSize: 16 }} />;
     case 'update': // Fall through
+       // Fall through
        return <EditOutlined style={{ fontSize: 16 }} />;
     case 'view': // Fall through
+       // Fall through
        return <InfoCircleOutlined style={{ fontSize: 16 }} />;
     case 'share': // Fall through
+       // Fall through
        return <LinkOutlined style={{ fontSize: 16 }} />;
     case 'download': // Fall through
+       // Fall through
        return <DownloadOutlined style={{ fontSize: 16 }} />;
     case 'comment': // Fall through
+       // Fall through
        return <InfoCircleOutlined style={{ fontSize: 16 }} />;
     default:
       return <CalendarOutlined style={{ fontSize: 16 }} />;

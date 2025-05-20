@@ -108,18 +108,25 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
   const getDocumentTypeIcon = (type: string | null | undefined) => {
     switch (type) {
       case "CONTRACT": // Fall through
+       // Fall through
        return <FileOutlined />;
       case "AGREEMENT": // Fall through
+       // Fall through
        return <CheckCircleOutlined />;
       case "REPORT": // Fall through
+       // Fall through
        return <InfoCircleOutlined />;
       case "POLICY": // Fall through
+       // Fall through
        return <InfoCircleOutlined />;
       case "INVOICE": // Fall through
+       // Fall through
        return <FileOutlined />;
       case "PRESENTATION": // Fall through
+       // Fall through
        return <InfoCircleOutlined />;
       case "CORRESPONDENCE": // Fall through
+       // Fall through
        return <InfoCircleOutlined />;
       default:
         return <FileOutlined />;
@@ -134,22 +141,28 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
     
     switch (status) {
       case "COMPLETED": // Fall through
+       // Fall through
       statusValue = "completed";
         tooltipText = "Document processed successfully";
         break;
       case "PROCESSING": // Fall through
+       // Fall through
       statusValue = "in_review";
         tooltipText = "Document is being processed";
         break;
       case "PENDING": // Fall through
        // Fall through
+       // Fall through
       case "QUEUED": // Fall through
+       // Fall through
       statusValue = "pending";
         tooltipText = "Document is waiting for processing";
         break;
       case "FAILED": // Fall through
        // Fall through
+       // Fall through
       case "ERROR": // Fall through
+       // Fall through
       statusValue = "rejected";
         tooltipText = "Document processing failed";
         break;

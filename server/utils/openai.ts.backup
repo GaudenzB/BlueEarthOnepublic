@@ -104,17 +104,17 @@ export async function analyzeDocumentText(
     let typeSpecificInstructions = '';
     
     switch(documentType.toUpperCase()) {
-      case 'CONTRACT':
-        typeSpecificInstructions = 'Focus on parties involved, key terms, obligations, dates, and financial commitments.';
+      case 'CONTRACT': // Fall through
+      typeSpecificInstructions = 'Focus on parties involved, key terms, obligations, dates, and financial commitments.';
         break;
-      case 'REPORT':
-        typeSpecificInstructions = 'Focus on major findings, methodology, recommendations, and statistical data.';
+      case 'REPORT': // Fall through
+      typeSpecificInstructions = 'Focus on major findings, methodology, recommendations, and statistical data.';
         break;
-      case 'POLICY':
-        typeSpecificInstructions = 'Focus on rules, procedures, compliance requirements, and governance structures.';
+      case 'POLICY': // Fall through
+      typeSpecificInstructions = 'Focus on rules, procedures, compliance requirements, and governance structures.';
         break;
-      case 'PRESENTATION':
-        typeSpecificInstructions = 'Focus on key points, proposals, data visualizations, and actionable insights.';
+      case 'PRESENTATION': // Fall through
+      typeSpecificInstructions = 'Focus on key points, proposals, data visualizations, and actionable insights.';
         break;
       default:
         typeSpecificInstructions = 'Identify the main themes, key stakeholders, and important insights.';
@@ -312,8 +312,8 @@ export async function extractTextFromDocument(
     
     // Handle different document types
     switch (normalizedMimeType) {
-      case 'application/pdf':
-        try {
+      case 'application/pdf': // Fall through
+      try {
           // Use our custom PDF parser utility that avoids issues with test files
           logger.info('Using custom PDF parser for PDF document', { 
             fileSize: documentContent.length, 
@@ -350,9 +350,10 @@ export async function extractTextFromDocument(
         }
         break;
         
-      case 'application/msword':{},
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        // In production, we would use a library like mammoth.js to extract Word document text
+      case 'application/msword': // Fall through
+       // Fall through
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': // Fall through
+       // In production, we would use a library like mammoth.js to extract Word document text
         extractedText = `This appears to be a Word document about investment strategies and financial analysis.
         
         Due to current technical limitations, we cannot extract the full text content.
@@ -361,31 +362,34 @@ export async function extractTextFromDocument(
         Please consider converting this document to PDF format for better analysis.`;
         break;
         
-      case 'text/plain':
-        // For plain text, we can just return the content as string
+      case 'text/plain': // Fall through
+       // For plain text, we can just return the content as string
         extractedText = documentContent.toString('utf-8');
         break;
         
-      case 'text/html':{},
-      case 'application/xhtml+xml':
-        // For HTML documents, we would parse and extract the text content
+      case 'text/html': // Fall through
+       // Fall through
+      case 'application/xhtml+xml': // Fall through
+       // For HTML documents, we would parse and extract the text content
         // For now, just return a message
         extractedText = `This appears to be an HTML document. The content seems to be related to investment analysis and financial data.
         
         For better analysis, please provide the document in PDF or plain text format.`;
         break;
         
-      case 'application/vnd.ms-excel':{},
-      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-        extractedText = `This appears to be an Excel spreadsheet.
+      case 'application/vnd.ms-excel': // Fall through
+       // Fall through
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': // Fall through
+      extractedText = `This appears to be an Excel spreadsheet.
         
         The document contains financial data that would require specialized parsing.
         For better analysis, please provide the document in PDF or text format.`;
         break;
         
-      case 'application/vnd.ms-powerpoint':{},
-      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-        extractedText = `This appears to be a PowerPoint presentation.
+      case 'application/vnd.ms-powerpoint': // Fall through
+       // Fall through
+      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': // Fall through
+      extractedText = `This appears to be a PowerPoint presentation.
         
         The document contains slides that would require specialized parsing.
         For better analysis, please provide the document in PDF or text format.`;

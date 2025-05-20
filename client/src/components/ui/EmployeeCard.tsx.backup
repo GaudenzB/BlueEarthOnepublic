@@ -293,22 +293,22 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
   // Determine card size properties
   const sizeConfig = useMemo(() => {
     switch (size) {
-      case 'small':
-        return {
+      case 'small': // Fall through
+       return {
           cardWidth: '240px',
           avatarSize: 40,
           bodyPadding: tokens.spacing[3],
           cardBodyStyle: { padding: tokens.spacing[3] }
         };
-      case 'large':
-        return {
+      case 'large': // Fall through
+       return {
           cardWidth: detailed ? '100%' : '320px',
           avatarSize: 64,
           bodyPadding: tokens.spacing[5],
           cardBodyStyle: { padding: tokens.spacing[5] }
         };
-      case 'default':
-        // Fall through to default case
+      case 'default': // Fall through
+       // Fall through to default case
       default:
         return {
           cardWidth: detailed ? '100%' : '280px',

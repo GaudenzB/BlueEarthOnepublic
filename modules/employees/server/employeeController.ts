@@ -23,14 +23,19 @@ function mapCoreStatusToSharedStatus(coreStatus?: string): "active" | "inactive"
   // Map from uppercase format to lowercase with underscores
   switch (coreStatus.toUpperCase()) {
     case "ACTIVE": // Fall through
+       // Fall through
        return "active";
     case "INACTIVE": // Fall through
+       // Fall through
        return "inactive";
     case "ON_LEAVE": // Fall through
+       // Fall through
        return "on_leave";
     case "CONTRACT": // Fall through
        // Fall through
+       // Fall through
     case "INTERN": // Fall through
+       // Fall through
        return "active"; // Consider contractors and interns as active employees
     default: return undefined;
   }
