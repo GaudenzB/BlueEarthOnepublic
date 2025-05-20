@@ -167,7 +167,7 @@ const DocumentUploader: React.FC = () => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Select the type of document you're uploading
+                      Select the type of document you&apos;re uploading
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
