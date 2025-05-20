@@ -509,7 +509,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         {ListItemRenderer}
       </FixedSizeList>
     );
-  }, [filteredEmployees.length, filteredEmployees, onEmployeeSelect, onEmployeeEdit, onEmployeeDelete, selectedEmployeeId, showCardActions, selectableCards]);
+  }, [filteredEmployees, onEmployeeSelect, onEmployeeEdit, onEmployeeDelete, selectedEmployeeId, showCardActions, selectableCards]);
   
   // Render grid of employee cards (non-virtualized)
   const renderStaticGrid = useCallback(() => {

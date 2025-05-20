@@ -112,11 +112,12 @@ export const createSortSchema = (
 /**
  * Helper to trim all string fields in an object
  */
-export const trimStringFields = <T extends Record<string, any>>(obj: T): T => {
+export const trimStringFields = <T extends Record<string, unknown>>(obj: T): T => {
   const result = { ...obj };
   Object.keys(result).forEach(key => {
-    if (typeof result[key] === 'string') {
-      result[key] = result[key].trim();
+    if (typeof result[key as keyof T] === 'string') {
+      const trimmedValue = (result[key as keyof T] as string).trim();
+      (result as Record<string, unknown>)[key] = trimmedValue;
     }
   });
   return result;

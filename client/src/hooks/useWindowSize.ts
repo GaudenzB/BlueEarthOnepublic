@@ -108,7 +108,7 @@ export function useWindowSize(): WindowSize {
     
     // Remove event listener on cleanup
     return () => window.removeEventListener('resize', handleResize);
-  }, []); // Breakpoints are defined inside the component and won't change
+  }, [breakpoints]); // Include breakpoints as a dependency
   
   return windowSize;
 }

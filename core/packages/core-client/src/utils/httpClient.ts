@@ -146,23 +146,35 @@ export const apiRequest = {
   post: <T>(url: string, data?: any, options?: RequestInit) => 
     fetchWithAuth<T>(url, { 
       method: 'POST', 
-      body: data ? JSON.stringify(data) : undefined,
-      ...options 
-    }),
+      body: data ? JSON.stringify(data) : null,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers || {})
+      },
+      ...(options || {})
+    } as RequestInit),
     
   put: <T>(url: string, data?: any, options?: RequestInit) => 
     fetchWithAuth<T>(url, { 
       method: 'PUT', 
-      body: data ? JSON.stringify(data) : undefined, 
-      ...options 
-    }),
+      body: data ? JSON.stringify(data) : null, 
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers || {})
+      },
+      ...(options || {})
+    } as RequestInit),
     
   patch: <T>(url: string, data?: any, options?: RequestInit) => 
     fetchWithAuth<T>(url, { 
       method: 'PATCH', 
-      body: data ? JSON.stringify(data) : undefined, 
-      ...options 
-    }),
+      body: data ? JSON.stringify(data) : null, 
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers || {})
+      },
+      ...(options || {})
+    } as RequestInit),
     
   delete: <T>(url: string, options?: RequestInit) => 
     fetchWithAuth<T>(url, { method: 'DELETE', ...options }),
