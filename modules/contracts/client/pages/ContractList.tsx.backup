@@ -58,7 +58,7 @@ export default function ContractList() {
     switch (status?.toUpperCase()) {
       case 'ACTIVE':
         return 'bg-green-100 text-green-800';
-      case 'PENDING':{},
+      case 'PENDING':
       case 'DRAFT':
         return 'bg-yellow-100 text-yellow-800';
       case 'EXPIRED':

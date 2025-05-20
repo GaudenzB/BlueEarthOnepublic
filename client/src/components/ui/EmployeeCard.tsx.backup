@@ -308,7 +308,6 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
           cardBodyStyle: { padding: tokens.spacing[5] }
         };
       case 'default':
-        // Fall through to default case
       default:
         return {
           cardWidth: detailed ? '100%' : '280px',

@@ -663,7 +663,7 @@ export default function DocumentDetail() {
 function getTimelineIcon(type: string) {
   switch (type) {
     case 'create':
-      return <FileOutlined style={{ fontSize: 16 ,
+      return <FileOutlined style={{ fontSize: 16 
     default:
       return undefined; // Default fallback case
   }} />;

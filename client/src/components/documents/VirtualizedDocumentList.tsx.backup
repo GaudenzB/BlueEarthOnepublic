@@ -163,7 +163,7 @@ export default function VirtualizedDocumentList({
             </Tag>
           </Tooltip>
         );
-      case "PENDING":{},
+      case "PENDING":
       case "QUEUED":
         return (
           <Tooltip title="Document is waiting for processing">
@@ -172,7 +172,7 @@ export default function VirtualizedDocumentList({
             </Tag>
           </Tooltip>
         );
-      case "FAILED":{},
+      case "FAILED":
       case "ERROR":
         return (
           <Tooltip title="Document processing failed">

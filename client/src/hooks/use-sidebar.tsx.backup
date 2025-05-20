@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 
 interface SidebarContextType {
-  isOpen: boolean,
+  isOpen: boolean
   toggleSidebar: () => void
 }
 

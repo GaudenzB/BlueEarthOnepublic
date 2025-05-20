@@ -319,7 +319,7 @@ export const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         cardWidth = 320;
         rowHeight = 400;
         break;
-      case 'default':{},
+      case 'default':
       default:
         cardWidth = 280;
         rowHeight = 350;

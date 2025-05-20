@@ -118,18 +118,18 @@ export function DocumentPreview({
     switch (ext) {
       case 'pdf':
         return <FilePdfOutlined {...iconProps} />;
-      case 'doc':{},
+      case 'doc':
       case 'docx':
         return <FileWordOutlined {...iconProps} />;
-      case 'xls':{},
+      case 'xls':
       case 'xlsx':
         return <FileExcelOutlined {...iconProps} />;
-      case 'ppt':{},
+      case 'ppt':
       case 'pptx':
         return <FilePptOutlined {...iconProps} />;
-      case 'jpg':{},
-      case 'jpeg':{},
-      case 'png':{},
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
       case 'gif':
         return <FileImageOutlined {...iconProps} />;
       case 'txt':

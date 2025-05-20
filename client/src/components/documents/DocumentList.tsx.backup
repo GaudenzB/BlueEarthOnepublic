@@ -141,12 +141,12 @@ export default function DocumentList({ documents, isLoading, filter = "all" }: D
         statusValue = "in_review";
         tooltipText = "Document is being processed";
         break;
-      case "PENDING":{},
+      case "PENDING":
       case "QUEUED":
         statusValue = "pending";
         tooltipText = "Document is waiting for processing";
         break;
-      case "FAILED":{},
+      case "FAILED":
       case "ERROR":
         statusValue = "rejected";
         tooltipText = "Document processing failed";

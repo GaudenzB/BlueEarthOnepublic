@@ -113,7 +113,7 @@ export function useAuth() {
         const response = await apiRequest<any>("/api/auth/login", {
           method: "POST",
           body: JSON.stringify(credentials),
-          // Set credentials: 'include' to include cookies in the request,
+          // Set credentials: 'include' to include cookies in the request
           credentials: 'include',
         });
         

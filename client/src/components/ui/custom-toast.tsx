@@ -114,24 +114,6 @@ export function CustomToast({
     };
     }
   };
-  
-  // Calculate ARIA role and live region settings
-  const getAriaAttrs = () => {
-    // Type-safe aria-live values
-    const assertive = 'assertive' as const;
-    const polite = 'polite' as const;
-    
-    switch (variant) {
-      case 'error':
-        return { role: 'alert', 'aria-live': assertive };
-      case 'warning':
-        return { role: 'status', 'aria-live': polite };
-      case 'success':undefined;
-      case 'info':undefined;
-      default:
-        return { role: 'status', 'aria-live': polite };
-    }
-  };
 
   return (
     <div
