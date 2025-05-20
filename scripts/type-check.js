@@ -8,13 +8,14 @@
  * configurations:
  * 
  * Usage:
- *   npm run type-check             - Run check on all source files
- *   npm run type-check:strict      - Run with strict checks
- *   npm run type-check:watch       - Run in watch mode
+ *   node scripts/type-check.js             - Run check on all source files
+ *   node scripts/type-check.js --strict    - Run with strict checks
+ *   node scripts/type-check.js --watch     - Run in watch mode
  */
 
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 // Get arguments
 const args = process.argv.slice(2);
