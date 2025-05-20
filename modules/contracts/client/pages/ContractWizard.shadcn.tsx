@@ -6,7 +6,7 @@ import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 // Import steps - using relative imports without explicit file extensions
-import ContractDetailsForm from '../components/ContractDetailsForm.shadcn';
+import ContractDetailsForm from '../components/ContractDetailsForm';
 import ContractObligationsForm from '../components/ContractObligationsForm.shadcn';
 import ContractReviewForm from '../components/ContractReviewForm.shadcn';
 
