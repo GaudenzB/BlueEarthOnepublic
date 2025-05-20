@@ -1,7 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Space, notification } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined, WarningOutlined } from '@ant-design/icons';
-import { tokens } from '@/styles/tokens';
+// Define tokens as a local object since the import is not working
+const tokens = {
+  colors: {
+    text: {
+      primary: '#141414',
+      secondary: '#595959',
+    },
+    background: {
+      toast: '#ffffff',
+    },
+    status: {
+      success: '#52c41a',
+      error: '#ff4d4f',
+      warning: '#faad14',
+      info: '#1890ff',
+    }
+  }
+};
 
 type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
@@ -163,7 +180,7 @@ export function CustomToast({
           {actions.length > 0 && (
             <Space className="toast-actions" style={{ marginTop: '8px' }}>
               {actions.map((action, index) => (
-                <React.Fragment key={index}>{action}</ReactReact.Fragment>
+                <React.Fragment key={index}>{action}</React.Fragment>
               ))}
             </Space>
           )}
@@ -183,7 +200,7 @@ export function CustomToast({
             }}
           >
             <CloseCircleOutlined />
-          </CloseCircleOutlinedButton>
+          </Button>
         )}
       </div>
     </div>

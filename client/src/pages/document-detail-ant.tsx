@@ -662,23 +662,35 @@ export default function DocumentDetail() {
 // Helper function to get timeline icon
 function getTimelineIcon(type: string) {
   switch (type) {
-    case 'create': // Fall through
-       return <FileOutlined style={{ fontSize: 16 ,
+    case 'create':
+      return <FileOutlined style={{ fontSize: 16 }} />;
+    case 'edit':
+      return <EditOutlined style={{ fontSize: 16 }} />;
+    case 'status':
+      return <InfoCircleOutlined style={{ fontSize: 16 }} />;
+    case 'share':
+      return <LinkOutlined style={{ fontSize: 16 }} />;
     default:
       return undefined; // Default fallback case
-  }} />;
-    case 'edit': // Fall through
-       return <EditOutlined style={{ fontSize: 16 }} />;
-    case 'status': // Fall through
-       return <InfoCircleOutlined style={{ fontSize: 16 }} />;
-    case 'share': // Fall through
-       return <LinkOutlined style={{ fontSize: 16 }} />;
-    case 'download': // Fall through
-       return <DownloadOutlined style={{ fontSize: 16 }} />;
-    default:
-      return <CalendarOutlined style={{ fontSize: 16 }} />;
   }
 }
 
-// Missing imports mock
-import { Empty, Timeline } from 'antd';
+// Function to render the document timeline
+function renderTimeline(events: any[]) {
+  return (
+    <Timeline>
+      {events.map((event, index) => (
+        <Timeline.Item 
+          key={index}
+          dot={getTimelineIcon(event.type)}
+        >
+          <div>
+            <b>{event.title}</b>
+            <p>{event.description}</p>
+            <small>{event.date}</small>
+          </div>
+        </Timeline.Item>
+      ))}
+    </Timeline>
+  );
+}
