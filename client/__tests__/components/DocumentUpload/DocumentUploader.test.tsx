@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import DocumentUploader from '../../../src/components/DocumentUpload/DocumentUploader';
 
@@ -118,6 +119,14 @@ describe('DocumentUploader Component', () => {
       error: null,
       isSuccess: false,
       reset: jest.fn(),
+      data: undefined,
+      variables: undefined,
+      isIdle: true,
+      status: 'idle',
+      mutateAsync: jest.fn().mockResolvedValue({}),
+      failureCount: 0,
+      failureReason: null,
+      context: undefined
     });
   });
 
@@ -186,6 +195,14 @@ describe('DocumentUploader Component', () => {
       error: null,
       isSuccess: false,
       reset: jest.fn(),
+      data: undefined,
+      variables: undefined,
+      isIdle: false,
+      status: 'pending' as const,
+      mutateAsync: jest.fn().mockResolvedValue({}),
+      failureCount: 0,
+      failureReason: null,
+      context: undefined
     });
 
     render(
