@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { Router, MemoryRouter } from 'wouter';
+import { Router } from 'wouter';
 // Create a mock component for testing
 const EmployeeList = ({ 
   filterStatus, 
