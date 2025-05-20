@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+// Removed unused Label import
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -24,7 +23,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function SigninPage() {
   const { user, loginMutation, microsoftAuthStatus, isMicrosoftAuthStatusLoading } = useAuth();
-  const { toast } = useToast();
+  // Removed unused toast import and variable
   const [, setLocation] = useLocation();
   const [isEntraLoading, setIsEntraLoading] = useState(false);
   const [entraError, setEntraError] = useState<string | null>(null);
