@@ -15,7 +15,6 @@ import {
   type ThemeFontWeightKey,
   type ThemeBorderRadiusKey
 } from "@/theme/blueearth-theme";
-import { type ClassValue } from "clsx";
 
 /**
  * Apply theme-based spacing values
@@ -78,7 +77,7 @@ export function borderRadius(size: ThemeBorderRadiusKey): string {
  * @param classes ClassValue[] to be processed
  * @returns The combined class string
  */
-export function themeClass(...classes: ClassValue[]): string {
+export function themeClass(...classes: any[]): string {
   return cn(...classes);
 }
 

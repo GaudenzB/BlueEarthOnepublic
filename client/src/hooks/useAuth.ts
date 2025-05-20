@@ -8,11 +8,6 @@ interface LoginCredentials {
   rememberMe?: boolean;
 }
 
-interface AuthTokens {
-  accessToken: string;
-  refreshToken?: string;
-}
-
 interface User {
   id: number;
   username: string;
@@ -22,23 +17,6 @@ interface User {
   role: string;
   active: boolean;
   createdAt: string;
-}
-
-// Server response structures updated to match our new standardized API responses
-interface ApiSuccessResponse<T> {
-  success: true;
-  message: string;
-  data: T;
-}
-
-// Updated interface to match the actual server response structure
-interface AuthResponse {
-  success: boolean;
-  message: string;
-  data: {
-    user: User;
-    token: string;
-  };
 }
 
 export function useAuth() {
