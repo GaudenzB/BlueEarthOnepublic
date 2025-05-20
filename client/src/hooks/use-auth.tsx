@@ -192,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
-        microsoftAuthStatus: microsoftAuthStatus as MicrosoftAuthStatus | null,
+        microsoftAuthStatus: microsoftAuthStatus ? microsoftAuthStatus as MicrosoftAuthStatus : null,
         isMicrosoftAuthStatusLoading,
         refetchUser,
         isAdmin,

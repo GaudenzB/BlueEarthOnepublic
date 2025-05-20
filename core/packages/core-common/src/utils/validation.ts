@@ -113,14 +113,23 @@ export const createSortSchema = (
  * Helper to trim all string fields in an object
  */
 export const trimStringFields = <T extends Record<string, unknown>>(obj: T): T => {
+  // Create a new object with the same type
   const result = { ...obj };
-  Object.keys(result).forEach(key => {
-    if (typeof result[key as keyof T] === 'string') {
-      const trimmedValue = (result[key as keyof T] as string).trim();
-      (result as Record<string, unknown>)[key] = trimmedValue;
+  
+  // Create a mutable copy that we can safely modify
+  const mutableCopy: Record<string, unknown> = { ...result };
+  
+  // Process each property
+  Object.keys(mutableCopy).forEach(key => {
+    const value = mutableCopy[key];
+    if (typeof value === 'string') {
+      // Trim string values
+      mutableCopy[key] = value.trim();
     }
   });
-  return result;
+  
+  // Return the modified object with the original type
+  return mutableCopy as T;
 };
 
 /**
