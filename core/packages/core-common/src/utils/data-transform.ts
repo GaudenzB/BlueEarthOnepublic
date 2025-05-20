@@ -62,74 +62,6 @@ export function camelToSnake<T extends Record<string, any>>(obj: T): Record<stri
 }
 
 /**
- * Formats a date string into a localized date display
- * 
- * @example
- * // Returns "May 20, 2025"
- * formatDate("2025-05-20T12:00:00Z");
- */
-export function formatDate(
-  dateString: string | Date | null | undefined,
-  options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  }
-): string {
-  if (!dateString) return '';
-  
-  try {
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return new Intl.DateTimeFormat('en-US', options).format(date);
-  } catch (e) {
-    console.error('Error formatting date:', e);
-    return '';
-  }
-}
-
-/**
- * Formats a number as currency
- * 
- * @example
- * // Returns "$1,234.56"
- * formatCurrency(1234.56);
- */
-export function formatCurrency(
-  amount: number | null | undefined,
-  options: Intl.NumberFormatOptions = { 
-    style: 'currency', 
-    currency: 'USD' 
-  }
-): string {
-  if (amount === null || amount === undefined) return '';
-  
-  try {
-    return new Intl.NumberFormat('en-US', options).format(amount);
-  } catch (e) {
-    console.error('Error formatting currency:', e);
-    return '';
-  }
-}
-
-/**
- * Truncates text to a specified length with an ellipsis
- * 
- * @example
- * // Returns "This is a long..."
- * truncateText("This is a long text", 15);
- */
-export function truncateText(
-  text: string | null | undefined, 
-  maxLength: number = 100, 
-  ellipsis: string = '...'
-): string {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  
-  return text.substring(0, maxLength - ellipsis.length) + ellipsis;
-}
-
-/**
  * Creates a URL-friendly slug from a string
  * 
  * @example
@@ -167,13 +99,106 @@ export function groupBy<T extends Record<string, any>, K extends keyof T>(
   }, {} as Record<string, T[]>);
 }
 
+/**
+ * Flattens a nested object structure into a flat object with dot notation keys
+ * 
+ * @example
+ * // Returns { "user.id": 1, "user.profile.name": "John" }
+ * flattenObject({ user: { id: 1, profile: { name: "John" } } });
+ */
+export function flattenObject(
+  obj: Record<string, any>, 
+  prefix: string = ''
+): Record<string, any> {
+  return Object.keys(obj).reduce((acc, key) => {
+    const prefixedKey = prefix ? `${prefix}.${key}` : key;
+    
+    if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+      Object.assign(acc, flattenObject(obj[key], prefixedKey));
+    } else {
+      acc[prefixedKey] = obj[key];
+    }
+    
+    return acc;
+  }, {} as Record<string, any>);
+}
+
+/**
+ * Unflatten a dot-notation object back into a nested structure
+ * 
+ * @example
+ * // Returns { user: { id: 1, profile: { name: "John" } } }
+ * unflattenObject({ "user.id": 1, "user.profile.name": "John" });
+ */
+export function unflattenObject(
+  obj: Record<string, any>
+): Record<string, any> {
+  const result: Record<string, any> = {};
+  
+  Object.entries(obj).forEach(([key, value]) => {
+    const keys = key.split('.');
+    let current = result;
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      const k = keys[i];
+      if (!current[k]) {
+        current[k] = {};
+      }
+      current = current[k];
+    }
+    
+    current[keys[keys.length - 1]] = value;
+  });
+  
+  return result;
+}
+
+/**
+ * Picks specific properties from an object
+ * 
+ * @example
+ * // Returns { name: "John", email: "john@example.com" }
+ * pick(user, ["name", "email"]);
+ */
+export function pick<T extends object, K extends keyof T>(
+  obj: T,
+  keys: K[]
+): Pick<T, K> {
+  return keys.reduce((result, key) => {
+    if (key in obj) {
+      result[key] = obj[key];
+    }
+    return result;
+  }, {} as Pick<T, K>);
+}
+
+/**
+ * Omits specific properties from an object
+ * 
+ * @example
+ * // Returns { name: "John" } (without the password)
+ * omit(user, ["password", "token"]);
+ */
+export function omit<T extends object, K extends keyof T>(
+  obj: T,
+  keys: K[]
+): Omit<T, K> {
+  return Object.entries(obj).reduce((result, [key, value]) => {
+    if (!keys.includes(key as K)) {
+      result[key as keyof Omit<T, K>] = value as any;
+    }
+    return result;
+  }, {} as Omit<T, K>);
+}
+
 // Silence unused warnings if these aren't used yet
 markAsUnused(
   snakeToCamel,
   camelToSnake,
-  formatDate,
-  formatCurrency,
-  truncateText,
   slugify,
-  groupBy
+  groupBy,
+  flattenObject,
+  unflattenObject,
+  pick,
+  omit
 );
