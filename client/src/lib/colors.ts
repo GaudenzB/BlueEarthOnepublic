@@ -59,5 +59,6 @@ export const colors = {
     light: '#eaecf0',
     default: '#d1d5db',
     focus: '#0e4a86',
+    muted: '#e2e8f0',
   }
 };

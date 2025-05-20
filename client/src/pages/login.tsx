@@ -15,7 +15,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = React.useState(false);
   const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const usernameInputRef = React.useRef<HTMLInputElement>(null);
   const hasFocusedRef = React.useRef(false);
   
@@ -32,6 +32,8 @@ export default function Login() {
       }, 100);
       return () => clearTimeout(timer);
     }
+    // Return a no-op cleanup function for consistent return paths
+    return () => {}; 
   }, []);
 
   // Redirect if authenticated (as a proper side effect)
@@ -139,7 +141,7 @@ export default function Login() {
             
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" style={{ borderColor: colors.border.muted }}></span>
+                <span className="w-full border-t" style={{ borderColor: colors.border.default }}></span>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="px-2" style={{ backgroundColor: colors.background.card, color: colors.text.muted }}>
