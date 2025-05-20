@@ -1,7 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import DocumentUploader from '../../../src/components/DocumentUpload/DocumentUploader';
+
+// Define the mock type for useMutation
+type MockUseMutation = jest.Mock<ReturnType<typeof useMutation>>;
 
 // Mock the react-query hooks
 jest.mock('@tanstack/react-query', () => {
@@ -92,7 +95,7 @@ describe('DocumentUploader Component', () => {
     jest.clearAllMocks();
     
     // Setup useMutation mock
-    (useMutation as jest.Mock).mockReturnValue({
+    (useMutation as MockUseMutation).mockReturnValue({
       mutate: jest.fn(),
       isPending: false,
       isError: false,
@@ -160,7 +163,7 @@ describe('DocumentUploader Component', () => {
     });
     
     // Mock the mutation to show loading state
-    (useMutation as jest.Mock).mockReturnValue({
+    (useMutation as MockUseMutation).mockReturnValue({
       mutate: jest.fn(),
       isPending: true,
       isError: false,
