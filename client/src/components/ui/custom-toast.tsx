@@ -1,141 +1,97 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { 
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  InfoCircleOutlined,
-  WarningOutlined,
-  CloseOutlined
-} from '@ant-design/icons';
-import { tokens } from '@/theme/tokens';
-import useMountTransition from '@/hooks/useMountTransition';
-import { generateId } from '@/utils/a11y';
+import React, { useEffect, useState } from 'react';
+import { Button, Space, notification } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, InfoCircleOutlined, WarningOutlined } from '@ant-design/icons';
+import { tokens } from '@/styles/tokens';
 
-/**
- * Toast variant types
- */
-export type ToastVariant = 'success' | 'error' | 'info' | 'warning';
+type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
-/**
- * Toast duration presets (in ms)
- */
-export const TOAST_DURATION = {
-  SHORT: 3000,
-  MEDIUM: 5000,
-  LONG: 8000,
-  PERSISTENT: Infinity
-};
-
-/**
- * Toast interface for passing to ToastProvider
- */
-export interface ToastOptions {
+interface CustomToastProps {
   /**
-   * Toast message content
+   * Toast title text
    */
-  message: React.ReactNode;
+  title: React.ReactNode;
   
   /**
-   * Toast description
+   * Toast description/body text
    */
   description?: React.ReactNode;
   
   /**
-   * Toast variant (controls colors and icon)
+   * Visual variant of the toast
    */
   variant?: ToastVariant;
   
   /**
-   * Duration in milliseconds for automatic dismissal
-   * Set to Infinity for persistent toast
+   * Duration in milliseconds before auto-closing
+   * Set to 0 to disable auto-close
    */
   duration?: number;
   
   /**
-   * Toast unique ID
-   */
-  id?: string;
-  
-  /**
-   * Whether to allow manually closing the toast
+   * Whether the toast should show a close button
    */
   closable?: boolean;
   
   /**
-   * Whether to pause auto-dismissal timer on hover
-   */
-  pauseOnHover?: boolean;
-  
-  /**
-   * Callback when toast is dismissed
+   * Callback function when the toast is closed
    */
   onClose?: () => void;
   
   /**
-   * Custom action button
+   * Additional actions to display
    */
-  action?: React.ReactNode;
-}
-
-/**
- * Props for individual Toast component
- */
-interface CustomToastProps extends ToastOptions {
+  actions?: React.ReactNode[];
+  
   /**
-   * Callback for removing the toast
+   * Pause toast timer on hover/focus
    */
-  remove: (id: string) => void;
+  pauseOnHover?: boolean;
+  
+  /**
+   * Unique identifier for the toast
+   */
+  id?: string;
 }
 
 /**
- * Individual Toast component
+ * CustomToast Component
+ * 
+ * A toast notification component that builds on Ant Design's notification system
+ * with enhanced accessibility, theme integration, and customization options.
  */
-const CustomToast: React.FC<CustomToastProps> = ({
-  id,
-  message,
+export function CustomToast({
+  title,
   description,
   variant = 'info',
-  duration = TOAST_DURATION.MEDIUM,
+  duration = 5000,
   closable = true,
-  pauseOnHover = true,
   onClose,
-  action,
-  remove
-}) => {
-  // State for handling hover pause
+  actions = [],
+  pauseOnHover = true,
+  id,
+}: CustomToastProps) {
   const [isPaused, setIsPaused] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(duration);
   
-  // State for transition animation
-  const { isShown, mountClass } = useMountTransition({
-    initialState: true,
-    transitionDuration: 200,
-    isMounted: true
-  });
-  
-  // Handle close button click
-  const handleClose = useCallback(() => {
-    // Call the onClose callback if provided
+  const handleClose = () => {
+    notification.close(id);
     if (onClose) {
       onClose();
     }
-    
-    // Remove the toast from the provider
-    if (id) {
-      remove(id);
-    }
-  }, [id, onClose, remove]);
+  };
   
-  // Set up auto-dismiss timer
+  // Handle auto-close functionality with pause support
   useEffect(() => {
-    // If toast is persistent or paused, don't set up the timer
-    if (duration === Infinity || isPaused) {
-      return;
-    }
+    // If duration is 0, don't auto-close
+    if (duration === 0) return;
     
-    // Set up the timer to automatically close the toast
+    // Don't run the timer if paused
+    if (isPaused) return;
+    
+    // Set up a timer to close the toast
     const timer = setTimeout(() => {
       handleClose();
-    }, duration);
+    }, remainingTime);
     
     // Clean up the timer on unmount
     return () => {
@@ -147,10 +103,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
   const renderIcon = () => {
     switch (variant) {
       case 'success':
-        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.success
-      default:
-        return {}; // Default case
-  }} />;
+        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.success }} />;
       case 'error':
         return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.error }} />;
       case 'warning':
@@ -168,9 +121,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
         return {
           background: '#f0fdf4',
           borderColor: '#a3e635'
-      default:
-        return {}; // Default case
-  };
+        };
       case 'error':
         return {
           background: '#fef2f2',
@@ -184,8 +135,8 @@ const CustomToast: React.FC<CustomToastProps> = ({
       case 'info':
       default:
         return {
-          background: '#eff6ff',
-          borderColor: '#93c5fd'
+          background: '#f0f9ff',
+          borderColor: '#7dd3fc'
         };
     }
   };
@@ -198,10 +149,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
     
     switch (variant) {
       case 'error':
-        return { role: 'alert', 'aria-live': assertive
-      default:
-        return {}; // Default case
-  };
+        return { role: 'alert', 'aria-live': assertive };
       case 'warning':
         return { role: 'status', 'aria-live': polite };
       case 'success':
@@ -210,318 +158,77 @@ const CustomToast: React.FC<CustomToastProps> = ({
         return { role: 'status', 'aria-live': polite };
     }
   };
-  
-  const variantStyles = getVariantStyles();
-  const ariaAttrs = getAriaAttrs();
-  
-  if (!isShown) return null;
-  
-  // Destructure aria attributes to apply them properly
-  const { role, 'aria-live': ariaLive } = ariaAttrs;
-  
+
   return (
     <div
-      className={`flex items-start p-4 mb-3 rounded-lg shadow-md border-l-4 max-w-md w-full ${mountClass}`}
-      style={{
-        backgroundColor: variantStyles.background,
-        borderLeftColor: variantStyles.borderColor,
-        borderRadius: tokens.radii.md,
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-        opacity: mountClass === 'toast-enter' ? 0 : 1,
-        transform: mountClass === 'toast-enter' ? 'translateX(100%)' : 'translateX(0)',
-        transition: 'all 0.2s ease'
-      }}
+      className="custom-toast"
       onMouseEnter={pauseOnHover ? () => setIsPaused(true) : undefined}
       onMouseLeave={pauseOnHover ? () => setIsPaused(false) : undefined}
-      role={role}
-      aria-live={ariaLive}
+      onFocus={pauseOnHover ? () => setIsPaused(true) : undefined}
+      onBlur={pauseOnHover ? () => setIsPaused(false) : undefined}
+      style={{
+        ...getVariantStyles(),
+        padding: '12px 16px',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderRadius: '6px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        width: '100%',
+        maxWidth: '400px'
+      }}
+      {...getAriaAttrs()}
     >
-      {/* Icon */}
-      <div className="flex-shrink-0 mr-3 pt-0.5">
-        {renderIcon()}
-      </div>
-      
-      {/* Content */}
-      <div className="flex-grow">
-        {/* Message */}
-        <div className="font-medium text-gray-900" style={{ fontSize: tokens.typography.fontSize.sm }}>
-          {message}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        <div style={{ flexShrink: 0 }}>
+          {renderIcon()}
         </div>
         
-        {/* Description */}
-        {description && (
-          <div className="mt-1 text-gray-600" style={{ fontSize: tokens.typography.fontSize.xs }}>
-            {description}
-          </div>
-        )}
+        <div style={{ flex: 1 }}>
+          <h3 style={{ 
+            margin: '0 0 4px 0', 
+            fontSize: '16px', 
+            fontWeight: 600,
+            color: tokens.colors.text.primary 
+          }}>
+            {title}
+          </h3>
+          
+          {description && (
+            <p style={{ 
+              margin: '0', 
+              fontSize: '14px',
+              color: tokens.colors.text.secondary 
+            }}>
+              {description}
+            </p>
+          )}
+          
+          {actions.length > 0 && (
+            <Space className="toast-actions" style={{ marginTop: '8px' }}>
+              {actions.map((action, index) => (
+                <React.Fragment key={index}>{action}</React.Fragment>
+              ))}
+            </Space>
+          )}
+        </div>
         
-        {/* Action */}
-        {action && (
-          <div className="mt-2">
-            {action}
-          </div>
+        {closable && (
+          <Button
+            type="text"
+            size="small"
+            onClick={handleClose}
+            aria-label="Close notification"
+            style={{ 
+              padding: '4px', 
+              height: 'auto', 
+              marginLeft: '8px',
+              color: tokens.colors.text.secondary
+            }}
+          >
+            <CloseCircleOutlined />
+          </Button>
         )}
       </div>
-      
-      {/* Close button */}
-      {closable && (
-        <button
-          type="button"
-          className="flex-shrink-0 ml-3 p-1 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          onClick={handleClose}
-          aria-label="Close notification"
-        >
-          <CloseOutlined style={{ fontSize: '14px' }} />
-        </button>
-      )}
     </div>
   );
-};
-
-/**
- * Context for toast provider
- */
-interface CustomToastContextValue {
-  /**
-   * Add a toast to the queue
-   */
-  addToast: (options: ToastOptions) => string;
-  
-  /**
-   * Remove a toast from the queue
-   */
-  removeToast: (id: string) => void;
-  
-  /**
-   * Show a success toast
-   */
-  success: (options: string | Omit<ToastOptions, 'variant'>) => string;
-  
-  /**
-   * Show an error toast
-   */
-  error: (options: string | Omit<ToastOptions, 'variant'>) => string;
-  
-  /**
-   * Show an info toast
-   */
-  info: (options: string | Omit<ToastOptions, 'variant'>) => string;
-  
-  /**
-   * Show a warning toast
-   */
-  warning: (options: string | Omit<ToastOptions, 'variant'>) => string;
 }
-
-/**
- * Create the toast context
- */
-export const CustomToastContext = React.createContext<CustomToastContextValue | undefined>(undefined);
-
-/**
- * Props for CustomToastProvider component
- */
-interface CustomToastProviderProps {
-  /**
-   * Maximum number of toasts to show at once
-   */
-  maxToasts?: number;
-  
-  /**
-   * Default duration for toasts
-   */
-  defaultDuration?: number;
-  
-  /**
-   * Default toast variant
-   */
-  defaultVariant?: ToastVariant;
-  
-  /**
-   * Position for toasts
-   */
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
-  
-  /**
-   * Children components
-   */
-  children: React.ReactNode;
-}
-
-/**
- * CustomToastProvider component
- * 
- * Provides a context for managing toast notifications throughout the application.
- * Handles creating, displaying, and dismissing toasts with proper accessibility.
- */
-export const CustomToastProvider: React.FC<CustomToastProviderProps> = ({
-  maxToasts = 5,
-  defaultDuration = TOAST_DURATION.MEDIUM,
-  position = 'top-right',
-  children
-}) => {
-  // State for tracking active toasts
-  const [toasts, setToasts] = useState<ToastOptions[]>([]);
-  
-  // Helper for generating unique toast IDs
-  const generateToastId = () => generateId('toast');
-  
-  // Display position styles
-  const getPositionStyles = (): React.CSSProperties => {
-    switch (position) {
-      case 'top-left':
-        return { top: '20px', left: '20px'
-      default:
-        return {}; // Default case
-  };
-      case 'top-center':
-        return { top: '20px', left: '50%', transform: 'translateX(-50%)' };
-      case 'bottom-right':
-        return { bottom: '20px', right: '20px' };
-      case 'bottom-left':
-        return { bottom: '20px', left: '20px' };
-      case 'bottom-center':
-        return { bottom: '20px', left: '50%', transform: 'translateX(-50%)' };
-      case 'top-right':
-      default:
-        return { top: '20px', right: '20px' };
-    }
-  };
-  
-  // Add a toast
-  const addToast = useCallback((options: ToastOptions): string => {
-    const id = options.id || generateToastId();
-    
-    setToasts(prev => {
-      // Enforce maximum number of toasts
-      const updatedToasts = [
-        { ...options, id },
-        ...prev
-      ].slice(0, maxToasts);
-      
-      return updatedToasts;
-    });
-    
-    return id;
-  }, [maxToasts]);
-  
-  // Remove a toast
-  const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
-  
-  // Convenience functions for different toast variants
-  const success = useCallback((options: string | Omit<ToastOptions, 'variant'>): string => {
-    const toastOptions = typeof options === 'string' 
-      ? { message: options, variant: 'success' as ToastVariant, duration: defaultDuration }
-      : { ...options, variant: 'success' as ToastVariant, duration: options.duration || defaultDuration };
-      
-    return addToast(toastOptions as ToastOptions);
-  }, [addToast, defaultDuration]);
-  
-  const error = useCallback((options: string | Omit<ToastOptions, 'variant'>): string => {
-    const toastOptions = typeof options === 'string' 
-      ? { message: options, variant: 'error' as ToastVariant, duration: defaultDuration }
-      : { ...options, variant: 'error' as ToastVariant, duration: options.duration || defaultDuration };
-      
-    return addToast(toastOptions as ToastOptions);
-  }, [addToast, defaultDuration]);
-  
-  const info = useCallback((options: string | Omit<ToastOptions, 'variant'>): string => {
-    const toastOptions = typeof options === 'string' 
-      ? { message: options, variant: 'info' as ToastVariant, duration: defaultDuration }
-      : { ...options, variant: 'info' as ToastVariant, duration: options.duration || defaultDuration };
-      
-    return addToast(toastOptions as ToastOptions);
-  }, [addToast, defaultDuration]);
-  
-  const warning = useCallback((options: string | Omit<ToastOptions, 'variant'>): string => {
-    const toastOptions = typeof options === 'string' 
-      ? { message: options, variant: 'warning' as ToastVariant, duration: defaultDuration }
-      : { ...options, variant: 'warning' as ToastVariant, duration: options.duration || defaultDuration };
-      
-    return addToast(toastOptions as ToastOptions);
-  }, [addToast, defaultDuration]);
-  
-  // Create the context value
-  const contextValue = React.useMemo(() => ({
-    addToast,
-    removeToast,
-    success,
-    error,
-    info,
-    warning
-  }), [addToast, removeToast, success, error, info, warning]);
-  
-  // Create a portal for the toast container
-  const renderPortal = () => {
-    // Wait until DOM is available (for SSR compatibility)
-    if (typeof document === 'undefined') return null;
-    
-    return createPortal(
-      <div
-        className="fixed z-50 flex flex-col"
-        style={{
-          ...getPositionStyles(),
-          pointerEvents: 'none'
-        }}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {/* Container for toasts with pointer events re-enabled */}
-        <div style={{ pointerEvents: 'auto' }}>
-          {toasts.map(toast => (
-            <CustomToast
-              key={toast.id}
-              {...toast}
-              remove={removeToast}
-            />
-          ))}
-        </div>
-      </div>,
-      document.body
-    );
-  };
-  
-  return (
-    <CustomToastContext.Provider value={contextValue}>
-      {children}
-      {renderPortal()}
-    </CustomToastContext.Provider>
-  );
-};
-
-/**
- * Custom hook for using the custom toast API
- * 
- * @returns Toast context value or throws an error if used outside a CustomToastProvider
- * 
- * @example
- * ```tsx
- * const { success, error } = useCustomToast();
- * 
- * const handleSubmit = async () => {
- *   try {
- *     await saveData();
- *     success('Data saved successfully');
- *   } catch (err) {
- *     error({ 
- *       message: 'Failed to save data', 
- *       description: err.message 
- *     });
- *   }
- * };
- * ```
- */
-export const useCustomToast = (): CustomToastContextValue => {
-  const context = React.useContext(CustomToastContext);
-  
-  if (context === undefined) {
-    throw new Error('useCustomToast must be used within a CustomToastProvider');
-  }
-  
-  return context;
-};
-
-// Default export for convenience
-export default { CustomToastProvider, useCustomToast };
