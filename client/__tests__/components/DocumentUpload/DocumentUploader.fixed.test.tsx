@@ -30,8 +30,8 @@ jest.mock('../../../src/components/DocumentUpload/DocumentUploader', () => ({
   default: MockDocumentUploader
 }));
 
-// Define mock types for TanStack Query
-type MockUseMutationResult = Partial<UseMutationResult<unknown, unknown, unknown, unknown>>;
+// Used for reference only
+// type MockUseMutationResult = Partial<UseMutationResult<unknown, unknown, unknown, unknown>>;
 
 // Mock the TanStack Query hooks
 jest.mock('@tanstack/react-query', () => {

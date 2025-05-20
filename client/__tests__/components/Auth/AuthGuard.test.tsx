@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useLocation, Router } from 'wouter';
+import { useLocation } from 'wouter';
 import AuthGuard from '../../../src/components/Auth/AuthGuard';
 import { useAuth } from '../../../src/hooks/useAuth';
 

@@ -80,7 +80,7 @@ export default function EmployeeDetail() {
   // Effect to refresh data when component mounts or id changes
   useEffect(() => {
     refreshData();
-  }, [id, refetch]);
+  }, [id, refetch, refreshData]);
 
   // Get status color
   const getStatusColor = (status: string): string => {

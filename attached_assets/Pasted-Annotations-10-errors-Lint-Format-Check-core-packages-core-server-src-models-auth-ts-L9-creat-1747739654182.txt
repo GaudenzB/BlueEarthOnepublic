@@ -1,0 +1,22 @@
+Annotations
+10 errors
+Lint & Format Check: core/packages/core-server/src/models/auth.ts#L9
+'createInsertSchema' is declared but its value is never read.
+Lint & Format Check: core/packages/core-common/src/utils/validation.ts#L119
+Type 'T' is generic and can only be indexed for reading.
+Lint & Format Check: core/packages/core-common/src/utils/validation.ts#L107
+No overload matches this call.
+Lint & Format Check: core/packages/core-client/src/utils/httpClient.ts#L161
+Argument of type '{ body: BodyInit | null; cache?: RequestCache; credentials?: RequestCredentials; headers?: HeadersInit; integrity?: string; keepalive?: boolean; method: string; mode?: RequestMode; priority?: RequestPriority; ... 4 more ...; window?: null; }' is not assignable to parameter of type 'RequestInit' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: core/packages/core-client/src/utils/httpClient.ts#L154
+Argument of type '{ body: BodyInit | null; cache?: RequestCache; credentials?: RequestCredentials; headers?: HeadersInit; integrity?: string; keepalive?: boolean; method: string; mode?: RequestMode; priority?: RequestPriority; ... 4 more ...; window?: null; }' is not assignable to parameter of type 'RequestInit' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: core/packages/core-client/src/utils/httpClient.ts#L147
+Argument of type '{ body: BodyInit | null; cache?: RequestCache; credentials?: RequestCredentials; headers?: HeadersInit; integrity?: string; keepalive?: boolean; method: string; mode?: RequestMode; priority?: RequestPriority; ... 4 more ...; window?: null; }' is not assignable to parameter of type 'RequestInit' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+Lint & Format Check: core/packages/core-client/src/utils/httpClient.ts#L10
+'ApiSuccessResponse' is declared but its value is never read.
+Lint & Format Check: client/src/utils/a11y.ts#L147
+Object is possibly 'undefined'.
+Lint & Format Check: client/src/utils/a11y.ts#L122
+'firstElement' is possibly 'undefined'.
+Lint & Format Check: client/src/utils/a11y.ts#L119
+'lastElement' is possibly 'undefined'.
