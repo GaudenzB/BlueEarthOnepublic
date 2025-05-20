@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { 
   Typography, 
-  Alert, 
+  // Alert removed - unused
   Space, 
   Card, 
   Radio, 
@@ -11,7 +11,7 @@ import {
   Col, 
   Switch
 } from "antd";
-import { InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons"; // Removed unused InfoCircleOutlined
 import { Button } from "@/components/ui/button";
 import DocumentList from "@/components/documents/DocumentList";
 import VirtualizedDocumentList from "@/components/documents/VirtualizedDocumentList";

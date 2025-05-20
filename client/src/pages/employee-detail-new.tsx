@@ -51,8 +51,7 @@ export default function EmployeeDetail() {
   const [, setLocation] = useLocation();
   const { hasPermissionCached } = usePermissionsContext();
 
-  // Check if we have an auth token
-  const token = localStorage.getItem("token");
+  // Auth token check is handled by the auth context - removing unused token variable
   
   // Fetch employee data directly from the single-employee endpoint
   const { 

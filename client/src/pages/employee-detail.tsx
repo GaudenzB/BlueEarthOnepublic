@@ -5,7 +5,7 @@ import type { Employee } from "@shared/schema";
 import { 
   Card, 
   Avatar, 
-  Divider, 
+  // Divider removed - unused
   Button, 
   Skeleton, 
   Tabs, 
