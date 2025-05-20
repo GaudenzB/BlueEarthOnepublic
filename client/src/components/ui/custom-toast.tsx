@@ -108,36 +108,10 @@ export function CustomToast({
         return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.error }} />;
       case 'warning':
         return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.warning }} />;
-      case 'info':undefined;
+      case 'info':
       default:
         return <InfoCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.info }} />;
-    }
-  };
-  
-  // Get variant-based styles
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'success':
-        return {
-          background: '#f0fdf4',
-          borderColor: '#a3e635'
-        };
-      case 'error':
-        return {
-          background: '#fef2f2',
-          borderColor: '#f87171'
-        };
-      case 'warning':
-        return {
-          background: '#fffbeb',
-          borderColor: '#fbbf24'
-        };
-      case 'info':undefined;
-      default:
-        return {
-          background: '#f0f9ff',
-          borderColor: '#7dd3fc'
-        };
+    };
     }
   };
   
