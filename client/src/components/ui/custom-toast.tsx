@@ -102,13 +102,14 @@ export function CustomToast({
   // Get the appropriate icon based on variant
   const renderIcon = () => {
     switch (variant) {
-      case 'success':
-        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.success }} />;
-      case 'error':
-        return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.error }} />;
-      case 'warning':
-        return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.warning }} />;
-      case 'info':
+      case 'success': // Fall through
+       return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.success }} />;
+      case 'error': // Fall through
+       return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.error }} />;
+      case 'warning': // Fall through
+       return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.warning }} />;
+      case 'info': // Fall through
+       // Fall through
       default:
         return <InfoCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.info }} />;
     };

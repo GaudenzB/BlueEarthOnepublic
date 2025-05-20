@@ -11,7 +11,7 @@ const departmentOptions = Object.values(departmentEnum.enum);
 
 interface SearchFiltersProps {
   onSearch: (value: string) => void,
-  onDepartmentFilter: (value: string) => void
+  onDepartmentFilter: (value: string) => void,
   onStatusFilter: () => void
   onSortByName: () => void
   onSortByDepartment: () => void

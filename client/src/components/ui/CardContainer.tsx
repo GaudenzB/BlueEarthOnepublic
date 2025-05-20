@@ -89,11 +89,16 @@ export const CardContainer: React.FC<CardContainerProps> = ({
   // Get border radius value from theme
   const getBorderRadius = () => {
     switch (borderRadius) {
-      case 'sm': return theme.borderRadius.sm;
-      case 'md': return theme.borderRadius.md;
-      case 'lg': return theme.borderRadius.lg;
-      case 'xl': return theme.borderRadius.xl;
-      case '2xl': return theme.borderRadius.xl; // Using xl since 2xl isn't available
+      case 'sm': // Fall through
+       return theme.borderRadius.sm;
+      case 'md': // Fall through
+       return theme.borderRadius.md;
+      case 'lg': // Fall through
+       return theme.borderRadius.lg;
+      case 'xl': // Fall through
+       return theme.borderRadius.xl;
+      case '2xl': // Fall through
+       return theme.borderRadius.xl; // Using xl since 2xl isn't available
       default:
         return {}; // Default case
     }

@@ -8,7 +8,7 @@ import { logger } from './logger';
 const cookieConfig = {
   // Base configuration for all environments
   base: {
-    // HttpOnly: true prevents JavaScript from accessing the cookie (crucial for security)
+    // HttpOnly: true prevents JavaScript from accessing the cookie (crucial for security),
     httpOnly: true,
     // Path: '/' makes the cookie available for all paths
     path: '/',
@@ -18,7 +18,7 @@ const cookieConfig = {
   
   // Development-specific configuration
   development: {
-    // Domain: not needed in development
+    // Domain: not needed in development,
     domain: undefined,
     // Secure: false allows cookies over HTTP in development
     secure: false,
@@ -30,7 +30,7 @@ const cookieConfig = {
   
   // Production-specific configuration
   production: {
-    // Domain: specific to the production domain
+    // Domain: specific to the production domain,
     domain: undefined, // Will be set based on configuration
     // Secure: true requires HTTPS (recommended in production)
     secure: true,
@@ -40,7 +40,7 @@ const cookieConfig = {
   
   // Test-specific configuration
   test: {
-    // Domain: not needed in test
+    // Domain: not needed in test,
     domain: undefined,
     // Secure: false allows cookies over HTTP in test
     secure: false,

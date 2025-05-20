@@ -436,7 +436,7 @@ export default function DocumentDetail() {
             </Badge>
           </Tooltip>
         );
-      case "PENDING":
+      case "PENDING":{},
       case "QUEUED":
         return (
           <Tooltip label="Document is waiting for processing">
@@ -446,7 +446,7 @@ export default function DocumentDetail() {
             </Badge>
           </Tooltip>
         );
-      case "FAILED":
+      case "FAILED":{},
       case "ERROR":
         return (
           <Tooltip label="Document processing failed">

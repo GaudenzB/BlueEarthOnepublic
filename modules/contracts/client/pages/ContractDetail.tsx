@@ -87,13 +87,14 @@ export default function ContractDetail() {
   // Get status badge color
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
-      case 'PENDING':{},
-      case 'DRAFT':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'EXPIRED':
-        return 'bg-red-100 text-red-800';
+      case 'ACTIVE': // Fall through
+       return 'bg-green-100 text-green-800';
+      case 'PENDING': // Fall through
+       // Fall through
+      case 'DRAFT': // Fall through
+       return 'bg-yellow-100 text-yellow-800';
+      case 'EXPIRED': // Fall through
+       return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

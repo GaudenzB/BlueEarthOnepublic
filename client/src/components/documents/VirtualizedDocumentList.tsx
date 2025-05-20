@@ -126,20 +126,20 @@ export default function VirtualizedDocumentList({
 
   const getDocumentTypeIcon = (type: string | null) => {
     switch (type) {
-      case "CONTRACT":
-        return <FileOutlined />;
-      case "AGREEMENT":
-        return <CheckCircleOutlined />;
-      case "REPORT":
-        return <InfoCircleOutlined />;
-      case "POLICY":
-        return <InfoCircleOutlined />;
-      case "INVOICE":
-        return <FileOutlined />;
-      case "PRESENTATION":
-        return <InfoCircleOutlined />;
-      case "CORRESPONDENCE":
-        return <InfoCircleOutlined />;
+      case "CONTRACT": // Fall through
+       return <FileOutlined />;
+      case "AGREEMENT": // Fall through
+       return <CheckCircleOutlined />;
+      case "REPORT": // Fall through
+       return <InfoCircleOutlined />;
+      case "POLICY": // Fall through
+       return <InfoCircleOutlined />;
+      case "INVOICE": // Fall through
+       return <FileOutlined />;
+      case "PRESENTATION": // Fall through
+       return <InfoCircleOutlined />;
+      case "CORRESPONDENCE": // Fall through
+       return <InfoCircleOutlined />;
       default:
         return <FileOutlined />;
     }
@@ -147,34 +147,36 @@ export default function VirtualizedDocumentList({
 
   const getProcessingStatusBadge = (status: string) => {
     switch (status) {
-      case "COMPLETED":
-        return (
+      case "COMPLETED": // Fall through
+       return (
           <Tooltip title="Document processed successfully">
             <Tag color="success" icon={<CheckCircleOutlined />}>
               Processed
             </Tag>
           </Tooltip>
         );
-      case "PROCESSING":
-        return (
+      case "PROCESSING": // Fall through
+       return (
           <Tooltip title="Document is being processed">
             <Tag color="warning" icon={<ClockCircleOutlined />}>
               Processing
             </Tag>
           </Tooltip>
         );
-      case "PENDING":{},
-      case "QUEUED":
-        return (
+      case "PENDING": // Fall through
+       // Fall through
+      case "QUEUED": // Fall through
+       return (
           <Tooltip title="Document is waiting for processing">
             <Tag color="processing" icon={<ClockCircleOutlined />}>
               Pending
             </Tag>
           </Tooltip>
         );
-      case "FAILED":{},
-      case "ERROR":
-        return (
+      case "FAILED": // Fall through
+       // Fall through
+      case "ERROR": // Fall through
+       return (
           <Tooltip title="Document processing failed">
             <Tag color="error" icon={<WarningOutlined />}>
               Failed

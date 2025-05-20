@@ -10,7 +10,7 @@ const cookieConfig = {
   base: {
     // HttpOnly: true prevents JavaScript from accessing the cookie (crucial for security),
     httpOnly: true,
-    // Path: '/' makes the cookie available for all paths
+    // Path: '/' makes the cookie available for all paths,
     path: '/',
     // SameSite: 'strict' prevents the cookie from being sent in cross-site requests
     sameSite: 'strict' as const,
@@ -20,7 +20,7 @@ const cookieConfig = {
   development: {
     // Domain: not needed in development,
     domain: undefined,
-    // Secure: false allows cookies over HTTP in development
+    // Secure: false allows cookies over HTTP in development,
     secure: false,
     // Max age: 7 days in milliseconds
     maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -32,7 +32,7 @@ const cookieConfig = {
   production: {
     // Domain: specific to the production domain,
     domain: undefined, // Will be set based on configuration
-    // Secure: true requires HTTPS (recommended in production)
+    // Secure: true requires HTTPS (recommended in production),
     secure: true,
     // Max age: 7 days in milliseconds
     maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -42,7 +42,7 @@ const cookieConfig = {
   test: {
     // Domain: not needed in test,
     domain: undefined,
-    // Secure: false allows cookies over HTTP in test
+    // Secure: false allows cookies over HTTP in test,
     secure: false,
     // Max age: shorter in test environment
     maxAge: 1 * 24 * 60 * 60 * 1000,

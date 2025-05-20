@@ -34,11 +34,11 @@ type ActionType = typeof actionTypes
 
 type Action =
   | {
-      type: ActionType["ADD_TOAST"]
+      type: ActionType["ADD_TOAST"],
       toast: ToasterToast
     }
   | {
-      type: ActionType["UPDATE_TOAST"]
+      type: ActionType["UPDATE_TOAST"],
       toast: Partial<ToasterToast>
     }
   | {
@@ -78,8 +78,7 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
-      }
-    case "UPDATE_TOAST":
+      };case "UPDATE_TOAST":
       return {
         ...state,
         toasts: state.toasts.map((t) =>

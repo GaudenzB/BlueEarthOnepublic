@@ -39,9 +39,12 @@ const { TabPane } = Tabs;
 // Utility functions for employee status
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'active': return 'green';
-    case 'inactive': return 'red';
-    case 'pending': return 'orange';
+    case 'active': // Fall through
+       return 'green';
+    case 'inactive': // Fall through
+       return 'red';
+    case 'pending': // Fall through
+       return 'orange';
     default:
       return undefined; // Default fallback case
   }
@@ -49,9 +52,12 @@ const getStatusColor = (status: string) => {
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'active': return 'Active';
-    case 'inactive': return 'Inactive';
-    case 'pending': return 'Pending';
+    case 'active': // Fall through
+       return 'Active';
+    case 'inactive': // Fall through
+       return 'Inactive';
+    case 'pending': // Fall through
+       return 'Pending';
     default:
       return undefined; // Default fallback case
   }

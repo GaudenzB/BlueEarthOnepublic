@@ -25,7 +25,7 @@ function mapCoreStatusToSharedStatus(coreStatus?: string): "active" | "inactive"
     case "ACTIVE": return "active";
     case "INACTIVE": return "inactive";
     case "ON_LEAVE": return "on_leave";
-    case "CONTRACT": 
+    case "CONTRACT": // Fall through
     case "INTERN": return "active"; // Consider contractors and interns as active employees
     default: return undefined;
   }

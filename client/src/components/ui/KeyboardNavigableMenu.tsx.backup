@@ -199,7 +199,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
         newIndex = findNextEnabledIndex(items.length - 1, 'up');
         break;
         
-      case 'Enter':
+      case 'Enter':{},
       case ' ':
         e.preventDefault();
         if (currentIndex >= 0 && currentIndex < items.length) {

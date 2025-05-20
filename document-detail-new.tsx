@@ -387,12 +387,12 @@ export default function DocumentDetail() {
   // Helper function to get processing status text
   const getProcessingStatusText = (status: string): string => {
     switch(status) {
-      case "PROCESSING":
-        return "Processing document...";
-      case "PENDING":
-        return "Pending processing...";
-      case "QUEUED":
-        return "Queued for processing...";
+      case "PROCESSING": // Fall through
+       return "Processing document...";
+      case "PENDING": // Fall through
+       return "Pending processing...";
+      case "QUEUED": // Fall through
+       return "Queued for processing...";
       default:
         return "Waiting to process...";
     }
@@ -401,12 +401,12 @@ export default function DocumentDetail() {
   // Helper function to get processing progress percentage
   const getProcessingProgress = (status: string): number => {
     switch(status) {
-      case "PROCESSING":
-        return 65;
-      case "PENDING":
-        return 25;
-      case "QUEUED":
-        return 15;
+      case "PROCESSING": // Fall through
+       return 65;
+      case "PENDING": // Fall through
+       return 25;
+      case "QUEUED": // Fall through
+       return 15;
       default:
         return 5;
     }
@@ -418,8 +418,8 @@ export default function DocumentDetail() {
     console.log("getStatusBadge called with status:", status);
     
     switch (status) {
-      case "COMPLETED":
-        return (
+      case "COMPLETED": // Fall through
+       return (
           <Tooltip label="Document processed successfully">
             <Badge variant="subtle" colorScheme="green" display="flex" alignItems="center">
               <Icon as={CheckIcon} mr={1} boxSize={3} /> 
@@ -427,8 +427,8 @@ export default function DocumentDetail() {
             </Badge>
           </Tooltip>
         );
-      case "PROCESSING":
-        return (
+      case "PROCESSING": // Fall through
+       return (
           <Tooltip label="Document is being processed">
             <Badge variant="subtle" colorScheme="yellow" display="flex" alignItems="center">
               <Icon as={TimeIcon} mr={1} boxSize={3} /> 
@@ -436,9 +436,10 @@ export default function DocumentDetail() {
             </Badge>
           </Tooltip>
         );
-      case "PENDING":{},
-      case "QUEUED":
-        return (
+      case "PENDING": // Fall through
+       // Fall through
+      case "QUEUED": // Fall through
+       return (
           <Tooltip label="Document is waiting for processing">
             <Badge variant="subtle" colorScheme="blue" display="flex" alignItems="center">
               <Icon as={TimeIcon} mr={1} boxSize={3} /> 
@@ -446,9 +447,10 @@ export default function DocumentDetail() {
             </Badge>
           </Tooltip>
         );
-      case "FAILED":{},
-      case "ERROR":
-        return (
+      case "FAILED": // Fall through
+       // Fall through
+      case "ERROR": // Fall through
+       return (
           <Tooltip label="Document processing failed">
             <Badge variant="subtle" colorScheme="red" display="flex" alignItems="center">
               <Icon as={WarningIcon} mr={1} boxSize={3} /> 

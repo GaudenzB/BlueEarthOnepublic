@@ -350,7 +350,7 @@ export async function extractTextFromDocument(
         }
         break;
         
-      case 'application/msword':
+      case 'application/msword':{},
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
         // In production, we would use a library like mammoth.js to extract Word document text
         extractedText = `This appears to be a Word document about investment strategies and financial analysis.
@@ -366,7 +366,7 @@ export async function extractTextFromDocument(
         extractedText = documentContent.toString('utf-8');
         break;
         
-      case 'text/html':
+      case 'text/html':{},
       case 'application/xhtml+xml':
         // For HTML documents, we would parse and extract the text content
         // For now, just return a message
@@ -375,7 +375,7 @@ export async function extractTextFromDocument(
         For better analysis, please provide the document in PDF or plain text format.`;
         break;
         
-      case 'application/vnd.ms-excel':
+      case 'application/vnd.ms-excel':{},
       case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         extractedText = `This appears to be an Excel spreadsheet.
         
@@ -383,7 +383,7 @@ export async function extractTextFromDocument(
         For better analysis, please provide the document in PDF or text format.`;
         break;
         
-      case 'application/vnd.ms-powerpoint':
+      case 'application/vnd.ms-powerpoint':{},
       case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
         extractedText = `This appears to be a PowerPoint presentation.
         

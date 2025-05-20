@@ -252,9 +252,12 @@ export type DeepPartial<T> = T extends object
  * 
  * function getStatusMessage(status: Status): string {
  *   switch (status) {
- *     case 'pending': return 'Loading...';
- *     case 'success': return 'Success!';
- *     case 'error': return 'Error occurred';
+ *     case 'pending': // Fall through
+       return 'Loading...';
+ *     case 'success': // Fall through
+       return 'Success!';
+ *     case 'error': // Fall through
+       return 'Error occurred';
  *     default: return exhaustiveCheck(status); // Error if Status gets a new value
  *   }
  * }

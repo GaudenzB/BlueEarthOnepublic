@@ -175,33 +175,34 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
     let newIndex = currentIndex;
     
     switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
+      case 'ArrowDown': // Fall through
+      e.preventDefault();
         // Find next non-disabled item
         newIndex = findNextEnabledIndex(currentIndex, 'down');
         break;
         
-      case 'ArrowUp':
-        e.preventDefault();
+      case 'ArrowUp': // Fall through
+      e.preventDefault();
         // Find previous non-disabled item
         newIndex = findNextEnabledIndex(currentIndex, 'up');
         break;
         
-      case 'Home':
-        e.preventDefault();
+      case 'Home': // Fall through
+      e.preventDefault();
         // Find first non-disabled item
         newIndex = findNextEnabledIndex(-1, 'down');
         break;
         
-      case 'End':
-        e.preventDefault();
+      case 'End': // Fall through
+      e.preventDefault();
         // Find last non-disabled item
         newIndex = findNextEnabledIndex(items.length - 1, 'up');
         break;
         
-      case 'Enter':{},
-      case ' ':
-        e.preventDefault();
+      case 'Enter': // Fall through
+       // Fall through
+      case ' ': // Fall through
+      e.preventDefault();
         if (currentIndex >= 0 && currentIndex < items.length) {
           const item = items[currentIndex];
           if (item && item.disabled !== true) {

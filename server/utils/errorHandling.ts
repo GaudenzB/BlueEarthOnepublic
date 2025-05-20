@@ -248,8 +248,8 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
         return apiResponse.notFound(res, err.message);
       case ErrorType.CONFLICT:
         return apiResponse.conflict(res, err.message);
-      case ErrorType.DATABASE:
-      case ErrorType.INTEGRATION:
+      case ErrorType.DATABASE:{},
+      case ErrorType.INTEGRATION:{},
       case ErrorType.SERVER:
         return apiResponse.serverError(res, 'An unexpected error occurred. Please try again later.');
       case ErrorType.RATE_LIMIT:

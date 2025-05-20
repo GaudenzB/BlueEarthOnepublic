@@ -245,7 +245,7 @@ export const tokens = {
     // Aspect ratios for image containers
     aspectRatio: {
       square: '1/1',     // 1: 1 Square,
-      video: '16/9',     // 16:9 Widescreen
+      video: '16/9',     // 16: 9 Widescreen,
       portrait: '3/4',   // 3:4 Portrait
       landscape: '4/3',  // 4:3 Landscape
       wide: '21/9',      // 21:9 Ultrawide
