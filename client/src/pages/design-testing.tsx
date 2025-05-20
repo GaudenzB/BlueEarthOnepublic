@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import {
   Tabs,
-  Tab,
   Button,
   Space,
   Card,
@@ -19,19 +18,18 @@ import {
   FileTextOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  InfoCircleOutlined,
   SettingOutlined,
   DownloadOutlined
 } from "@ant-design/icons";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 const { Panel } = Collapse;
 
 export default function DesignTesting() {
-  const [activeTab, setActiveTab] = useState("1");
-
+  // Sample tab change handler for demonstration purposes
   const onChange = (key: string) => {
-    setActiveTab(key);
+    // This function is just for demonstration and not actually used
+    console.log(`Tab ${key} selected`);
   };
 
   return (

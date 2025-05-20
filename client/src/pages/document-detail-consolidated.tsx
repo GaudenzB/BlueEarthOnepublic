@@ -183,23 +183,23 @@ export default function DocumentDetail() {
         >
           <Tabs activeKey={activeTab} onChange={handleTabChange}>
             <Tabs.TabPane tab="Overview" key="1">
-              <DocumentOverviewTab document={safeDocument} />
+              <DocumentOverviewTab document={validDocument} />
             </Tabs.TabPane>
             
             <Tabs.TabPane tab="Version History" key="2">
               <DocumentVersionsTab 
-                document={safeDocument} 
+                document={validDocument} 
                 onRestoreVersion={handleRestoreVersion}
                 isRestoring={restoreVersionMutation.isPending}
               />
             </Tabs.TabPane>
             
             <Tabs.TabPane tab="Comments" key="3">
-              <DocumentCommentsTab document={safeDocument} />
+              <DocumentCommentsTab document={validDocument} />
             </Tabs.TabPane>
             
             <Tabs.TabPane tab="Timeline" key="4">
-              <DocumentTimelineTab document={safeDocument} />
+              <DocumentTimelineTab document={validDocument} />
             </Tabs.TabPane>
           </Tabs>
         </div>
