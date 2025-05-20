@@ -128,6 +128,14 @@ export default function DocumentDetail() {
     return <DocumentDetailNotFound onReturn={handleReturn} />;
   }
   
+  // Ensure we have a valid Document object with all required properties
+  const validDocument: Document = {
+    ...safeDocument,
+    // Ensure any potentially undefined properties have default values
+    id: safeDocument.id || '',
+    title: safeDocument.title || 'Untitled Document',
+    processingStatus: safeDocument.processingStatus || 'completed',
+  };
   // Render document details with improved UI structure
   return (
     <>

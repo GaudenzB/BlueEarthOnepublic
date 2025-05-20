@@ -182,6 +182,8 @@ export default function DocumentDetail() {
           statusBadge={<DocumentStatusBadge status={document.processingStatus} />}
           onDeleteClick={handleDeleteClick}
           onShareClick={handleShareClick}
+          onFavorite={() => {}} // Adding required prop
+          isFavorited={false} // Adding required prop
         />
         
         {/* Processing Alert if needed */}
@@ -198,7 +200,11 @@ export default function DocumentDetail() {
           </Tabs.TabPane>
           
           <Tabs.TabPane tab="Version History" key="2">
-            <DocumentVersionsTab document={document} />
+            <DocumentVersionsTab 
+              document={document} 
+              onRestoreVersion={() => {}} 
+              isRestoring={false} 
+            />
           </Tabs.TabPane>
           
           <Tabs.TabPane tab="Comments" key="3">
