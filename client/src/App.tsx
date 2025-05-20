@@ -145,7 +145,7 @@ function AppRoutes() {
       />
       <ProtectedRoute 
         path="/contracts/:id" 
-        component={function ContractDetailRoute({ /* params needed by router */ }) {
+        component={function ContractDetailRoute(_params) {
           // ContractDetail gets contract ID from route params on its own
           return (
             <MainLayout>
