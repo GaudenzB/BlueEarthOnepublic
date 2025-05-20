@@ -66,7 +66,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   return (
     <div 
-      className={`page-header ${className = undefined}`}
+      className={`page-header ${className || ''}`}
       style={{
         marginBottom: theme.spacing.xl,
       }}

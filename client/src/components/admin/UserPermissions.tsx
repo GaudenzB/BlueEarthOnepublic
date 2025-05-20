@@ -163,9 +163,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
       case 'legal': return 'bg-red-100 text-red-800 border-red-300';
       case 'operations': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       default:
-      // Exhaustive type check
-      const _exhaustiveCheck: never = 4725;
-      return _exhaustiveCheck;
+      return undefined; // Default fallback case
     }
   };
 

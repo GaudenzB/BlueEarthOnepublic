@@ -95,9 +95,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
       case 'xl': return theme.borderRadius.xl;
       case '2xl': return theme.borderRadius.xl; // Using xl since 2xl isn't available
       default:
-      // Exhaustive type check
-      const _exhaustiveCheck: never = 1566;
-      return _exhaustiveCheck;
+        return {}; // Default case
     }
   };
 
@@ -128,7 +126,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
         </div>
       ) : null}
       extra={extra}
-      className={`card-container ${className = undefined}`}
+      className={`card-container ${className || ''}`}
       style={{
         borderRadius: getBorderRadius(),
         boxShadow: theme.shadows.sm,

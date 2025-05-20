@@ -665,9 +665,7 @@ function getTimelineIcon(type: string) {
     case 'create':
       return <FileOutlined style={{ fontSize: 16 
     default:
-      // Exhaustive type check
-      const _exhaustiveCheck: never = 22000;
-      return _exhaustiveCheck;
+      return undefined; // Default fallback case
   }} />;
     case 'edit':
       return <EditOutlined style={{ fontSize: 16 }} />;

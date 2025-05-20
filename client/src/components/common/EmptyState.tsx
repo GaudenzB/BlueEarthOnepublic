@@ -34,9 +34,7 @@ export function EmptyState({
       case 'small':
         return { padding: '16px 0' 
     default:
-      // Exhaustive type check
-      const _exhaustiveCheck: never = 755;
-      return _exhaustiveCheck;
+      return undefined; // Default fallback case
   };
       case 'large':
         return { padding: '48px 0' };
