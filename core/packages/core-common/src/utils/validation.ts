@@ -103,8 +103,17 @@ export const createSortSchema = (
     throw new Error('allowedFields must not be empty');
   }
   
+  // Create a properly typed tuple with at least one element
+  const nonEmptyFields = allowedFields.length > 0 
+    ? allowedFields 
+    : ['id']; // Fallback to 'id' if somehow the array is empty
+  
+  const firstField = nonEmptyFields[0] as string;
+  const restFields = nonEmptyFields.slice(1) as string[];
+  const typedFields = [firstField, ...restFields] as [string, ...string[]];
+  
   return z.object({
-    sort: z.enum(allowedFields.length > 0 ? allowedFields as [string, ...string[]] : ['id']).optional().default(defaultField || allowedFields[0]),
+    sort: z.enum(typedFields).optional().default(defaultField || firstField),
     order: z.enum(['asc', 'desc']).optional().default(defaultOrder)
   });
 };
