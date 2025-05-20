@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Employee } from "@shared/schema";
@@ -8,18 +8,33 @@ import {
   Button, 
   Skeleton, 
   Tabs, 
-  Select
+  Tag,
+  Divider,
+  Typography,
+  Space,
+  Row,
+  Col
 } from "antd";
 import { 
   ArrowLeftOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
-  GlobalOutlined,
-  StopOutlined
+  StopOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  EnvironmentOutlined,
+  BankOutlined,
+  UserOutlined,
+  FileTextOutlined,
+  DollarOutlined,
+  LockOutlined,
+  CalendarOutlined
 } from "@ant-design/icons";
 
+const { Title, Text, Paragraph } = Typography;
+const { TabPane } = Tabs;
+
 // Utility functions for employee status
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string): string => {
   switch (status) {
     case 'active': return 'green';
     case 'inactive': return 'red';
@@ -28,7 +43,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string): string => {
   switch (status) {
     case 'active': return 'Active';
     case 'inactive': return 'Inactive';
@@ -36,37 +51,6 @@ const getStatusText = (status: string) => {
     default: return 'Unknown';
   }
 };
-import {
-  Card as ShadcnCard,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs as ShadcnTabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Select as ShadcnSelect,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem
-} from "@/components/ui/select";
-import {
-  ChevronLeft,
-  RefreshCw,
-  Mail,
-  Phone,
-  MapPin,
-  Building,
-  Briefcase,
-  User,
-  FileText,
-  DollarSign,
-  Calendar
-} from "lucide-react";
-import { LockIcon } from "@/components/ui/icons";
 import { colors } from "@/lib/colors";
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
