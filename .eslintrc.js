@@ -272,6 +272,18 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
         '@typescript-eslint/unbound-method': 'off',
+        // Relaxed rules for test files
+        '@typescript-eslint/no-unused-vars': ['warn', { 
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        }],
+        // Allow more flexible imports in tests
+        'import/no-unresolved': 'warn',
+        // Don't enforce React naming conventions in tests
+        'react/function-component-definition': 'off',
+        // Allow import paths flexibility for mocks
+        'import/no-absolute-path': 'off',
       },
     },
   ],
