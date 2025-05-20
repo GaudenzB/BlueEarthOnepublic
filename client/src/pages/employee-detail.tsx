@@ -5,29 +5,16 @@ import type { Employee } from "@shared/schema";
 import { 
   Card, 
   Avatar, 
-  // Divider removed - unused
   Button, 
   Skeleton, 
   Tabs, 
-  Select, 
-  Tag, 
-  Result, 
-  Empty
+  Select
+  // Removed unused Tag, Result, Empty imports
 } from "antd";
 import { 
-  MailOutlined, 
-  PhoneOutlined, 
-  EnvironmentOutlined, 
-  BankOutlined, 
-  BriefcaseOutlined, 
-  UserOutlined, 
-  FileTextOutlined, 
-  DollarOutlined, 
-  LockOutlined, 
-  CalendarOutlined, 
-  SyncOutlined,
   ArrowLeftOutlined,
   CheckCircleOutlined,
+  // Removed other unused icon imports
   ClockCircleOutlined,
   GlobalOutlined,
   StopOutlined
