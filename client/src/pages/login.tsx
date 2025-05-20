@@ -21,19 +21,23 @@ export default function Login() {
   
   // Set focus once when component mounts and prevent refocus
   React.useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    
     // Only focus once per component lifecycle
     if (!hasFocusedRef.current && usernameInputRef.current) {
       // Use a slight delay to ensure focus after any re-renders
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         if (usernameInputRef.current) {
           usernameInputRef.current.focus();
           hasFocusedRef.current = true; // Mark that we've focused
         }
       }, 100);
-      return () => clearTimeout(timer);
     }
-    // Return a no-op cleanup function for consistent return paths
-    return () => {}; 
+    
+    // Return cleanup function that works in all code paths
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   // Redirect if authenticated (as a proper side effect)

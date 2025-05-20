@@ -181,9 +181,12 @@ export default function EmployeeDirectoryPage() {
   // Count filtered employees
   const filteredCount = filteredEmployees.length
   const totalCount = Array.isArray(employees) ? employees.length : 0
+  // Ensure totalCount is treated as a number for comparison operations
+  const totalEmployees: number = totalCount
 
   if (isLoading) {
-    return <LoadingState size="large" text="Loading employees..." />
+    // Fix the size prop to be a number as required by the component
+    return <LoadingState size={32} message="Loading employees..." />
   }
 
   if (error) {
@@ -331,8 +334,10 @@ export default function EmployeeDirectoryPage() {
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         // If image fails to load, display initials instead
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling!.style.display = 'flex';
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        // Type assertion to ensure nextElementSibling has style property
+                        const sibling = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (sibling) sibling.style.display = 'flex';
                       }}
                     />
                   ) : null}
