@@ -227,8 +227,8 @@ export default function UserManagement() {
       const { password, ...dataWithoutPassword } = dataToUpdate;
       // Reassign to dataToUpdate
       Object.assign(dataToUpdate, dataWithoutPassword);
-      // Set to undefined instead of using delete
-      dataToUpdate.password = undefined;
+      // Override with empty string instead of undefined
+      dataToUpdate.password = '';
     }
 
     updateUser.mutate({ id: selectedUserId, data: dataToUpdate });

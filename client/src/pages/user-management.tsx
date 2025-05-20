@@ -220,10 +220,15 @@ export default function UserManagement() {
     e.preventDefault();
     if (!selectedUserId) return;
 
-    // If password is empty, omit it from the update
+    // If password is empty, create a new object without it
     const dataToUpdate = { ...formData };
     if (!dataToUpdate.password) {
-      delete dataToUpdate.password;
+      // Create a new object with all properties except password
+      const { password, ...dataWithoutPassword } = dataToUpdate;
+      // Reassign to dataToUpdate
+      Object.assign(dataToUpdate, dataWithoutPassword);
+      // Override with empty string instead of undefined
+      dataToUpdate.password = '';
     }
 
     updateUser.mutate({ id: selectedUserId, data: dataToUpdate });
