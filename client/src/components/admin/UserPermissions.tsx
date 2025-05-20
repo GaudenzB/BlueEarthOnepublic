@@ -11,6 +11,9 @@ import { X, Plus, CheckSquare, Edit, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
+// Define valid areas type
+type PermissionArea = "finance" | "hr" | "it" | "legal" | "operations" | "documents";
+
 interface UserPermissionsProps {
   userId: number;
   userName: string;
@@ -20,8 +23,9 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedPermissionId, setSelectedPermissionId] = useState<number | null>(null);
+  
   const [formData, setFormData] = useState({
-    area: "finance",
+    area: "finance" as PermissionArea,
     canView: true,
     canEdit: false,
     canDelete: false,
@@ -33,9 +37,9 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
   const getPermissionById = (id: number) => {
     return permissions.find(p => p.id === id);
   };
-
-  // Handle area change
-  const handleAreaChange = (value: string) => {
+  
+  // Handle area change with proper typing
+  const handleAreaChange = (value: PermissionArea) => {
     setFormData(prev => ({ ...prev, area: value }));
   };
 
@@ -48,7 +52,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
   const handleAddPermission = async () => {
     try {
       await addPermission.mutateAsync({
-        area: formData.area as string, // Properly typed as string instead of any
+        area: formData.area,
         canView: formData.canView,
         canEdit: formData.canEdit,
         canDelete: formData.canDelete,
@@ -128,7 +132,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
     
     setSelectedPermissionId(id);
     setFormData({
-      area: permission.area,
+      area: permission.area as PermissionArea,
       canView: permission.canView,
       canEdit: permission.canEdit,
       canDelete: permission.canDelete,
@@ -140,7 +144,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
   // Reset form
   const resetForm = () => {
     setFormData({
-      area: "finance",
+      area: "finance" as PermissionArea,
       canView: true,
       canEdit: false,
       canDelete: false,
@@ -162,8 +166,8 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
       case 'it': return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'legal': return 'bg-red-100 text-red-800 border-red-300';
       case 'operations': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      default:
-      return undefined; // Default fallback case
+      case 'documents': return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300'; // Proper fallback
     }
   };
 
@@ -172,7 +176,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
       <CardHeader>
         <CardTitle>Functional Permissions</CardTitle>
         <CardDescription>
-          Manage {userName}'s functional area permissions
+          Manage {userName}&apos;s functional area permissions
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -189,7 +193,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
                 <DialogHeader>
                   <DialogTitle>Add Functional Permission</DialogTitle>
                   <DialogDescription>
-                    Grant {userName} access to a functional area
+                    Grant {userName}&apos;s access to a functional area
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -210,6 +214,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
                         <SelectItem value="it">IT</SelectItem>
                         <SelectItem value="legal">Legal</SelectItem>
                         <SelectItem value="operations">Operations</SelectItem>
+                        <SelectItem value="documents">Documents</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
