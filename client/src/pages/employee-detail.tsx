@@ -17,8 +17,6 @@ import {
 } from "antd";
 import { 
   ArrowLeftOutlined,
-  CheckCircleOutlined,
-  StopOutlined,
   MailOutlined,
   PhoneOutlined,
   EnvironmentOutlined,
@@ -58,7 +56,7 @@ export default function EmployeeDetail() {
   // Get employee ID from URL
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTabKey, setActiveTabKey] = useState<string>("1");
+  const [activeTab, setActiveTab] = useState<string>("1");
   const { hasPermissionCached } = usePermissionsContext();
   
   // Check permissions
@@ -148,7 +146,7 @@ export default function EmployeeDetail() {
             )}
           </div>
           
-          <Tabs defaultActiveKey="1" onChange={setActiveTabKey}>
+          <Tabs defaultActiveKey="1" onChange={setActiveTab}>
             <Tabs.TabPane tab="Profile" key="1">
               <Descriptions bordered column={1}>
                 <Descriptions.Item label="Email">
@@ -218,51 +216,6 @@ export default function EmployeeDetail() {
       {renderEmployeeDetails()}
     </PermissionGuard>
   );
-  
-  // Extract employee from response
-  const employee = apiResponse?.data as Employee | undefined;
-  
-  // Force refresh function
-  const refreshData = () => {
-    if (id) refetch();
-  };
-  
-  // Effect to refresh data when component mounts or id changes
-  useEffect(() => {
-    refreshData();
-  }, [id, refetch]);
-
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'active':
-        return { 
-          color: "success", 
-          icon: <CheckCircleOutlined />, 
-          text: 'Active' 
-        };
-      case 'inactive':
-        return { 
-          color: "default", 
-          icon: <StopOutlined />, 
-          text: 'Inactive' 
-        };
-      case 'on_leave':
-        return { 
-          color: "warning", 
-          icon: <ClockCircleOutlined />, 
-          text: 'On Leave' 
-        };
-      case 'remote':
-        return { 
-          color: "processing", 
-          icon: <GlobalOutlined />, 
-          text: 'Remote' 
-        };
-      default:
-        return { 
-          color: "default", 
-          icon: <StopOutlined />, 
-          text: 'Unknown' 
         };
     }
   };
