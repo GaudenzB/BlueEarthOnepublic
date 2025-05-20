@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { QueryClient, QueryClientProvider, UseMutationResult } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, _UseMutationResult } from '@tanstack/react-query';
 
 // Define a mock DocumentUploader component
 const MockDocumentUploader: React.FC = () => (

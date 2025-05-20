@@ -103,7 +103,7 @@ export function UserDetails({ userId, onBackClick }: UserDetailsProps) {
       setIsSaving(true);
       
       // Prepare submission data (omit empty values)
-      const submissionData: Record<string, any> = {};
+      const submissionData: Record<string, string | number | boolean> = {};
       
       Object.entries(formData).forEach(([key, value]) => {
         // Only include password if it's not empty

@@ -57,7 +57,7 @@ export function BubbleSync() {
       // Refresh employee data
       queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Sync Failed',
         description: error?.message || 'Failed to sync employees. Please try again.',

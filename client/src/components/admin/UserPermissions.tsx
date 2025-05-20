@@ -48,7 +48,7 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
   const handleAddPermission = async () => {
     try {
       await addPermission.mutateAsync({
-        area: formData.area as any,
+        area: formData.area as string, // Properly typed as string instead of any
         canView: formData.canView,
         canEdit: formData.canEdit,
         canDelete: formData.canDelete,
