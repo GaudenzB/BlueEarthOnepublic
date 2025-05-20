@@ -17,6 +17,25 @@ import {
   GlobalOutlined,
   StopOutlined
 } from "@ant-design/icons";
+
+// Utility functions for employee status
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active': return 'green';
+    case 'inactive': return 'red';
+    case 'pending': return 'orange';
+    default: return 'gray';
+  }
+};
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'active': return 'Active';
+    case 'inactive': return 'Inactive';
+    case 'pending': return 'Pending';
+    default: return 'Unknown';
+  }
+};
 import {
   Card as ShadcnCard,
   CardHeader,
