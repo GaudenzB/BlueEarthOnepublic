@@ -29,6 +29,10 @@ import {
   LockOutlined,
   CalendarOutlined
 } from "@ant-design/icons";
+import { usePermissionsContext } from "@/contexts/PermissionsContext";
+import { PermissionGuard } from "@/components/permissions/PermissionGuard";
+import { ROUTES } from "@/lib/routes";
+import { ApiResponse, ApiError } from "@/lib/httpClient";
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -51,11 +55,6 @@ const getStatusText = (status: string): string => {
     default: return 'Unknown';
   }
 };
-import { colors } from "@/lib/colors";
-import { usePermissionsContext } from "@/contexts/PermissionsContext";
-import { PermissionGuard } from "@/components/permissions/PermissionGuard";
-import { ROUTES } from "@/lib/routes";
-import { httpClient, ApiResponse, ApiError } from "@/lib/httpClient";
 
 /**
  * Employee detail page component

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Employee } from "@shared/schema";
@@ -8,20 +8,16 @@ import {
   Button, 
   Skeleton, 
   Tabs, 
-  Select,
   Tag,
   Divider,
   Typography,
   Space,
   Row,
-  Col,
-  Badge
+  Col
 } from "antd";
 import { 
   ArrowLeftOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
-  GlobalOutlined,
   StopOutlined,
   MailOutlined,
   PhoneOutlined,
@@ -33,11 +29,9 @@ import {
   LockOutlined,
   CalendarOutlined
 } from "@ant-design/icons";
-import { colors } from "@/lib/colors";
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
-import { PermissionGuard } from "@/components/permissions/PermissionGuard";
 import { ROUTES } from "@/lib/routes";
-import { httpClient, ApiResponse, ApiError } from "@/lib/httpClient";
+import { ApiResponse, ApiError } from "@/lib/httpClient";
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -97,7 +91,7 @@ export default function EmployeeDetail() {
   const [activeTab, setActiveTab] = React.useState("1");
   
   // Navigation helper
-  const goBack = () => navigate(ROUTES.EMPLOYEES);
+  const goBack = () => navigate(ROUTES.EMPLOYEES.LIST);
   
   // Log errors for debugging
   if (error) {
@@ -217,7 +211,7 @@ export default function EmployeeDetail() {
               {canEdit && (
                 <Button 
                   type="primary"
-                  href={`${ROUTES.EMPLOYEES}/${id}/edit`}
+                  href={`/employee/${id}/edit`}
                 >
                   Edit Employee
                 </Button>
