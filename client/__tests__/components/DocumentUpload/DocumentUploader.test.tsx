@@ -127,8 +127,8 @@ describe('DocumentUploader Component', () => {
     const mockFile1 = new File(['file1 content'], 'document1.pdf', { type: 'application/pdf' });
     const mockFile2 = new File(['file2 content'], 'document2.pdf', { type: 'application/pdf' });
     
-    // Modify dropzone mock to include accepted files
-    const useDropzoneMock = require('react-dropzone').useDropzone;
+    // Modify dropzone mock to include accepted files using proper import
+    const { useDropzone: useDropzoneMock } = jest.requireMock('react-dropzone');
     useDropzoneMock.mockReturnValue({
       getRootProps: jest.fn(() => ({})),
       getInputProps: jest.fn(() => ({})),
@@ -150,8 +150,8 @@ describe('DocumentUploader Component', () => {
     // Setup mock file
     const mockFile = new File(['file content'], 'document.pdf', { type: 'application/pdf' });
     
-    // Modify dropzone mock
-    const useDropzoneMock = require('react-dropzone').useDropzone;
+    // Modify dropzone mock using proper import syntax
+    const { useDropzone: useDropzoneMock } = jest.requireMock('react-dropzone');
     useDropzoneMock.mockReturnValue({
       getRootProps: jest.fn(() => ({})),
       getInputProps: jest.fn(() => ({})),
@@ -214,8 +214,8 @@ describe('DocumentUploader Component', () => {
     // Setup mock file
     const mockFile = new File(['file content'], 'document.pdf', { type: 'application/pdf' });
     
-    // Modify dropzone mock
-    const useDropzoneMock = require('react-dropzone').useDropzone;
+    // Modify dropzone mock using proper import syntax
+    const { useDropzone: useDropzoneMock } = jest.requireMock('react-dropzone');
     useDropzoneMock.mockReturnValue({
       getRootProps: jest.fn(() => ({})),
       getInputProps: jest.fn(() => ({})),
@@ -243,8 +243,8 @@ describe('DocumentUploader Component', () => {
   });
 
   it('shows drag active state when dragging files', () => {
-    // Modify dropzone mock to show drag active state
-    const useDropzoneMock = require('react-dropzone').useDropzone;
+    // Modify dropzone mock to show drag active state using proper import syntax
+    const { useDropzone: useDropzoneMock } = jest.requireMock('react-dropzone');
     useDropzoneMock.mockReturnValue({
       getRootProps: jest.fn(() => ({})),
       getInputProps: jest.fn(() => ({})),

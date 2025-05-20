@@ -29,22 +29,22 @@ import {
 import { 
   ArrowLeft, 
   Building, 
-  Calendar, 
+  // Calendar removed - unused
   FileText, 
-  Loader2, 
+  // Loader2 removed - unused
   Mail, 
   MapPin, 
   Phone, 
   RefreshCw,
   User,
   Briefcase,
-  DollarSign,
-  Lock
+  // DollarSign removed - unused
+  // Lock removed - unused
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
-import { httpClient, ApiResponse, ApiError } from "@/lib/httpClient";
+import { httpClient, ApiResponse } from "@/lib/httpClient"; // Removed unused ApiError import
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
-import { LoadingState } from "@/components/ui";
+// Removed unused LoadingState import
 
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
