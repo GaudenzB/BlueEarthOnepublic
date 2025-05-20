@@ -9,12 +9,45 @@ import {
   Skeleton, 
   Tabs, 
   Select
-  // Removed unused Tag, Result, Empty imports
 } from "antd";
 import { 
   ArrowLeftOutlined,
   CheckCircleOutlined,
-  // Removed other unused icon imports
+  ClockCircleOutlined,
+  GlobalOutlined,
+  StopOutlined
+} from "@ant-design/icons";
+import {
+  Card as ShadcnCard,
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs as ShadcnTabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select as ShadcnSelect,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
+} from "@/components/ui/select";
+import {
+  ChevronLeft,
+  RefreshCw,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Briefcase,
+  User,
+  FileText,
+  DollarSign,
+  Calendar
+} from "lucide-react";
+import { LockIcon } from "@/components/ui/icons";
   ClockCircleOutlined,
   GlobalOutlined,
   StopOutlined
