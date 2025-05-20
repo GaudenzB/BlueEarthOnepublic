@@ -127,7 +127,8 @@ export function sendServerError(
   details?: any
 ): void {
   // In production, we may want to sanitize the details
-  const safeDetails = process.env.NODE_ENV === 'production' ? undefined : details;
+  const nodeEnv = process.env['NODE_ENV'];
+  const safeDetails = nodeEnv === 'production' ? undefined : details;
   
   sendError(
     res,
