@@ -56,7 +56,7 @@ export default function EmployeeDetail() {
   // Get employee ID from URL
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTabKey, setActiveTabKey] = useState<string>("1");
+  const [_activeTabKey, setActiveTabKey] = useState<string>("1"); // Prefix with _ to mark as intentionally unused
   const { hasPermissionCached } = usePermissionsContext();
   
   // Check permissions

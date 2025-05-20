@@ -43,7 +43,7 @@ interface UserFormData {
 export default function UserManagement() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { user: currentUser, isAdmin, isSuperAdmin } = useAuth();
+  const { user: currentUser, /* isAdmin not used in this component */ isSuperAdmin } = useAuth();
 
   // State for dialogs
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);

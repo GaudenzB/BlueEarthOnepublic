@@ -181,8 +181,7 @@ export default function EmployeeDirectoryPage() {
   // Count filtered employees
   const filteredCount = filteredEmployees.length
   const totalCount = Array.isArray(employees) ? employees.length : 0
-  // Ensure totalCount is treated as a number for comparison operations
-  const totalEmployees: number = totalCount
+  // Use totalCount directly where needed - removing unused variable
 
   if (isLoading) {
     // Fix the size prop to be a number as required by the component
