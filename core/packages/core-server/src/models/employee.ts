@@ -6,8 +6,7 @@
  */
 
 import { z } from 'zod';
-import { createInsertSchema } from 'drizzle-zod';
-import { employeeSchema, employeeBaseSchema, departmentEnum, employeeStatusEnum } from '@blueearth/core-common';
+import { employeeBaseSchema } from '@blueearth/core-common';
 
 /**
  * Insert Employee Schema

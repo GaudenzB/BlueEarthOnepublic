@@ -6,12 +6,8 @@
  */
 
 import { z } from 'zod';
-import { createInsertSchema } from 'drizzle-zod';
 import { 
-  documentSchema, 
   documentBaseSchema,
-  documentTypeEnum,
-  documentStatusEnum,
   accessLevelEnum 
 } from '@blueearth/core-common';
 

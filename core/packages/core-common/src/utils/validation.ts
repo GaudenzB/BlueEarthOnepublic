@@ -104,7 +104,7 @@ export const createSortSchema = (
   }
   
   return z.object({
-    sort: z.enum(allowedFields as [string, ...string[]]).optional().default(defaultField || allowedFields[0]),
+    sort: z.enum(allowedFields.length > 0 ? allowedFields as [string, ...string[]] : ['id']).optional().default(defaultField || allowedFields[0]),
     order: z.enum(['asc', 'desc']).optional().default(defaultOrder)
   });
 };

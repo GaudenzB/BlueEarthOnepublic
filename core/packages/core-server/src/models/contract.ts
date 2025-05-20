@@ -6,12 +6,8 @@
  */
 
 import { z } from 'zod';
-import { createInsertSchema } from 'drizzle-zod';
 import { 
-  contractSchema, 
-  contractBaseSchema,
-  contractTypeEnum,
-  contractStatusEnum
+  contractBaseSchema
 } from '@blueearth/core-common';
 
 /**
