@@ -7,7 +7,7 @@
  */
 
 // Import from core-common package
-import { ApiErrorResponse, ApiSuccessResponse } from '@blueearth/core-common';
+import { ApiErrorResponse } from '@blueearth/core-common';
 
 /**
  * Default fetch options
@@ -177,5 +177,12 @@ export const apiRequest = {
     } as RequestInit),
     
   delete: <T>(url: string, options?: RequestInit) => 
-    fetchWithAuth<T>(url, { method: 'DELETE', ...options }),
+    fetchWithAuth<T>(url, { 
+      method: 'DELETE', 
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers || {})
+      },
+      ...(options || {})
+    } as RequestInit),
 };
