@@ -27,8 +27,9 @@ const { Panel } = Collapse;
 
 export default function DesignTesting() {
   // Sample tab change handler for demonstration purposes
-  const onChange = (key: string) => {
-    // This function is just for demonstration and not actually used
+  // We'll create an actual implementation of the onChange handler
+  // that will be used by the Tabs component in the UI
+  const handleTabChange = (key: string) => {
     console.log(`Tab ${key} selected`);
   };
 
@@ -42,7 +43,7 @@ export default function DesignTesting() {
         
         {/* Basic Tabs */}
         <Divider orientation="left">Basic Tabs</Divider>
-        <Tabs defaultActiveKey="1" onChange={onChange} style={{ marginBottom: 24 }}>
+        <Tabs defaultActiveKey="1" onChange={handleTabChange} style={{ marginBottom: 24 }}>
           <Tabs.TabPane tab="Tab 1" key="1">
             Content of Tab Pane 1
           </Tabs.TabPane>
@@ -56,7 +57,7 @@ export default function DesignTesting() {
         
         {/* Card Tabs */}
         <Divider orientation="left">Card Tabs</Divider>
-        <Tabs defaultActiveKey="1" type="card" style={{ marginBottom: 24 }}>
+        <Tabs defaultActiveKey="1" onChange={handleTabChange} type="card" style={{ marginBottom: 24 }}>
           <Tabs.TabPane tab="Card Tab 1" key="1">
             Content of Card Tab 1
           </Tabs.TabPane>

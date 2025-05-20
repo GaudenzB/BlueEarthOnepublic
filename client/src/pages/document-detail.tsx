@@ -128,7 +128,7 @@ export default function DocumentDetail() {
       
       {/* Main content area */}
       <div className="document-detail-container">
-        {/* Using a more generic container since DocumentDetailContent doesn't exist */}
+        {/* Using a more structured container that uses all our variables */}
         <div className="document-content">
           <h1>{safeDocument.title || "Document"}</h1>
           <p>Document ID: {safeDocument.id}</p>
@@ -140,6 +140,67 @@ export default function DocumentDetail() {
             <button onClick={handleFavoriteToggle}>
               {safeDocument.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
             </button>
+            <button onClick={handleRefreshStatus}>Refresh Status</button>
+          </div>
+          
+          {/* Tab navigation using the activeTab state */}
+          <div className="document-tabs" style={{ marginTop: '20px' }}>
+            <div className="tab-header">
+              <button 
+                onClick={() => handleTabChange("1")} 
+                className={activeTab === "1" ? "active" : ""}>
+                Overview
+              </button>
+              <button 
+                onClick={() => handleTabChange("2")} 
+                className={activeTab === "2" ? "active" : ""}>
+                Versions
+              </button>
+              <button 
+                onClick={() => handleTabChange("3")} 
+                className={activeTab === "3" ? "active" : ""}>
+                Comments
+              </button>
+              <button 
+                onClick={() => handleTabChange("4")} 
+                className={activeTab === "4" ? "active" : ""}>
+                Timeline
+              </button>
+            </div>
+            
+            {/* Tab content */}
+            <div className="tab-content" style={{ padding: '20px', border: '1px solid #eee' }}>
+              {activeTab === "1" && (
+                <div>
+                  <h3>Overview Content</h3>
+                  <p>Document details would go here.</p>
+                </div>
+              )}
+              
+              {activeTab === "2" && (
+                <div>
+                  <h3>Version History</h3>
+                  <p>No previous versions</p>
+                  <button onClick={() => handleRestoreVersion("v1")}>
+                    Restore to Latest Version
+                  </button>
+                </div>
+              )}
+              
+              {activeTab === "3" && (
+                <div>
+                  <h3>Comments</h3>
+                  <p>No comments yet.</p>
+                </div>
+              )}
+              
+              {activeTab === "4" && (
+                <div>
+                  <h3>Timeline</h3>
+                  <p>No activity recorded.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

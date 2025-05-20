@@ -103,8 +103,8 @@ describe('DocumentUploader Component', () => {
   });
 
   it('renders document uploader interface', () => {
-    // Modify dropzone mock for this test only
-    const useDropzoneMock = require('react-dropzone').useDropzone;
+    // Modify dropzone mock for this test only using proper ES module syntax
+    const { useDropzone: useDropzoneMock } = jest.requireMock('react-dropzone');
     useDropzoneMock.mockReturnValue({
       getRootProps: jest.fn(() => ({})),
       getInputProps: jest.fn(() => ({})),
