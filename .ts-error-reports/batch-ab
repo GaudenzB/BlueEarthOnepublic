@@ -1,0 +1,10 @@
+./client/src/components/ui/drawer.tsx
+./client/src/components/ui/form.tsx
+./client/src/components/ui/label.tsx
+./client/src/components/ui/navigation-menu.tsx
+./client/src/components/ui/pagination.tsx
+./client/src/components/ui/popover.tsx
+./client/src/components/ui/progress.tsx
+./client/src/components/ui/radio-group.tsx
+./client/src/components/ui/resizable.tsx
+./client/src/components/ui/scroll-area.tsx

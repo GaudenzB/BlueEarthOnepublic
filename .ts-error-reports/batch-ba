@@ -1,0 +1,10 @@
+./core/packages/core-common/src/utils/data-transform.ts
+./core/packages/core-common/src/utils/auth-helpers.ts
+./core/packages/core-common/src/types/api.ts
+./core/packages/core-common/src/types/index.ts
+./core/packages/core-common/src/index.ts
+./core/packages/core-client/src/utils/index.ts
+./core/packages/core-client/src/utils/httpClient.ts
+./core/packages/core-client/src/index.ts
+./core/packages/core-server/src/utils/index.ts
+./core/packages/core-server/src/utils/errorHandling.ts

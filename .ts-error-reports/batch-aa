@@ -1,0 +1,10 @@
+./client/src/components/ui/accordion.tsx
+./client/src/components/ui/alert-dialog.tsx
+./client/src/components/ui/alert.tsx
+./client/src/components/ui/aspect-ratio.tsx
+./client/src/components/ui/avatar.tsx
+./client/src/components/ui/breadcrumb.tsx
+./client/src/components/ui/calendar.tsx
+./client/src/components/ui/carousel.tsx
+./client/src/components/ui/collapsible.tsx
+./client/src/components/ui/dialog.tsx

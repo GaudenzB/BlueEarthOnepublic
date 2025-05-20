@@ -1,0 +1,10 @@
+./client/src/pages/employee-detail-fixed-complete.tsx
+./client/src/pages/employee-detail-clean.tsx
+./client/src/pages/user-management.tsx
+./client/src/pages/employee-detail-new.tsx
+./client/src/contexts/PermissionsContext.tsx
+./client/src/__tests__/useAuth.test.tsx
+./client/src/theme/theme.ts
+./client/src/theme/blueearth-theme.ts
+./client/src/theme/tokens.ts
+./client/src/theme/ant-theme.ts

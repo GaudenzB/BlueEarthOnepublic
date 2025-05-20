@@ -1,0 +1,10 @@
+./client/src/hooks/useA11y.ts
+./client/src/hooks/use-toast.ts
+./client/src/hooks/useAuth.ts
+./client/src/hooks/usePermissions.ts
+./client/src/hooks/use-toast.tsx
+./client/src/hooks/useWindowSize.ts
+./client/src/hooks/use-auth.tsx
+./client/src/lib/config.ts
+./client/src/lib/types.ts
+./client/src/lib/theme.ts

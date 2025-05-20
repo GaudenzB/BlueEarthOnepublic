@@ -1,0 +1,10 @@
+./server/routes/health.ts
+./server/routes/authRoutes.ts
+./server/routes/permissions.ts
+./server/routes/documents.ts
+./server/routes/entraIdRoutes.ts
+./server/utils/config.ts
+./server/utils/errorHandling.ts
+./server/utils/apiResponse.ts
+./server/utils/setupDefaultTenant.ts
+./server/utils/jwtHelper.ts

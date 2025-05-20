@@ -1,0 +1,10 @@
+./server/db.ts
+./server/lib/utils.ts
+./server/passport-auth.ts
+./server/auth/microsoft.ts
+./server/auth-minimal.ts
+./server/auth.ts
+./server/storage.ts
+./server/routes.ts
+./server/index.ts
+./server/ai/contractExtractor.ts

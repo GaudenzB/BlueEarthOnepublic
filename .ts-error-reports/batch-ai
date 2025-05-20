@@ -1,0 +1,10 @@
+./client/src/components/documents/DocumentDetailState.tsx
+./client/src/components/documents/DocumentPreview.tsx
+./client/src/components/documents/DocumentList.tsx
+./client/src/components/documents/DocumentStatusBadge.tsx
+./client/src/components/documents/SemanticSearchBar.tsx
+./client/src/components/documents/DocumentHeader.tsx
+./client/src/components/layout/PageLayout.tsx
+./client/src/components/common/EmptyState.tsx
+./client/src/components/PageLayout.tsx
+./client/src/components/design/DesignTokens.tsx

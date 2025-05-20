@@ -1,0 +1,10 @@
+./client/src/components/services/documentSearchService.ts
+./client/src/components/DocumentUpload/DocumentUploader.tsx
+./client/src/hooks/use-mobile.tsx
+./client/src/hooks/use-sidebar.tsx
+./client/src/hooks/usePermissionCheck.ts
+./client/src/hooks/useDocumentMutations.ts
+./client/src/hooks/useFormState.ts
+./client/src/hooks/useDebounce.ts
+./client/src/hooks/useMountTransition.ts
+./client/src/hooks/useLocalStorage.ts

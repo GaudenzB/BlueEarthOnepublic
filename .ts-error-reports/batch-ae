@@ -1,0 +1,10 @@
+./client/src/components/ui/checkbox.tsx
+./client/src/components/ui/tabs.tsx
+./client/src/components/ui/sidebar.tsx
+./client/src/components/ui/KeyboardNavigableMenu.tsx
+./client/src/components/ui/StatusTag.tsx
+./client/src/components/ui/CardContainer.tsx
+./client/src/components/ui/index.ts
+./client/src/components/ui/input-otp.tsx
+./client/src/components/ui/LoadingState.tsx
+./client/src/components/ui/PageHeader.tsx

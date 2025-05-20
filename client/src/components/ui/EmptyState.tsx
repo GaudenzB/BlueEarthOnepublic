@@ -1,5 +1,5 @@
 import React from 'react';
-import { Empty, Button } from 'antd';
+import { Empty, Button, theme as antTheme } from 'antd';
 import { theme } from '@/lib/theme';
 
 export interface EmptyStateProps {

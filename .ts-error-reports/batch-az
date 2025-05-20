@@ -1,0 +1,10 @@
+./core/packages/core-common/src/schemas/document.ts
+./core/packages/core-common/src/schemas/contract.ts
+./core/packages/core-common/src/schemas/index.ts
+./core/packages/core-common/src/schemas/auth.ts
+./core/packages/core-common/src/utils/formatting.ts
+./core/packages/core-common/src/utils/validation.ts
+./core/packages/core-common/src/utils/form-helpers.ts
+./core/packages/core-common/src/utils/debug-helpers.ts
+./core/packages/core-common/src/utils/index.ts
+./core/packages/core-common/src/utils/ts-helpers.ts

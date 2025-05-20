@@ -1,0 +1,10 @@
+./server/services/documentProcessor.ts
+./server/migrations/addUserPermissions.ts
+./server/migrations/addEmployeeFields.ts
+./server/migrations/index.ts
+./server/migrations/addEmployeeTrackingFields.ts
+./server/routes/monitoring.ts
+./server/routes/documentPreview.ts
+./server/routes/semanticSearch.ts
+./server/routes/test-pdf.ts
+./server/routes/chunkedUploads.ts

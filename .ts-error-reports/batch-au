@@ -1,0 +1,10 @@
+./server/middleware/session.ts
+./server/__tests__/routes/auth-routes.test.ts
+./server/__tests__/auth.test.ts
+./server/__tests__/auth-middleware.test.ts
+./server/__tests__/controllers/authController.test.ts
+./server/__tests__/controllers/employeeController.test.ts
+./server/__tests__/controllers/documentController.test.ts
+./server/__tests__/services/permissionService.test.ts
+./server/__tests__/middleware/authenticate.test.ts
+./server/__tests__/utils/expressUtils.ts

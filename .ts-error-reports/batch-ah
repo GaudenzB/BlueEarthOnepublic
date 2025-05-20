@@ -1,0 +1,10 @@
+./client/src/components/documents/tabs/DocumentOverviewTab.tsx
+./client/src/components/documents/tabs/DocumentVersionsTab.tsx
+./client/src/components/documents/DocumentDeleteDialog.tsx
+./client/src/components/documents/DocumentProcessingStatus.tsx
+./client/src/components/documents/DocumentShareDialog.tsx
+./client/src/components/documents/DocumentMetadata.tsx
+./client/src/components/documents/VirtualizedDocumentList.tsx
+./client/src/components/documents/DocumentProcessingAlert.tsx
+./client/src/components/documents/DocumentTabs.tsx
+./client/src/components/documents/DocumentDetailContent.tsx

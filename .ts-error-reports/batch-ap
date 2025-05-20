@@ -1,0 +1,10 @@
+./client/__tests__/components/DocumentUpload/DocumentUploader.test.tsx
+./client/__tests__/components/DocumentUpload/DocumentUploader.fixed.test.tsx
+./client/__tests__/components/Dashboard/AnalyticsDashboard.test.tsx
+./client/__tests__/components/Auth/AuthGuard.test.tsx
+./server/vite.ts
+./server/services/employeeSync.ts
+./server/services/bubbleApi.ts
+./server/services/documentStorage.ts
+./server/services/documentSearchService.ts
+./server/services/entraIdService.ts

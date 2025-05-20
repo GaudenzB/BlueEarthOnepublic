@@ -1,0 +1,10 @@
+./client/src/components/ui/select.tsx
+./client/src/components/ui/separator.tsx
+./client/src/components/ui/sheet.tsx
+./client/src/components/ui/skeleton.tsx
+./client/src/components/ui/slider.tsx
+./client/src/components/ui/switch.tsx
+./client/src/components/ui/table.tsx
+./client/src/components/ui/textarea.tsx
+./client/src/components/ui/toast.tsx
+./client/src/components/ui/toaster.tsx

@@ -1,0 +1,10 @@
+./client/src/components/employee/EmployeeDirectory.tsx
+./client/src/components/auth/ResetPasswordForm.tsx
+./client/src/components/auth/ForgotPasswordForm.tsx
+./client/src/components/admin/BubbleSync.tsx
+./client/src/components/admin/UserPermissions.tsx
+./client/src/components/admin/UserDetails.tsx
+./client/src/components/profile/UserPermissionsTab.tsx
+./client/src/components/logo.tsx
+./client/src/components/documents/tabs/DocumentTimelineTab.tsx
+./client/src/components/documents/tabs/DocumentCommentsTab.tsx

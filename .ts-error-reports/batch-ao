@@ -1,0 +1,10 @@
+./client/src/types/document.ts
+./client/src/main.tsx
+./client/src/utils/dom.ts
+./client/src/utils/formatting.ts
+./client/src/utils/a11y.ts
+./client/src/services/chunkedUploadService.ts
+./client/src/services/documentSearchService.ts
+./client/src/App.tsx
+./client/src/setupTests.ts
+./client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx

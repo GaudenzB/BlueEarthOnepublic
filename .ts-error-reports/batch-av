@@ -1,0 +1,10 @@
+./server/docs/openapi.ts
+./server/repositories/contractRepository.ts
+./server/repositories/documentEmbeddingsRepository.ts
+./server/repositories/userRepository.ts
+./server/repositories/documentRepository.ts
+./server/controllers/authController.ts
+./server/controllers/documentController.ts
+./server/queue/jobQueue.ts
+./server/queue/documentJobs.ts
+./server/config/env.ts

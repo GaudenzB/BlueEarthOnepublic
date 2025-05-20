@@ -148,7 +148,7 @@ export function sendDatabaseError(
   details?: any
 ): void {
   // In production, we should never expose database details
-  const safeDetails = process.env.NODE_ENV === 'production' ? undefined : details;
+  const safeDetails = process.env['NODE_ENV'] === 'production' ? undefined : details;
   
   sendError(
     res,

@@ -1,0 +1,10 @@
+./client/src/lib/httpClient.ts
+./client/src/lib/protected-route.tsx
+./client/src/lib/routes.ts
+./client/src/lib/utils.ts
+./client/src/lib/queryClient.ts
+./client/src/lib/theme-utils.ts
+./client/src/lib/colors.ts
+./client/src/pages/integrations.tsx
+./client/src/pages/document-detail-ant.tsx
+./client/src/pages/auth/entra-error.tsx

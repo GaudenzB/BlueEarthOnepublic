@@ -1,0 +1,10 @@
+./core/src/schemas/employee.ts
+./core/src/schemas/auth.ts
+./core/src/theme/colors.ts
+./core/src/theme/spacing.ts
+./core/src/theme/typography.ts
+./core/src/theme/index.ts
+./core/src/styles/index.ts
+./core/src/index.ts
+./core/packages/core-common/src/schemas/common.ts
+./core/packages/core-common/src/schemas/employee.ts

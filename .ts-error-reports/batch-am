@@ -1,0 +1,10 @@
+./client/src/pages/auth/entra-complete.tsx
+./client/src/pages/auth/signin.tsx
+./client/src/pages/DesignSystem.tsx
+./client/src/pages/auth-page.tsx
+./client/src/pages/document-detail.tsx
+./client/src/pages/design-testing.tsx
+./client/src/pages/documents.tsx
+./client/src/pages/login.tsx
+./client/src/pages/employee-detail.tsx
+./client/src/pages/employee-directory.tsx
