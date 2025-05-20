@@ -48,10 +48,6 @@ import {
   Calendar
 } from "lucide-react";
 import { LockIcon } from "@/components/ui/icons";
-  ClockCircleOutlined,
-  GlobalOutlined,
-  StopOutlined
-} from "@ant-design/icons";
 import { colors } from "@/lib/colors";
 import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { PermissionGuard } from "@/components/permissions/PermissionGuard";
