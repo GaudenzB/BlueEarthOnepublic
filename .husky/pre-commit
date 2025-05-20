@@ -1,19 +1,29 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Get staged files
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(js|jsx|ts|tsx)$")
+echo "🔎 Running TypeScript type check..."
+
+# Get staged TS/TSX files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(ts|tsx)$")
 
 if [ -n "$STAGED_FILES" ]; then
-  echo "Checking TypeScript type errors..."
-  # Only check staged TypeScript/JavaScript files
-  npx tsc --noEmit --project tsconfig.strict.json
-
-  echo "Running ESLint on staged files..."
-  npx eslint --fix $STAGED_FILES
+  # Check TypeScript types using our strict configuration
+  node scripts/type-check.mjs --strict
   
-  # Re-stage files that might have been fixed by eslint
-  echo "Re-staging files that may have been auto-fixed..."
+  # Store the exit code
+  TYPE_CHECK_EXIT_CODE=$?
+  
+  # If type checking failed, abort the commit
+  if [ $TYPE_CHECK_EXIT_CODE -ne 0 ]; then
+    echo "❌ TypeScript type check failed. Please fix the errors before committing."
+    exit 1
+  fi
+  
+  # Run ESLint on staged files
+  echo "🔍 Running ESLint on staged TypeScript files..."
+  npx eslint $STAGED_FILES --fix
+  
+  # Re-stage files that might have been fixed by ESLint
   for FILE in $STAGED_FILES; do
     if [ -f "$FILE" ]; then
       git add "$FILE"
@@ -21,5 +31,5 @@ if [ -n "$STAGED_FILES" ]; then
   done
 fi
 
-# Run lint-staged for additional checks
-npx lint-staged
+echo "✅ TypeScript checks passed!"
+exit 0
