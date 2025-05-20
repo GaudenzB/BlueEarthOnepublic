@@ -66,7 +66,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   return (
     <div 
-      className={`page-header ${className}`}
+      className={`page-header ${className = undefined}`}
       style={{
         marginBottom: theme.spacing.xl,
       }}
@@ -103,7 +103,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               }}
             >
               <ArrowLeftOutlined style={{ marginRight: '0.5rem' }} />
-              {backLabel}
+              {backLabel = undefined}
             </Button>
           )}
           

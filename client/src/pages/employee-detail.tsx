@@ -35,7 +35,10 @@ const getStatusColor = (status: string): string => {
     case 'active': return 'green';
     case 'inactive': return 'red';
     case 'pending': return 'orange';
-    default: return 'gray';
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 807;
+      return _exhaustiveCheck;
   }
 };
 
@@ -44,7 +47,10 @@ const getStatusText = (status: string): string => {
     case 'active': return 'Active';
     case 'inactive': return 'Inactive';
     case 'pending': return 'Pending';
-    default: return 'Unknown';
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 1112;
+      return _exhaustiveCheck;
   }
 };
 

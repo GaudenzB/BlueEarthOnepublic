@@ -78,7 +78,12 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
-      }
+      
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 1520;
+      return _exhaustiveCheck;
+  }
 
     case "UPDATE_TOAST":
       return {

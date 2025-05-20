@@ -147,7 +147,12 @@ const CustomToast: React.FC<CustomToastProps> = ({
   const renderIcon = () => {
     switch (variant) {
       case 'success':
-        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.success }} />;
+        return <CheckCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.success 
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 2981;
+      return _exhaustiveCheck;
+  }} />;
       case 'error':
         return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.error }} />;
       case 'warning':
@@ -165,7 +170,12 @@ const CustomToast: React.FC<CustomToastProps> = ({
         return {
           background: '#f0fdf4',
           borderColor: '#a3e635'
-        };
+        
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 3725;
+      return _exhaustiveCheck;
+  };
       case 'error':
         return {
           background: '#fef2f2',
@@ -193,7 +203,12 @@ const CustomToast: React.FC<CustomToastProps> = ({
     
     switch (variant) {
       case 'error':
-        return { role: 'alert', 'aria-live': assertive };
+        return { role: 'alert', 'aria-live': assertive 
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 4560;
+      return _exhaustiveCheck;
+  };
       case 'warning':
         return { role: 'status', 'aria-live': polite };
       case 'success':
@@ -362,7 +377,12 @@ export const CustomToastProvider: React.FC<CustomToastProviderProps> = ({
   const getPositionStyles = (): React.CSSProperties => {
     switch (position) {
       case 'top-left':
-        return { top: '20px', left: '20px' };
+        return { top: '20px', left: '20px' 
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 9109;
+      return _exhaustiveCheck;
+  };
       case 'top-center':
         return { top: '20px', left: '50%', transform: 'translateX(-50%)' };
       case 'bottom-right':

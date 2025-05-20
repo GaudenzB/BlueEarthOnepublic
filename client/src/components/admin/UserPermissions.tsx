@@ -162,7 +162,10 @@ export function UserPermissions({ userId, userName }: UserPermissionsProps) {
       case 'it': return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'legal': return 'bg-red-100 text-red-800 border-red-300';
       case 'operations': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 4725;
+      return _exhaustiveCheck;
     }
   };
 

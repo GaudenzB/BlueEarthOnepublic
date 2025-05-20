@@ -94,7 +94,10 @@ export const CardContainer: React.FC<CardContainerProps> = ({
       case 'lg': return theme.borderRadius.lg;
       case 'xl': return theme.borderRadius.xl;
       case '2xl': return theme.borderRadius.xl; // Using xl since 2xl isn't available
-      default: return theme.borderRadius.xl;
+      default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 1566;
+      return _exhaustiveCheck;
     }
   };
 
@@ -125,13 +128,13 @@ export const CardContainer: React.FC<CardContainerProps> = ({
         </div>
       ) : null}
       extra={extra}
-      className={`card-container ${className}`}
+      className={`card-container ${className = undefined}`}
       style={{
         borderRadius: getBorderRadius(),
         boxShadow: theme.shadows.sm,
         ...style,
       }}
-      hoverable={hoverable}
+      hoverable={hoverable = undefined}
       size={size}
       onClick={onClick}
     >

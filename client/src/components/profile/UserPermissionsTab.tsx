@@ -23,7 +23,10 @@ export function UserPermissionsTab({ userId, userName, userRole }: UserPermissio
       case 'admin': return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'manager': return 'bg-green-100 text-green-800 border-green-300';
       case 'user': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 870;
+      return _exhaustiveCheck;
     }
   };
 
@@ -33,7 +36,10 @@ export function UserPermissionsTab({ userId, userName, userRole }: UserPermissio
       case 'admin': return <ShieldCheck className="h-5 w-5 text-blue-600" />;
       case 'manager': return <Shield className="h-5 w-5 text-green-600" />;
       case 'user': return <SquareUserRound className="h-5 w-5 text-gray-600" />;
-      default: return <SquareUserRound className="h-5 w-5 text-gray-600" />;
+      default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 1367;
+      return _exhaustiveCheck;
     }
   };
 

@@ -241,7 +241,7 @@ const ListItemRenderer = React.memo(({
  * // Basic usage
  * <EmployeeDirectory 
  *   employees={employees} 
- *   isLoading={isLoading}
+ *   isLoading={isLoading = undefined}
  *   onEmployeeSelect={handleEmployeeSelect}
  * />
  * 
@@ -249,7 +249,7 @@ const ListItemRenderer = React.memo(({
  * <EmployeeDirectory 
  *   employees={employees}
  *   isLoading={isLoading}
- *   error={error}
+ *   error={error = undefined}
  *   onRefresh={refetchEmployees}
  *   onEmployeeSelect={handleEmployeeSelect}
  *   onEmployeeEdit={handleEmployeeEdit}

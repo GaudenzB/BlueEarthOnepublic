@@ -141,7 +141,7 @@ export default function EmployeeDirectoryPage() {
     if (urlStatus) setStatusFilter(urlStatus)
     if (urlSortBy) setSortBy(urlSortBy)
     if (urlSortDirection) setSortDirection(urlSortDirection)
-  }, [])
+  }, [] /* Only runs once on mount */)
 
   // Update URL with filter params
   useEffect(() => {

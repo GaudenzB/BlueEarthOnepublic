@@ -89,7 +89,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
                 color: '#1e293b' as string as string,
                 marginBottom: '0.75rem',
               }}>
-                {title}
+                {title = undefined}
               </h3>
             )}
             
@@ -114,7 +114,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               borderColor: theme.colors.primary.base,
             }}
           >
-            {actionText}
+            {actionText = undefined}
           </Button>
         )}
       </Empty>

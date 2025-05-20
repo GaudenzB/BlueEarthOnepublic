@@ -28,7 +28,12 @@ const { Title, Text } = Typography;
 function getTimelineIcon(type: string) {
   switch (type) {
     case 'create':
-      return <FileOutlined style={{ fontSize: 16 }} />;
+      return <FileOutlined style={{ fontSize: 16 
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 645;
+      return _exhaustiveCheck;
+  }} />;
     case 'update':
       return <EditOutlined style={{ fontSize: 16 }} />;
     case 'view':

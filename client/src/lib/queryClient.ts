@@ -51,6 +51,9 @@ export async function apiRequest<T = any>(
         response = await httpClient.delete<T>(url, options);
         break;
       default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 1063;
+      return _exhaustiveCheck;
         throw new Error(`Unsupported HTTP method: ${method}`);
     }
     

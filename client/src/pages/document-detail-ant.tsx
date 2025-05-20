@@ -663,7 +663,12 @@ export default function DocumentDetail() {
 function getTimelineIcon(type: string) {
   switch (type) {
     case 'create':
-      return <FileOutlined style={{ fontSize: 16 }} />;
+      return <FileOutlined style={{ fontSize: 16 
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 22000;
+      return _exhaustiveCheck;
+  }} />;
     case 'edit':
       return <EditOutlined style={{ fontSize: 16 }} />;
     case 'status':

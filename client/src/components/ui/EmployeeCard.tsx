@@ -467,7 +467,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = memo(({
     <Card
       id={id}
       hoverable={Boolean(onClick)}
-      className={`employee-card ${className}`}
+      className={`employee-card ${className || ''}`}
       actions={cardActions}
       style={{
         width: sizeConfig.cardWidth,

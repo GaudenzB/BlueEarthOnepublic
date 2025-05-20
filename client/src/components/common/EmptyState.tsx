@@ -32,7 +32,12 @@ export function EmptyState({
   const getEmptyStyles = () => {
     switch (size) {
       case 'small':
-        return { padding: '16px 0' };
+        return { padding: '16px 0' 
+    default:
+      // Exhaustive type check
+      const _exhaustiveCheck: never = 755;
+      return _exhaustiveCheck;
+  };
       case 'large':
         return { padding: '48px 0' };
       default:
