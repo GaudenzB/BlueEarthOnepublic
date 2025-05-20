@@ -325,10 +325,17 @@ export function redactSensitiveData(data: string): string {
   
   // Email redaction
   if (data.includes('@')) {
-    const [username, domain] = data.split('@');
-    const firstChar = username.charAt(0);
-    const redactedUsername = firstChar + '*'.repeat(username.length - 1);
-    return `${redactedUsername}@${domain}`;
+    const parts = data.split('@');
+    if (parts.length >= 2) {
+      const username = parts[0];
+      const domain = parts[1];
+      if (username && username.length > 0) {
+        const firstChar = username.charAt(0);
+        const redactedUsername = firstChar + '*'.repeat(username.length - 1);
+        return `${redactedUsername}@${domain}`;
+      }
+    }
+    // If email format is invalid, fall through to other redaction methods
   }
   
   // Generic string redaction (e.g., API keys, tokens)

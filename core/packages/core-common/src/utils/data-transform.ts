@@ -317,13 +317,18 @@ export function unflattenObject(
     
     for (let i = 0; i < keys.length - 1; i++) {
       const k = keys[i];
-      if (!current[k]) {
-        current[k] = {};
+      if (k) { // Check that key segment is not undefined
+        if (!current[k]) {
+          current[k] = {};
+        }
+        current = current[k] as Record<string, any>;
       }
-      current = current[k];
     }
     
-    current[keys[keys.length - 1]] = value;
+    const lastKey = keys[keys.length - 1];
+    if (lastKey) { // Check that last key segment is not undefined
+      current[lastKey] = value;
+    }
   });
   
   return result;

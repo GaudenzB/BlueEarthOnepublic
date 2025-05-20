@@ -1,0 +1,32 @@
+Annotations
+10 errors and 5 warnings
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L223
+'MemoryRouter' is not defined
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L197
+'MemoryRouter' is not defined
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L180
+'MemoryRouter' is not defined
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L154
+'MemoryRouter' is not defined
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L126
+'MemoryRouter' is not defined
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L101
+'MemoryRouter' is not defined
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L4
+'Router' is defined but never used. Allowed unused vars must match /^_/u
+lint-and-typecheck: client/__tests__/components/EmployeeDirectory/EmployeeList.test.tsx#L4
+'Router' is defined but never used. Allowed unused vars must match /^_/u
+lint-and-typecheck: client/__tests__/components/DocumentUpload/DocumentUploader.fixed.test.tsx#L4
+'UseMutationResult' is defined but never used. Allowed unused vars must match /^_/u
+lint-and-typecheck: client/__tests__/components/DocumentUpload/DocumentUploader.fixed.test.tsx#L4
+'UseMutationResult' is defined but never used. Allowed unused vars must match /^_/u
+lint-and-typecheck: modules/employees/client/EmployeeDirectory.tsx#L61
+The 'employees' conditional could make the dependencies of useMemo Hook (at line 144) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'employees' in its own useMemo() Hook
+lint-and-typecheck: core/src/hooks/useMediaQuery.ts#L10
+The 'getMatches' function makes the dependencies of useEffect Hook (at line 42) change on every render. To fix this, wrap the definition of 'getMatches' in its own useCallback() Hook
+lint-and-typecheck: core/src/hooks/useLocalStorage.ts#L8
+The 'readValue' function makes the dependencies of useEffect Hook (at line 56) change on every render. To fix this, wrap the definition of 'readValue' in its own useCallback() Hook
+lint-and-typecheck: client/src/pages/employee-detail-new.tsx#L76
+The 'refreshData' function makes the dependencies of useEffect Hook (at line 83) change on every render. To fix this, wrap the definition of 'refreshData' in its own useCallback() Hook
+lint-and-typecheck: client/src/hooks/useWindowSize.ts#L41
+The 'breakpoints' object makes the dependencies of useEffect Hook (at line 111) change on every render. Move it inside the useEffect callback. Alternatively, wrap the initialization of 'breakpoints' in its own useMemo() Hook

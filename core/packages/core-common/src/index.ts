@@ -5,8 +5,9 @@
  * that are shared between client and server code.
  */
 
-// Export all schemas
-export * from './schemas';
+// Export all schemas through a namespace to avoid conflicts
+import * as Schemas from './schemas';
+export { Schemas };
 
 // Export utility types and functions
 export * from './utils';

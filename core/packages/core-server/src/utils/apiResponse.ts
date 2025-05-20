@@ -28,8 +28,8 @@ export function sendSuccess<T>(
   const response: ApiSuccessResponse<T> = {
     success: true,
     data,
-    message,
-    meta
+    message: message || undefined,
+    meta: meta || undefined
   };
   
   res.status(statusCode).json(response);
