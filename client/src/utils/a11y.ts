@@ -112,18 +112,20 @@ export function trapFocus(container: HTMLElement, event: KeyboardEvent): void {
   const focusableElements = getFocusableElements(container);
   if (focusableElements.length === 0) return;
   
-  // Since we've already checked focusableElements.length above, these are safe to use
-  const firstElement = focusableElements[0];
-  const lastElement = focusableElements[focusableElements.length - 1];
-  
-  if (event.shiftKey && document.activeElement === firstElement) {
-    // When on the first element and going backward, wrap to the last element
-    lastElement.focus();
-    event.preventDefault();
-  } else if (!event.shiftKey && document.activeElement === lastElement) {
-    // When on the last element and going forward, wrap to the first element
-    firstElement.focus();
-    event.preventDefault();
+  // Since we check focusableElements.length > 0 above, we can safely access these elements
+  if (focusableElements.length > 0) {
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    
+    if (event.shiftKey && document.activeElement === firstElement) {
+      // When on the first element and going backward, wrap to the last element
+      lastElement?.focus();
+      event.preventDefault();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      // When on the last element and going forward, wrap to the first element
+      firstElement?.focus();
+      event.preventDefault();
+    }
   }
 }
 
@@ -148,8 +150,9 @@ export function focusFirstElement(container: HTMLElement): void {
   const focusableElements = getFocusableElements(container);
   // Check if the array has elements before accessing
   if (focusableElements.length > 0) {
-    // Since we've checked length, we know this element exists
-    focusableElements[0].focus();
+    // Since we've checked length, we can safely access the first element
+    // and TypeScript should be assured it exists
+    focusableElements[0]?.focus();
   }
 }
 
