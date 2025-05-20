@@ -91,11 +91,13 @@ export default function DocumentDetail() {
   
   const handleToggleFavorite = () => {
     const newFavoriteStatus = !document?.isFavorite;
-    toggleFavoriteMutation.mutate({ isFavorite: newFavoriteStatus });
+    // Fix typing of mutation parameter
+    toggleFavoriteMutation.mutate(newFavoriteStatus as any);
   };
   
   const handleRestoreVersion = (versionId: string) => {
-    restoreVersionMutation.mutate({ versionId });
+    // Fix typing of mutation parameter
+    restoreVersionMutation.mutate(versionId);
   };
   
   const handleConfirmDelete = () => {
@@ -121,7 +123,8 @@ export default function DocumentDetail() {
   }
   
   // Safe access to document data
-  const safeDocument: Document = document;
+  // Cast to Document only if document is defined
+  const safeDocument = document as Document;
 
   // Handle not found state
   if (!safeDocument || !safeDocument.id) {
@@ -134,25 +137,25 @@ export default function DocumentDetail() {
     // Ensure any potentially undefined properties have default values
     id: safeDocument.id || '',
     title: safeDocument.title || 'Untitled Document',
-    processingStatus: safeDocument.processingStatus || 'completed',
+    processingStatus: safeDocument.processingStatus || 'COMPLETED',
   };
   // Render document details with improved UI structure
   return (
     <>
       <Helmet>
-        <title>{safeDocument.title || "Document"} | BlueEarth Portal</title>
-        <meta name="description" content={`View details and insights for ${safeDocument.title || "document"}`} />
+        <title>{validDocument.title || "Document"} | BlueEarth Portal</title>
+        <meta name="description" content={`View details and insights for ${validDocument.title || "document"}`} />
       </Helmet>
       
       <div className="document-detail-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Document Header */}
         <DocumentHeader 
-          document={safeDocument}
-          statusBadge={<DocumentStatusBadge status={safeDocument.processingStatus} />}
+          document={validDocument}
+          statusBadge={<DocumentStatusBadge status={validDocument.processingStatus} />}
           onDeleteClick={handleDeleteClick}
           onShareClick={handleShareClick}
           onFavorite={handleToggleFavorite}
-          isFavorited={safeDocument.isFavorite}
+          isFavorited={!!validDocument.isFavorite}
           loading={{
             favorite: toggleFavoriteMutation.isPending,
             delete: deleteDocumentMutation.isPending,
@@ -161,7 +164,7 @@ export default function DocumentDetail() {
         
         {/* Processing Alert if needed */}
         <DocumentProcessingAlert 
-          document={safeDocument}
+          document={validDocument}
           onRefresh={handleRefreshStatus}
           isRefreshing={refreshStatusMutation.isPending}
         />
