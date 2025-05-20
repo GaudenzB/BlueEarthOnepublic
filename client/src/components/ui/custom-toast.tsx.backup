@@ -108,7 +108,7 @@ export function CustomToast({
         return <CloseCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.error }} />;
       case 'warning':
         return <WarningOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.warning }} />;
-      case 'info':undefined;
+      case 'info':
       default:
         return <InfoCircleOutlined style={{ fontSize: '20px', color: tokens.colors.semantic.info }} />;
     }
@@ -132,7 +132,7 @@ export function CustomToast({
           background: '#fffbeb',
           borderColor: '#fbbf24'
         };
-      case 'info':undefined;
+      case 'info':
       default:
         return {
           background: '#f0f9ff',
@@ -152,8 +152,8 @@ export function CustomToast({
         return { role: 'alert', 'aria-live': assertive };
       case 'warning':
         return { role: 'status', 'aria-live': polite };
-      case 'success':undefined;
-      case 'info':undefined;
+      case 'success':
+      case 'info':
       default:
         return { role: 'status', 'aria-live': polite };
     }
@@ -206,7 +206,7 @@ export function CustomToast({
           {actions.length > 0 && (
             <Space className="toast-actions" style={{ marginTop: '8px' }}>
               {actions.map((action, index) => (
-                <React.Fragment key={index}>{action}</ReactReact.Fragment>
+                <React.Fragment key={index}>{action}</React.Fragment>
               ))}
             </Space>
           )}
@@ -226,7 +226,7 @@ export function CustomToast({
             }}
           >
             <CloseCircleOutlined />
-          </CloseCircleOutlinedButton>
+          </Button>
         )}
       </div>
     </div>
