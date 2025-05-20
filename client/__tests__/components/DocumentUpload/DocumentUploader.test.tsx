@@ -3,15 +3,31 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import DocumentUploader from '../../../src/components/DocumentUpload/DocumentUploader';
 
-// Define the mock type for useMutation
-type MockUseMutation = jest.Mock<ReturnType<typeof useMutation>>;
+// Define more complete mock types for react-query
+type MockUseMutation = jest.Mock<Partial<ReturnType<typeof useMutation>>>;
 
 // Mock the react-query hooks
 jest.mock('@tanstack/react-query', () => {
   const originalModule = jest.requireActual('@tanstack/react-query');
   return {
     ...originalModule,
-    useMutation: jest.fn(),
+    useMutation: jest.fn().mockImplementation(() => ({
+      mutate: jest.fn(),
+      isPending: false,
+      isError: false,
+      error: null,
+      isSuccess: false,
+      reset: jest.fn(),
+      // Add missing properties required by the TypeScript interface
+      data: undefined,
+      variables: undefined,
+      isIdle: true,
+      status: 'idle',
+      mutateAsync: jest.fn().mockResolvedValue({}),
+      failureCount: 0,
+      failureReason: null,
+      context: undefined
+    })),
   };
 });
 

@@ -2,13 +2,23 @@ import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '../../hooks/use-toast';
-import { useForm } from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage, Form } from '@/components/ui/form';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from '@/components/ui/context-menu';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Upload, File, X, Check, Loader2, ArrowUp } from 'lucide-react';
+
+// Define form schema for validation
+const formSchema = z.object({
+  documentType: z.string().min(1, "Document type is required"),
+  description: z.string().optional(),
+});
+
+// Define type based on schema
+type FormValues = z.infer<typeof formSchema>;
 
 /**
  * Document uploader component
@@ -19,7 +29,8 @@ const DocumentUploader: React.FC = () => {
   const { toast } = useToast();
   
   // Form setup with react-hook-form
-  const form = useForm({
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       documentType: 'general',
       description: '',
@@ -27,7 +38,7 @@ const DocumentUploader: React.FC = () => {
   });
   
   // Configure dropzone for document uploads
-  const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
@@ -35,8 +46,8 @@ const DocumentUploader: React.FC = () => {
     },
     maxFiles: 5,
     maxSize: 10 * 1024 * 1024, // 10MB
-    onDrop: (acceptedFiles) => {
-      setFiles(acceptedFiles as unknown as File[]);
+    onDrop: (acceptedFiles: File[]) => {
+      setFiles(acceptedFiles);
     },
   });
   
@@ -56,7 +67,7 @@ const DocumentUploader: React.FC = () => {
       setFiles([]);
       form.reset();
     },
-    onError: (error) => {
+    onError: (_error: unknown) => {
       toast({
         title: "Error",
         description: "Failed to upload documents. Please try again.",
