@@ -45,8 +45,8 @@ const VersionActions = memo(function VersionActions({
         icon={<EyeOutlined />} 
         onClick={() => console.log('View version', version.id)}
         style={{
-          color: '#0e4a86', // Corporate blue
-          fontWeight: 500
+          color: '#0e4a86' as string, // Corporate blue
+          fontWeight: 500 as number
         }}
       >
         View
@@ -57,8 +57,8 @@ const VersionActions = memo(function VersionActions({
         icon={<DownloadOutlined />} 
         onClick={() => console.log('Download version', version.id)}
         style={{
-          color: '#0e4a86', // Corporate blue
-          fontWeight: 500
+          color: '#0e4a86' as string, // Corporate blue
+          fontWeight: 500 as number
         }}
       >
         Download
@@ -73,7 +73,7 @@ const VersionActions = memo(function VersionActions({
           style={{
             backgroundColor: '#0e4a86', // Corporate blue
             borderColor: '#0e4a86',
-            fontWeight: 500,
+            fontWeight: 500 as number,
             boxShadow: 'none'
           }}
         >
@@ -84,8 +84,8 @@ const VersionActions = memo(function VersionActions({
         <span
           style={{
             fontSize: '12px',
-            fontWeight: 500,
-            color: '#12705c', // Financial green
+            fontWeight: 500 as number,
+            color: '#12705c' as string, // Financial green
             backgroundColor: '#effcf6',
             padding: '2px 8px',
             borderRadius: '4px',
@@ -171,8 +171,8 @@ export const DocumentVersionsTab = memo(function DocumentVersionsTab({
         style={{
           marginBottom: '16px',
           fontSize: '16px',
-          fontWeight: 600,
-          color: '#1e293b' // Slate-800 - professional dark tone for financial services
+          fontWeight: 600 as number,
+          color: '#1e293b' as string // Slate-800 - professional dark tone for financial services
         }}
       >
         Document Versions
@@ -194,7 +194,7 @@ export const DocumentVersionsTab = memo(function DocumentVersionsTab({
           } as React.CSSProperties}
         />
       ) : (
-        <div style={{ marginTop: 24 }}>
+        <div style={{ marginTop: 24 as number }}>
           <EmptyState
             title="No Version History"
             description="This document doesn't have any recorded versions. When document updates are made, version history will be tracked here."

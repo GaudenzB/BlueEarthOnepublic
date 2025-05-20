@@ -186,7 +186,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               style={{ 
                 minWidth: 32,
                 height: 32,
-                padding: 0,
+                padding: 0 as number,
                 backgroundColor: 'transparent', 
                 display: 'flex',
                 alignItems: 'center',

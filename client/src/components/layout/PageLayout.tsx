@@ -39,7 +39,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {title && (
-            <Title level={2} style={{ color: "#1E2A40", marginBottom: 0 }}>
+            <Title level={2} style={{ color: "#1E2A40" as string, marginBottom: 0 as number }}>
               {title}
             </Title>
           )}

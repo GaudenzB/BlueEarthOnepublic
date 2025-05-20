@@ -31,7 +31,7 @@ export function PageLayout({ title, children }: PageLayoutProps) {
         lineHeight: 'normal'
       }}>
         <Title level={3} style={{ 
-          margin: 0,
+          margin: 0 as number,
           color: theme.colors.primary.base
         }}>
           {title}

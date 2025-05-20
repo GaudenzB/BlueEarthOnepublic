@@ -95,7 +95,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               type="link" 
               onClick={onBack} 
               style={{ 
-                padding: 0, 
+                padding: 0 as number, 
                 height: 'auto',
                 marginBottom: '0.75rem',
                 display: 'flex',
@@ -111,8 +111,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           <h1 style={{ 
             fontSize: '1.5rem',
             fontWeight: 'bold',
-            margin: 0,
-            color: '#1e293b' as string as string
+            margin: 0 as number,
+            color: '#1e293b' as string as string as string
           }}>
             {title}
           </h1>
@@ -131,7 +131,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         <p style={{ 
           fontSize: theme.typography.fontSizes.base,
           color: theme.colors.text.secondary,
-          margin: 0,
+          margin: 0 as number,
           marginTop: theme.spacing.xs
         }}>
           {description}

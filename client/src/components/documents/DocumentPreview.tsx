@@ -113,7 +113,7 @@ export function DocumentPreview({
   const getFileIcon = (filename?: string) => {
     const ext = getFileExtension(filename);
     
-    const iconProps = { style: { fontSize: 64, color: '#1890ff' } };
+    const iconProps = { style: { fontSize: 64, color: '#1890ff' as string } };
     
     switch (ext) {
       case 'pdf':
@@ -203,7 +203,7 @@ export function DocumentPreview({
           {getFileIcon(document.filename)}
         </div>
         
-        <Space direction="vertical" align="center" style={{ marginTop: 24 }} className="fade-in stagger-item-2">
+        <Space direction="vertical" align="center" style={{ marginTop: 24 as number }} className="fade-in stagger-item-2">
           <Text strong>{document.filename || document.originalFilename || document.title}</Text>
           
           {document.fileSize && (
@@ -217,7 +217,7 @@ export function DocumentPreview({
           </Text>
         </Space>
         
-        <div style={{ marginTop: 32 }} className="fade-in stagger-item-3">
+        <div style={{ marginTop: 32 as number }} className="fade-in stagger-item-3">
           {canPreview ? (
             <Button 
               type="primary" 
@@ -246,7 +246,7 @@ export function DocumentPreview({
     return (
       <Card style={{ textAlign: 'center', padding: '48px 0' }}>
         <Spin size="large" />
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 16 as number }}>
           <Text>Loading document preview...</Text>
         </div>
       </Card>
@@ -262,7 +262,7 @@ export function DocumentPreview({
           description="The document may have been deleted or you don't have permission to view it."
           type="default"
           size="large"
-          icon={<WarningOutlined style={{ fontSize: 48, color: '#faad14' }} />}
+          icon={<WarningOutlined style={{ fontSize: 48, color: '#faad14' as string }} />}
         />
       </Card>
     );
@@ -275,11 +275,11 @@ export function DocumentPreview({
     return (
       <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
         <Spin size="large" />
-        <div style={{ marginTop: 24 }}>
+        <div style={{ marginTop: 24 as number }}>
           <Text strong style={{ fontSize: 16 }}>
             {isProcessing ? 'Processing Document' : 'Document in Queue'}
           </Text>
-          <div style={{ marginTop: 16, marginBottom: 24 }}>
+          <div style={{ marginTop: 16 as number, marginBottom: 24 as number }}>
             <Text>
               {isProcessing 
                 ? 'We are preparing your document for preview. This may take a few moments.' 
@@ -294,7 +294,7 @@ export function DocumentPreview({
                 status="active" 
                 strokeColor={{ from: '#108ee9', to: '#87d068' }} 
               />
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 8 as number }}>
                 <Text type="secondary">
                   Estimated time remaining: {estimatedProcessingTime > 60 
                     ? `${Math.ceil(estimatedProcessingTime / 60)} minutes` 
@@ -305,7 +305,7 @@ export function DocumentPreview({
           )}
           
           {onRefresh && (
-            <div style={{ marginTop: 24 }}>
+            <div style={{ marginTop: 24 as number }}>
               <Button 
                 icon={<ReloadOutlined />} 
                 onClick={onRefresh}
@@ -362,7 +362,7 @@ export function DocumentPreview({
       <Card>
         <div style={{ padding: '16px', marginBottom: '24px', backgroundColor: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '4px' }}>
           <Text type="warning" strong>
-            <WarningOutlined style={{ marginRight: 8 }} />
+            <WarningOutlined style={{ marginRight: 8 as number }} />
             Warning: {document.processingError || 'This document was processed with warnings.'}
           </Text>
         </div>

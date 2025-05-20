@@ -145,7 +145,7 @@ const EmployeeName = memo(({
     <Typography.Title
       level={detailed ? 4 : 5}
       style={{ 
-        margin: 0, 
+        margin: 0 as number, 
         overflow: 'hidden', 
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap'
@@ -179,13 +179,13 @@ const EmployeeContact = memo(({
   <Space direction="vertical" size={detailed ? 4 : 2} style={{ width: '100%' }}>
     <Typography.Paragraph 
       style={{ 
-        margin: 0, 
+        margin: 0 as number, 
         fontSize: detailed ? 14 : 12,
         display: 'flex',
         alignItems: 'center'
       }}
     >
-      <MailOutlined style={{ marginRight: 8, color: tokens.colors.neutral[500] }} />
+      <MailOutlined style={{ marginRight: 8 as number, color: tokens.colors.neutral[500] }} />
       <a href={`mailto:${email}`} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {truncateText(email, detailed ? 30 : 20)}
       </a>
@@ -194,13 +194,13 @@ const EmployeeContact = memo(({
     {phone && (
       <Typography.Paragraph 
         style={{ 
-          margin: 0, 
+          margin: 0 as number, 
           fontSize: detailed ? 14 : 12,
           display: 'flex',
           alignItems: 'center'
         }}
       >
-        <PhoneOutlined style={{ marginRight: 8, color: tokens.colors.neutral[500] }} />
+        <PhoneOutlined style={{ marginRight: 8 as number, color: tokens.colors.neutral[500] }} />
         <a href={`tel:${phone}`}>{phone}</a>
       </Typography.Paragraph>
     )}

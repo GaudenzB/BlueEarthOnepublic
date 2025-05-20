@@ -55,7 +55,7 @@ export function SearchFilters({
               placeholder="Search by name, department, or position..."
               value={searchTerm}
               onChange={(e) => onSearch(e.target.value)}
-              prefix={<SearchOutlined style={{ color: '#64748b' }} />}
+              prefix={<SearchOutlined style={{ color: '#64748b' as string }} />}
               style={{ 
                 borderRadius: '6px',
                 height: '40px',
@@ -76,7 +76,7 @@ export function SearchFilters({
                 width: '100%', 
                 height: '40px',
               }}
-              suffixIcon={<FilterOutlined style={{ color: '#64748b' }} />}
+              suffixIcon={<FilterOutlined style={{ color: '#64748b' as string }} />}
               popupClassName="financial-select-dropdown"
             >
               <Option value="all">All Departments</Option>
@@ -105,7 +105,7 @@ export function SearchFilters({
               borderColor: activeOnly ? colors.primary.base : '#d1d5db',
               borderRadius: '6px',
               boxShadow: activeOnly ? '0 1px 2px rgba(14, 74, 134, 0.05)' : 'none',
-              fontWeight: 500
+              fontWeight: 500 as number
             }}
             icon={<CheckCircleOutlined style={{ 
               color: activeOnly ? 'white' : '#10b981',
@@ -134,7 +134,7 @@ export function SearchFilters({
                 height: '38px',
                 borderRight: '1px solid #d1d5db',
                 borderColor: '#d1d5db',
-                fontWeight: 500,
+                fontWeight: 500 as number,
                 background: sortBy === "name" ? '#f0f7ff' : '#ffffff',
                 color: sortBy === "name" ? '#0e4a86' : '#64748b'
               }}
@@ -155,7 +155,7 @@ export function SearchFilters({
                 alignItems: 'center',
                 height: '38px',
                 borderColor: '#d1d5db',
-                fontWeight: 500,
+                fontWeight: 500 as number,
                 background: sortBy === "department" ? '#f0f7ff' : '#ffffff',
                 color: sortBy === "department" ? '#0e4a86' : '#64748b'
               }}

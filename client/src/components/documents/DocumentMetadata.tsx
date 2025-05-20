@@ -90,7 +90,7 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
         bordered 
         size="small"
         column={{ xs: 1, sm: 2, md: 3 }}
-        style={{ marginBottom: 24 }}
+        style={{ marginBottom: 24 as number }}
       >
         <Descriptions.Item label="File Type">
           {document.fileType || 'Unknown'}
@@ -167,7 +167,7 @@ export function DocumentMetadata({ document }: DocumentMetadataProps) {
             bordered
             size="small"
             column={{ xs: 1, sm: 2, md: 2 }}
-            style={{ marginBottom: 24 }}
+            style={{ marginBottom: 24 as number }}
           >
             {metadataKeys.map(key => (
               <Descriptions.Item 

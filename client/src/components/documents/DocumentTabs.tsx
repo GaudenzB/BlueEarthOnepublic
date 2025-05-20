@@ -61,9 +61,9 @@ export const DocumentTabs = memo(function DocumentTabs({
       items={tabItems}
       size="large"
       tabBarStyle={{ 
-        marginBottom: 24,
+        marginBottom: 24 as number,
         borderBottom: '1px solid #e5e7eb',
-        fontWeight: 500
+        fontWeight: 500 as number
       }}
       tabBarGutter={32} // Increased spacing between tabs for professional look
       className="document-detail-tabs"

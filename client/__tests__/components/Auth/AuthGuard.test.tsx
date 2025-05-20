@@ -82,7 +82,7 @@ describe('AuthGuard Component', () => {
     });
 
     // Create a mock navigate function
-    const mockNavigate = jest.fn();
+    const mockNavigate = jest.fn() as jest.Mock;
     (useLocation as jest.Mock).mockReturnValue(['/', mockNavigate]);
 
     render(
@@ -138,7 +138,7 @@ describe('AuthGuard Component', () => {
     });
 
     // Create a mock navigate function
-    const mockNavigate = jest.fn();
+    const mockNavigate = jest.fn() as jest.Mock;
     (useLocation as jest.Mock).mockReturnValue(['/', mockNavigate]);
 
     render(
@@ -215,7 +215,7 @@ describe('AuthGuard Component', () => {
     });
 
     // Create a mock navigate function and set current location to a protected page
-    const mockNavigate = jest.fn();
+    const mockNavigate = jest.fn() as jest.Mock;
     (useLocation as jest.Mock).mockReturnValue(['/documents', mockNavigate]);
 
     // Mock sessionStorage

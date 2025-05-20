@@ -226,7 +226,7 @@ export function DocumentProcessingAlert({
                 {onRefresh && (
                   <div 
                     onClick={handleManualRefresh}
-                    style={{ cursor: 'pointer', marginLeft: 8 }}
+                    style={{ cursor: 'pointer', marginLeft: 8 as number }}
                   >
                     {(() => {
                       const StatusTag = require('@/components/ui/StatusTag').default;
@@ -247,7 +247,7 @@ export function DocumentProcessingAlert({
           
           {/* Auto-refresh toggle for pending or processing status */}
           {showAutoRefresh && onRefresh && (
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 as number }}>
               <Button 
                 type="text"
                 size="small"
@@ -261,7 +261,7 @@ export function DocumentProcessingAlert({
                 {autoRefresh ? 'Auto-refresh on' : 'Turn on auto-refresh'}
               </Button>
               {autoRefresh && (
-                <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                <Text type="secondary" style={{ marginLeft: 8 as number, fontSize: 12 }}>
                   {isRefreshing 
                     ? 'Refreshing...' 
                     : `Last refresh: ${getTimeSinceLastRefresh()}s ago`}
@@ -272,7 +272,7 @@ export function DocumentProcessingAlert({
           
           {/* Retry button for failed status */}
           {showRetry && onRefresh && (
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 12 as number }}>
               <Button 
                 type="primary" 
                 danger
@@ -282,7 +282,7 @@ export function DocumentProcessingAlert({
               >
                 Retry Processing
               </Button>
-              <Text type="secondary" style={{ marginLeft: 8, fontSize: 13 }}>
+              <Text type="secondary" style={{ marginLeft: 8 as number, fontSize: 13 }}>
                 You can try processing this document again
               </Text>
             </div>
@@ -290,16 +290,16 @@ export function DocumentProcessingAlert({
           
           {/* Show detailed error message for failed documents */}
           {document.processingStatus === 'FAILED' && document.processingError && (
-            <div style={{ marginTop: 12, padding: 12, background: '#fff1f0', borderRadius: 4 }}>
+            <div style={{ marginTop: 12 as number, padding: 12 as number, background: '#fff1f0', borderRadius: 4 }}>
               <Text type="danger" strong>Error details:</Text>
-              <Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+              <Text type="danger" style={{ display: 'block', marginTop: 4 as number }}>
                 {document.processingError}
               </Text>
             </div>
           )}
         </Space>
       }
-      style={{ marginBottom: 24 }}
+      style={{ marginBottom: 24 as number }}
     />
   );
 }

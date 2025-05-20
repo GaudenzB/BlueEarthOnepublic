@@ -117,17 +117,17 @@ const DocumentTitle = memo(({
 }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <Title level={3} style={{ margin: 0 }}>
+      <Title level={3} style={{ margin: 0 as number }}>
         {document.title}
       </Title>
       {statusBadge && (
-        <div style={{ marginLeft: 12 }}>
+        <div style={{ marginLeft: 12 as number }}>
           {statusBadge}
         </div>
       )}
       {isConfidential && (
         <Tooltip title="Confidential Document">
-          <Badge count={<LockOutlined style={{ color: '#ff4d4f' }} />} />
+          <Badge count={<LockOutlined style={{ color: '#ff4d4f' as string }} />} />
         </Tooltip>
       )}
       {versionCount && versionCount > 1 && (
@@ -185,7 +185,7 @@ const DocumentActions = memo(({
       {onFavorite && (
         <Tooltip title={isFavorited ? "Remove from favorites" : "Add to favorites"}>
           <Button 
-            icon={isFavorited ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+            icon={isFavorited ? <StarFilled style={{ color: '#faad14' as string }} /> : <StarOutlined />}
             onClick={onFavorite}
             loading={loading?.favorite ? true : false}
             type={isFavorited ? 'text' : 'default'}
@@ -316,18 +316,18 @@ export const DocumentHeader = memo(function DocumentHeader({
   ];
   
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{ marginBottom: 24 as number }}>
       {/* Breadcrumb navigation */}
       <Breadcrumb 
         items={[
           { title: <Link to="/documents">Documents</Link> },
           { title: document.title || 'Document Details' }
         ]}
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 16 as number }}
       />
       
       {/* Document metadata badges */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12 as number }}>
         <DocumentTags document={document} />
       </div>
       

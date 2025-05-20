@@ -253,7 +253,7 @@ describe('DocumentUploader Component Tests', () => {
 
   it('calls upload mutation when upload button is clicked', async () => {
     // Setup mock mutation function
-    const mockMutate = jest.fn();
+    const mockMutate = jest.fn() as jest.Mock;
     useMutation.mockReturnValue({
       mutate: mockMutate,
       isPending: false,

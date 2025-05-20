@@ -201,6 +201,6 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
   return sendServerError(
     res,
     'An unexpected error occurred',
-    process.env.NODE_ENV === 'development' ? { message: err.message, stack: err.stack } : undefined
+    process.env['NODE_ENV'] === 'development' ? { message: err.message, stack: err.stack } : undefined
   );
 };

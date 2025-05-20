@@ -67,7 +67,7 @@ const CommentForm = memo(function CommentForm({ onSubmit }: { onSubmit: (values:
           placeholder="Add a comment..." 
         />
       </Form.Item>
-      <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+      <Form.Item style={{ marginBottom: 0 as number, textAlign: 'right' }}>
         <Button 
           type="primary" 
           htmlType="submit" 
@@ -105,7 +105,7 @@ export const DocumentCommentsTab = memo(function DocumentCommentsTab({ document 
           )}
         />
       ) : (
-        <div style={{ marginTop: 24, marginBottom: 24 }}>
+        <div style={{ marginTop: 24 as number, marginBottom: 24 as number }}>
           <EmptyState
             title="No Comments Yet"
             description="Be the first to add a comment to this document."
@@ -115,7 +115,7 @@ export const DocumentCommentsTab = memo(function DocumentCommentsTab({ document 
         </div>
       )}
       
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24 as number }}>
         <CommentForm onSubmit={handleSubmitComment} />
       </div>
     </Card>

@@ -91,7 +91,7 @@ const DocumentPreview = memo(function DocumentPreview({ document }: DocumentPrev
           borderRadius: '4px'
         }}>
           <Space direction="vertical" align="center">
-            <FileOutlined style={{ fontSize: 48, color: '#bfbfbf' }} />
+            <FileOutlined style={{ fontSize: 48, color: '#bfbfbf' as string }} />
             <Text type="secondary">No preview available</Text>
           </Space>
         </div>
@@ -105,9 +105,9 @@ const DocumentPreview = memo(function DocumentPreview({ document }: DocumentPrev
  */
 const SharedUserItem = memo(function SharedUserItem({ user }: SharedUserItemProps) {
   return (
-    <Card size="small" style={{ marginBottom: 8 }}>
+    <Card size="small" style={{ marginBottom: 8 as number }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar icon={<UserOutlined />} style={{ marginRight: 12 }} />
+        <Avatar icon={<UserOutlined />} style={{ marginRight: 12 as number }} />
         <div>
           <Text strong>{user.name}</Text><br />
           <Text type="secondary">{user.id}</Text>
@@ -130,11 +130,11 @@ const DocumentDetails = memo(function DocumentDetails({ document }: DocumentDeta
   return (
     <Card bordered={false}>
       <Title level={5}>Document Details</Title>
-      <div style={{ marginTop: 16 }}>
-        <Title level={5} style={{ marginBottom: 8 }}>
+      <div style={{ marginTop: 16 as number }}>
+        <Title level={5} style={{ marginBottom: 8 as number }}>
           Tags
         </Title>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16 as number }}>
           {document.tags && document.tags.length > 0 ? (
             <Space wrap>
               {document.tags.map((tag: string, index: number) => (
@@ -146,7 +146,7 @@ const DocumentDetails = memo(function DocumentDetails({ document }: DocumentDeta
           )}
         </div>
         
-        <Title level={5} style={{ marginBottom: 8 }}>
+        <Title level={5} style={{ marginBottom: 8 as number }}>
           Description
         </Title>
         {document.description ? (
@@ -157,7 +157,7 @@ const DocumentDetails = memo(function DocumentDetails({ document }: DocumentDeta
           <Text type="secondary">No description provided</Text>
         )}
         
-        <Title level={5} style={{ marginBottom: 8 }}>
+        <Title level={5} style={{ marginBottom: 8 as number }}>
           Access Control
         </Title>
         <Badge 
@@ -170,7 +170,7 @@ const DocumentDetails = memo(function DocumentDetails({ document }: DocumentDeta
         
         {hasSharedUsers && (
           <>
-            <Title level={5} style={{ marginTop: 16, marginBottom: 8 }}>
+            <Title level={5} style={{ marginTop: 16 as number, marginBottom: 8 as number }}>
               Shared With
             </Title>
             <Space direction="vertical" style={{ width: '100%' }}>

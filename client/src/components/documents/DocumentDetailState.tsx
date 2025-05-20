@@ -99,7 +99,7 @@ export function DocumentDetailSkeleton() {
       <div style={{ 
         display: 'flex', 
         flexDirection: 'row', 
-        marginBottom: 24, 
+        marginBottom: 24 as number, 
         alignItems: 'center', 
         gap: 16,
         flexWrap: 'wrap'
@@ -161,7 +161,7 @@ export function DocumentDetailSkeleton() {
           height: 20, 
           backgroundColor: '#f0f0f0', 
           borderRadius: 4, 
-          marginBottom: 12, 
+          marginBottom: 12 as number, 
           width: '100%',
           ...pulseAnimation
         }} 
@@ -171,7 +171,7 @@ export function DocumentDetailSkeleton() {
           height: 20, 
           backgroundColor: '#f0f0f0', 
           borderRadius: 4, 
-          marginBottom: 12, 
+          marginBottom: 12 as number, 
           width: '90%',
           ...pulseAnimation
         }} 
@@ -224,7 +224,7 @@ export function DocumentDetailSkeleton() {
           height: 32, 
           backgroundColor: '#f0f0f0', 
           borderRadius: 4, 
-          marginBottom: 16, 
+          marginBottom: 16 as number, 
           width: '30%',
           ...pulseAnimation
         }} 
@@ -235,7 +235,7 @@ export function DocumentDetailSkeleton() {
           height: 250, 
           backgroundColor: '#f0f0f0', 
           borderRadius: 4, 
-          marginBottom: 16, 
+          marginBottom: 16 as number, 
           width: '100%',
           ...pulseAnimation
         }} 
@@ -316,17 +316,17 @@ export function DocumentDetailError({ error, onReturn }: DocumentDetailStateProp
       role="alert"
       aria-live="assertive"
     >
-      <div style={{ fontSize: '48px', color: '#CF1322', marginBottom: '16px' }}>
+      <div style={{ fontSize: '48px', color: '#CF1322' as string, marginBottom: '16px' }}>
         ⚠️
       </div>
-      <h2 style={{ color: '#CF1322', fontSize: '24px', marginBottom: '16px' }} id="error-heading">
+      <h2 style={{ color: '#CF1322' as string, fontSize: '24px', marginBottom: '16px' }} id="error-heading">
         {errorInfo.title}
       </h2>
-      <p style={{ color: '#666', marginBottom: '16px', fontSize: '16px' }}>
+      <p style={{ color: '#666' as string, marginBottom: '16px', fontSize: '16px' }}>
         {errorInfo.details}
       </p>
       <div style={{ margin: '24px 0' }}>
-        <div style={{ fontSize: '14px', backgroundColor: '#FFEBE9', padding: '12px', borderRadius: '4px', color: '#5C0011', fontFamily: 'monospace', textAlign: 'left', maxHeight: '100px', overflow: 'auto' }}>
+        <div style={{ fontSize: '14px', backgroundColor: '#FFEBE9', padding: '12px', borderRadius: '4px', color: '#5C0011' as string, fontFamily: 'monospace', textAlign: 'left', maxHeight: '100px', overflow: 'auto' }}>
           {error?.stack ? error.stack.split('\n')[0] : 'No additional error information available'}
         </div>
       </div>
@@ -360,27 +360,27 @@ export function DocumentDetailNotFound({ onReturn }: DocumentDetailStateProps) {
       role="alert"
       aria-live="polite"
     >
-      <div style={{ fontSize: '48px', color: '#52C41A', marginBottom: '16px' }}>
+      <div style={{ fontSize: '48px', color: '#52C41A' as string, marginBottom: '16px' }}>
         🔍
       </div>
-      <h2 style={{ color: '#135200', fontSize: '24px', marginBottom: '16px' }} id="not-found-heading">
+      <h2 style={{ color: '#135200' as string, fontSize: '24px', marginBottom: '16px' }} id="not-found-heading">
         Document Not Found
       </h2>
-      <p style={{ color: '#666', marginBottom: '24px', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
+      <p style={{ color: '#666' as string, marginBottom: '24px', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
         The document you're looking for doesn't exist or you don't have permission to view it. 
         This could be because:
       </p>
-      <ul style={{ listStyle: 'none', textAlign: 'left', width: 'fit-content', margin: '0 auto 24px', color: '#444' }}>
+      <ul style={{ listStyle: 'none', textAlign: 'left', width: 'fit-content', margin: '0 auto 24px', color: '#444' as string }}>
         <li style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '8px', color: '#52C41A' }}>•</span> 
+          <span style={{ marginRight: '8px', color: '#52C41A' as string }}>•</span> 
           The document has been deleted or moved
         </li>
         <li style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '8px', color: '#52C41A' }}>•</span> 
+          <span style={{ marginRight: '8px', color: '#52C41A' as string }}>•</span> 
           The URL you entered is incorrect
         </li>
         <li style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '8px', color: '#52C41A' }}>•</span> 
+          <span style={{ marginRight: '8px', color: '#52C41A' as string }}>•</span> 
           You need additional permissions to access this document
         </li>
       </ul>

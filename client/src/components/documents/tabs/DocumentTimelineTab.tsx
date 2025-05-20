@@ -82,7 +82,7 @@ export const DocumentTimelineTab = memo(function DocumentTimelineTab({ document 
           ))}
         </Timeline>
       ) : (
-        <div style={{ marginTop: 24 }}>
+        <div style={{ marginTop: 24 as number }}>
           <EmptyState
             title="No Timeline Activity"
             description="This document doesn't have any recorded activity. When users interact with this document, their actions will be logged here."

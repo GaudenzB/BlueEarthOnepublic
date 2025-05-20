@@ -47,7 +47,7 @@ export const TypographyShowcase: React.FC<{
       <Text strong>{size}</Text>
       <Text type="secondary">{value}</Text>
     </div>
-    <Typography.Paragraph style={{ fontSize: value, margin: 0 }}>{example}</Typography.Paragraph>
+    <Typography.Paragraph style={{ fontSize: value, margin: 0 as number }}>{example}</Typography.Paragraph>
     <Divider style={{ margin: '12px 0' }} />
   </div>
 );

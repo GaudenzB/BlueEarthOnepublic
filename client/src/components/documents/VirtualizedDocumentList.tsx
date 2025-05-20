@@ -241,13 +241,13 @@ export default function VirtualizedDocumentList({
         <div style={{ flex: 3, maxWidth: '40%', overflow: 'hidden' }}>
           <Link href={`/documents/${document.id}`}>
             <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <span style={{ marginRight: 8, color: '#666' }}>
+              <span style={{ marginRight: 8 as number, color: '#666' as string }}>
                 {getDocumentTypeIcon(document.documentType)}
               </span>
               <Typography.Text 
                 style={{ 
-                  fontWeight: 500, 
-                  color: '#1E2A40',
+                  fontWeight: 500 as number, 
+                  color: '#1E2A40' as string,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -357,7 +357,7 @@ export default function VirtualizedDocumentList({
 
   if (isLoading) {
     return (
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 16 as number }}>
         <Skeleton active paragraph={{ rows: 5 }} />
       </div>
     );
@@ -366,7 +366,7 @@ export default function VirtualizedDocumentList({
   if (filteredDocuments.length === 0) {
     return (
       <Empty
-        image={<FileOutlined style={{ fontSize: 48, color: '#ccc' }} />}
+        image={<FileOutlined style={{ fontSize: 48, color: '#ccc' as string }} />}
         description={
           <Space direction="vertical" size="small">
             <Typography.Text strong>No documents found</Typography.Text>

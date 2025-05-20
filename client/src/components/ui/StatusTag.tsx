@@ -249,7 +249,7 @@ function StatusTag({
       lineHeight: currentSizeConfig.height ? `${parseInt(currentSizeConfig.height) - 2}px` : '22px',
       display: 'inline-flex',
       alignItems: 'center',
-      fontWeight: 500 as number,
+      fontWeight: 500 as number as number,
     },
     onClick: onClick,
   };
