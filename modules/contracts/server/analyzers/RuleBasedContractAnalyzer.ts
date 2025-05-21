@@ -174,8 +174,8 @@ export class RuleBasedContractAnalyzer implements IContractAnalyzer {
           vendor: extractionResult.vendor,
           contractTitle: extractionResult.contractTitle,
           docType: extractionResult.docType,
-          effectiveDate: extractionResult.effectiveDate ? new Date(extractionResult.effectiveDate) : null,
-          terminationDate: extractionResult.terminationDate ? new Date(extractionResult.terminationDate) : null,
+          effectiveDate: extractionResult.effectiveDate ? extractionResult.effectiveDate : null,
+          terminationDate: extractionResult.terminationDate ? extractionResult.terminationDate : null,
           confidence: extractionResult.confidence,
           rawAnalysisJson: JSON.stringify(extractionResult)
         })
@@ -248,7 +248,7 @@ export class RuleBasedContractAnalyzer implements IContractAnalyzer {
     
     // Try to extract contract title from document title
     if (documentTitle) {
-      result.contractTitle = documentTitle;
+      result.contractTitle = documentTitle || undefined;
       result.confidence.contractTitle = 0.6;
     }
     
