@@ -34,7 +34,7 @@ type HealthCheckResult = {
  * GET /api/health
  */
 router.get('/', async (req, res) => {
-  let status: 'pass' | 'fail' = 'pass';
+  const status: 'pass' | 'fail' = 'pass';
   const version = process.env.npm_package_version || '1.0.0';
   const startTime = Date.now();
   
@@ -139,7 +139,7 @@ router.get('/detailed', async (req, res) => {
  * GET /api/health/database
  */
 router.get('/database', async (req, res) => {
-  let status: 'pass' | 'fail' = 'pass';
+  const status: 'pass' | 'fail' = 'pass';
   const startTime = Date.now();
   
   try {
@@ -185,7 +185,7 @@ router.get('/database', async (req, res) => {
  * GET /api/health/storage
  */
 router.get('/storage', async (req, res) => {
-  let status: 'pass' | 'fail' = 'pass';
+  const status: 'pass' | 'fail' = 'pass';
   const startTime = Date.now();
   
   try {

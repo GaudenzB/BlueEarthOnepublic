@@ -1,0 +1,73 @@
+Phase B — Make the remaining ≈ 900 hits non-blocking
+1 · Open your root ESLint config
+The repo seems to use .eslintrc.cjs (if it’s .js/.json, just edit that file instead).
+
+2 · Drop the patch below
+Copy-paste everything between the diff fences exactly and save.
+
+diff
+Copy
+Edit
+ module.exports = {
+   root: true,
+   parser: '@typescript-eslint/parser',
+   extends: [
+     // whatever you already extend…
+   ],
+-  rules: {
+-    /* existing rules */
+-  },
++  /**
++   * ──────────────────────────────────────────────────────────
++   * TEMP “SOFT MODE” — turn noisy errors into warnings
++   * Once the backlog is paid down, switch rules back to "error"
++   * one-by-one (or delete them from here to fall back to presets).
++   * ──────────────────────────────────────────────────────────
++   */
++  rules: {
++    /* existing project-specific rules stay ↑ here */
++
++    /* --- React / JSX --- */
++    'react/no-unescaped-entities': 'warn',
++    'react/display-name':         'warn',
++    'react/no-unknown-property':  'warn',
++    'react-hooks/rules-of-hooks': 'warn',
++    'react-hooks/exhaustive-deps':'warn',
++
++    /* --- TypeScript-ESLint --- */
++    '@typescript-eslint/no-explicit-any': 'warn',
++    '@typescript-eslint/no-unused-vars':  [
++      'warn',
++      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
++    ],
++    '@typescript-eslint/no-require-imports': 'warn',
++    '@typescript-eslint/ban-ts-comment': [
++      'warn',
++      { 'ts-ignore': 'allow-with-description' },
++    ],
++
++    /* --- Base ESLint --- */
++    'no-unused-vars': [
++      'warn',
++      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
++    ],
++    'no-case-declarations': 'warn',
++    'no-useless-escape':    'warn',
++    'no-undef':             'warn',
++  },
++
++  /**
++   * Override test & story files completely – they’re not part of prod bundle.
++   */
++  overrides: [
++    {
++      files: ['**/__tests__/**/*', '**/*.test.*', '**/*.spec.*', '**/*.stories.*'],
++      rules: { 'react/display-name': 'off', '@typescript-eslint/no-require-imports': 'off' },
++    },
++  ],
++
++  /**
++   * Optional: silence the “React version not specified” notice
++   */
++  settings: { react: { version: 'detect' } },
+ };

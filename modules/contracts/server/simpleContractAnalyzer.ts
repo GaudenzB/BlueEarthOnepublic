@@ -409,7 +409,7 @@ function useFallbackAnalysis(text: string, documentTitle: string) {
   logger.info('Using fallback contract analysis with regex patterns');
   
   // Extract vendor name using various patterns
-  let vendor = extractVendorName(text, documentTitle);
+  const vendor = extractVendorName(text, documentTitle);
   
   // Extract dates with better prioritization for effective/termination dates
   const allDates = extractDates(text);

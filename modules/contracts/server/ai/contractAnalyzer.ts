@@ -445,7 +445,7 @@ async function runAiAnalysis(text: string, documentTitle: string) {
     for (const pattern of datePatterns) {
       let match;
       const regex = new RegExp(pattern);
-      let textToSearch = text || '';
+      const textToSearch = text || '';
       
       while ((match = regex.exec(textToSearch)) !== null) {
         foundDates.push(match[0]);

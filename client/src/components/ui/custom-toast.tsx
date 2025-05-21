@@ -173,13 +173,13 @@ export function CustomToast({
     if (variant === 'error') {
       return {
         ...baseAttrs,
-        'aria-live': 'assertive' as 'assertive',
+        'aria-live': 'assertive' as const,
       };
     }
 
     return {
       ...baseAttrs,
-      'aria-live': 'polite' as 'polite',
+      'aria-live': 'polite' as const,
     };
   };
 

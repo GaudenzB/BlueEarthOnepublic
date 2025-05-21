@@ -414,7 +414,7 @@ export class RuleBasedContractAnalyzer implements IContractAnalyzer {
           
           try {
             const effectiveDate = new Date(result.effectiveDate);
-            let terminationDate = new Date(effectiveDate);
+            const terminationDate = new Date(effectiveDate);
             
             // Add the duration to effective date
             if (unit === 'day' || unit === 'days') {

@@ -286,7 +286,7 @@ export class HttpClient {
     
     // If FormData is being sent, don't set Content-Type header
     // The browser will set it automatically with the correct boundary
-    let customHeaders = options.headers || {};
+    const customHeaders = options.headers || {};
     
     if (data instanceof FormData) {
       // Remove Content-Type for FormData requests to let browser set it
