@@ -218,6 +218,13 @@ module.exports = {
     'build'
   ],
   overrides: [
+    // Test & Story files override
+    {
+      files: ['**/__tests__/**/*', '**/*.stories.*'],
+      rules: {
+        'react/display-name': 'off',
+      },
+    },
     // JavaScript files override
     {
       files: ['*.js'],
