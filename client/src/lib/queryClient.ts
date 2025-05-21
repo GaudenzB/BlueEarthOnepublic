@@ -56,10 +56,10 @@ export async function apiRequest<T = any>(
       response = await httpClient.delete<T>(url, options);
         break;
       default:
-      // Exhaustive type check
-      const _exhaustiveCheck: never = 1063;
-      return _exhaustiveCheck;
-        throw new Error(`Unsupported HTTP method: ${method}`);
+      // Exhaustive-switch guard – if you ever add a new HTTP method,
+      // TypeScript will flag the assignment below.
+      const _exhaustiveCheck: never = method;
+      throw new Error(`Unsupported HTTP method: ${method}`);
     }
     
     // For auth endpoints, return the full response object with success, message, and data
