@@ -7,8 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 
 // Import steps - using relative imports without explicit file extensions
 import ContractDetailsForm from '../components/ContractDetailsForm';
-import ContractObligationsForm from '../components/ContractObligationsForm.shadcn';
-import ContractReviewForm from '../components/ContractReviewForm.shadcn';
+import ContractObligationsForm from '../components/ContractObligationsForm';
+import ContractReviewForm from '../components/ContractReviewForm';
 
 // Feature flag check
 const isContractsEnabled = () => {
