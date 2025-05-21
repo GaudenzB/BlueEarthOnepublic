@@ -202,7 +202,16 @@ export class RuleBasedContractAnalyzer implements IContractAnalyzer {
   private async extractTextFromBuffer(buffer: Buffer): Promise<string> {
     try {
       const textChunks = await extractTextFromPDFBuffer(buffer);
-      return textChunks.join('\n');
+      
+      // Ensure textChunks is an array before calling join
+      if (Array.isArray(textChunks)) {
+        return textChunks.join('\n');
+      } else if (typeof textChunks === 'string') {
+        return textChunks; // Already a string, return as is
+      } else {
+        // Handle unexpected format
+        return String(textChunks || '');
+      }
     } catch (error) {
       logger.error('Error extracting text from PDF:', error);
       throw new Error('Failed to extract text from document');

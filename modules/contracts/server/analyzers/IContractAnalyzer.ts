@@ -9,15 +9,15 @@ export interface AnalysisResult {
   id: string;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   documentId: string;
-  filename?: string;
-  title?: string;
-  error?: string;
-  vendor?: string;
-  contractTitle?: string;
-  docType?: string;
-  effectiveDate?: string;
-  terminationDate?: string;
-  confidence?: Record<string, number>;
+  filename?: string | undefined;
+  title?: string | undefined;
+  error?: string | undefined;
+  vendor?: string | undefined;
+  contractTitle?: string | undefined;
+  docType?: string | undefined;
+  effectiveDate?: string | undefined;
+  terminationDate?: string | undefined;
+  confidence?: Record<string, number> | undefined;
 }
 
 export interface IContractAnalyzer {
