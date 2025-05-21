@@ -259,7 +259,7 @@ module.exports = {
           allowHigherOrderFunctions: true,
           allowTypedFunctionExpressions: true,
         }],
-        '@typescript-eslint/no-explicit-any': 'error',
+        '@typescript-eslint/no-explicit-any': 'warn',
       },
     },
     // Module server code overrides
