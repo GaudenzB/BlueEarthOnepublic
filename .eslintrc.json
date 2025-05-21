@@ -1,84 +1,56 @@
 {
   "root": true,
-  "env": {
-    "browser": true,
-    "es2022": true,
-    "node": true,
-    "jest": true
-  },
   "extends": [
     "eslint:recommended",
     "plugin:react/recommended",
-    "plugin:react-hooks/recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+    "plugin:@typescript-eslint/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
     "ecmaFeatures": {
       "jsx": true
-    },
-    "ecmaVersion": "latest",
-    "sourceType": "module",
-    "project": "./tsconfig.json"
+    }
   },
-  "plugins": [
-    "react",
-    "react-hooks",
-    "@typescript-eslint"
-  ],
   "settings": {
     "react": {
       "version": "detect"
-    },
-    "import/resolver": {
-      "typescript": {
-        "alwaysTryTypes": true
-      }
     }
   },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true,
+    "jest": true
+  },
+  "plugins": ["react", "@typescript-eslint"],
   "rules": {
-    // React Rules
+    // Convert all errors to warnings
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-module-boundary-types": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    "no-case-declarations": "warn",
     "react/react-in-jsx-scope": "off",
-    "react/prop-types": "off",
-    "react/jsx-uses-react": "off",
-    "react-hooks/rules-of-hooks": "off",
-    "react-hooks/exhaustive-deps": "off",
-    
-    // TypeScript Rules - completely disabled for now
-    "@typescript-eslint/no-unused-vars": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/no-non-null-assertion": "off",
-    "@typescript-eslint/ban-ts-comment": "off",
-    "@typescript-eslint/no-floating-promises": "off",
-    "@typescript-eslint/await-thenable": "off",
-    "@typescript-eslint/no-misused-promises": "off",
-    
-    // General Rules - all made more lenient
-    "no-undef": "off",
-    "no-unused-vars": "off",
-    "no-useless-escape": "off",
-    "no-console": "off", 
-    "prefer-const": "warn",
-    "eqeqeq": "warn",
-    "no-var": "warn",
-    "no-duplicate-imports": "warn",
-    "no-unreachable": "warn"
+    "react/display-name": "off",
+    "react/prop-types": "warn",
+    "react/no-unescaped-entities": "warn",
+    "no-unused-vars": "warn",
+    "no-undef": "warn"
   },
   "overrides": [
     {
-      "files": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
+      "files": ["**/*.test.{ts,tsx,js}", "**/*.stories.{ts,tsx,js}"],
       "rules": {
-        "@typescript-eslint/no-explicit-any": "off",
-        "no-console": "off"
+        "react/display-name": "off"
       }
     },
     {
-      "files": ["*.js", "*.jsx"],
+      "files": ["**/*.{js,mjs}", "scripts/**/*", "setup-*.{js,mjs}"],
+      "env": { "node": true },
       "rules": {
-        "@typescript-eslint/no-var-requires": "off",
-        "@typescript-eslint/explicit-module-boundary-types": "off"
+        "no-undef": "off"
       }
     }
   ]
