@@ -42,7 +42,7 @@ const getStatusColor = (status: string): string => {
        // Fall through
        return 'orange';
     default:
-      return undefined; // Default fallback case
+      return 'grey';              // ✅ safe fallback keeps type string
   }
 };
 
@@ -58,7 +58,7 @@ const getStatusText = (status: string): string => {
        // Fall through
        return 'Pending';
     default:
-      return undefined; // Default fallback case
+      return 'Unknown';              // ✅ safe fallback keeps type string
   }
 };
 
