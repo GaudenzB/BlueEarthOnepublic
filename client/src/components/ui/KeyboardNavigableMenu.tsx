@@ -287,7 +287,7 @@ export const KeyboardNavigableMenu: React.FC<KeyboardNavigableMenuProps> = ({
     <ul
       ref={menuRef}
       role="menu"
-      aria-label={ariaLabel = undefined}
+      aria-label={ariaLabel ?? 'Menu'}
       className={`list-none p-0 m-0 border border-gray-200 rounded-md overflow-hidden ${className || ''}`}
       onKeyDown={handleKeyDown}
       id={id}
