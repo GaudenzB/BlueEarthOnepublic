@@ -89,7 +89,6 @@ export function CustomToast({
   id,
 }: CustomToastProps) {
   const [isPaused, setIsPaused] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(duration);
   
   const handleClose = () => {
     if (id) {
@@ -112,13 +111,13 @@ export function CustomToast({
     // Set up a timer to close the toast
     const timer = setTimeout(() => {
       handleClose();
-    }, remainingTime);
+    }, duration);
     
     // Clean up the timer on unmount
     return () => {
       clearTimeout(timer);
     };
-  }, [duration, handleClose, isPaused, remainingTime]);
+  }, [duration, handleClose, isPaused]);
   
   // Get the appropriate icon based on variant
   const renderIcon = () => {
