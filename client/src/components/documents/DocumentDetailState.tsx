@@ -367,7 +367,7 @@ export function DocumentDetailNotFound({ onReturn }: DocumentDetailStateProps) {
         Document Not Found
       </h2>
       <p style={{ color: '#666' as string, marginBottom: '24px', fontSize: '16px', maxWidth: '600px', margin: '0 auto 24px' }}>
-        The document you're looking for doesn't exist or you don't have permission to view it. 
+        The document&nbsp;you're&nbsp;looking&nbsp;for&nbsp;doesn't&nbsp;exist or you don't have permission to view it. 
         This could be because:
       </p>
       <ul style={{ listStyle: 'none', textAlign: 'left', width: 'fit-content', margin: '0 auto 24px', color: '#444' as string }}>
