@@ -115,9 +115,9 @@ export class RuleBasedContractAnalyzer implements IContractAnalyzer {
         vendor: analysis.vendor || undefined,
         contractTitle: analysis.contractTitle || undefined,
         docType: analysis.docType || undefined,
-        effectiveDate: analysis.effectiveDate ? analysis.effectiveDate.toISOString() : undefined,
-        terminationDate: analysis.terminationDate ? analysis.terminationDate.toISOString() : undefined,
-        confidence: analysis.confidence as Record<string, number> || {},
+        effectiveDate: analysis.effectiveDate ? new Date(analysis.effectiveDate).toISOString() : undefined,
+        terminationDate: analysis.terminationDate ? new Date(analysis.terminationDate).toISOString() : undefined,
+        confidence: analysis.confidence ? JSON.parse(analysis.confidence as string) : {},
         error: analysis.error || undefined
       };
     } catch (error) {

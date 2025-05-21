@@ -96,8 +96,8 @@ export class AIContractAnalyzer implements IContractAnalyzer {
         id: initialRecord.id,
         status: 'PENDING',
         documentId: documentId,
-        filename: document.filename,
-        title: document.title
+        filename: document.filename || undefined,
+        title: document.title || undefined
       };
     } catch (error) {
       logger.error(`Error initiating contract analysis for document ${documentId}:`, error);
@@ -139,9 +139,9 @@ export class AIContractAnalyzer implements IContractAnalyzer {
         vendor: analysis.vendor || undefined,
         contractTitle: analysis.contractTitle || undefined,
         docType: analysis.docType || undefined,
-        effectiveDate: analysis.effectiveDate ? analysis.effectiveDate.toISOString() : undefined,
-        terminationDate: analysis.terminationDate ? analysis.terminationDate.toISOString() : undefined,
-        confidence: analysis.confidence as Record<string, number> || {},
+        effectiveDate: analysis.effectiveDate ? new Date(analysis.effectiveDate).toISOString() : undefined,
+        terminationDate: analysis.terminationDate ? new Date(analysis.terminationDate).toISOString() : undefined,
+        confidence: analysis.confidence ? JSON.parse(analysis.confidence as string) : {},
         error: analysis.error || undefined
       };
     } catch (error) {
