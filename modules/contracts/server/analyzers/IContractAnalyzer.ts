@@ -12,12 +12,12 @@ export interface AnalysisResult {
   filename?: string;
   title?: string;
   error?: string;
-  vendor?: string;
-  contractTitle?: string;
-  docType?: string;
-  effectiveDate?: string;
-  terminationDate?: string;
-  confidence?: Record<string, number>;
+  vendor?: string | null;
+  contractTitle?: string | null;
+  docType?: string | null;
+  effectiveDate?: string | null;
+  terminationDate?: string | null;
+  confidence?: Record<string, number> | null;
 }
 
 export interface IContractAnalyzer {
